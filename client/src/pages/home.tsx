@@ -49,6 +49,12 @@ const categoryConfig = {
       // Test Prep
       "ged", "gre", "lsat", "toefl"
     ]
+  },
+  other: {
+    title: "Other Subjects",
+    description: "Additional practice subjects and custom content",
+    icon: BookOpen,
+    keywords: ["dummy", "test", "practice", "custom", "sample"] // Common test/demo keywords
   }
 };
 

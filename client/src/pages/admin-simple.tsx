@@ -590,6 +590,9 @@ export default function AdminSimple() {
                         <FormControl>
                           <Input placeholder="e.g., PMP Certification" {...field} value={field.value || ""} />
                         </FormControl>
+                        <div className="text-xs text-gray-600 mt-1">
+                          💡 For automatic categorization, include keywords like: "certification", "aws", "pmp", "statistics", "programming", "engineering", etc.
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

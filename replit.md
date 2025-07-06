@@ -154,6 +154,15 @@ The application uses four main entities:
 - **Homepage integration**: Added "Browse All Categories" button on homepage for discoverability
 - **Responsive design**: All category pages are fully responsive and mobile-friendly
 
+### July 06, 2025 - Admin Panel Authentication and Subject Categorization Fixes (COMPLETED)
+- **Fixed admin authentication JWT token issue**: Resolved token secret mismatch between admin login and auth service verification
+- **Created real admin user in database**: Added user ID 999 with proper credentials for token verification
+- **Fixed create exam form validation**: Added missing difficulty field to exam creation form with default "Intermediate" value
+- **Enhanced subject categorization system**: Added "Other Subjects" category to display new subjects that don't match existing keywords
+- **Improved admin UX**: Added helpful hints in subject creation form to guide proper naming for automatic categorization
+- **Verified full functionality**: Admin panel now successfully creates exams and questions with proper authentication flow
+- **Enhanced homepage display**: New subjects now automatically appear in appropriate categories on homepage and subcategory pages
+
 ### July 06, 2025 - Major Database Expansion with Comprehensive Academic Subjects (COMPLETED)
 - **Successfully resolved display issue**: Fixed technical problem where expanded subject database wasn't appearing on homepage
 - **Massive subject database expansion**: Added 47 comprehensive subjects across 8 major categories (now fully functional)
