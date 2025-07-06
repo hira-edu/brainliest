@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { analyticsService } from "./analytics";
 import { getQuestionHelp, explainAnswer } from "./ai";
+import { emailService } from "./email-service";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -13,6 +14,14 @@ import {
   insertExamAnalyticsSchema,
   insertUserSchema
 } from "@shared/schema";
+
+// Store verification codes temporarily (in production, use Redis)
+const verificationCodes = new Map<string, { code: string; expires: number }>();
+
+// Generate 6-digit verification code
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint
@@ -767,6 +776,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to export users" });
     }
   });
+
+  // Authentication routes
+  app.post("/api/auth/send-code", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Simple email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Generate verification code
+      const code = generateVerificationCode();
+      const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+      // Store code temporarily
+      verificationCodes.set(email, { code, expires });
+
+      // Send email
+      const emailSent = await emailService.sendAuthenticationCode(email, code);
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification code" });
+      }
+
+      res.json({ 
+        message: "Verification code sent successfully",
+        success: true
+      });
+    } catch (error) {
+      console.error("Send code error:", error);
+      res.status(500).json({ message: "Failed to send verification code" });
+    }
+  });
+
+  app.post("/api/auth/verify-code", async (req, res) => {
+    try {
+      const { email, code } = req.body;
+      
+      if (!email || !code) {
+        return res.status(400).json({ message: "Email and code are required" });
+      }
+
+      // Check if code exists and hasn't expired
+      const storedData = verificationCodes.get(email);
+      if (!storedData) {
+        return res.status(400).json({ message: "No verification code found for this email" });
+      }
+
+      if (Date.now() > storedData.expires) {
+        verificationCodes.delete(email);
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      if (storedData.code !== code) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      // Code is valid, remove it
+      verificationCodes.delete(email);
+
+      // Extract username from email (simple approach)
+      const username = email.split('@')[0];
+
+      // Try to find existing user
+      let user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Create new user
+        user = await storage.createUser({
+          email,
+          username,
+          firstName: null,
+          lastName: null,
+          role: 'user',
+          isActive: true,
+        });
+      }
+
+      res.json({ 
+        message: "Authentication successful",
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        }
+      });
+    } catch (error) {
+      console.error("Verify code error:", error);
+      res.status(500).json({ message: "Failed to verify code" });
+    }
+  });
+
+  // Clean up expired codes periodically
+  setInterval(() => {
+    const now = Date.now();
+    for (const [email, data] of verificationCodes.entries()) {
+      if (now > data.expires) {
+        verificationCodes.delete(email);
+      }
+    }
+  }, 5 * 60 * 1000); // Clean up every 5 minutes
 
   const httpServer = createServer(app);
   return httpServer;
