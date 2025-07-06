@@ -26,7 +26,7 @@ function Router() {
       <Route path="/exam/:id" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
-      <Route path="/admin" component={AdminClean} />
+      <Route path="/admin" component={AdminSimple} />
       <Route path="/admin-simple" component={AdminSimple} />
       <Route path="/settings" component={Settings} />
       <Route path="/our-story" component={OurStory} />

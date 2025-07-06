@@ -4,6 +4,7 @@ import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject } fr
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
+import AdminUsers from "@/pages/admin-users";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -2037,11 +2038,12 @@ export default function AdminSimple() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="subjects">Subjects</TabsTrigger>
             <TabsTrigger value="exams">Exams</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard">
@@ -2055,6 +2057,9 @@ export default function AdminSimple() {
           </TabsContent>
           <TabsContent value="questions">
             <QuestionManager />
+          </TabsContent>
+          <TabsContent value="users">
+            <AdminUsers />
           </TabsContent>
           <TabsContent value="analytics">
             <Card>
