@@ -183,8 +183,7 @@ export const CertificationIcons: Record<string, React.ComponentType<{ className?
   'comptia': CompTIAIcon,
   'cisco': CiscoIcon,
   'azure': AzureIcon,
-  'gcp': GoogleCloudIcon,
-  'google-cloud': GoogleCloudIcon,
+  'googlecloud': GoogleCloudIcon,
   'oracle': OracleIcon,
   'vmware': VMwareIcon,
   'kubernetes': KubernetesIcon,
@@ -206,6 +205,7 @@ export const getIconComponent = (subjectName: string): React.ComponentType<{ cla
   
   // Direct mapping for better accuracy
   const iconMapping: Record<string, string> = {
+    // Professional Certifications
     'pmp certification': 'pmp',
     'aws certified solutions architect': 'aws',
     'aws cloud practitioner': 'aws',
@@ -224,30 +224,72 @@ export const getIconComponent = (subjectName: string): React.ComponentType<{ cla
     'vmware': 'vmware',
     'kubernetes': 'kubernetes',
     'docker': 'docker',
+    
+    // Mathematics & Statistics
     'mathematics': 'math',
+    'calculus': 'math',
+    'linear algebra': 'math',
+    'geometry': 'math',
+    'discrete mathematics': 'math',
+    'pre-calculus': 'math',
     'statistics': 'statistics',
     'ap statistics': 'statistics',
     'biostatistics': 'statistics',
     'business statistics': 'statistics',
     'elementary statistics': 'statistics',
     'intro to statistics': 'statistics',
+    
+    // Computer Science & Programming
+    'programming': 'science',
+    'data structures': 'science',
+    'web development': 'science',
+    'database design': 'science',
+    'computer science fundamentals': 'science',
+    
+    // Natural Sciences
     'science': 'science',
     'biology': 'science',
     'chemistry': 'science',
     'physics': 'science',
+    'anatomy': 'medical',
+    'astronomy': 'science',
+    'earth science': 'science',
+    
+    // Engineering
     'engineering': 'engineering',
     'mechanical engineering': 'engineering',
     'electrical engineering': 'engineering',
+    
+    // Business & Economics
     'business': 'business',
     'business administration': 'business',
     'accounting': 'business',
     'economics': 'business',
     'finance': 'business',
+    
+    // Medical & Health Sciences
     'medical': 'medical',
     'nursing': 'medical',
     'health sciences': 'medical',
     'medical sciences': 'medical',
-    'pharmacology': 'medical'
+    'pharmacology': 'medical',
+    'hesi': 'medical',
+    'teas': 'medical',
+    
+    // Social Sciences & Humanities
+    'psychology': 'science',
+    'history': 'business',
+    'philosophy': 'business',
+    'sociology': 'science',
+    'political science': 'science',
+    'english': 'business',
+    'writing': 'business',
+    
+    // Test Preparation
+    'gre': 'business',
+    'lsat': 'business',
+    'toefl': 'business',
+    'ged': 'business'
   };
   
   // Check direct mapping first
