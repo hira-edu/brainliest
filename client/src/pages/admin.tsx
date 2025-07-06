@@ -79,56 +79,35 @@ const commonTags = [
 ];
 
 export default function Admin() {
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("subjects");
+  // Authentication must be checked first - set to false by default
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [adminEmail, setAdminEmail] = useState("admin@brainliest.com");
   const [adminPassword, setAdminPassword] = useState("admin123");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Admin panel state - only used after authentication
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("subjects");
+  
   const { toast } = useToast();
   const { user, isSignedIn } = useAuth();
 
-  // Check for existing admin token on mount
+  // Force authentication check on mount - always start unauthenticated
   useEffect(() => {
-    const checkExistingAuth = () => {
-      console.log('Checking admin authentication...');
-      const token = localStorage.getItem('brainliest_access_token');
-      const storedUser = localStorage.getItem('brainliest_user');
-      
-      console.log('Token exists:', !!token);
-      console.log('Stored user exists:', !!storedUser);
-      
-      if (token && storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          console.log('Parsed user role:', parsedUser.role);
-          if (parsedUser.role === 'admin') {
-            console.log('Admin authentication successful');
-            setIsAuthenticated(true);
-            setIsLoading(false);
-            return;
-          }
-        } catch (error) {
-          console.error('Failed to parse stored user:', error);
-          localStorage.removeItem('brainliest_access_token');
-          localStorage.removeItem('brainliest_user');
-        }
-      }
-      
-      // No valid admin token found
-      console.log('No admin authentication found, showing login');
-      setIsAuthenticated(false);
-      setIsLoading(false);
-    };
-
-    // Clear any existing tokens to force fresh authentication
+    console.log('Admin panel mounted - checking authentication...');
+    
+    // Always clear tokens on admin panel access for security
     localStorage.removeItem('brainliest_access_token');
     localStorage.removeItem('brainliest_user');
     
-    checkExistingAuth();
+    // Always require fresh admin login for security
+    setIsAuthenticated(false);
+    setIsLoading(false);
+    
+    console.log('Admin panel requires fresh authentication');
   }, []);
 
   const handleAdminLogin = async () => {
