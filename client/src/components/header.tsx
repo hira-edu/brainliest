@@ -28,6 +28,13 @@ export default function Header() {
                   Subjects
                 </a>
               </Link>
+              <Link href="/analytics">
+                <a className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  location === '/analytics' ? 'text-primary' : 'text-gray-600 hover:text-primary'
+                }`}>
+                  Analytics
+                </a>
+              </Link>
               <Link href="/admin">
                 <a className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   location === '/admin' ? 'text-primary' : 'text-gray-600 hover:text-primary'
