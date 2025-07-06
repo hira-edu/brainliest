@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -175,6 +175,24 @@ export default function AdminSimple() {
   // Icon suggestions and search functionality
   const [iconSearchTerm, setIconSearchTerm] = useState("");
   const [showIconSuggestions, setShowIconSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowIconSuggestions(false);
+      }
+    };
+
+    if (showIconSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showIconSuggestions]);
   
   const getUsedIcons = () => {
     const icons = subjects?.map(s => s.icon).filter(Boolean) || [];

@@ -9,7 +9,7 @@ import ExamSelection from "@/pages/exam-selection";
 import QuestionInterface from "@/pages/question-interface";
 import Results from "@/pages/results";
 import Analytics from "@/pages/analytics";
-import AdminSimple from "@/pages/admin-simple";
+import AdminSimple from "@/pages/admin-simple-fixed";
 import NotFound from "@/pages/not-found";
 
 function Router() {
