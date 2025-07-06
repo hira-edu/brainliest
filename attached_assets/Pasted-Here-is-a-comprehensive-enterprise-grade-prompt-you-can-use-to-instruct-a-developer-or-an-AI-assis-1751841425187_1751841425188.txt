@@ -1,0 +1,83 @@
+Here is a comprehensive, enterprise-grade prompt you can use to instruct a developer (or an AI assistant like ChatGPT) to fix all issues identified in the audit of your Next.js admin panel. This prompt is tailored to guide implementation in a secure, structured, and non-breaking manner.
+
+🔧 ENTERPRISE-GRADE ADMIN PANEL FIX IMPLEMENTATION PROMPT
+
+Purpose:
+You are a senior full-stack developer or expert development team with enterprise-level experience in Next.js, React, Node.js, Prisma/SQL/MongoDB, and security best practices. You will now systematically implement fixes to resolve all critical vulnerabilities and structural issues identified in the most recent audit of the admin panel.
+
+Your objective is to fix these problems without changing any of the existing application’s core functionality, without breaking the current user interface, and while ensuring full backwards compatibility. All fixes must meet modern security, maintainability, and compliance standards (including OWASP, GDPR readiness, and enterprise CI/CD readiness).
+
+🔐 1. AUTHENTICATION AND AUTHORIZATION FIXES
+
+Implement server-side authentication middleware to protect all /admin routes on both frontend and backend.
+Integrate middleware into every admin page (via _middleware.js or custom HOC) that checks for active sessions and verifies JWT tokens or session cookies.
+Set up role-based access control (RBAC) so that only users with role = admin or equivalent claim can access admin views or perform admin-level API actions.
+Ensure that every admin API endpoint performs a server-side check for both authentication and admin role. Do not rely on client-side checks alone.
+
+Use secure, HttpOnly cookies or access tokens with proper expiration, refresh, and CSRF protection for session persistence. If you’re using NextAuth or Clerk, enforce role checks in session callbacks and getServerSideProps.
+
+🛠️ 2. FORM-TO-DATABASE FIELD MAPPING FIXES
+
+Review all admin panel forms and eliminate any frontend input fields that do not map to actual database schema fields (such as unused category or tags in Subject or Exam forms).
+If these fields are needed in the future, either add them to the schema with appropriate type definitions and migrations or temporarily hide them from the form.
+Add frontend validation (using libraries like Zod or Yup) for fields like icon, color, isActive, and difficulty, using enums or allowed-value arrays.
+Ensure that the correctAnswer input supports multiple correct answers if the database schema does. Convert single-answer inputs into a checkbox group or multi-select to support array input if necessary.
+
+Synchronize all form states with corresponding fields in the backend models and ensure each form submission goes to the correct route and database function.
+
+📂 3. CSV IMPORT & EXPORT FIXES
+
+For CSV export, add pagination or streaming to prevent memory issues with large datasets. Use libraries like json2csv, csv-writer, or Prisma’s batch query support.
+Ensure that exports do not include sensitive data. Validate export headers against the actual schema, and make sure CSV encoding is consistent (UTF-8, with clean line breaks).
+For CSV import, enforce both file type and MIME type validation (e.g., text/csv, .csv extension).
+Implement a file size limit (e.g., 2MB–5MB) to prevent denial-of-service uploads.
+Sanitize all incoming CSV data—escape characters, strip scripts or HTML, normalize inputs.
+Before inserting into the database, run parsed rows through Zod or Yup schemas to validate required fields, field types, and enums.
+Wrap import logic in transactions or batch upserts. If any rows fail validation, the entire import should roll back or log partial errors cleanly.
+Create detailed success/error reports to be shown to the admin after import (e.g., “92 of 100 rows successfully imported”).
+
+🗃️ 4. DATABASE INTEGRITY FIXES
+
+Update your schema (e.g., Prisma, Sequelize, or raw SQL) to include proper foreign key constraints, especially between subjects, exams, and questions.
+Enforce referential integrity rules: use ON DELETE CASCADE or similar strategies to prevent orphaned records.
+Introduce soft delete fields (deletedAt, isDeleted) instead of hard deletes for auditability.
+Automate examCount or questionCount tracking via database triggers or post-insert hooks (or recalculate on demand).
+If you’re using Prisma, make use of @relation, @default, and @updatedAt annotations to enforce data integrity and reduce manual error.
+
+🛡️ 5. SECURITY ENHANCEMENTS
+
+Sanitize all text input fields on the frontend and backend using a library such as DOMPurify, sanitize-html, or custom regex.
+Escape characters from inputs during both CSV parsing and form submission to prevent XSS and SQL injection attacks.
+For uploaded files (including CSVs), validate MIME types and restrict to a whitelist of allowed types. Use a content analyzer or magic number check if necessary.
+Log admin session activities server-side, such as login time, last access, and all CRUD actions taken via admin panel. Store these in an audit_logs table or collection.
+Prevent privilege escalation by enforcing role checks at every data interaction layer (controllers, routes, services).
+Never trust user role or status from the client—always fetch from secure server session or token.
+
+⚙️ 6. USER EXPERIENCE & TOAST HANDLING FIXES
+
+Standardize the format and structure of all toast notifications and error messages across the admin UI. Use a centralized Toast provider (like React Hot Toast or Radix) and enforce message type (error, warning, success) consistency.
+Ensure that modals do not clear form data unless the form is explicitly submitted or reset. Implement form state persistence within modals to prevent data loss on accidental closure.
+Enhance field-level validation with clear inline error labels, optional tooltips for complex fields, and success indicators where appropriate.
+Ensure all buttons handle async states with loading indicators and disable conditions. Support retry logic where possible.
+
+📊 7. ENTERPRISE FEATURES & COMPLIANCE
+
+Implement admin audit logging. Create a backend middleware or logging hook that records all admin activity (e.g., created exam, updated subject, deleted question) with timestamp, admin ID, route, and IP address.
+Introduce bulk operation safeguards such as confirmation modals before destructive actions (e.g., “Are you sure you want to delete 80 records?”).
+Add support for undo or rollback mechanisms where possible (e.g., soft deletes, versioned updates).
+Set up data versioning if applicable, where historical snapshots of edited records are preserved for compliance.
+Optionally integrate a dashboard for activity history or downloadable audit trails.
+
+🔚 Final Notes
+
+Apply all fixes in a modular, testable way. Do not break any existing frontend components or APIs. Keep backward compatibility with all current routes, pages, and forms. Write clean, commented code following the project’s preferred style guide. All improvements must be secure by default, scalable, and easily maintainable for future developers.
+
+Once completed, provide a detailed changelog summarizing:
+	•	Fixed vulnerabilities and where
+	•	Improved schema and migrations
+	•	API updates and protected routes
+	•	Updated form mappings
+	•	Improved validation layers
+	•	Admin panel behavior enhancements
+
+You may begin implementing these fixes now. Would you like me to generate the middleware code for admin route protection first, or assist in updating the role-based access logic in the API layer?

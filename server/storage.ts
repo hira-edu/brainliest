@@ -5,6 +5,7 @@ import {
   examSessions,
   comments,
   users,
+  auditLogs,
   type Subject,
   type InsertSubject,
   type Exam,
@@ -17,9 +18,11 @@ import {
   type InsertComment,
   type User,
   type InsertUser,
+  type AuditLog,
+  type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, or } from "drizzle-orm";
+import { eq, like, and, or, desc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -77,6 +80,11 @@ export interface IStorage {
     isBanned?: boolean;
     search?: string;
   }): Promise<User[]>;
+
+  // Audit Logs
+  getAuditLogs(): Promise<AuditLog[]>;
+  getAuditLog(id: number): Promise<AuditLog | undefined>;
+  createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -333,6 +341,21 @@ export class DatabaseStorage implements IStorage {
     }
 
     return await db.select().from(users);
+  }
+
+  // Audit Logs
+  async getAuditLogs(): Promise<AuditLog[]> {
+    return await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp));
+  }
+
+  async getAuditLog(id: number): Promise<AuditLog | undefined> {
+    const results = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
+    return results.length > 0 ? results[0] : undefined;
+  }
+
+  async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
+    const result = await db.insert(auditLogs).values(auditLog).returning();
+    return result[0];
   }
 }
 

@@ -100,6 +100,22 @@ export const users = pgTable("users", {
   loginCount: integer("login_count").default(0),
 });
 
+// Audit logging table for enterprise compliance
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").notNull(),
+  adminEmail: text("admin_email").notNull(),
+  action: text("action").notNull(), // e.g., "POST /api/subjects", "DELETE /api/questions/123"
+  resourceType: text("resource_type"), // 'subject', 'exam', 'question', 'user'
+  resourceId: integer("resource_id"), // ID of affected resource
+  changes: text("changes"), // JSON string of changes made
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  success: boolean("success").default(true),
+  errorMessage: text("error_message"),
+});
+
 // Analytics and Performance Tracking Tables
 export const userProfiles = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
@@ -279,6 +295,11 @@ export const insertAuthSessionSchema = createInsertSchema(authSessions).omit({
   lastUsedAt: true,
 });
 
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
 export type Subject = typeof subjects.$inferSelect;
 export type InsertSubject = z.infer<typeof insertSubjectSchema>;
 export type Exam = typeof exams.$inferSelect;
@@ -310,3 +331,7 @@ export type AuthLog = typeof authLogs.$inferSelect;
 export type InsertAuthLog = z.infer<typeof insertAuthLogSchema>;
 export type AuthSession = typeof authSessions.$inferSelect;
 export type InsertAuthSession = z.infer<typeof insertAuthSessionSchema>;
+
+// Audit Log Types
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;

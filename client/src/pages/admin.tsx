@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
+import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject, AuditLog } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
@@ -93,6 +93,86 @@ export default function Admin() {
   const { data: questions } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
   });
+
+  // Audit Logs Manager Component
+  const AuditLogsManager = () => {
+    const { data: auditLogs, isLoading } = useQuery<AuditLog[]>({
+      queryKey: ["/api/audit-logs"],
+    });
+
+    if (isLoading) {
+      return <div className="flex justify-center p-8">Loading audit logs...</div>;
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Audit Logs</h2>
+            <p className="text-gray-600">Monitor all administrative actions and security events</p>
+          </div>
+          <Badge variant="secondary" className="text-sm">
+            {auditLogs?.length || 0} Events Logged
+          </Badge>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Settings className="w-5 h-5" />
+              <span>Administrative Activity Monitor</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!auditLogs || auditLogs.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Settings className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No audit logs found</p>
+                <p className="text-sm">Administrative actions will appear here for compliance tracking</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <Badge variant="outline" className="text-xs">
+                            {log.action}
+                          </Badge>
+                          <span className="font-medium text-blue-600">
+                            {log.adminEmail}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            ID: {log.adminId}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <div className="flex items-center space-x-4">
+                            <span>🌐 {log.ipAddress}</span>
+                            <span>📱 {log.userAgent}</span>
+                          </div>
+                        </div>
+                        {log.details && (
+                          <div className="text-xs bg-gray-100 p-2 rounded">
+                            <strong>Details:</strong> {log.details}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right text-sm text-gray-500">
+                        <div>{new Date(log.timestamp).toLocaleDateString()}</div>
+                        <div>{new Date(log.timestamp).toLocaleTimeString()}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   // Subject Management Component
   function SubjectManager() {
@@ -1377,7 +1457,7 @@ export default function Admin() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="subjects" className="flex items-center space-x-2">
               <Book className="w-4 h-4" />
               <span>Subjects</span>
@@ -1393,6 +1473,10 @@ export default function Admin() {
             <TabsTrigger value="users" className="flex items-center space-x-2">
               <Users className="w-4 h-4" />
               <span>Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="flex items-center space-x-2">
+              <FileText className="w-4 h-4" />
+              <span>Audit Logs</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1410,6 +1494,10 @@ export default function Admin() {
 
           <TabsContent value="users">
             <AdminUsers />
+          </TabsContent>
+
+          <TabsContent value="audit">
+            <AuditLogsManager />
           </TabsContent>
         </Tabs>
       </main>

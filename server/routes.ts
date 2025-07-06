@@ -5,6 +5,7 @@ import { analyticsService } from "./analytics";
 import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
 import { authService } from "./auth-service";
+import { requireAdminAuth, logAdminAction } from "./middleware/auth";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -72,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subjects", async (req, res) => {
+  app.post("/api/subjects", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
       if (!validation.success) {
@@ -111,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/exams", async (req, res) => {
+  app.post("/api/exams", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const validation = insertExamSchema.safeParse(req.body);
       if (!validation.success) {
@@ -150,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", async (req, res) => {
+  app.post("/api/questions", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const validation = insertQuestionSchema.safeParse(req.body);
       if (!validation.success) {
@@ -163,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", async (req, res) => {
+  app.put("/api/questions/:id", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validation = insertQuestionSchema.partial().safeParse(req.body);
@@ -180,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/all", async (req, res) => {
+  app.delete("/api/questions/all", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const questions = await storage.getQuestions();
       for (const question of questions) {
@@ -192,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", async (req, res) => {
+  app.delete("/api/questions/:id", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteQuestion(id);
@@ -236,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/all", async (req, res) => {
+  app.delete("/api/questions/all", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
       const questions = await storage.getQuestions();
       let deletedCount = 0;
@@ -1067,6 +1068,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailServiceWorking: false,
         resendConfigured: !!process.env.RESEND_API_KEY
       });
+    }
+  });
+
+  // Audit Log endpoints
+  app.get("/api/audit-logs", requireAdminAuth, async (req, res) => {
+    try {
+      const auditLogs = await storage.getAuditLogs();
+      res.json(auditLogs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+
+  app.get("/api/audit-logs/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const auditLog = await storage.getAuditLog(id);
+      if (!auditLog) {
+        return res.status(404).json({ message: "Audit log not found" });
+      }
+      res.json(auditLog);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch audit log" });
     }
   });
 
