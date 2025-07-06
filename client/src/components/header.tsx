@@ -1,7 +1,9 @@
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header() {
   const [location] = useLocation();
+  const { isSignedIn, userName, signIn, signOut } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -33,9 +35,29 @@ export default function Header() {
             </div>
           </nav>
           <div className="flex items-center space-x-4">
-            <button className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-              Sign In
-            </button>
+            {!isSignedIn ? (
+              <button 
+                onClick={() => {
+                  const name = prompt("Enter your name to sign in:");
+                  if (name?.trim()) {
+                    signIn(name.trim());
+                  }
+                }}
+                className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Sign In
+              </button>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-700">Welcome, {userName}!</span>
+                <button 
+                  onClick={signOut}
+                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
