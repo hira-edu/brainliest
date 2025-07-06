@@ -1882,76 +1882,7 @@ export default function AdminSimple() {
           </Alert>
         )}
         
-        {/* Filters */}
-        <div className="mb-6 space-y-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <Input
-              placeholder="Search questions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-xs"
-            />
-            
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium">Subject:</span>
-            </div>
-            <Select value={selectedSubjectFilter} onValueChange={setSelectedSubjectFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All subjects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {subjects?.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id.toString()}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">Exam:</span>
-            </div>
-            <Select value={selectedExamFilter} onValueChange={setSelectedExamFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All exams" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Exams</SelectItem>
-                {exams?.filter((exam) => 
-                  selectedSubjectFilter === "all" || exam.subjectId.toString() === selectedSubjectFilter
-                ).map((exam) => (
-                  <SelectItem key={exam.id} value={exam.id.toString()}>
-                    {exam.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {(selectedSubjectFilter !== "all" || selectedExamFilter !== "all" || searchTerm) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedSubjectFilter("all");
-                  setSelectedExamFilter("all");
-                  setSearchTerm("");
-                  setQuestionsPage(1);
-                }}
-              >
-                Clear All Filters
-              </Button>
-            )}
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">
-              Showing {filteredQuestions.length} question{filteredQuestions.length !== 1 ? 's' : ''}
-              {(selectedSubjectFilter !== "all" || selectedExamFilter !== "all" || searchTerm) && ' (filtered)'}
-            </p>
-          </div>
-        </div>
+
 
         <div className="space-y-4">
           {filteredQuestions.slice((questionsPage - 1) * questionsPerPage, questionsPage * questionsPerPage).map((question) => {
