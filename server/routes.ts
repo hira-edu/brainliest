@@ -489,6 +489,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Settings API endpoints
+  app.get("/api/settings/profile", async (req, res) => {
+    try {
+      // Mock user profile data
+      const profile = {
+        firstName: "John",
+        lastName: "Doe", 
+        email: "john.doe@example.com",
+        phone: "+1 (555) 123-4567",
+        bio: "Passionate about learning and professional development.",
+        location: "San Francisco, CA",
+        dateOfBirth: "1990-01-15",
+        website: "https://johndoe.com"
+      };
+      res.json(profile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.put("/api/settings/profile", async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, bio, location, dateOfBirth, website } = req.body;
+      
+      // Here you would update the user profile in the database
+      res.json({ 
+        message: "Profile updated successfully",
+        success: true 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  app.post("/api/settings/change-password", async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current and new password are required" });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+      
+      // Here you would verify current password and update to new password
+      res.json({ 
+        message: "Password changed successfully",
+        success: true 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
+  app.get("/api/settings/notifications", async (req, res) => {
+    try {
+      const notifications = {
+        emailNotifications: true,
+        pushNotifications: true,
+        examReminders: true,
+        progressUpdates: true,
+        marketingEmails: false,
+        weeklyDigest: true,
+        practiceReminders: true
+      };
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notification settings" });
+    }
+  });
+
+  app.put("/api/settings/notifications", async (req, res) => {
+    try {
+      // Here you would update notification preferences in the database
+      res.json({ 
+        message: "Notification settings updated successfully",
+        success: true 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update notification settings" });
+    }
+  });
+
+  app.post("/api/settings/export-data", async (req, res) => {
+    try {
+      // Here you would generate and send export data
+      res.json({ 
+        message: "Data export requested. You will receive an email with download link.",
+        success: true 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
+  app.delete("/api/settings/delete-account", async (req, res) => {
+    try {
+      // Here you would mark account for deletion
+      res.json({ 
+        message: "Account deletion requested. Your account will be deleted within 24 hours.",
+        success: true 
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to process account deletion" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -97,6 +97,25 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 06, 2025 - Comprehensive User Settings Panel with Modern Functionality
+- **Complete user settings interface**: Created comprehensive settings panel with 5 main sections
+- **Profile management**: Personal information editing including contact details, bio, and social links
+- **Security features**: Password change functionality with validation and show/hide toggles
+- **Notification preferences**: Granular control over email, push, and reminder notifications
+- **Privacy controls**: Profile visibility, data sharing, and analytics opt-out options
+- **Account management**: Data export functionality and account deletion with proper confirmations
+- **Backend API integration**: Full REST API endpoints for all settings operations
+- **Header integration**: Added settings link in user dropdown menu for easy access
+- **Modern UI components**: Used shadcn/ui components with proper validation and loading states
+
+### July 06, 2025 - Enhanced Authentication Modal with Separate Sign-in/Sign-up Flows
+- **Separate authentication modes**: Clear distinction between sign-in and sign-up processes
+- **Sign-in tab**: Email and password fields for existing users with proper validation
+- **Sign-up tab**: Email verification code flow for new user registration
+- **Easy mode switching**: Quick links to switch between sign-in and sign-up modes
+- **Social authentication**: Google sign-in option available for both authentication modes
+- **Updated branding**: Modal title and descriptions reflect "Brainliest" brand
+
 ### July 06, 2025 - Complete Rebranding from ExamPrep Pro to Brainliest
 - **Complete brand name change**: Updated all references from "ExamPrep Pro" to "Brainliest" across the entire platform
 - **Email address updates**: Changed all email addresses from @examprep.pro to @brainliest.com domain

@@ -10,6 +10,7 @@ import QuestionInterface from "@/pages/question-interface";
 import Results from "@/pages/results";
 import Analytics from "@/pages/analytics";
 import AdminSimple from "@/pages/admin-simple";
+import Settings from "@/pages/settings";
 import OurStory from "@/pages/our-story";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/admin" component={AdminSimple} />
       <Route path="/admin-simple" component={AdminSimple} />
+      <Route path="/settings" component={Settings} />
       <Route path="/our-story" component={OurStory} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />

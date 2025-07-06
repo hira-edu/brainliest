@@ -143,10 +143,12 @@ export default function Header() {
                           View Analytics
                         </DropdownMenuItem>
                       </Link>
-                      <DropdownMenuItem>
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </DropdownMenuItem>
+                      <Link href="/settings">
+                        <DropdownMenuItem>
+                          <Settings className="w-4 h-4 mr-2" />
+                          Settings
+                        </DropdownMenuItem>
+                      </Link>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={signOut} className="text-red-600">
                         <LogOut className="w-4 h-4 mr-2" />
