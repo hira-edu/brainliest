@@ -40,6 +40,94 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
+// Pagination component
+function PaginationControls({ 
+  currentPage, 
+  totalItems, 
+  itemsPerPage, 
+  onPageChange, 
+  onItemsPerPageChange 
+}: {
+  currentPage: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange: (items: number) => void;
+}) {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  return (
+    <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center space-x-2">
+        <span className="text-sm text-gray-600">
+          Showing {startItem}-{endItem} of {totalItems} items
+        </span>
+        <Select value={itemsPerPage.toString()} onValueChange={(value) => onItemsPerPageChange(parseInt(value))}>
+          <SelectTrigger className="w-20">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="30">30</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-gray-600">per page</span>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        
+        <div className="flex items-center space-x-1">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+            
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? "default" : "outline"}
+                size="sm"
+                className="w-8 h-8 p-0"
+                onClick={() => onPageChange(pageNum)}
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+        </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Form schemas
 const questionFormSchema = insertQuestionSchema.extend({
   option1: z.string().min(1, "Option 1 is required"),
@@ -58,6 +146,18 @@ export default function AdminSimple() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedExam, setSelectedExam] = useState<string>("all");
+  
+  // Pagination state for each tab
+  const [subjectsPage, setSubjectsPage] = useState(1);
+  const [examsPage, setExamsPage] = useState(1);
+  const [questionsPage, setQuestionsPage] = useState(1);
+  const [subjectsPerPage, setSubjectsPerPage] = useState(10);
+  const [examsPerPage, setExamsPerPage] = useState(10);
+  const [questionsPerPage, setQuestionsPerPage] = useState(10);
+  
+  // Selected filters for linking tabs
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("all");
+  const [selectedExamFilter, setSelectedExamFilter] = useState<string>("all");
 
   const { data: subjects } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
@@ -587,7 +687,7 @@ export default function AdminSimple() {
         </div>
 
         <div className="grid gap-4">
-          {subjects?.map((subject) => (
+          {subjects?.slice((subjectsPage - 1) * subjectsPerPage, subjectsPage * subjectsPerPage).map((subject) => (
             <Card key={subject.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -608,10 +708,24 @@ export default function AdminSimple() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEditSubject(subject)}
+                      onClick={() => {
+                        handleEditSubject(subject);
+                      }}
                       title="Edit subject"
                     >
                       <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedSubjectFilter(subject.id.toString());
+                        setExamsPage(1); // Reset exams page when filtering
+                      }}
+                      title="View exams for this subject"
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <Eye className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -628,9 +742,22 @@ export default function AdminSimple() {
             </Card>
           ))}
         </div>
+        
+        <PaginationControls
+          currentPage={subjectsPage}
+          totalItems={subjects?.length || 0}
+          itemsPerPage={subjectsPerPage}
+          onPageChange={setSubjectsPage}
+          onItemsPerPageChange={(items) => {
+            setSubjectsPerPage(items);
+            setSubjectsPage(1);
+          }}
+        />
       </div>
     );
   }
+
+
 
   // Exam Management Component
   function ExamManager() {
@@ -989,8 +1116,41 @@ export default function AdminSimple() {
           </Dialog>
         </div>
 
+        <div className="mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium">Filter by Subject:</span>
+            </div>
+            <Select value={selectedSubjectFilter} onValueChange={setSelectedSubjectFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjects?.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id.toString()}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedSubjectFilter !== "all" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedSubjectFilter("all")}
+              >
+                Clear Filter
+              </Button>
+            )}
+          </div>
+        </div>
+
         <div className="grid gap-4">
-          {exams?.map((exam) => {
+          {exams?.filter((exam) => 
+            selectedSubjectFilter === "all" || exam.subjectId.toString() === selectedSubjectFilter
+          ).slice((examsPage - 1) * examsPerPage, examsPage * examsPerPage).map((exam) => {
             const subject = subjects?.find(s => s.id === exam.subjectId);
             const questionCount = questions?.filter(q => q.examId === exam.id).length || 0;
 
@@ -1020,6 +1180,18 @@ export default function AdminSimple() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => {
+                          setSelectedExamFilter(exam.id.toString());
+                          setQuestionsPage(1); // Reset questions page when filtering
+                        }}
+                        title="View questions for this exam"
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => cloneExamMutation.mutate(exam)}
                         title="Clone exam"
                       >
@@ -1041,6 +1213,19 @@ export default function AdminSimple() {
             );
           })}
         </div>
+        
+        <PaginationControls
+          currentPage={examsPage}
+          totalItems={exams?.filter((exam) => 
+            selectedSubjectFilter === "all" || exam.subjectId.toString() === selectedSubjectFilter
+          ).length || 0}
+          itemsPerPage={examsPerPage}
+          onPageChange={setExamsPage}
+          onItemsPerPageChange={(items) => {
+            setExamsPerPage(items);
+            setExamsPage(1);
+          }}
+        />
       </div>
     );
   }
@@ -1050,18 +1235,18 @@ export default function AdminSimple() {
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    // Filter questions based on search and selections
+    // Filter questions based on search and selections - use filter states for hierarchical linking
     const filteredQuestions = questions?.filter(question => {
       const matchesSearch = !searchTerm || 
         question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
         question.explanation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         question.domain?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesSubject = selectedSubject === "all" || 
-        question.subjectId.toString() === selectedSubject;
+      const matchesSubject = selectedSubjectFilter === "all" || 
+        question.subjectId.toString() === selectedSubjectFilter;
       
-      const matchesExam = selectedExam === "all" || 
-        question.examId.toString() === selectedExam;
+      const matchesExam = selectedExamFilter === "all" || 
+        question.examId.toString() === selectedExamFilter;
 
       return matchesSearch && matchesSubject && matchesExam;
     }) || [];
@@ -1515,9 +1700,80 @@ export default function AdminSimple() {
             </AlertDescription>
           </Alert>
         )}
+        
+        {/* Filters */}
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <Input
+              placeholder="Search questions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-xs"
+            />
+            
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium">Subject:</span>
+            </div>
+            <Select value={selectedSubjectFilter} onValueChange={setSelectedSubjectFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All subjects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjects?.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id.toString()}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">Exam:</span>
+            </div>
+            <Select value={selectedExamFilter} onValueChange={setSelectedExamFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All exams" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Exams</SelectItem>
+                {exams?.filter((exam) => 
+                  selectedSubjectFilter === "all" || exam.subjectId.toString() === selectedSubjectFilter
+                ).map((exam) => (
+                  <SelectItem key={exam.id} value={exam.id.toString()}>
+                    {exam.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {(selectedSubjectFilter !== "all" || selectedExamFilter !== "all" || searchTerm) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedSubjectFilter("all");
+                  setSelectedExamFilter("all");
+                  setSearchTerm("");
+                  setQuestionsPage(1);
+                }}
+              >
+                Clear All Filters
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-600">
+              Showing {filteredQuestions.length} question{filteredQuestions.length !== 1 ? 's' : ''}
+              {(selectedSubjectFilter !== "all" || selectedExamFilter !== "all" || searchTerm) && ' (filtered)'}
+            </p>
+          </div>
+        </div>
 
         <div className="space-y-4">
-          {filteredQuestions.map((question) => {
+          {filteredQuestions.slice((questionsPage - 1) * questionsPerPage, questionsPage * questionsPerPage).map((question) => {
             const exam = exams?.find(e => e.id === question.examId);
             const subject = subjects?.find(s => s.id === question.subjectId);
             
@@ -1575,6 +1831,17 @@ export default function AdminSimple() {
             );
           })}
         </div>
+        
+        <PaginationControls
+          currentPage={questionsPage}
+          totalItems={filteredQuestions.length}
+          itemsPerPage={questionsPerPage}
+          onPageChange={setQuestionsPage}
+          onItemsPerPageChange={(items) => {
+            setQuestionsPerPage(items);
+            setQuestionsPage(1);
+          }}
+        />
       </div>
     );
   }

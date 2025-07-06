@@ -142,6 +142,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/questions/all", async (req, res) => {
+    try {
+      const questions = await storage.getQuestions();
+      for (const question of questions) {
+        await storage.deleteQuestion(question.id);
+      }
+      res.json({ message: "All questions deleted successfully", count: questions.length });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete all questions" });
+    }
+  });
+
   app.delete("/api/questions/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
