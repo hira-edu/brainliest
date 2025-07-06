@@ -16,12 +16,21 @@ import OurStory from "@/pages/our-story";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
 import Contact from "@/pages/contact";
+import CategoriesPage from "@/pages/categories";
+import CategoryDetailPage from "@/pages/category-detail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/categories" component={CategoriesPage} />
+      <Route path="/categories/:categoryId">
+        {(params) => <CategoryDetailPage categoryId={params.categoryId} />}
+      </Route>
+      <Route path="/categories/:categoryId/:subCategoryId">
+        {(params) => <CategoryDetailPage categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
+      </Route>
       <Route path="/subject/:id" component={ExamSelection} />
       <Route path="/exam/:id" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />

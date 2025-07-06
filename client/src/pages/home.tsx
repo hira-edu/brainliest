@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Subject } from "@shared/schema";
 import SubjectCard from "@/components/subject-card";
 import Header from "@/components/header";
@@ -202,6 +202,16 @@ export default function Home() {
               </p>
             </div>
           )}
+          
+          {/* Browse Categories Button */}
+          <div className="mt-4 text-center">
+            <Link href="/categories">
+              <Button variant="outline" className="bg-primary/5 hover:bg-primary/10 border-primary/20">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Browse All Categories
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Category Sections */}

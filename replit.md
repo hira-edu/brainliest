@@ -97,6 +97,20 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 06, 2025 - Comprehensive Category and Sub-Category Navigation System (COMPLETED)
+- **Complete categorization structure**: Built comprehensive 2-level category system with main categories and sub-categories
+- **Professional Certifications category**: Contains IT & Cloud Computing, Project Management, Cybersecurity, and Networking sub-categories
+- **University & College category**: Contains 8 sub-categories: Mathematics & Statistics, Computer Science, Natural Sciences, Engineering, Business & Economics, Health & Medical Sciences, Social Sciences & Humanities, and Standardized Test Prep
+- **Category navigation pages**: Created dedicated /categories page showing all categories and sub-categories
+- **Sub-category detail pages**: Built detailed pages for each sub-category with subject filtering and search
+- **Enhanced routing system**: Added proper routing for /categories/:categoryId/:subCategoryId navigation paths
+- **Subject filtering by category**: Implemented smart subject categorization using keyword matching
+- **Search and sort functionality**: Added search bar and sorting options (by name, exam count, question count) on category pages
+- **Breadcrumb navigation**: Added back buttons and breadcrumb navigation for easy category browsing
+- **Header navigation link**: Added "Categories" link to main navigation for easy access
+- **Homepage integration**: Added "Browse All Categories" button on homepage for discoverability
+- **Responsive design**: All category pages are fully responsive and mobile-friendly
+
 ### July 06, 2025 - Major Database Expansion with Comprehensive Academic Subjects (COMPLETED)
 - **Successfully resolved display issue**: Fixed technical problem where expanded subject database wasn't appearing on homepage
 - **Massive subject database expansion**: Added 47 comprehensive subjects across 8 major categories (now fully functional)
