@@ -1113,7 +1113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         
         // Generate token using the auth service
-        const token = require('jsonwebtoken').sign(
+        const jwt = await import('jsonwebtoken');
+        const token = jwt.default.sign(
           adminUser,
           process.env.JWT_SECRET || 'fallback-secret',
           { expiresIn: '24h' }
