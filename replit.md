@@ -97,6 +97,13 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 06, 2025 - Google Gemini AI Integration
+- **Switched from OpenAI to Google Gemini**: Replaced OpenAI API with Google Gemini Pro for all AI features
+- **Updated AI question help**: Now uses Gemini for generating hints and guidance without revealing answers
+- **Enhanced answer explanations**: Gemini provides detailed explanations for correct and incorrect answers
+- **Improved API reliability**: Using provided Gemini API key for consistent AI assistance
+- **Maintained feature compatibility**: All existing AI functionality continues to work seamlessly
+
 ### July 06, 2025 - Comprehensive User Settings Panel with Modern Functionality
 - **Complete user settings interface**: Created comprehensive settings panel with 5 main sections
 - **Profile management**: Personal information editing including contact details, bio, and social links
