@@ -605,9 +605,21 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Icon class or emoji" {...field} value={field.value || ""} />
-                        </FormControl>
+                        <div className="flex items-center space-x-3">
+                          <FormControl>
+                            <Input 
+                              placeholder="Icon class or emoji" 
+                              {...field} 
+                              value={field.value || ""} 
+                              className="flex-1"
+                            />
+                          </FormControl>
+                          {field.value && (
+                            <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
+                              {field.value}
+                            </div>
+                          )}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -665,9 +677,21 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Icon class or emoji" {...field} value={field.value || ""} />
-                        </FormControl>
+                        <div className="flex items-center space-x-3">
+                          <FormControl>
+                            <Input 
+                              placeholder="Icon class or emoji" 
+                              {...field} 
+                              value={field.value || ""} 
+                              className="flex-1"
+                            />
+                          </FormControl>
+                          {field.value && (
+                            <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
+                              {field.value}
+                            </div>
+                          )}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
