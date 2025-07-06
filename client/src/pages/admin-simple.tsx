@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -172,47 +172,10 @@ export default function AdminSimple() {
     queryKey: ["/api/questions"],
   });
 
-  // Icon suggestions and search functionality
-  const [iconSearchTerm, setIconSearchTerm] = useState("");
-  const [showIconSuggestions, setShowIconSuggestions] = useState(false);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
-  
-  // Handle click outside to close suggestions
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowIconSuggestions(false);
-      }
-    };
-
-    if (showIconSuggestions) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showIconSuggestions]);
-  
+  // Track previously used icons
   const getUsedIcons = () => {
     const icons = subjects?.map(s => s.icon).filter(Boolean) || [];
-    return Array.from(new Set(icons)); // Remove duplicates
-  };
-
-  const commonIcons = [
-    "chart", "cloud", "shield", "network", "laptop", "calculator", 
-    "beaker", "briefcase", "coins", "wrench", "heart", "leaf",
-    "atom", "server", "tree", "book", "graduation-cap", "code",
-    "database", "gear", "lock", "globe", "star", "lightning"
-  ];
-
-  const getFilteredIconSuggestions = (searchTerm: string) => {
-    if (!searchTerm) return Array.from(new Set([...getUsedIcons(), ...commonIcons])).slice(0, 12);
-    
-    const filtered = Array.from(new Set([...getUsedIcons(), ...commonIcons]))
-      .filter(icon => icon.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return filtered.slice(0, 12);
+    return [...new Set(icons)]; // Remove duplicates
   };
 
   // CSV Template Generation
@@ -648,60 +611,50 @@ export default function AdminSimple() {
                     name="icon"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Icon</FormLabel>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-1 relative">
-                              <FormControl>
-                                <Input 
-                                  placeholder="Search or type icon name (e.g., chart, cloud, shield)" 
-                                  {...field} 
-                                  value={field.value || ""} 
-                                  onChange={(e) => {
-                                    field.onChange(e.target.value);
-                                    setIconSearchTerm(e.target.value);
-                                    // Only show suggestions if there's text
-                                    setShowIconSuggestions(e.target.value.length > 0);
-                                  }}
-                                  onBlur={(e) => {
-                                    // Only hide suggestions if clicking outside the suggestions area
-                                    setTimeout(() => {
-                                      const relatedTarget = e.relatedTarget as Element | null;
-                                      if (!relatedTarget || !relatedTarget.closest('.icon-suggestions')) {
-                                        setShowIconSuggestions(false);
-                                      }
-                                    }, 150);
-                                  }}
-                                />
-                              </FormControl>
-                            </div>
-                            {field.value && (
-                              <div className="flex items-center justify-center w-10 h-10 text-sm font-medium border-2 rounded-md bg-gray-50">
-                                {field.value}
-                              </div>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-1 relative">
+                            <FormControl>
+                              <Input 
+                                placeholder="Icon class or emoji" 
+                                {...field} 
+                                value={field.value || ""} 
+                              />
+                            </FormControl>
+                            {getUsedIcons().length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-2"
+                                    type="button"
+                                  >
+                                    ▼
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2">
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {getUsedIcons().map((icon, index) => (
+                                      <Button
+                                        key={index}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => field.onChange(icon)}
+                                        type="button"
+                                      >
+                                        {icon}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           </div>
-                          {showIconSuggestions && iconSearchTerm.length > 0 && (
-                            <div className="icon-suggestions border rounded-lg p-3 bg-white shadow-sm relative z-10">
-                              <p className="text-xs text-gray-600 mb-2">Click to select:</p>
-                              <div className="grid grid-cols-6 gap-2">
-                                {getFilteredIconSuggestions(iconSearchTerm).map((icon, index) => (
-                                  <button
-                                    key={index}
-                                    type="button"
-                                    className="flex items-center justify-center w-12 h-8 text-xs font-medium border rounded hover:bg-gray-100 hover:border-blue-400 transition-colors"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault(); // Prevent blur event
-                                      field.onChange(icon);
-                                      setShowIconSuggestions(false);
-                                      setIconSearchTerm("");
-                                    }}
-                                    title={`Use "${icon}"`}
-                                  >
-                                    {icon}
-                                  </button>
-                                ))}
-                              </div>
+                          {field.value && (
+                            <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
+                              {field.value}
                             </div>
                           )}
                         </div>
@@ -761,60 +714,50 @@ export default function AdminSimple() {
                     name="icon"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Icon</FormLabel>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex-1 relative">
-                              <FormControl>
-                                <Input 
-                                  placeholder="Search or type icon name (e.g., chart, cloud, shield)" 
-                                  {...field} 
-                                  value={field.value || ""} 
-                                  onChange={(e) => {
-                                    field.onChange(e.target.value);
-                                    setIconSearchTerm(e.target.value);
-                                    // Only show suggestions if there's text
-                                    setShowIconSuggestions(e.target.value.length > 0);
-                                  }}
-                                  onBlur={(e) => {
-                                    // Only hide suggestions if clicking outside the suggestions area
-                                    setTimeout(() => {
-                                      const relatedTarget = e.relatedTarget as Element | null;
-                                      if (!relatedTarget || !relatedTarget.closest('.icon-suggestions')) {
-                                        setShowIconSuggestions(false);
-                                      }
-                                    }, 150);
-                                  }}
-                                />
-                              </FormControl>
-                            </div>
-                            {field.value && (
-                              <div className="flex items-center justify-center w-10 h-10 text-sm font-medium border-2 rounded-md bg-gray-50">
-                                {field.value}
-                              </div>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-1 relative">
+                            <FormControl>
+                              <Input 
+                                placeholder="Icon class or emoji" 
+                                {...field} 
+                                value={field.value || ""} 
+                              />
+                            </FormControl>
+                            {getUsedIcons().length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-2"
+                                    type="button"
+                                  >
+                                    ▼
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2">
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {getUsedIcons().map((icon, index) => (
+                                      <Button
+                                        key={index}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => field.onChange(icon)}
+                                        type="button"
+                                      >
+                                        {icon}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           </div>
-                          {showIconSuggestions && iconSearchTerm.length > 0 && (
-                            <div className="icon-suggestions border rounded-lg p-3 bg-white shadow-sm relative z-10">
-                              <p className="text-xs text-gray-600 mb-2">Click to select:</p>
-                              <div className="grid grid-cols-6 gap-2">
-                                {getFilteredIconSuggestions(iconSearchTerm).map((icon, index) => (
-                                  <button
-                                    key={index}
-                                    type="button"
-                                    className="flex items-center justify-center w-12 h-8 text-xs font-medium border rounded hover:bg-gray-100 hover:border-blue-400 transition-colors"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault(); // Prevent blur event
-                                      field.onChange(icon);
-                                      setShowIconSuggestions(false);
-                                      setIconSearchTerm("");
-                                    }}
-                                    title={`Use "${icon}"`}
-                                  >
-                                    {icon}
-                                  </button>
-                                ))}
-                              </div>
+                          {field.value && (
+                            <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
+                              {field.value}
                             </div>
                           )}
                         </div>
@@ -846,10 +789,8 @@ export default function AdminSimple() {
                       <CardTitle className="text-lg">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
-                    <div className="flex items-center justify-center w-8 h-8 text-base border rounded ml-3 overflow-hidden">
-                      <span className="truncate text-center">
-                        {(subject.icon && subject.icon.length <= 3) ? subject.icon : "📚"}
-                      </span>
+                    <div className="flex items-center justify-center w-8 h-8 text-lg border rounded ml-3">
+                      {subject.icon || "📚"}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
