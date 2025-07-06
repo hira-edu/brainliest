@@ -2,7 +2,7 @@ import {
   subjects,
   exams,
   questions,
-  userSessions,
+  examSessions,
   comments,
   users,
   type Subject,
@@ -11,8 +11,8 @@ import {
   type InsertExam,
   type Question,
   type InsertQuestion,
-  type UserSession,
-  type InsertUserSession,
+  type ExamSession,
+  type InsertExamSession,
   type Comment,
   type InsertComment,
   type User,
@@ -46,12 +46,12 @@ export interface IStorage {
   updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: number): Promise<boolean>;
 
-  // User Sessions
-  getUserSessions(): Promise<UserSession[]>;
-  getUserSession(id: number): Promise<UserSession | undefined>;
-  createUserSession(session: InsertUserSession): Promise<UserSession>;
-  updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined>;
-  deleteUserSession(id: number): Promise<boolean>;
+  // Exam Sessions
+  getExamSessions(): Promise<ExamSession[]>;
+  getExamSession(id: number): Promise<ExamSession | undefined>;
+  createExamSession(session: InsertExamSession): Promise<ExamSession>;
+  updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined>;
+  deleteExamSession(id: number): Promise<boolean>;
 
   // Comments
   getComments(): Promise<Comment[]>;
@@ -175,32 +175,32 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // User Sessions
-  async getUserSessions(): Promise<UserSession[]> {
-    return await db.select().from(userSessions);
+  // Exam Sessions
+  async getExamSessions(): Promise<ExamSession[]> {
+    return await db.select().from(examSessions);
   }
 
-  async getUserSession(id: number): Promise<UserSession | undefined> {
-    const [session] = await db.select().from(userSessions).where(eq(userSessions.id, id));
+  async getExamSession(id: number): Promise<ExamSession | undefined> {
+    const [session] = await db.select().from(examSessions).where(eq(examSessions.id, id));
     return session;
   }
 
-  async createUserSession(session: InsertUserSession): Promise<UserSession> {
-    const [newSession] = await db.insert(userSessions).values(session).returning();
+  async createExamSession(session: InsertExamSession): Promise<ExamSession> {
+    const [newSession] = await db.insert(examSessions).values(session).returning();
     return newSession;
   }
 
-  async updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined> {
+  async updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined> {
     const [updatedSession] = await db
-      .update(userSessions)
+      .update(examSessions)
       .set(session)
-      .where(eq(userSessions.id, id))
+      .where(eq(examSessions.id, id))
       .returning();
     return updatedSession;
   }
 
-  async deleteUserSession(id: number): Promise<boolean> {
-    const result = await db.delete(userSessions).where(eq(userSessions.id, id));
+  async deleteExamSession(id: number): Promise<boolean> {
+    const result = await db.delete(examSessions).where(eq(examSessions.id, id));
     return (result.rowCount || 0) > 0;
   }
 
@@ -308,7 +308,6 @@ export class DatabaseStorage implements IStorage {
     isBanned?: boolean;
     search?: string;
   }): Promise<User[]> {
-    let query = db.select().from(users);
     const conditions = [];
 
     if (filters.role) {
@@ -330,10 +329,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await db.select().from(users).where(and(...conditions));
     }
 
-    return await query;
+    return await db.select().from(users);
   }
 }
 

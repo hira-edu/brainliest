@@ -308,7 +308,6 @@ export class DatabaseStorage implements IStorage {
     isBanned?: boolean;
     search?: string;
   }): Promise<User[]> {
-    let query = db.select().from(users);
     const conditions = [];
 
     if (filters.role) {
@@ -330,10 +329,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await db.select().from(users).where(and(...conditions));
     }
 
-    return await query;
+    return await db.select().from(users);
   }
 }
 

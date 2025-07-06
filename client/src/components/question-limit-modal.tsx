@@ -24,7 +24,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [authTab, setAuthTab] = useState("email");
   
-  const { signInWithGoogle, signIn } = useAuth();
+  const { signInWithGoogle, signIn, verifyEmail } = useAuth();
   const { resetViewedQuestions } = useQuestionLimit();
   const { toast } = useToast();
 
@@ -99,10 +99,22 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
       const data = await response.json();
 
       if (data.success) {
-        // Extract username from email for signin
-        const username = email.split('@')[0];
-        signIn(username);
-        resetViewedQuestions();
+        // Handle successful email verification using auth context
+        if (data.token) {
+          const verifyResult = await verifyEmail(data.token);
+          if (verifyResult.success) {
+            resetViewedQuestions();
+          } else {
+            toast({
+              title: "Error",
+              description: verifyResult.message || "Verification failed",
+              variant: "destructive",
+            });
+            return;
+          }
+        } else {
+          resetViewedQuestions();
+        }
         
         toast({
           title: "Welcome!",

@@ -22,7 +22,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isVerificationLoading, setIsVerificationLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [authTab, setAuthTab] = useState("email");
-  const { signInWithGoogle, signIn } = useAuth();
+  const { signInWithGoogle, signIn, verifyEmail } = useAuth();
   const { toast } = useToast();
 
   const handleSendCode = async () => {
@@ -96,20 +96,31 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const data = await response.json();
 
       if (data.success) {
-        // Handle successful email verification by updating auth state directly
-        if (data.user) {
-          setUser(data.user);
-          setUserName(data.user.firstName || data.user.username || data.user.email);
-          setIsSignedIn(true);
+        // Handle successful email verification using auth context
+        if (data.token) {
+          const verifyResult = await verifyEmail(data.token);
+          if (verifyResult.success) {
+            toast({
+              title: "Welcome!",
+              description: "Email verified successfully!",
+            });
+            onClose();
+            resetForm();
+          } else {
+            toast({
+              title: "Error",
+              description: verifyResult.message || "Verification failed",
+              variant: "destructive",
+            });
+          }
+        } else {
+          toast({
+            title: "Welcome!",
+            description: "Successfully signed in!",
+          });
+          onClose();
+          resetForm();
         }
-        
-        toast({
-          title: "Welcome!",
-          description: "Email verified successfully!",
-        });
-        
-        onClose();
-        resetForm();
       } else {
         toast({
           title: "Error",

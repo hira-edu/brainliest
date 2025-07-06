@@ -84,24 +84,20 @@ export const authAPI = {
     firstName?: string;
     lastName?: string;
   }): Promise<AuthResponse> {
-    return apiRequest("/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        email,
-        password,
-        ...userData
-      })
+    const response = await apiRequest("POST", "/api/auth/register", {
+      email,
+      password,
+      ...userData
     });
+    return response.json();
   },
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    return apiRequest("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({
-        email,
-        password
-      })
+    const response = await apiRequest("POST", "/api/auth/login", {
+      email,
+      password
     });
+    return response.json();
   },
 
   async googleOAuth(googleData: {
@@ -111,59 +107,43 @@ export const authAPI = {
     lastName?: string;
     profileImage?: string;
   }): Promise<AuthResponse> {
-    return apiRequest("/api/auth/oauth/google", {
-      method: "POST",
-      body: JSON.stringify(googleData)
-    });
+    const response = await apiRequest("POST", "/api/auth/oauth/google", googleData);
+    return response.json();
   },
 
   async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
-    return apiRequest("/api/auth/verify-email", {
-      method: "POST",
-      body: JSON.stringify({ token })
-    });
+    const response = await apiRequest("POST", "/api/auth/verify-email", { token });
+    return response.json();
   },
 
   async requestPasswordReset(email: string): Promise<{ success: boolean; message: string }> {
-    return apiRequest("/api/auth/request-password-reset", {
-      method: "POST",
-      body: JSON.stringify({ email })
-    });
+    const response = await apiRequest("POST", "/api/auth/request-password-reset", { email });
+    return response.json();
   },
 
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    return apiRequest("/api/auth/reset-password", {
-      method: "POST",
-      body: JSON.stringify({ token, newPassword })
-    });
+    const response = await apiRequest("POST", "/api/auth/reset-password", { token, newPassword });
+    return response.json();
   },
 
   async verifyToken(token: string): Promise<TokenVerificationResponse> {
-    return apiRequest("/api/auth/verify-token", {
-      method: "POST",
-      body: JSON.stringify({ token })
-    });
+    const response = await apiRequest("POST", "/api/auth/verify-token", { token });
+    return response.json();
   },
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
-    return apiRequest("/api/auth/refresh-token", {
-      method: "POST",
-      body: JSON.stringify({ refreshToken })
-    });
+    const response = await apiRequest("POST", "/api/auth/refresh-token", { refreshToken });
+    return response.json();
   },
 
   async logout(token: string): Promise<{ success: boolean; message: string }> {
-    return apiRequest("/api/auth/logout", {
-      method: "POST",
-      body: JSON.stringify({ token })
-    });
+    const response = await apiRequest("POST", "/api/auth/logout", { token });
+    return response.json();
   },
 
   async logoutAll(userId: number): Promise<{ success: boolean; message: string }> {
-    return apiRequest("/api/auth/logout-all", {
-      method: "POST",
-      body: JSON.stringify({ userId })
-    });
+    const response = await apiRequest("POST", "/api/auth/logout-all", { userId });
+    return response.json();
   }
 };
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ export default function IconSelector({ selectedIcon, onSelect, className }: Icon
             <div className="flex items-center space-x-2">
               {selectedIconComponent ? (
                 <>
-                  <selectedIconComponent className="w-6 h-6" />
+                  {React.createElement(selectedIconComponent, { className: "w-6 h-6" })}
                   <span className="capitalize">{selectedIcon}</span>
                 </>
               ) : (
