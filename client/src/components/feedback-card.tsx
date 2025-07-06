@@ -201,35 +201,26 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
               <span className="text-sm text-gray-600">
                 Correct Answer: {String.fromCharCode(65 + question.correctAnswer)}
               </span>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setShowComments(!showComments)}
-                  className="flex items-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <i className="fas fa-comments mr-2"></i>
-                  Comments ({comments?.length || 0})
-                </button>
-                <button 
-                  onClick={onNext}
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  {isLastQuestion ? 'Finish Exam' : 'Next Question'} 
-                  <i className="fas fa-arrow-right ml-2"></i>
-                </button>
-              </div>
+              <button 
+                onClick={onNext}
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                {isLastQuestion ? 'Finish Exam' : 'Next Question'} 
+                <i className="fas fa-arrow-right ml-2"></i>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Comments Section with Slide Animation */}
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
-        showComments ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-      }`}>
-        <div className="border-t border-gray-200 p-6 bg-gray-50">
-          <h5 className="font-semibold text-gray-900 mb-4">Discussion</h5>
-          
-          {/* Sign In / Add Comment Form */}
+      {/* Comments Section - Always Visible */}
+      <div className="border-t border-gray-200 p-6 bg-gray-50">
+        <div className="flex items-center mb-4">
+          <i className="fas fa-comments text-gray-600 mr-2"></i>
+          <h5 className="font-semibold text-gray-900">Discussion ({comments?.length || 0})</h5>
+        </div>
+        
+        {/* Sign In / Add Comment Form */}
           <div className="mb-4 p-4 bg-white rounded-lg border">
             {!isSignedIn ? (
               <>
@@ -313,21 +304,20 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
             )}
           </div>
 
-          {/* Comments List */}
-          <div className="space-y-3 max-h-48 overflow-y-auto">
-            {comments?.map((comment) => (
-              <div key={comment.id} className="bg-white p-3 rounded-lg border">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900 text-sm">{comment.authorName}</span>
-                  <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
-                </div>
-                <p className="text-gray-700 text-sm">{comment.content}</p>
+        {/* Comments List */}
+        <div className="space-y-3 max-h-48 overflow-y-auto">
+          {comments?.map((comment) => (
+            <div key={comment.id} className="bg-white p-3 rounded-lg border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-900 text-sm">{comment.authorName}</span>
+                <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
               </div>
-            ))}
-            {(!comments || comments.length === 0) && (
-              <p className="text-gray-500 text-sm italic">No comments yet. Be the first to discuss this question!</p>
-            )}
-          </div>
+              <p className="text-gray-700 text-sm">{comment.content}</p>
+            </div>
+          ))}
+          {(!comments || comments.length === 0) && (
+            <p className="text-gray-500 text-sm italic">No comments yet. Be the first to discuss this question!</p>
+          )}
         </div>
       </div>
     </div>
