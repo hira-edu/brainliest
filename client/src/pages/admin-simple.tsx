@@ -633,8 +633,8 @@ export default function AdminSimple() {
                                     ▼
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-64 p-3">
-                                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                                <PopoverContent className="w-64 p-0" onWheel={(e) => e.stopPropagation()}>
+                                  <div className="p-3 space-y-1 max-h-48 overflow-y-auto overscroll-contain scroll-smooth">
                                     {getUsedIcons().map((icon, index) => (
                                       <Button
                                         key={index}
@@ -739,8 +739,8 @@ export default function AdminSimple() {
                                     ▼
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-64 p-3">
-                                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                                <PopoverContent className="w-64 p-0" onWheel={(e) => e.stopPropagation()}>
+                                  <div className="p-3 space-y-1 max-h-48 overflow-y-auto overscroll-contain scroll-smooth">
                                     {getUsedIcons().map((icon, index) => (
                                       <Button
                                         key={index}
