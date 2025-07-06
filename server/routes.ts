@@ -887,6 +887,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 5 * 60 * 1000); // Clean up every 5 minutes
 
+  // Email service test endpoint
+  app.get("/api/email-test", async (req, res) => {
+    try {
+      const testResult = await emailService.testConnection();
+      res.json({ 
+        success: true,
+        emailServiceWorking: testResult,
+        resendConfigured: !!process.env.RESEND_API_KEY,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Email test error:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error.message,
+        emailServiceWorking: false,
+        resendConfigured: !!process.env.RESEND_API_KEY
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
