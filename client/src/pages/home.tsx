@@ -16,6 +16,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Search, Filter, TrendingUp, Users, Award, BookOpen } from "lucide-react";
+import { PMPIcon, AWSIcon, CompTIAIcon, AzureIcon } from "@/assets/icons/certifications";
 
 // Category configuration for better organization
 const categoryConfig = {
@@ -287,10 +288,10 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { name: 'PMP Certification', trend: '+15%', icon: 'fas fa-project-diagram', searchTerm: 'pmp' },
-              { name: 'AWS Cloud Practitioner', trend: '+23%', icon: 'fab fa-aws', searchTerm: 'aws' },
-              { name: 'CompTIA Security+', trend: '+18%', icon: 'fas fa-shield-alt', searchTerm: 'comptia' },
-              { name: 'Azure Fundamentals', trend: '+12%', icon: 'fab fa-microsoft', searchTerm: 'azure' }
+              { name: 'PMP Certification', trend: '+15%', IconComponent: PMPIcon, searchTerm: 'pmp' },
+              { name: 'AWS Cloud Practitioner', trend: '+23%', IconComponent: AWSIcon, searchTerm: 'aws' },
+              { name: 'CompTIA Security+', trend: '+18%', IconComponent: CompTIAIcon, searchTerm: 'comptia' },
+              { name: 'Azure Fundamentals', trend: '+12%', IconComponent: AzureIcon, searchTerm: 'azure' }
             ].map((cert) => (
               <div 
                 key={cert.name}
@@ -301,7 +302,7 @@ export default function Home() {
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <i className={`${cert.icon} text-primary text-lg`}></i>
+                  <cert.IconComponent className="w-8 h-8" />
                   <Badge variant="outline" className="text-xs text-green-600">
                     {cert.trend}
                   </Badge>
