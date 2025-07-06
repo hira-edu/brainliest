@@ -48,6 +48,15 @@ export const userSessions = pgTable("user_sessions", {
   isCompleted: boolean("is_completed").default(false),
 });
 
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  parentId: integer("parent_id"), // For nested replies
+});
+
 export const insertSubjectSchema = createInsertSchema(subjects).omit({
   id: true,
   examCount: true,
@@ -68,6 +77,11 @@ export const insertUserSessionSchema = createInsertSchema(userSessions).omit({
   completedAt: true,
 });
 
+export const insertCommentSchema = createInsertSchema(comments).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Subject = typeof subjects.$inferSelect;
 export type InsertSubject = z.infer<typeof insertSubjectSchema>;
 export type Exam = typeof exams.$inferSelect;
@@ -76,3 +90,5 @@ export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type UserSession = typeof userSessions.$inferSelect;
 export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;

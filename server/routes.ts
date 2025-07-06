@@ -1,11 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { getQuestionHelp, explainAnswer } from "./ai";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
   insertQuestionSchema,
-  insertUserSessionSchema 
+  insertUserSessionSchema,
+  insertCommentSchema 
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -194,6 +196,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(session);
     } catch (error) {
       res.status(500).json({ message: "Failed to update session" });
+    }
+  });
+
+  // Comment routes
+  app.get("/api/comments", async (req, res) => {
+    try {
+      const questionId = req.query.questionId ? parseInt(req.query.questionId as string) : undefined;
+      const comments = questionId 
+        ? await storage.getCommentsByQuestion(questionId)
+        : await storage.getComments();
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/comments", async (req, res) => {
+    try {
+      const validation = insertCommentSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid comment data", errors: validation.error.errors });
+      }
+      const comment = await storage.createComment(validation.data);
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  app.delete("/api/comments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteComment(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
+  // AI Help routes
+  app.post("/api/ai/question-help", async (req, res) => {
+    try {
+      const { questionId } = req.body;
+      const question = await storage.getQuestion(questionId);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      const subject = await storage.getSubject(question.subjectId);
+      const subjectName = subject?.name || "certification";
+
+      const help = await getQuestionHelp(question.text, question.options, subjectName);
+      res.json({ help });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get AI help" });
+    }
+  });
+
+  app.post("/api/ai/explain-answer", async (req, res) => {
+    try {
+      const { questionId, userAnswer } = req.body;
+      const question = await storage.getQuestion(questionId);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      const subject = await storage.getSubject(question.subjectId);
+      const subjectName = subject?.name || "certification";
+
+      const explanation = await explainAnswer(
+        question.text, 
+        question.options, 
+        question.correctAnswer, 
+        userAnswer, 
+        subjectName
+      );
+      res.json({ explanation });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get AI explanation" });
     }
   });
 

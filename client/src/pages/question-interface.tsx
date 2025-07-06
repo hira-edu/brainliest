@@ -210,23 +210,28 @@ export default function QuestionInterface() {
       />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!showFeedback ? (
-          <QuestionCard 
-            question={currentQuestion}
-            onAnswer={handleAnswer}
-            onPrevious={handlePreviousQuestion}
-            onSubmit={handleSubmitAnswer}
-            selectedAnswer={selectedAnswer}
-            canGoPrevious={currentQuestionIndex > 0}
-          />
-        ) : (
-          <FeedbackCard 
-            question={currentQuestion}
-            userAnswer={selectedAnswer!}
-            onNext={handleNextQuestion}
-            isLastQuestion={currentQuestionIndex === (questions?.length || 0) - 1}
-          />
-        )}
+        <QuestionCard 
+          question={currentQuestion}
+          onAnswer={handleAnswer}
+          onPrevious={handlePreviousQuestion}
+          onSubmit={handleSubmitAnswer}
+          selectedAnswer={selectedAnswer}
+          canGoPrevious={currentQuestionIndex > 0}
+        />
+        
+        {/* Slide-down feedback section */}
+        <div className={`transition-all duration-500 ease-in-out overflow-hidden ${
+          showFeedback ? 'max-h-screen opacity-100 mt-6' : 'max-h-0 opacity-0'
+        }`}>
+          {showFeedback && (
+            <FeedbackCard 
+              question={currentQuestion}
+              userAnswer={selectedAnswer!}
+              onNext={handleNextQuestion}
+              isLastQuestion={currentQuestionIndex === (questions?.length || 0) - 1}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

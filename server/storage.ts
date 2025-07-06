@@ -3,6 +3,7 @@ import {
   exams, 
   questions, 
   userSessions,
+  comments,
   type Subject, 
   type InsertSubject,
   type Exam,
@@ -10,7 +11,9 @@ import {
   type Question,
   type InsertQuestion,
   type UserSession,
-  type InsertUserSession
+  type InsertUserSession,
+  type Comment,
+  type InsertComment
 } from "@shared/schema";
 
 export interface IStorage {
@@ -43,6 +46,14 @@ export interface IStorage {
   createUserSession(session: InsertUserSession): Promise<UserSession>;
   updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined>;
   deleteUserSession(id: number): Promise<boolean>;
+
+  // Comments
+  getComments(): Promise<Comment[]>;
+  getCommentsByQuestion(questionId: number): Promise<Comment[]>;
+  getComment(id: number): Promise<Comment | undefined>;
+  createComment(comment: InsertComment): Promise<Comment>;
+  updateComment(id: number, comment: Partial<InsertComment>): Promise<Comment | undefined>;
+  deleteComment(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -50,20 +61,24 @@ export class MemStorage implements IStorage {
   private exams: Map<number, Exam>;
   private questions: Map<number, Question>;
   private userSessions: Map<number, UserSession>;
+  private comments: Map<number, Comment>;
   private currentSubjectId: number;
   private currentExamId: number;
   private currentQuestionId: number;
   private currentSessionId: number;
+  private currentCommentId: number;
 
   constructor() {
     this.subjects = new Map();
     this.exams = new Map();
     this.questions = new Map();
     this.userSessions = new Map();
+    this.comments = new Map();
     this.currentSubjectId = 1;
     this.currentExamId = 1;
     this.currentQuestionId = 1;
     this.currentSessionId = 1;
+    this.currentCommentId = 1;
 
     this.seedData();
   }
@@ -75,8 +90,6 @@ export class MemStorage implements IStorage {
       description: "Project Management Professional certification practice exams",
       icon: "fas fa-project-diagram",
       color: "blue",
-      examCount: 3,
-      questionCount: 150,
     });
 
     const awsSubject = this.createSubjectSync({
@@ -84,8 +97,6 @@ export class MemStorage implements IStorage {
       description: "Amazon Web Services foundational certification prep",
       icon: "fab fa-aws",
       color: "orange",
-      examCount: 2,
-      questionCount: 100,
     });
 
     const comptiaSubject = this.createSubjectSync({
@@ -93,8 +104,6 @@ export class MemStorage implements IStorage {
       description: "Cybersecurity fundamentals certification practice",
       icon: "fas fa-shield-alt",
       color: "green",
-      examCount: 2,
-      questionCount: 80,
     });
 
     // Create sample exams
@@ -180,21 +189,41 @@ export class MemStorage implements IStorage {
 
   private createSubjectSync(subject: InsertSubject): Subject {
     const id = this.currentSubjectId++;
-    const newSubject: Subject = { ...subject, id };
+    const newSubject: Subject = { 
+      id, 
+      name: subject.name,
+      description: subject.description || null,
+      icon: subject.icon || null,
+      color: subject.color || null,
+      examCount: 0, 
+      questionCount: 0 
+    };
     this.subjects.set(id, newSubject);
     return newSubject;
   }
 
   private createExamSync(exam: InsertExam): Exam {
     const id = this.currentExamId++;
-    const newExam: Exam = { ...exam, id, isActive: true };
+    const newExam: Exam = { 
+      ...exam, 
+      id, 
+      isActive: true,
+      description: exam.description || null,
+      duration: exam.duration || null
+    };
     this.exams.set(id, newExam);
     return newExam;
   }
 
   private createQuestionSync(question: InsertQuestion): Question {
     const id = this.currentQuestionId++;
-    const newQuestion: Question = { ...question, id };
+    const newQuestion: Question = { 
+      ...question, 
+      id,
+      explanation: question.explanation || null,
+      domain: question.domain || null,
+      order: question.order || null
+    };
     this.questions.set(id, newQuestion);
     return newQuestion;
   }
@@ -320,6 +349,47 @@ export class MemStorage implements IStorage {
 
   async deleteUserSession(id: number): Promise<boolean> {
     return this.userSessions.delete(id);
+  }
+
+  // Comment methods
+  async getComments(): Promise<Comment[]> {
+    return Array.from(this.comments.values());
+  }
+
+  async getCommentsByQuestion(questionId: number): Promise<Comment[]> {
+    return Array.from(this.comments.values())
+      .filter(comment => comment.questionId === questionId)
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+  }
+
+  async getComment(id: number): Promise<Comment | undefined> {
+    return this.comments.get(id);
+  }
+
+  async createComment(comment: InsertComment): Promise<Comment> {
+    const id = this.currentCommentId++;
+    const newComment: Comment = {
+      id,
+      questionId: comment.questionId,
+      authorName: comment.authorName,
+      content: comment.content,
+      parentId: comment.parentId || null,
+      createdAt: new Date(),
+    };
+    this.comments.set(id, newComment);
+    return newComment;
+  }
+
+  async updateComment(id: number, comment: Partial<InsertComment>): Promise<Comment | undefined> {
+    const existing = this.comments.get(id);
+    if (!existing) return undefined;
+    const updated: Comment = { ...existing, ...comment };
+    this.comments.set(id, updated);
+    return updated;
+  }
+
+  async deleteComment(id: number): Promise<boolean> {
+    return this.comments.delete(id);
   }
 }
 

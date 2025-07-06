@@ -95,11 +95,24 @@ The application uses four main entities:
 - **NODE_ENV**: Environment mode (development/production)
 - **Session Configuration**: PostgreSQL-backed sessions for scalability
 
+## Recent Changes
+
+### July 06, 2025 - Enhanced Question Interface
+- **Added slide-down feedback system**: Feedback now appears below questions with smooth animation instead of replacing the question
+- **Integrated ChatGPT AI assistance**: Added AI help button on questions and AI explanations in feedback
+- **Added comments system**: Users can discuss questions with other learners, comments slide down below feedback
+- **Enhanced user experience**: Questions remain visible during feedback for better learning context
+- **Added OpenAI integration**: Backend endpoints for AI help and detailed explanations
+
+### Database Extensions
+- Added comments table with author name, content, timestamps, and threading support
+- Extended API routes for comment CRUD operations and AI assistance
+
 ## Changelog
 
 ```
 Changelog:
-- July 06, 2025. Initial setup
+- July 06, 2025. Initial setup and enhanced question interface with AI help and comments
 ```
 
 ## User Preferences

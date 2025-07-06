@@ -1,5 +1,8 @@
 import { Question } from "@shared/schema";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuestionCardProps {
   question: Question;
@@ -19,18 +22,69 @@ export default function QuestionCard({
   canGoPrevious = false 
 }: QuestionCardProps) {
   const [localSelectedAnswer, setLocalSelectedAnswer] = useState<number | undefined>(selectedAnswer);
+  const [showAiHelp, setShowAiHelp] = useState(false);
+  const [aiHelp, setAiHelp] = useState<string>("");
+  const { toast } = useToast();
+
+  const getAiHelpMutation = useMutation({
+    mutationFn: async (questionId: number) => {
+      const response = await apiRequest("POST", "/api/ai/question-help", { questionId });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setAiHelp(data.help);
+      setShowAiHelp(true);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Unable to get AI help right now. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleAnswerSelect = (index: number) => {
     setLocalSelectedAnswer(index);
     onAnswer(index);
   };
 
+  const handleGetAiHelp = () => {
+    getAiHelpMutation.mutate(question.id);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          {question.text}
-        </h3>
+        <div className="flex items-start justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex-1 mr-4">
+            {question.text}
+          </h3>
+          <button
+            onClick={handleGetAiHelp}
+            disabled={getAiHelpMutation.isPending}
+            className="flex items-center px-3 py-2 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
+          >
+            <i className="fas fa-robot mr-2"></i>
+            {getAiHelpMutation.isPending ? "Loading..." : "AI Help"}
+          </button>
+        </div>
+
+        {showAiHelp && (
+          <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center mb-2">
+              <i className="fas fa-robot text-purple-600 mr-2"></i>
+              <span className="font-medium text-purple-800">AI Study Helper</span>
+            </div>
+            <p className="text-gray-700 text-sm leading-relaxed">{aiHelp}</p>
+            <button
+              onClick={() => setShowAiHelp(false)}
+              className="mt-2 text-purple-600 text-sm hover:text-purple-800"
+            >
+              Hide
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
