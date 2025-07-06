@@ -103,11 +103,12 @@ export default function Header() {
                         </div>
                       );
                     })}
-                    <Link href="/">
-                      <DropdownMenuItem className="font-medium text-primary">
-                        View All Subjects →
-                      </DropdownMenuItem>
-                    </Link>
+                    <DropdownMenuItem 
+                      className="font-medium text-primary"
+                      onClick={() => window.location.href = "/"}
+                    >
+                      View All Subjects →
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </nav>
