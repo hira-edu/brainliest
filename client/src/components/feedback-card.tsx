@@ -18,6 +18,10 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [newComment, setNewComment] = useState("");
   const [authorName, setAuthorName] = useState("");
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { toast } = useToast();
 
   const { data: comments } = useQuery<Comment[]>({
@@ -50,34 +54,69 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
     },
   });
 
+  const signInMutation = useMutation({
+    mutationFn: async (credentials: { email: string; password: string }) => {
+      // Simple mock authentication - in real app would call actual auth service
+      if (credentials.email && credentials.password) {
+        return { user: { name: credentials.email.split('@')[0], email: credentials.email } };
+      }
+      throw new Error("Invalid credentials");
+    },
+    onSuccess: (data) => {
+      setIsSignedIn(true);
+      setAuthorName(data.user.name);
+      setShowSignIn(false);
+      setEmail("");
+      setPassword("");
+      toast({
+        title: "Success",
+        description: "Signed in successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addCommentMutation = useMutation({
     mutationFn: async (commentData: { questionId: number; authorName: string; content: string }) => {
+      if (!isSignedIn) {
+        throw new Error("Please sign in to comment");
+      }
       const response = await apiRequest("POST", "/api/comments", commentData);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/comments", question.id] });
       setNewComment("");
-      setAuthorName("");
       toast({
         title: "Success",
         description: "Comment added successfully!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to add comment. Please try again.",
+        description: error.message || "Failed to add comment. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const handleAddComment = () => {
-    if (!newComment.trim() || !authorName.trim()) {
+    if (!isSignedIn) {
+      setShowSignIn(true);
+      return;
+    }
+    
+    if (!newComment.trim()) {
       toast({
         title: "Error",
-        description: "Please fill in both name and comment.",
+        description: "Please enter a comment.",
         variant: "destructive",
       });
       return;
@@ -87,6 +126,22 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
       questionId: question.id,
       authorName: authorName.trim(),
       content: newComment.trim(),
+    });
+  };
+
+  const handleSignIn = () => {
+    if (!email.trim() || !password.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both email and password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    signInMutation.mutate({
+      email: email.trim(),
+      password: password.trim(),
     });
   };
 
@@ -174,31 +229,88 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
         <div className="border-t border-gray-200 p-6 bg-gray-50">
           <h5 className="font-semibold text-gray-900 mb-4">Discussion</h5>
           
-          {/* Add Comment Form */}
+          {/* Sign In / Add Comment Form */}
           <div className="mb-4 p-4 bg-white rounded-lg border">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <input
-                type="text"
-                placeholder="Your name"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-              />
-            </div>
-            <textarea
-              placeholder="Share your thoughts about this question..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary mb-3"
-            />
-            <button
-              onClick={handleAddComment}
-              disabled={addCommentMutation.isPending}
-              className="px-4 py-2 bg-primary text-white text-sm rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {addCommentMutation.isPending ? "Adding..." : "Add Comment"}
-            </button>
+            {!isSignedIn ? (
+              <>
+                {!showSignIn ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600 mb-3">Please sign in to join the discussion</p>
+                    <button
+                      onClick={() => setShowSignIn(true)}
+                      className="px-4 py-2 bg-primary text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Sign In to Comment
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <h6 className="font-medium text-gray-900 mb-3">Sign In to Comment</h6>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                      <input
+                        type="email"
+                        placeholder="Email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      />
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSignIn}
+                        disabled={signInMutation.isPending}
+                        className="px-4 py-2 bg-primary text-white text-sm rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        {signInMutation.isPending ? "Signing In..." : "Sign In"}
+                      </button>
+                      <button
+                        onClick={() => setShowSignIn(false)}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-gray-600">Signed in as: <strong>{authorName}</strong></span>
+                  <button
+                    onClick={() => {
+                      setIsSignedIn(false);
+                      setAuthorName("");
+                      setNewComment("");
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+                <textarea
+                  placeholder="Share your thoughts about this question..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary mb-3"
+                />
+                <button
+                  onClick={handleAddComment}
+                  disabled={addCommentMutation.isPending}
+                  className="px-4 py-2 bg-primary text-white text-sm rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {addCommentMutation.isPending ? "Adding..." : "Add Comment"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Comments List */}

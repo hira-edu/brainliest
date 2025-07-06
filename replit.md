@@ -100,9 +100,10 @@ The application uses four main entities:
 ### July 06, 2025 - Enhanced Question Interface
 - **Added slide-down feedback system**: Feedback now appears below questions with smooth animation instead of replacing the question
 - **Integrated ChatGPT AI assistance**: Added AI help button on questions and AI explanations in feedback
-- **Added comments system**: Users can discuss questions with other learners, comments slide down below feedback
+- **Added comments system with authentication**: Users must sign in before commenting on questions, includes discussion threads
 - **Enhanced user experience**: Questions remain visible during feedback for better learning context
 - **Added OpenAI integration**: Backend endpoints for AI help and detailed explanations
+- **Simple authentication system**: Mock sign-in system for comment access control
 
 ### Database Extensions
 - Added comments table with author name, content, timestamps, and threading support
