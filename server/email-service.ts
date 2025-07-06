@@ -111,6 +111,12 @@ class EmailService {
       html: htmlContent,
     };
 
+    console.log('🔍 EMAIL DEBUG INFO:');
+    console.log(`- Requested recipient: ${email}`);
+    console.log(`- Sender address: ${senderAddress}`);
+    console.log(`- Using Resend API: ${!!process.env.RESEND_API_KEY}`);
+    console.log(`- Mail options TO field: ${mailOptions.to}`);
+
     try {
       const result = await this.transporter.sendMail(mailOptions);
       
