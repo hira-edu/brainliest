@@ -10,6 +10,9 @@ import QuestionInterface from "@/pages/question-interface";
 import Results from "@/pages/results";
 import Analytics from "@/pages/analytics";
 import AdminSimple from "@/pages/admin-simple";
+import OurStory from "@/pages/our-story";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +25,9 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/admin" component={AdminSimple} />
       <Route path="/admin-simple" component={AdminSimple} />
+      <Route path="/our-story" component={OurStory} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/contact" component={Contact} />
       <Route component={NotFound} />
     </Switch>
   );

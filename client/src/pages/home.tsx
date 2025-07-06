@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { Subject } from "@shared/schema";
 import SubjectCard from "@/components/subject-card";
 import Header from "@/components/header";
+import Footer from "@/components/footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -323,6 +324,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

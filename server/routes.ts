@@ -322,6 +322,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contact form route
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, subject, category, message } = req.body;
+      
+      // Validate required fields
+      if (!name || !email || !subject || !category || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // In a real application, you would:
+      // 1. Save to database
+      // 2. Send email notification to support team
+      // 3. Send confirmation email to user
+      // For now, we'll just log and return success
+      
+      console.log("Contact form submission:", {
+        name,
+        email,
+        subject,
+        category,
+        message,
+        timestamp: new Date().toISOString()
+      });
+
+      res.status(201).json({ 
+        message: "Contact form submitted successfully",
+        id: Math.random().toString(36).substr(2, 9) // Generate simple ID
+      });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      res.status(500).json({ message: "Failed to submit contact form" });
+    }
+  });
+
   // User Session routes
   app.post("/api/sessions", async (req, res) => {
     try {
