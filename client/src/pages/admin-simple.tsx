@@ -633,7 +633,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon</FormLabel>
                         <div className="space-y-2">
                           <div className="flex items-center space-x-3">
-                            <div className="flex-1">
+                            <div className="flex-1 relative">
                               <FormControl>
                                 <Input 
                                   placeholder="Search or type icon name (e.g., chart, cloud, shield)" 
@@ -642,14 +642,17 @@ export default function AdminSimple() {
                                   onChange={(e) => {
                                     field.onChange(e.target.value);
                                     setIconSearchTerm(e.target.value);
-                                    setShowIconSuggestions(true);
+                                    // Only show suggestions if there's text
+                                    setShowIconSuggestions(e.target.value.length > 0);
                                   }}
-                                  onBlur={() => {
-                                    setTimeout(() => setShowIconSuggestions(false), 200);
-                                  }}
-                                  onFocus={() => {
-                                    setIconSearchTerm(field.value || "");
-                                    setShowIconSuggestions(true);
+                                  onBlur={(e) => {
+                                    // Only hide suggestions if clicking outside the suggestions area
+                                    setTimeout(() => {
+                                      const relatedTarget = e.relatedTarget as Element | null;
+                                      if (!relatedTarget || !relatedTarget.closest('.icon-suggestions')) {
+                                        setShowIconSuggestions(false);
+                                      }
+                                    }, 150);
                                   }}
                                 />
                               </FormControl>
@@ -660,8 +663,8 @@ export default function AdminSimple() {
                               </div>
                             )}
                           </div>
-                          {showIconSuggestions && (
-                            <div className="border rounded-lg p-3 bg-white shadow-sm">
+                          {showIconSuggestions && iconSearchTerm.length > 0 && (
+                            <div className="icon-suggestions border rounded-lg p-3 bg-white shadow-sm relative z-10">
                               <p className="text-xs text-gray-600 mb-2">Click to select:</p>
                               <div className="grid grid-cols-6 gap-2">
                                 {getFilteredIconSuggestions(iconSearchTerm).map((icon, index) => (
@@ -669,9 +672,11 @@ export default function AdminSimple() {
                                     key={index}
                                     type="button"
                                     className="flex items-center justify-center w-12 h-8 text-xs font-medium border rounded hover:bg-gray-100 hover:border-blue-400 transition-colors"
-                                    onClick={() => {
+                                    onMouseDown={(e) => {
+                                      e.preventDefault(); // Prevent blur event
                                       field.onChange(icon);
                                       setShowIconSuggestions(false);
+                                      setIconSearchTerm("");
                                     }}
                                     title={`Use "${icon}"`}
                                   >
@@ -741,7 +746,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon</FormLabel>
                         <div className="space-y-2">
                           <div className="flex items-center space-x-3">
-                            <div className="flex-1">
+                            <div className="flex-1 relative">
                               <FormControl>
                                 <Input 
                                   placeholder="Search or type icon name (e.g., chart, cloud, shield)" 
@@ -750,14 +755,17 @@ export default function AdminSimple() {
                                   onChange={(e) => {
                                     field.onChange(e.target.value);
                                     setIconSearchTerm(e.target.value);
-                                    setShowIconSuggestions(true);
+                                    // Only show suggestions if there's text
+                                    setShowIconSuggestions(e.target.value.length > 0);
                                   }}
-                                  onBlur={() => {
-                                    setTimeout(() => setShowIconSuggestions(false), 200);
-                                  }}
-                                  onFocus={() => {
-                                    setIconSearchTerm(field.value || "");
-                                    setShowIconSuggestions(true);
+                                  onBlur={(e) => {
+                                    // Only hide suggestions if clicking outside the suggestions area
+                                    setTimeout(() => {
+                                      const relatedTarget = e.relatedTarget as Element | null;
+                                      if (!relatedTarget || !relatedTarget.closest('.icon-suggestions')) {
+                                        setShowIconSuggestions(false);
+                                      }
+                                    }, 150);
                                   }}
                                 />
                               </FormControl>
@@ -768,8 +776,8 @@ export default function AdminSimple() {
                               </div>
                             )}
                           </div>
-                          {showIconSuggestions && (
-                            <div className="border rounded-lg p-3 bg-white shadow-sm">
+                          {showIconSuggestions && iconSearchTerm.length > 0 && (
+                            <div className="icon-suggestions border rounded-lg p-3 bg-white shadow-sm relative z-10">
                               <p className="text-xs text-gray-600 mb-2">Click to select:</p>
                               <div className="grid grid-cols-6 gap-2">
                                 {getFilteredIconSuggestions(iconSearchTerm).map((icon, index) => (
@@ -777,9 +785,11 @@ export default function AdminSimple() {
                                     key={index}
                                     type="button"
                                     className="flex items-center justify-center w-12 h-8 text-xs font-medium border rounded hover:bg-gray-100 hover:border-blue-400 transition-colors"
-                                    onClick={() => {
+                                    onMouseDown={(e) => {
+                                      e.preventDefault(); // Prevent blur event
                                       field.onChange(icon);
                                       setShowIconSuggestions(false);
+                                      setIconSearchTerm("");
                                     }}
                                     title={`Use "${icon}"`}
                                   >

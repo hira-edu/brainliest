@@ -108,6 +108,7 @@ The application uses four main entities:
 - **Real-time data synchronization**: All components automatically update when data changes across the platform
 - **Icon system optimization**: Replaced FontAwesome classes with proper icon names (chart, cloud, shield, network, laptop, calculator, etc.) positioned correctly in small bordered boxes on the right side
 - **Enhanced icon interface**: Replaced dropdown with search functionality and clickable suggestions below the input field, with proper GUI positioning and real-time filtering
+- **Improved dialog behavior**: Fixed dialog closing issues and enhanced search UX - suggestions only appear when typing (not on focus), close on selection/escape/clicking outside, with better blur handling
 
 ### July 06, 2025 - Enhanced Homepage with Subject Organization
 - **Enhanced original design**: Kept familiar layout while adding search and categorization features
