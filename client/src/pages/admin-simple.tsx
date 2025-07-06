@@ -790,16 +790,16 @@ export default function AdminSimple() {
             <Card key={subject.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center justify-between flex-1">
+                  <div className="flex items-center justify-between flex-1 mr-4">
                     <div>
                       <CardTitle className="text-base font-semibold">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
-                    <span className="text-xs text-gray-500 ml-3" title={subject.icon || "📚"}>
+                    <span className="text-xs text-gray-500 ml-4" title={subject.icon || "📚"}>
                       {subject.icon || "📚"}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-shrink-0">
                     <Badge variant="outline">
                       {exams?.filter(e => e.subjectId === subject.id).length || 0} exams
                     </Badge>
