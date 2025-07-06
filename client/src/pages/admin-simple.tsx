@@ -174,8 +174,8 @@ export default function AdminSimple() {
 
   // Track previously used icons
   const getUsedIcons = () => {
-    const icons = subjects?.map(s => s.icon).filter(Boolean) || [];
-    return [...new Set(icons)]; // Remove duplicates
+    const icons = subjects?.map(s => s.icon).filter((icon): icon is string => Boolean(icon)) || [];
+    return Array.from(new Set(icons)); // Remove duplicates
   };
 
   // CSV Template Generation
@@ -653,8 +653,10 @@ export default function AdminSimple() {
                             )}
                           </div>
                           {field.value && (
-                            <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
-                              {field.value}
+                            <div className="flex items-center justify-center w-8 h-8 text-sm border rounded overflow-hidden">
+                              <span className="text-xs truncate px-1" title={field.value}>
+                                {field.value}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -756,8 +758,10 @@ export default function AdminSimple() {
                             )}
                           </div>
                           {field.value && (
-                            <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
-                              {field.value}
+                            <div className="flex items-center justify-center w-8 h-8 text-sm border rounded overflow-hidden">
+                              <span className="text-xs truncate px-1" title={field.value}>
+                                {field.value}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -789,8 +793,10 @@ export default function AdminSimple() {
                       <CardTitle className="text-lg">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
-                    <div className="flex items-center justify-center w-8 h-8 text-lg border rounded ml-3">
-                      {subject.icon || "📚"}
+                    <div className="flex items-center justify-center w-8 h-8 text-sm border rounded ml-3 overflow-hidden">
+                      <span className="text-xs truncate px-1" title={subject.icon || "📚"}>
+                        {subject.icon || "📚"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
