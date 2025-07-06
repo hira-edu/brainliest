@@ -108,6 +108,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedData() {
+    console.log("Starting to seed data...");
     // Professional Certifications & IT
     const pmpSubject = this.createSubjectSync({
       name: "PMP Certification",
@@ -1270,6 +1271,8 @@ export class MemStorage implements IStorage {
       registrationIp: "192.168.1.101",
       metadata: JSON.stringify({ loginCount: 89, moderatedComments: 156 })
     });
+    
+    console.log(`Seed data complete! Created ${this.subjects.size} subjects, ${this.exams.size} exams, ${this.questions.size} questions`);
   }
 
   private createSubjectSync(subject: InsertSubject): Subject {
