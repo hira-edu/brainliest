@@ -59,7 +59,60 @@ class EmailService {
         return;
       }
 
-      // 4. Development/Testing fallback
+      // 4. Titan Mail (GoDaddy's premium email service)
+      const titanEmail = process.env.TITAN_EMAIL;
+      const titanPassword = process.env.TITAN_PASSWORD;
+      if (titanEmail && titanPassword) {
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.titan.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: titanEmail,
+            pass: titanPassword,
+          },
+        });
+        console.log('Email service initialized with Titan Mail');
+        return;
+      }
+
+      // 5. GoDaddy Workspace Email (Legacy)
+      const godaddyEmail = process.env.GODADDY_EMAIL;
+      const godaddyPassword = process.env.GODADDY_PASSWORD;
+      if (godaddyEmail && godaddyPassword) {
+        this.transporter = nodemailer.createTransport({
+          host: 'smtpout.secureserver.net',
+          port: 587,
+          secure: false,
+          auth: {
+            user: godaddyEmail,
+            pass: godaddyPassword,
+          },
+        });
+        console.log('Email service initialized with GoDaddy Workspace Email');
+        return;
+      }
+
+      // 6. Generic SMTP (Custom email provider)
+      const smtpHost = process.env.SMTP_HOST;
+      const smtpPort = process.env.SMTP_PORT;
+      const smtpUser = process.env.SMTP_USER;
+      const smtpPassword = process.env.SMTP_PASSWORD;
+      if (smtpHost && smtpUser && smtpPassword) {
+        this.transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: parseInt(smtpPort || '587'),
+          secure: smtpPort === '465',
+          auth: {
+            user: smtpUser,
+            pass: smtpPassword,
+          },
+        });
+        console.log(`Email service initialized with custom SMTP (${smtpHost})`);
+        return;
+      }
+
+      // 7. Development/Testing fallback
       this.transporter = nodemailer.createTransport({
         streamTransport: true,
         newline: 'unix',
@@ -96,6 +149,12 @@ class EmailService {
       senderAddress = 'noreply@brainliest.com'; // Use your verified domain
     } else if (process.env.MAILGUN_DOMAIN) {
       senderAddress = `noreply@${process.env.MAILGUN_DOMAIN}`;
+    } else if (process.env.TITAN_EMAIL) {
+      senderAddress = process.env.TITAN_EMAIL; // Use your Titan email
+    } else if (process.env.GODADDY_EMAIL) {
+      senderAddress = process.env.GODADDY_EMAIL; // Use your GoDaddy email
+    } else if (process.env.SMTP_USER) {
+      senderAddress = process.env.SMTP_USER; // Use your custom SMTP email
     } else if (process.env.GMAIL_USER) {
       senderAddress = process.env.GMAIL_USER;
     }
