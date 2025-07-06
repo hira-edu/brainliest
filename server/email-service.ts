@@ -91,7 +91,7 @@ class EmailService {
     let senderAddress = 'noreply@brainliest.com'; // Default
     
     if (process.env.RESEND_API_KEY) {
-      senderAddress = 'onboarding@resend.dev'; // Use Resend's testing domain until domain is verified
+      senderAddress = 'noreply@brainliest.com'; // Use your verified domain
     } else if (process.env.SENDGRID_API_KEY) {
       senderAddress = 'noreply@brainliest.com'; // Use your verified domain
     } else if (process.env.MAILGUN_DOMAIN) {
