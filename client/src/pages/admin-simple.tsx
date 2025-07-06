@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -131,10 +132,9 @@ function PaginationControls({
 
 // Form schemas
 const questionFormSchema = insertQuestionSchema.extend({
-  option1: z.string().min(1, "Option 1 is required"),
-  option2: z.string().min(1, "Option 2 is required"),
-  option3: z.string().min(1, "Option 3 is required"),
-  option4: z.string().min(1, "Option 4 is required"),
+  options: z.array(z.string().min(1, "Option cannot be empty")).min(2, "At least 2 options required"),
+  correctAnswers: z.array(z.number()).optional(),
+  allowMultipleAnswers: z.boolean().default(false),
 });
 
 type QuestionFormData = z.infer<typeof questionFormSchema>;
@@ -1358,11 +1358,10 @@ export default function AdminSimple() {
         examId: 0,
         subjectId: 0,
         text: "",
-        option1: "",
-        option2: "",
-        option3: "",
-        option4: "",
+        options: ["", ""],
         correctAnswer: 0,
+        correctAnswers: [],
+        allowMultipleAnswers: false,
         explanation: "",
         domain: "",
         difficulty: "Intermediate",
@@ -1372,12 +1371,14 @@ export default function AdminSimple() {
 
     const createQuestionMutation = useMutation({
       mutationFn: async (data: QuestionFormData) => {
-        const { option1, option2, option3, option4, ...questionData } = data;
-        const questionDataWithOptions: InsertQuestion = {
-          ...questionData,
-          options: [option1, option2, option3, option4],
+        // Filter out empty options
+        const cleanOptions = data.options.filter(option => option.trim() !== "");
+        const questionData: InsertQuestion = {
+          ...data,
+          options: cleanOptions,
+          correctAnswers: data.allowMultipleAnswers ? data.correctAnswers : null,
         };
-        await apiRequest("POST", "/api/questions", questionDataWithOptions);
+        await apiRequest("POST", "/api/questions", questionData);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
@@ -1390,12 +1391,14 @@ export default function AdminSimple() {
     const updateQuestionMutation = useMutation({
       mutationFn: async (data: QuestionFormData) => {
         if (!editingQuestion) return;
-        const { option1, option2, option3, option4, ...questionData } = data;
-        const questionDataWithOptions: Partial<InsertQuestion> = {
-          ...questionData,
-          options: [option1, option2, option3, option4],
+        // Filter out empty options
+        const cleanOptions = data.options.filter(option => option.trim() !== "");
+        const questionData: Partial<InsertQuestion> = {
+          ...data,
+          options: cleanOptions,
+          correctAnswers: data.allowMultipleAnswers ? data.correctAnswers : null,
         };
-        await apiRequest("PUT", `/api/questions/${editingQuestion.id}`, questionDataWithOptions);
+        await apiRequest("PUT", `/api/questions/${editingQuestion.id}`, questionData);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
@@ -1426,20 +1429,18 @@ export default function AdminSimple() {
 
     const handleEditQuestion = (question: Question) => {
       setEditingQuestion(question);
-      const options = question.options || [];
       questionForm.reset({
         examId: question.examId,
         subjectId: question.subjectId,
         text: question.text,
-        option1: options[0] || "",
-        option2: options[1] || "",
-        option3: options[2] || "",
-        option4: options[3] || "",
+        options: question.options || ["", ""],
         correctAnswer: question.correctAnswer,
+        correctAnswers: question.correctAnswers || [],
+        allowMultipleAnswers: question.allowMultipleAnswers || false,
         explanation: question.explanation || "",
         domain: question.domain || "",
         difficulty: question.difficulty,
-        order: question.order,
+        order: question.order || 1,
       });
       setIsEditDialogOpen(true);
     };
@@ -1516,60 +1517,85 @@ export default function AdminSimple() {
                       )}
                     />
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField
-                        control={questionForm.control}
-                        name="option1"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option A</FormLabel>
-                            <FormControl>
-                              <Input placeholder="First option..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={questionForm.control}
-                        name="option2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option B</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Second option..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={questionForm.control}
-                        name="option3"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option C</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Third option..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={questionForm.control}
-                        name="option4"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option D</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Fourth option..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={questionForm.control}
+                      name="options"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center justify-between">
+                            Answer Options
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => field.onChange([...(field.value || []), ""])}
+                              className="ml-2"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add Option
+                            </Button>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              {(field.value || [""]).map((option: string, index: number) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <span className="w-8 text-sm font-medium">
+                                    {String.fromCharCode(65 + index)}:
+                                  </span>
+                                  <Input
+                                    placeholder={`Option ${String.fromCharCode(65 + index)}...`}
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newOptions = [...(field.value || [])];
+                                      newOptions[index] = e.target.value;
+                                      field.onChange(newOptions);
+                                    }}
+                                    className="flex-1"
+                                  />
+                                  {(field.value || []).length > 2 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newOptions = [...(field.value || [])];
+                                        newOptions.splice(index, 1);
+                                        field.onChange(newOptions);
+                                      }}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={questionForm.control}
+                      name="allowMultipleAnswers"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Multiple Correct Answers</FormLabel>
+                            <FormDescription>
+                              Allow users to select more than one correct answer
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
                     <div className="flex justify-end space-x-2">
                       <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -1612,85 +1638,138 @@ export default function AdminSimple() {
                       )}
                     />
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormField
-                        control={questionForm.control}
-                        name="option1"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option A</FormLabel>
-                            <FormControl>
-                              <Input placeholder="First option..." {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={questionForm.control}
-                        name="option2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option B</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Second option..." {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={questionForm.control}
-                        name="option3"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option C</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Third option..." {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={questionForm.control}
-                        name="option4"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Option D</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Fourth option..." {...field} value={field.value || ""} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={questionForm.control}
+                      name="options"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center justify-between">
+                            Answer Options
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => field.onChange([...(field.value || []), ""])}
+                              className="ml-2"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Add Option
+                            </Button>
+                          </FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              {(field.value || [""]).map((option: string, index: number) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <span className="w-8 text-sm font-medium">
+                                    {String.fromCharCode(65 + index)}:
+                                  </span>
+                                  <Input
+                                    placeholder={`Option ${String.fromCharCode(65 + index)}...`}
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newOptions = [...(field.value || [])];
+                                      newOptions[index] = e.target.value;
+                                      field.onChange(newOptions);
+                                    }}
+                                    className="flex-1"
+                                  />
+                                  {(field.value || []).length > 2 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const newOptions = [...(field.value || [])];
+                                        newOptions.splice(index, 1);
+                                        field.onChange(newOptions);
+                                      }}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={questionForm.control}
+                      name="allowMultipleAnswers"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Multiple Correct Answers</FormLabel>
+                            <FormDescription>
+                              Allow users to select more than one correct answer
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Correct Answer Selection */}
+                    <FormField
+                      control={questionForm.control}
+                      name="allowMultipleAnswers"
+                      render={({ field: allowMultipleField }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {allowMultipleField.value ? "Correct Answers (Multiple)" : "Correct Answer (Single)"}
+                          </FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              {questionForm.watch("options")?.map((option: string, index: number) => (
+                                <div key={index} className="flex items-center space-x-2">
+                                  <input
+                                    type={allowMultipleField.value ? "checkbox" : "radio"}
+                                    id={`answer-${index}`}
+                                    name="correctAnswer"
+                                    value={index}
+                                    checked={
+                                      allowMultipleField.value
+                                        ? questionForm.watch("correctAnswers")?.includes(index) || false
+                                        : questionForm.watch("correctAnswer") === index
+                                    }
+                                    onChange={(e) => {
+                                      if (allowMultipleField.value) {
+                                        // Multiple choice logic
+                                        const currentAnswers = questionForm.watch("correctAnswers") || [];
+                                        if (e.target.checked) {
+                                          questionForm.setValue("correctAnswers", [...currentAnswers, index]);
+                                        } else {
+                                          questionForm.setValue("correctAnswers", currentAnswers.filter(i => i !== index));
+                                        }
+                                      } else {
+                                        // Single choice logic
+                                        questionForm.setValue("correctAnswer", index);
+                                      }
+                                    }}
+                                    className="rounded"
+                                  />
+                                  <label htmlFor={`answer-${index}`} className="text-sm">
+                                    {String.fromCharCode(65 + index)}: {option || `Option ${String.fromCharCode(65 + index)}`}
+                                  </label>
+                                </div>
+                              )) || []}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={questionForm.control}
-                        name="correctAnswer"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Correct Answer</FormLabel>
-                            <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select correct option" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="0">Option A</SelectItem>
-                                <SelectItem value="1">Option B</SelectItem>
-                                <SelectItem value="2">Option C</SelectItem>
-                                <SelectItem value="3">Option D</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <FormField
                         control={questionForm.control}
                         name="difficulty"

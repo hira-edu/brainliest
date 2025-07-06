@@ -29,7 +29,9 @@ export const questions = pgTable("questions", {
   subjectId: integer("subject_id").notNull(),
   text: text("text").notNull(),
   options: text("options").array().notNull(), // Array of option texts
-  correctAnswer: integer("correct_answer").notNull(), // Index of correct option (0-based)
+  correctAnswer: integer("correct_answer").notNull(), // Index of correct option (0-based) or multiple if multipleCorrect is true
+  correctAnswers: integer("correct_answers").array(), // Array of correct answer indexes for multiple-choice
+  allowMultipleAnswers: boolean("allow_multiple_answers").default(false), // Whether question allows multiple selections
   explanation: text("explanation"),
   domain: text("domain"), // For PMP: 'Initiating', 'Planning', etc.
   difficulty: text("difficulty").notNull(),

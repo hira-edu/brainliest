@@ -623,7 +623,9 @@ export class MemStorage implements IStorage {
       id,
       explanation: question.explanation || null,
       domain: question.domain || null,
-      order: question.order || null
+      order: question.order || null,
+      correctAnswers: question.correctAnswers ?? null,
+      allowMultipleAnswers: question.allowMultipleAnswers ?? null
     };
     this.questions.set(id, newQuestion);
     return newQuestion;
