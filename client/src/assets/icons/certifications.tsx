@@ -201,110 +201,84 @@ export const CertificationIcons: Record<string, React.ComponentType<{ className?
 export const getIconComponent = (subjectName: string): React.ComponentType<{ className?: string }> | null => {
   if (!subjectName) return null;
   
-  const name = subjectName.toLowerCase();
-  
-  // Direct mapping for better accuracy
-  const iconMapping: Record<string, string> = {
-    // Professional Certifications
-    'pmp certification': 'pmp',
-    'aws certified solutions architect': 'aws',
-    'aws cloud practitioner': 'aws',
-    'aws': 'aws',
-    'comptia security+': 'comptia',
-    'comptia': 'comptia',
-    'cisco ccna': 'cisco',
-    'cisco': 'cisco',
-    'microsoft azure fundamentals': 'azure',
-    'azure fundamentals': 'azure',
-    'azure': 'azure',
-    'google cloud platform': 'googlecloud',
-    'google cloud': 'googlecloud',
-    'gcp': 'googlecloud',
-    'oracle': 'oracle',
-    'vmware': 'vmware',
-    'kubernetes': 'kubernetes',
-    'docker': 'docker',
+  // EXACT subject name to official icon mapping (no fuzzy matching)
+  const exactIconMapping: Record<string, string> = {
+    // Professional Certifications - EXACT matches
+    'PMP Certification': 'pmp',
+    'AWS Certified Solutions Architect': 'aws', 
+    'CompTIA Security+': 'comptia',
+    'Cisco CCNA': 'cisco',
+    'Microsoft Azure Fundamentals': 'azure',
     
-    // Mathematics & Statistics
-    'mathematics': 'math',
-    'calculus': 'math',
-    'linear algebra': 'math',
-    'geometry': 'math',
-    'discrete mathematics': 'math',
-    'pre-calculus': 'math',
-    'statistics': 'statistics',
-    'ap statistics': 'statistics',
-    'biostatistics': 'statistics',
-    'business statistics': 'statistics',
-    'elementary statistics': 'statistics',
-    'intro to statistics': 'statistics',
+    // Statistics subjects
+    'AP Statistics': 'statistics',
+    'Biostatistics': 'statistics', 
+    'Business Statistics': 'statistics',
+    'Elementary Statistics': 'statistics',
+    'Intro to Statistics': 'statistics',
     
-    // Computer Science & Programming
-    'programming': 'science',
-    'data structures': 'science',
-    'web development': 'science',
-    'database design': 'science',
-    'computer science fundamentals': 'science',
+    // Math subjects
+    'Calculus': 'math',
+    'Linear Algebra': 'math',
+    'Geometry': 'math', 
+    'Discrete Mathematics': 'math',
+    'Pre-Calculus': 'math',
+    
+    // Computer Science subjects  
+    'Programming': 'science',
+    'Data Structures': 'science',
+    'Web Development': 'science',
+    'Database Design': 'science',
+    'Computer Science Fundamentals': 'science',
     
     // Natural Sciences
-    'science': 'science',
-    'biology': 'science',
-    'chemistry': 'science',
-    'physics': 'science',
-    'anatomy': 'medical',
-    'astronomy': 'science',
-    'earth science': 'science',
+    'Physics': 'science',
+    'Chemistry': 'science',
+    'Biology': 'science',
+    'Astronomy': 'science',
+    'Earth Science': 'science',
     
     // Engineering
-    'engineering': 'engineering',
-    'mechanical engineering': 'engineering',
-    'electrical engineering': 'engineering',
+    'Mechanical Engineering': 'engineering',
+    'Electrical Engineering': 'engineering', 
+    'Engineering': 'engineering',
     
     // Business & Economics
-    'business': 'business',
-    'business administration': 'business',
-    'accounting': 'business',
-    'economics': 'business',
-    'finance': 'business',
+    'Accounting': 'business',
+    'Economics': 'business',
+    'Finance': 'business',
+    'Business Administration': 'business',
     
     // Medical & Health Sciences
-    'medical': 'medical',
-    'nursing': 'medical',
-    'health sciences': 'medical',
-    'medical sciences': 'medical',
-    'pharmacology': 'medical',
-    'hesi': 'medical',
-    'teas': 'medical',
+    'Nursing': 'medical',
+    'Pharmacology': 'medical',
+    'Medical Sciences': 'medical',
+    'Health Sciences': 'medical',
+    'Anatomy': 'medical',
+    'HESI': 'medical',
+    'TEAS': 'medical',
     
-    // Social Sciences & Humanities
-    'psychology': 'science',
-    'history': 'business',
-    'philosophy': 'business',
-    'sociology': 'science',
-    'political science': 'science',
-    'english': 'business',
-    'writing': 'business',
+    // Social Sciences & Liberal Arts
+    'Psychology': 'science',
+    'History': 'business',
+    'Philosophy': 'business', 
+    'Sociology': 'science',
+    'Political Science': 'science',
+    'English': 'business',
+    'Writing': 'business',
     
     // Test Preparation
-    'gre': 'business',
-    'lsat': 'business',
-    'toefl': 'business',
-    'ged': 'business'
+    'GRE': 'business',
+    'LSAT': 'business',
+    'TOEFL': 'business',
+    'GED': 'business'
   };
   
-  // Check direct mapping first
-  if (iconMapping[name]) {
-    return CertificationIcons[iconMapping[name]] || null;
+  // Check EXACT subject name mapping first (case-sensitive)
+  if (exactIconMapping[subjectName]) {
+    return CertificationIcons[exactIconMapping[subjectName]] || null;
   }
   
-  // Check if subject name contains any of our certification keywords
-  for (const [keyword, iconKey] of Object.entries(iconMapping)) {
-    if (name.includes(keyword)) {
-      return CertificationIcons[iconKey] || null;
-    }
-  }
-  
-  // Fallback: try direct match with normalized name
-  const normalizedName = name.replace(/[^a-z0-9]/g, '');
-  return CertificationIcons[normalizedName] || null;
+  // No fuzzy matching - return null if no exact match
+  return null;
 };

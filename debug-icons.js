@@ -53,49 +53,58 @@ const subjects = [
   "GED"
 ];
 
-const iconMapping = {
-  'pmp certification': 'pmp',
-  'aws certified solutions architect': 'aws',
-  'aws cloud practitioner': 'aws',
-  'aws': 'aws',
-  'comptia security+': 'comptia',
-  'comptia': 'comptia',
-  'cisco ccna': 'cisco',
-  'cisco': 'cisco',
-  'microsoft azure fundamentals': 'azure',
-  'azure fundamentals': 'azure',
-  'azure': 'azure',
-  'google cloud platform': 'googlecloud',
-  'google cloud': 'googlecloud',
-  'gcp': 'googlecloud',
-  'oracle': 'oracle',
-  'vmware': 'vmware',
-  'kubernetes': 'kubernetes',
-  'docker': 'docker',
-  'mathematics': 'math',
-  'statistics': 'statistics',
-  'ap statistics': 'statistics',
-  'biostatistics': 'statistics',
-  'business statistics': 'statistics',
-  'elementary statistics': 'statistics',
-  'intro to statistics': 'statistics',
-  'science': 'science',
-  'biology': 'science',
-  'chemistry': 'science',
-  'physics': 'science',
-  'engineering': 'engineering',
-  'mechanical engineering': 'engineering',
-  'electrical engineering': 'engineering',
-  'business': 'business',
-  'business administration': 'business',
-  'accounting': 'business',
-  'economics': 'business',
-  'finance': 'business',
-  'medical': 'medical',
-  'nursing': 'medical',
-  'health sciences': 'medical',
-  'medical sciences': 'medical',
-  'pharmacology': 'medical'
+// EXACT subject name mapping (case-sensitive)
+const exactIconMapping = {
+  'PMP Certification': 'pmp',
+  'AWS Certified Solutions Architect': 'aws',
+  'CompTIA Security+': 'comptia',
+  'Cisco CCNA': 'cisco',
+  'Microsoft Azure Fundamentals': 'azure',
+  'AP Statistics': 'statistics',
+  'Biostatistics': 'statistics',
+  'Business Statistics': 'statistics',
+  'Elementary Statistics': 'statistics',
+  'Intro to Statistics': 'statistics',
+  'Calculus': 'math',
+  'Linear Algebra': 'math',
+  'Geometry': 'math',
+  'Discrete Mathematics': 'math',
+  'Pre-Calculus': 'math',
+  'Programming': 'science',
+  'Data Structures': 'science',
+  'Web Development': 'science',
+  'Database Design': 'science',
+  'Computer Science Fundamentals': 'science',
+  'Physics': 'science',
+  'Chemistry': 'science',
+  'Biology': 'science',
+  'Astronomy': 'science',
+  'Earth Science': 'science',
+  'Mechanical Engineering': 'engineering',
+  'Electrical Engineering': 'engineering',
+  'Engineering': 'engineering',
+  'Accounting': 'business',
+  'Economics': 'business',
+  'Finance': 'business',
+  'Business Administration': 'business',
+  'Nursing': 'medical',
+  'Pharmacology': 'medical',
+  'Medical Sciences': 'medical',
+  'Health Sciences': 'medical',
+  'Anatomy': 'medical',
+  'HESI': 'medical',
+  'TEAS': 'medical',
+  'Psychology': 'science',
+  'History': 'business',
+  'Philosophy': 'business',
+  'Sociology': 'science',
+  'Political Science': 'science',
+  'English': 'business',
+  'Writing': 'business',
+  'GRE': 'business',
+  'LSAT': 'business',
+  'TOEFL': 'business',
+  'GED': 'business'
 };
 
 const availableIcons = [
@@ -107,28 +116,11 @@ const availableIcons = [
 console.log("=== ICON MAPPING DEBUG ===\n");
 
 subjects.forEach(subject => {
-  const name = subject.toLowerCase();
   let mappedIcon = null;
   
-  // Check direct mapping first
-  if (iconMapping[name]) {
-    mappedIcon = iconMapping[name];
-  } else {
-    // Check if subject name contains any of our certification keywords
-    for (const [keyword, iconKey] of Object.entries(iconMapping)) {
-      if (name.includes(keyword)) {
-        mappedIcon = iconKey;
-        break;
-      }
-    }
-  }
-  
-  // Fallback: try direct match with normalized name
-  if (!mappedIcon) {
-    const normalizedName = name.replace(/[^a-z0-9]/g, '');
-    if (availableIcons.includes(normalizedName)) {
-      mappedIcon = normalizedName;
-    }
+  // Check EXACT subject name mapping (case-sensitive)
+  if (exactIconMapping[subject]) {
+    mappedIcon = exactIconMapping[subject];
   }
   
   const hasIcon = mappedIcon && availableIcons.includes(mappedIcon);
@@ -137,24 +129,22 @@ subjects.forEach(subject => {
   console.log(`${status} ${subject} → ${mappedIcon || 'NO MAPPING'}`);
 });
 
-console.log("\n=== MISSING ICONS ===");
+console.log("\n=== SUMMARY ===");
+let mappedCount = 0;
+let unmappedCount = 0;
+
 subjects.forEach(subject => {
-  const name = subject.toLowerCase();
-  let mappedIcon = null;
-  
-  if (iconMapping[name]) {
-    mappedIcon = iconMapping[name];
-  } else {
-    for (const [keyword, iconKey] of Object.entries(iconMapping)) {
-      if (name.includes(keyword)) {
-        mappedIcon = iconKey;
-        break;
-      }
-    }
-  }
-  
+  const mappedIcon = exactIconMapping[subject];
   const hasIcon = mappedIcon && availableIcons.includes(mappedIcon);
-  if (!hasIcon) {
-    console.log(`MISSING: ${subject}`);
+  
+  if (hasIcon) {
+    mappedCount++;
+  } else {
+    unmappedCount++;
+    console.log(`Missing: ${subject}`);
   }
 });
+
+console.log(`\nTotal subjects: ${subjects.length}`);
+console.log(`✓ Mapped to official icons: ${mappedCount}`);
+console.log(`✗ Missing icons: ${unmappedCount}`);
