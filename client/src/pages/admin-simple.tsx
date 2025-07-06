@@ -1793,8 +1793,6 @@ export default function AdminSimple() {
         subjectId: 0,
         title: "",
         description: "",
-        duration: 0,
-        questionCount: 0,
         difficulty: "Intermediate",
       }
     });
@@ -1827,8 +1825,6 @@ export default function AdminSimple() {
         subjectId: 0,
         title: "",
         description: "",
-        questionCount: 0,
-        duration: 0,
         difficulty: "",
       }
     });
@@ -1877,8 +1873,6 @@ export default function AdminSimple() {
         subjectId: exam.subjectId,
         title: exam.title,
         description: exam.description || "",
-        questionCount: exam.questionCount,
-        duration: exam.duration || 0,
         difficulty: exam.difficulty,
       });
       setIsEditDialogOpen(true);
@@ -1957,44 +1951,6 @@ export default function AdminSimple() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={examForm.control}
-                      name="duration"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Duration (minutes)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field} 
-                              value={field.value || ""} 
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={examForm.control}
-                      name="questionCount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Question Count</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              {...field} 
-                              value={field.value || ""} 
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
                   
                   <FormField
                     control={examForm.control}
@@ -2091,65 +2047,29 @@ export default function AdminSimple() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField
-                      control={editExamForm.control}
-                      name="questionCount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Question Count</FormLabel>
+                  <FormField
+                    control={editExamForm.control}
+                    name="difficulty"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Difficulty</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <Input 
-                              type="number" 
-                              onChange={(e) => field.onChange(parseInt(e.target.value))} 
-                              value={field.value || ""} 
-                            />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select difficulty" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={editExamForm.control}
-                      name="duration"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Duration (min)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              onChange={(e) => field.onChange(parseInt(e.target.value))} 
-                              value={field.value || ""} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={editExamForm.control}
-                      name="difficulty"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Difficulty</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select difficulty" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Beginner">Beginner</SelectItem>
-                              <SelectItem value="Intermediate">Intermediate</SelectItem>
-                              <SelectItem value="Advanced">Advanced</SelectItem>
-                              <SelectItem value="Expert">Expert</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          <SelectContent>
+                            <SelectItem value="Beginner">Beginner</SelectItem>
+                            <SelectItem value="Intermediate">Intermediate</SelectItem>
+                            <SelectItem value="Advanced">Advanced</SelectItem>
+                            <SelectItem value="Expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                       Cancel
