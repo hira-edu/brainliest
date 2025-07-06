@@ -398,11 +398,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User Session routes
   app.post("/api/sessions", async (req, res) => {
     try {
-      const validation = insertUserSessionSchema.safeParse(req.body);
+      const validation = insertExamSessionSchema.safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid session data", errors: validation.error.errors });
       }
-      const session = await storage.createUserSession(validation.data);
+      const session = await storage.createExamSession(validation.data);
       res.status(201).json(session);
     } catch (error) {
       res.status(500).json({ message: "Failed to create session" });
@@ -412,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sessions/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const session = await storage.getUserSession(id);
+      const session = await storage.getExamSession(id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }
@@ -425,11 +425,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/sessions/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validation = insertUserSessionSchema.partial().safeParse(req.body);
+      const validation = insertExamSessionSchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid session data", errors: validation.error.errors });
       }
-      const session = await storage.updateUserSession(id, validation.data);
+      const session = await storage.updateExamSession(id, validation.data);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }

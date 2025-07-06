@@ -47,11 +47,11 @@ export interface IStorage {
   deleteQuestion(id: number): Promise<boolean>;
 
   // Exam Sessions
-  getUserSessions(): Promise<ExamSession[]>;
-  getUserSession(id: number): Promise<ExamSession | undefined>;
-  createUserSession(session: InsertExamSession): Promise<ExamSession>;
-  updateUserSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined>;
-  deleteUserSession(id: number): Promise<boolean>;
+  getExamSessions(): Promise<ExamSession[]>;
+  getExamSession(id: number): Promise<ExamSession | undefined>;
+  createExamSession(session: InsertExamSession): Promise<ExamSession>;
+  updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined>;
+  deleteExamSession(id: number): Promise<boolean>;
 
   // Comments
   getComments(): Promise<Comment[]>;
@@ -175,32 +175,32 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // User Sessions
-  async getUserSessions(): Promise<UserSession[]> {
-    return await db.select().from(userSessions);
+  // Exam Sessions
+  async getExamSessions(): Promise<ExamSession[]> {
+    return await db.select().from(examSessions);
   }
 
-  async getUserSession(id: number): Promise<UserSession | undefined> {
-    const [session] = await db.select().from(userSessions).where(eq(userSessions.id, id));
+  async getExamSession(id: number): Promise<ExamSession | undefined> {
+    const [session] = await db.select().from(examSessions).where(eq(examSessions.id, id));
     return session;
   }
 
-  async createUserSession(session: InsertUserSession): Promise<UserSession> {
-    const [newSession] = await db.insert(userSessions).values(session).returning();
+  async createExamSession(session: InsertExamSession): Promise<ExamSession> {
+    const [newSession] = await db.insert(examSessions).values(session).returning();
     return newSession;
   }
 
-  async updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined> {
+  async updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined> {
     const [updatedSession] = await db
-      .update(userSessions)
+      .update(examSessions)
       .set(session)
-      .where(eq(userSessions.id, id))
+      .where(eq(examSessions.id, id))
       .returning();
     return updatedSession;
   }
 
-  async deleteUserSession(id: number): Promise<boolean> {
-    const result = await db.delete(userSessions).where(eq(userSessions.id, id));
+  async deleteExamSession(id: number): Promise<boolean> {
+    const result = await db.delete(examSessions).where(eq(examSessions.id, id));
     return (result.rowCount || 0) > 0;
   }
 
@@ -426,79 +426,6 @@ async function seedDatabase() {
         console.log(`✓ Inserted ${insertedQuestions.length} sample questions for ${firstExam.title}`);
       }
     }
-
-    // Create sample users
-    const userData: InsertUser[] = [
-      {
-        username: "john_doe",
-        email: "john.doe@example.com",
-        passwordHash: "hashed_password_123",
-        firstName: "John",
-        lastName: "Doe",
-        role: "student",
-        isActive: true,
-        isBanned: false,
-        lastLoginAt: new Date(),
-        ipAddress: "192.168.1.100",
-        loginAttempts: 0
-      },
-      {
-        username: "jane_smith",
-        email: "jane.smith@example.com",
-        passwordHash: "hashed_password_456",
-        firstName: "Jane",
-        lastName: "Smith",
-        role: "instructor",
-        isActive: true,
-        isBanned: false,
-        lastLoginAt: new Date(),
-        ipAddress: "192.168.1.101",
-        loginAttempts: 0
-      },
-      {
-        username: "mike_admin",
-        email: "mike.admin@brainliest.com",
-        passwordHash: "hashed_password_789",
-        firstName: "Mike",
-        lastName: "Johnson",
-        role: "admin",
-        isActive: true,
-        isBanned: false,
-        lastLoginAt: new Date(),
-        ipAddress: "192.168.1.102",
-        loginAttempts: 0
-      },
-      {
-        username: "sarah_student",
-        email: "sarah.wilson@example.com",
-        passwordHash: "hashed_password_101",
-        firstName: "Sarah",
-        lastName: "Wilson",
-        role: "student",
-        isActive: false,
-        isBanned: false,
-        lastLoginAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-        ipAddress: "192.168.1.103",
-        loginAttempts: 0
-      },
-      {
-        username: "banned_user",
-        email: "banned@example.com",
-        passwordHash: "hashed_password_999",
-        firstName: "Banned",
-        lastName: "User",
-        role: "student",
-        isActive: false,
-        isBanned: true,
-        banReason: "Violating terms of service",
-        lastLoginAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        ipAddress: "192.168.1.104",
-        loginAttempts: 5
-      }
-    ];
-
-    const insertedUsers = await db.insert(users).values(userData).returning();
-    console.log(`✓ Inserted ${insertedUsers.length} sample users`);
 
     console.log("✅ Database seeding completed successfully!");
 
