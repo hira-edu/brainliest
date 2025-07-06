@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -900,20 +901,20 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Parent Category</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories?.map((category) => (
-                              <SelectItem key={category.id} value={category.id.toString()}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={categories?.map((category) => ({
+                              value: category.id.toString(),
+                              label: category.name,
+                            })) || []}
+                            value={field.value?.toString()}
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            placeholder="Select a category"
+                            searchPlaceholder="Search categories..."
+                            emptyText="No categories found"
+                            clearable
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1037,20 +1038,20 @@ export default function AdminSimple() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Parent Category</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories?.map((category) => (
-                            <SelectItem key={category.id} value={category.id.toString()}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <SearchableSelect
+                          options={categories?.map((category) => ({
+                            value: category.id.toString(),
+                            label: category.name,
+                          })) || []}
+                          value={field.value?.toString()}
+                          onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                          placeholder="Select a category"
+                          searchPlaceholder="Search categories..."
+                          emptyText="No categories found"
+                          clearable
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1258,20 +1259,19 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Category</FormLabel>
                         <div className="flex items-center space-x-2">
-                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories?.map((category) => (
-                                <SelectItem key={category.id} value={category.id.toString()}>
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect
+                            options={categories?.map((category) => ({
+                              value: category.id.toString(),
+                              label: category.name,
+                            })) || []}
+                            value={field.value?.toString() || ""}
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            placeholder="Select a category"
+                            searchPlaceholder="Search categories..."
+                            emptyText="No categories found"
+                            clearable
+                            className="flex-1"
+                          />
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" type="button">
@@ -1318,20 +1318,19 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Subcategory</FormLabel>
                         <div className="flex items-center space-x-2">
-                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a subcategory" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {subcategories?.map((subcategory) => (
-                                <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
-                                  {subcategory.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect
+                            options={subcategories?.map((subcategory) => ({
+                              value: subcategory.id.toString(),
+                              label: subcategory.name,
+                            })) || []}
+                            value={field.value?.toString() || ""}
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            placeholder="Select a subcategory"
+                            searchPlaceholder="Search subcategories..."
+                            emptyText="No subcategories found"
+                            clearable
+                            className="flex-1"
+                          />
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" type="button">
@@ -2003,20 +2002,20 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
-                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a subject" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {subjects?.map((subject) => (
-                              <SelectItem key={subject.id} value={subject.id.toString()}>
-                                {subject.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={subjects?.map((subject) => ({
+                              value: subject.id.toString(),
+                              label: subject.name,
+                            })) || []}
+                            value={field.value?.toString()}
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            placeholder="Select a subject"
+                            searchPlaceholder="Search subjects..."
+                            emptyText="No subjects found"
+                            clearable
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -2053,19 +2052,22 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Difficulty</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select difficulty" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Beginner">Beginner</SelectItem>
-                            <SelectItem value="Intermediate">Intermediate</SelectItem>
-                            <SelectItem value="Advanced">Advanced</SelectItem>
-                            <SelectItem value="Expert">Expert</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: "Beginner", label: "Beginner" },
+                              { value: "Intermediate", label: "Intermediate" },
+                              { value: "Advanced", label: "Advanced" },
+                              { value: "Expert", label: "Expert" }
+                            ]}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select difficulty"
+                            searchPlaceholder="Search difficulty levels..."
+                            emptyText="No difficulty levels found"
+                            clearable
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -2090,19 +2092,21 @@ export default function AdminSimple() {
               <Filter className="w-4 h-4 text-gray-500" />
               <span className="text-sm font-medium">Filter by Subject:</span>
             </div>
-            <Select value={selectedSubjectFilter} onValueChange={setSelectedSubjectFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="All subjects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {subjects?.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id.toString()}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { value: "all", label: "All Subjects" },
+                ...(subjects?.map((subject) => ({
+                  value: subject.id.toString(),
+                  label: subject.name,
+                })) || [])
+              ]}
+              value={selectedSubjectFilter}
+              onValueChange={setSelectedSubjectFilter}
+              placeholder="All subjects"
+              searchPlaceholder="Search subjects..."
+              emptyText="No subjects found"
+              className="w-48"
+            />
             {selectedSubjectFilter !== "all" && (
               <Button
                 variant="outline"
