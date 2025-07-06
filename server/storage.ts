@@ -84,7 +84,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedData() {
-    // Create sample subjects
+    // Professional Certifications
     const pmpSubject = this.createSubjectSync({
       name: "PMP Certification",
       description: "Project Management Professional certification practice exams",
@@ -101,10 +101,101 @@ export class MemStorage implements IStorage {
 
     const comptiaSubject = this.createSubjectSync({
       name: "CompTIA Security+",
-      description: "Cybersecurity fundamentals certification practice",
+      description: "CompTIA Security+ certification for cybersecurity professionals",
       icon: "fas fa-shield-alt",
+      color: "red",
+    });
+
+    const ciscoSubject = this.createSubjectSync({
+      name: "CCNA Certification",
+      description: "Cisco Certified Network Associate certification",
+      icon: "fas fa-network-wired",
       color: "green",
     });
+
+    const microsoftSubject = this.createSubjectSync({
+      name: "Microsoft Azure AZ-900",
+      description: "Azure Fundamentals certification for cloud computing",
+      icon: "fab fa-microsoft",
+      color: "cyan",
+    });
+
+    // University/College Computer Science
+    const computerScienceSubject = this.createSubjectSync({
+      name: "Computer Science",
+      description: "Programming, algorithms, data structures, and software engineering",
+      icon: "fas fa-laptop-code",
+      color: "purple",
+    });
+
+    const dataStructuresSubject = this.createSubjectSync({
+      name: "Data Structures & Algorithms",
+      description: "Arrays, trees, graphs, sorting, and algorithmic problem solving",
+      icon: "fas fa-sitemap",
+      color: "indigo",
+    });
+
+    // University/College Mathematics & Sciences
+    const mathematicsSubject = this.createSubjectSync({
+      name: "Mathematics",
+      description: "Calculus, algebra, statistics, and discrete mathematics",
+      icon: "fas fa-calculator",
+      color: "teal",
+    });
+
+    const physicsSubject = this.createSubjectSync({
+      name: "Physics",
+      description: "Classical mechanics, thermodynamics, and modern physics",
+      icon: "fas fa-atom",
+      color: "blue",
+    });
+
+    const chemistrySubject = this.createSubjectSync({
+      name: "Chemistry",
+      description: "Organic, inorganic, and physical chemistry fundamentals",
+      icon: "fas fa-flask",
+      color: "emerald",
+    });
+
+    // University/College Business & Economics
+    const businessSubject = this.createSubjectSync({
+      name: "Business Administration",
+      description: "Management, finance, marketing, and business strategy",
+      icon: "fas fa-chart-line",
+      color: "red",
+    });
+
+    const economicsSubject = this.createSubjectSync({
+      name: "Economics",
+      description: "Microeconomics, macroeconomics, and economic theory",
+      icon: "fas fa-coins",
+      color: "yellow",
+    });
+
+    // University/College Engineering
+    const engineeringSubject = this.createSubjectSync({
+      name: "Engineering",
+      description: "Mechanical, electrical, civil, and software engineering",
+      icon: "fas fa-cogs",
+      color: "gray",
+    });
+
+    // University/College Health & Medical
+    const medicalSubject = this.createSubjectSync({
+      name: "Medical Sciences",
+      description: "Anatomy, physiology, pharmacology, and medical procedures",
+      icon: "fas fa-user-md",
+      color: "pink",
+    });
+
+    const biologySubject = this.createSubjectSync({
+      name: "Biology",
+      description: "Cell biology, genetics, ecology, and evolutionary biology",
+      icon: "fas fa-dna",
+      color: "green",
+    });
+
+
 
     // Create sample exams
     const pmpExam1 = this.createExamSync({

@@ -1,76 +1,210 @@
-import { Link, useLocation } from "wouter";
-import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import AuthModal from "@/components/auth-modal";
+import { useState } from "react";
+import { 
+  ChevronDown, 
+  Home, 
+  BarChart3, 
+  BookOpen, 
+  Award, 
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  GraduationCap
+} from "lucide-react";
 
 export default function Header() {
+  const { isSignedIn, userName, signOut } = useAuth();
   const [location] = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const { isSignedIn, userName, signOut } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navigationItems = [
+    { href: "/", label: "Home", icon: Home },
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/admin", label: "Admin", icon: Settings },
+  ];
+
+  const subjectCategories = [
+    { label: "Professional Certifications", icon: Award, items: ["PMP", "AWS", "CompTIA", "Cisco", "Microsoft"] },
+    { label: "Computer Science", icon: BookOpen, items: ["Programming", "Data Structures", "Algorithms"] },
+    { label: "University Subjects", icon: GraduationCap, items: ["Mathematics", "Physics", "Chemistry", "Biology"] },
+  ];
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
+    <>
+      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            {/* Logo and Main Navigation */}
+            <div className="flex items-center space-x-8">
               <Link href="/">
-                <h1 className="text-2xl font-bold text-primary cursor-pointer">ExamPractice Pro</h1>
+                <a className="text-xl font-bold text-gray-900 hover:text-primary flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-white" />
+                  </div>
+                  <span>ExamPractice Pro</span>
+                </a>
               </Link>
+              
+              {/* Desktop Navigation */}
+              <nav className="hidden md:flex items-center space-x-6">
+                {navigationItems.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <a className={`flex items-center space-x-1 text-sm font-medium hover:text-primary transition-colors ${
+                        location === item.href ? "text-primary" : "text-gray-700"
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </a>
+                    </Link>
+                  );
+                })}
+
+                {/* Subjects Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-sm font-medium text-gray-700 hover:text-primary">
+                      Subjects
+                      <ChevronDown className="w-4 h-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-64">
+                    <DropdownMenuLabel>Subject Categories</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {subjectCategories.map((category) => {
+                      const CategoryIcon = category.icon;
+                      return (
+                        <div key={category.label}>
+                          <DropdownMenuItem className="font-medium">
+                            <CategoryIcon className="w-4 h-4 mr-2" />
+                            {category.label}
+                          </DropdownMenuItem>
+                          {category.items.map((item) => (
+                            <DropdownMenuItem key={item} className="pl-8 text-sm text-gray-600">
+                              {item}
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator />
+                        </div>
+                      );
+                    })}
+                    <Link href="/">
+                      <DropdownMenuItem className="font-medium text-primary">
+                        View All Subjects →
+                      </DropdownMenuItem>
+                    </Link>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </nav>
             </div>
-          </div>
-          <nav className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
-              <Link href="/">
-                <a className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location === '/' ? 'text-primary' : 'text-gray-600 hover:text-primary'
-                }`}>
-                  Subjects
-                </a>
-              </Link>
-              <Link href="/analytics">
-                <a className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location === '/analytics' ? 'text-primary' : 'text-gray-600 hover:text-primary'
-                }`}>
-                  Analytics
-                </a>
-              </Link>
-              <Link href="/admin">
-                <a className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location === '/admin' ? 'text-primary' : 'text-gray-600 hover:text-primary'
-                }`}>
-                  Admin
-                </a>
-              </Link>
-            </div>
-          </nav>
-          <div className="flex items-center space-x-4">
-            {!isSignedIn ? (
-              <button 
-                onClick={() => setShowAuthModal(true)}
-                className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+
+            {/* Right Side - User Menu */}
+            <div className="flex items-center space-x-4">
+              {isSignedIn ? (
+                <div className="flex items-center space-x-4">
+                  {/* Quick Stats Badge */}
+                  <Badge variant="secondary" className="hidden sm:flex">
+                    Welcome back!
+                  </Badge>
+                  
+                  {/* User Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="hidden sm:block text-sm font-medium">{userName}</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <Link href="/analytics">
+                        <DropdownMenuItem>
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          View Analytics
+                        </DropdownMenuItem>
+                      </Link>
+                      <DropdownMenuItem>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={signOut} className="text-red-600">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <Button onClick={() => setShowAuthModal(true)} className="flex items-center space-x-2">
+                  <User className="w-4 h-4" />
+                  <span>Sign In</span>
+                </Button>
+              )}
+
+              {/* Mobile Menu Button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="md:hidden"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
-                Sign In
-              </button>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-700">Welcome, {userName}!</span>
-                <button 
-                  onClick={signOut}
-                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
+                <Menu className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 py-4">
+              <nav className="space-y-2">
+                {navigationItems.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <a 
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
+                          location === item.href 
+                            ? "bg-primary/10 text-primary" 
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <IconComponent className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </a>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          )}
         </div>
-      </div>
-      
+      </header>
+
       <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
       />
-    </header>
+    </>
   );
 }

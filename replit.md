@@ -97,6 +97,15 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 06, 2025 - Enhanced Homepage with Subject Organization
+- **Categorized subject organization**: Organized subjects into Professional Certifications, Computer Science, Mathematics & Sciences, Business & Economics, Engineering, and Health & Medical
+- **Enhanced navigation with dropdowns**: Professional header with subject category dropdowns and user account menu
+- **Search functionality**: Global search bar on homepage to find subjects and courses
+- **Tabbed interface**: Categories, Popular, and All Subjects tabs with filtering capabilities
+- **Carousel-style presentation**: Visual cards with badges, icons, and proper categorization
+- **Expanded subject database**: Added 15+ subjects across all major categories
+- **Mobile-responsive design**: Proper mobile navigation menu and responsive grid layouts
+
 ### July 06, 2025 - Advanced Analytics and Performance Tracking
 - **Comprehensive analytics dashboard**: Full-featured analytics page with performance insights
 - **Multi-tab analytics interface**: Performance trends, domain analysis, recommendations, and exam history
