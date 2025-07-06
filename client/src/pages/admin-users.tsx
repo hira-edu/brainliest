@@ -381,7 +381,7 @@ export default function AdminUsers() {
                           {user.email}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-500">
-                          @{user.username}
+                          @{user.username || 'N/A'}
                         </div>
                       </div>
                     </td>
