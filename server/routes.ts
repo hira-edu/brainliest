@@ -59,6 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/subjects/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid subject ID" });
+      }
       const subject = await storage.getSubject(id);
       if (!subject) {
         return res.status(404).json({ message: "Subject not found" });

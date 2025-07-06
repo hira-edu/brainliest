@@ -1,10 +1,53 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import slowDown from "express-slow-down";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Trust proxy for accurate IP addresses behind reverse proxies
+app.set('trust proxy', 1);
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com", "https://api.resend.com"],
+    },
+  },
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: { message: "Too many requests from this IP, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to API routes
+app.use("/api", limiter);
+
+// Slow down repeated requests
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  delayAfter: 10, // allow 10 requests per 15 minutes at full speed
+  delayMs: (used) => (used - 10) * 100, // add 100ms delay per request after 10th
+});
+
+app.use("/api", speedLimiter);
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -41,10 +84,22 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    
+    // Don't expose internal error messages in production
+    let message = "Internal Server Error";
+    if (process.env.NODE_ENV === 'development') {
+      message = err.message || "Internal Server Error";
+    } else if (status < 500) {
+      // Client errors can show their message
+      message = err.message || "Bad Request";
+    }
+
+    // Log error for debugging but don't expose stack traces
+    if (status >= 500) {
+      console.error('Server Error:', err);
+    }
 
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after

@@ -7,8 +7,18 @@ import { eq, and, or, lt, gt } from 'drizzle-orm';
 import { emailService } from './email-service';
 
 // Environment configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production');
+  }
+  return 'dev-jwt-secret-key-not-for-production';
+})();
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_REFRESH_SECRET environment variable is required in production');
+  }
+  return 'dev-jwt-refresh-secret-key-not-for-production';
+})();
 const JWT_EXPIRY = '15m'; // Short-lived access tokens
 const JWT_REFRESH_EXPIRY = '7d'; // Longer-lived refresh tokens
 const MAX_LOGIN_ATTEMPTS = 5;

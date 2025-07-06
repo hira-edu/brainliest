@@ -51,13 +51,11 @@ export default function Header() {
           <div className="flex justify-between items-center py-4">
             {/* Logo and Main Navigation */}
             <div className="flex items-center space-x-8">
-              <Link href="/">
-                <a className="text-xl font-bold text-gray-900 hover:text-primary flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-white" />
-                  </div>
-                  <span>Brainliest</span>
-                </a>
+              <Link href="/" className="text-xl font-bold text-gray-900 hover:text-primary flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <span>Brainliest</span>
               </Link>
               
               {/* Desktop Navigation */}
@@ -65,13 +63,11 @@ export default function Header() {
                 {navigationItems.map((item) => {
                   const IconComponent = item.icon;
                   return (
-                    <Link key={item.href} href={item.href}>
-                      <a className={`flex items-center space-x-1 text-sm font-medium hover:text-primary transition-colors ${
-                        location === item.href ? "text-primary" : "text-gray-700"
-                      }`}>
-                        <IconComponent className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </a>
+                    <Link key={item.href} href={item.href} className={`flex items-center space-x-1 text-sm font-medium hover:text-primary transition-colors ${
+                      location === item.href ? "text-primary" : "text-gray-700"
+                    }`}>
+                      <IconComponent className="w-4 h-4" />
+                      <span>{item.label}</span>
                     </Link>
                   );
                 })}
@@ -138,18 +134,18 @@ export default function Header() {
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <Link href="/analytics">
-                        <DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/analytics" className="flex items-center">
                           <BarChart3 className="w-4 h-4 mr-2" />
                           View Analytics
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link href="/settings">
-                        <DropdownMenuItem>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/settings" className="flex items-center">
                           <Settings className="w-4 h-4 mr-2" />
                           Settings
-                        </DropdownMenuItem>
-                      </Link>
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={signOut} className="text-red-600">
                         <LogOut className="w-4 h-4 mr-2" />
@@ -184,18 +180,18 @@ export default function Header() {
                 {navigationItems.map((item) => {
                   const IconComponent = item.icon;
                   return (
-                    <Link key={item.href} href={item.href}>
-                      <a 
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
-                          location === item.href 
-                            ? "bg-primary/10 text-primary" 
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <IconComponent className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </a>
+                    <Link 
+                      key={item.href} 
+                      href={item.href}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
+                        location === item.href 
+                          ? "bg-primary/10 text-primary" 
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <IconComponent className="w-4 h-4" />
+                      <span>{item.label}</span>
                     </Link>
                   );
                 })}

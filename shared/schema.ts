@@ -38,9 +38,10 @@ export const questions = pgTable("questions", {
   order: integer("order").default(0),
 });
 
-export const examSessions = pgTable("exam_sessions", {
+export const examSessions = pgTable("user_sessions", {
   id: serial("id").primaryKey(),
   examId: integer("exam_id").notNull(),
+  userName: text("user_name"), // Add userName field for compatibility
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   currentQuestionIndex: integer("current_question_index").default(0),
@@ -218,6 +219,9 @@ export const insertExamSessionSchema = createInsertSchema(examSessions).omit({
   id: true,
   startedAt: true,
   completedAt: true,
+}).extend({
+  // Make userName optional for compatibility
+  userName: z.string().optional(),
 });
 
 export const insertCommentSchema = createInsertSchema(comments).omit({
