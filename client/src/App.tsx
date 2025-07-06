@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { QuestionLimitProvider } from "@/contexts/QuestionLimitContext";
 import Home from "@/pages/home";
 import ExamSelection from "@/pages/exam-selection";
 import QuestionInterface from "@/pages/question-interface";
@@ -51,10 +52,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <QuestionLimitProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </QuestionLimitProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
