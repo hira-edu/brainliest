@@ -94,13 +94,19 @@ export default function Admin() {
   // Check for existing admin token on mount
   useEffect(() => {
     const checkExistingAuth = () => {
+      console.log('Checking admin authentication...');
       const token = localStorage.getItem('brainliest_access_token');
       const storedUser = localStorage.getItem('brainliest_user');
+      
+      console.log('Token exists:', !!token);
+      console.log('Stored user exists:', !!storedUser);
       
       if (token && storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
+          console.log('Parsed user role:', parsedUser.role);
           if (parsedUser.role === 'admin') {
+            console.log('Admin authentication successful');
             setIsAuthenticated(true);
             setIsLoading(false);
             return;
@@ -113,10 +119,15 @@ export default function Admin() {
       }
       
       // No valid admin token found
+      console.log('No admin authentication found, showing login');
       setIsAuthenticated(false);
       setIsLoading(false);
     };
 
+    // Clear any existing tokens to force fresh authentication
+    localStorage.removeItem('brainliest_access_token');
+    localStorage.removeItem('brainliest_user');
+    
     checkExistingAuth();
   }, []);
 
