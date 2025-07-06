@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject, AuditLog } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import AdminUsers from "@/pages/admin-users";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +37,8 @@ import {
   Download,
   FileSpreadsheet,
   Trash,
-  RefreshCw
+  RefreshCw,
+  Users
 } from "lucide-react";
 
 // Form schemas with validation
@@ -79,7 +81,35 @@ export default function Admin() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("subjects");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isSignedIn } = useAuth();
+
+  // Check admin authentication
+  useEffect(() => {
+    const checkAdminAuth = () => {
+      if (!isSignedIn || !user) {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        return;
+      }
+
+      if (user.role === 'admin') {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        toast({
+          title: "Access Denied",
+          description: "You need admin privileges to access this page",
+          variant: "destructive"
+        });
+      }
+      setIsLoading(false);
+    };
+
+    checkAdminAuth();
+  }, [user, isSignedIn, toast]);
 
   // Data queries
   const { data: subjects } = useQuery<Subject[]>({
@@ -153,15 +183,15 @@ export default function Admin() {
                             <span>📱 {log.userAgent}</span>
                           </div>
                         </div>
-                        {log.details && (
+                        {log.changes && (
                           <div className="text-xs bg-gray-100 p-2 rounded">
-                            <strong>Details:</strong> {log.details}
+                            <strong>Changes:</strong> {log.changes}
                           </div>
                         )}
                       </div>
                       <div className="text-right text-sm text-gray-500">
-                        <div>{new Date(log.timestamp).toLocaleDateString()}</div>
-                        <div>{new Date(log.timestamp).toLocaleTimeString()}</div>
+                        <div>{log.timestamp ? new Date(log.timestamp).toLocaleDateString() : 'Unknown'}</div>
+                        <div>{log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'Unknown'}</div>
                       </div>
                     </div>
                   </div>
@@ -1414,6 +1444,45 @@ export default function Admin() {
               </Card>
             );
           })}
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Verifying admin access...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication required message
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-md mx-auto mt-32 p-6 bg-white rounded-lg shadow-md">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Access Required</h2>
+            <p className="text-gray-600 mb-4">
+              You need administrator privileges to access this page. Please contact your system administrator if you believe this is an error.
+            </p>
+            <div className="space-y-2 text-sm text-gray-500">
+              <p>Required: Authenticated user with admin role</p>
+              <p>Current status: {!isSignedIn ? "Not signed in" : "Insufficient privileges"}</p>
+            </div>
+          </div>
         </div>
       </div>
     );
