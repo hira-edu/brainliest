@@ -29,7 +29,12 @@ import {
   Settings,
   Tag,
   Filter,
-  Search
+  Search,
+  Upload,
+  Download,
+  FileSpreadsheet,
+  Trash,
+  RefreshCw
 } from "lucide-react";
 
 // Form schemas with validation
@@ -624,10 +629,96 @@ export default function Admin() {
     );
   }
 
+  // CSV Helper Functions
+  const generateCSVTemplate = () => {
+    const headers = [
+      "Subject ID", "Subject Name", "Exam ID", "Exam Title", "Question Text",
+      "Option A", "Option B", "Option C", "Option D", "Correct Answer (0-3)",
+      "Explanation", "Domain", "Difficulty", "Order"
+    ];
+    
+    const sampleData = [
+      "1", "PMP Certification", "1", "PMP Practice Exam 1", 
+      "What is the primary purpose of project management?",
+      "To complete projects on time", "To manage resources effectively", 
+      "To deliver value to stakeholders", "To reduce project costs",
+      "2", "Project management focuses on delivering value to stakeholders through successful project outcomes.",
+      "Project Management Fundamentals", "Intermediate", "1"
+    ];
+
+    const csvContent = [headers, sampleData].map(row => 
+      row.map(field => `"${field}"`).join(",")
+    ).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "questions_template.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportQuestionsCSV = () => {
+    if (!questions || questions.length === 0) {
+      toast({ title: "No questions to export", variant: "destructive" });
+      return;
+    }
+
+    const headers = [
+      "Question ID", "Subject ID", "Subject Name", "Exam ID", "Exam Title", "Question Text",
+      "Option A", "Option B", "Option C", "Option D", "Correct Answer (0-3)",
+      "Explanation", "Domain", "Difficulty", "Order"
+    ];
+
+    const csvData = questions.map(question => {
+      const subject = subjects?.find(s => s.id === question.subjectId);
+      const exam = exams?.find(e => e.id === question.examId);
+      return [
+        question.id,
+        question.subjectId,
+        subject?.name || "",
+        question.examId,
+        exam?.title || "",
+        question.text,
+        question.options[0] || "",
+        question.options[1] || "",
+        question.options[2] || "",
+        question.options[3] || "",
+        question.correctAnswer,
+        question.explanation || "",
+        question.domain || "",
+        question.difficulty || "",
+        question.order
+      ];
+    });
+
+    const csvContent = [headers, ...csvData].map(row => 
+      row.map(field => `"${field}"`).join(",")
+    ).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `questions_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({ title: "Questions exported successfully!" });
+  };
+
   // Question Management Component
   function QuestionManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedExam, setSelectedExam] = useState<string>("");
+    const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [importPreview, setImportPreview] = useState<any[]>([]);
 
     const questionForm = useForm<QuestionFormData>({
       resolver: zodResolver(questionFormSchema),
@@ -664,6 +755,29 @@ export default function Admin() {
       },
     });
 
+    const bulkImportMutation = useMutation({
+      mutationFn: async (questionsData: any[]) => {
+        await apiRequest("POST", "/api/questions/bulk", { questions: questionsData });
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        toast({ title: "Questions imported successfully!" });
+        setIsImportDialogOpen(false);
+        setCsvFile(null);
+        setImportPreview([]);
+      },
+    });
+
+    const deleteAllQuestionsMutation = useMutation({
+      mutationFn: async () => {
+        await apiRequest("DELETE", "/api/questions/all");
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        toast({ title: "All questions deleted successfully!" });
+      },
+    });
+
     const deleteQuestionMutation = useMutation({
       mutationFn: async (id: number) => {
         await apiRequest("DELETE", `/api/questions/${id}`);
@@ -676,6 +790,74 @@ export default function Admin() {
 
     const onSubmit = (data: QuestionFormData) => {
       createQuestionMutation.mutate(data);
+    };
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file && file.type === "text/csv") {
+        setCsvFile(file);
+        
+        // Read and parse CSV for preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          const lines = text.split('\n').filter(line => line.trim());
+          const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+          const data = lines.slice(1).map(line => {
+            const values = line.split(',').map(v => v.replace(/"/g, ''));
+            return headers.reduce((obj, header, index) => {
+              obj[header] = values[index] || '';
+              return obj;
+            }, {} as any);
+          });
+          setImportPreview(data.slice(0, 5)); // Show first 5 rows for preview
+        };
+        reader.readAsText(file);
+      } else {
+        toast({ title: "Please select a valid CSV file", variant: "destructive" });
+      }
+    };
+
+    const handleImportQuestions = () => {
+      if (!csvFile) {
+        toast({ title: "Please select a CSV file", variant: "destructive" });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+        
+        const questionsData = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.replace(/"/g, ''));
+          const row = headers.reduce((obj, header, index) => {
+            obj[header] = values[index] || '';
+            return obj;
+          }, {} as any);
+
+          return {
+            subjectId: parseInt(row['Subject ID']) || 0,
+            examId: parseInt(row['Exam ID']) || 0,
+            text: row['Question Text'] || '',
+            options: [
+              row['Option A'] || '',
+              row['Option B'] || '',
+              row['Option C'] || '',
+              row['Option D'] || ''
+            ],
+            correctAnswer: parseInt(row['Correct Answer (0-3)']) || 0,
+            explanation: row['Explanation'] || '',
+            domain: row['Domain'] || '',
+            difficulty: row['Difficulty'] || 'Intermediate',
+            order: parseInt(row['Order']) || 1
+          };
+        }).filter(q => q.text && q.options.every(opt => opt));
+
+        bulkImportMutation.mutate(questionsData);
+      };
+      reader.readAsText(csvFile);
     };
 
     const filteredQuestions = questions?.filter(question => {
@@ -700,18 +882,124 @@ export default function Admin() {
             <h2 className="text-2xl font-bold">Manage Questions</h2>
             <p className="text-gray-600">Create and organize exam questions</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Question
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Question</DialogTitle>
-              </DialogHeader>
-              <Form {...questionForm}>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={generateCSVTemplate}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Download Template
+            </Button>
+            <Button variant="outline" onClick={exportQuestionsCSV}>
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import CSV
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Import Questions from CSV</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="csv-upload"
+                    />
+                    <label htmlFor="csv-upload" className="cursor-pointer">
+                      <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-lg font-medium">Upload CSV File</p>
+                      <p className="text-sm text-gray-500">
+                        Click to select a CSV file or drag and drop
+                      </p>
+                    </label>
+                  </div>
+
+                  {csvFile && (
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <p className="font-medium text-green-800">File Selected: {csvFile.name}</p>
+                      <p className="text-sm text-green-600">Ready to import questions</p>
+                    </div>
+                  )}
+
+                  {importPreview.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Preview (First 5 rows):</h4>
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="max-h-64 overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="p-2 text-left">Question</th>
+                                <th className="p-2 text-left">Options</th>
+                                <th className="p-2 text-left">Correct</th>
+                                <th className="p-2 text-left">Domain</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {importPreview.map((row, index) => (
+                                <tr key={index} className="border-t">
+                                  <td className="p-2">{row['Question Text']?.substring(0, 50)}...</td>
+                                  <td className="p-2">
+                                    A: {row['Option A']?.substring(0, 20)}...
+                                  </td>
+                                  <td className="p-2">{row['Correct Answer (0-3)']}</td>
+                                  <td className="p-2">{row['Domain']}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete all questions? This cannot be undone.")) {
+                          deleteAllQuestionsMutation.mutate();
+                        }
+                      }}
+                      disabled={deleteAllQuestionsMutation.isPending}
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      Delete All Questions
+                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleImportQuestions}
+                        disabled={!csvFile || bulkImportMutation.isPending}
+                      >
+                        {bulkImportMutation.isPending && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+                        Import Questions
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Question
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create New Question</DialogTitle>
+                </DialogHeader>
+                <Form {...questionForm}>
                 <form onSubmit={questionForm.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <FormField
@@ -960,7 +1248,7 @@ export default function Admin() {
               <SelectValue placeholder="Filter by exam" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Exams</SelectItem>
+              <SelectItem value="all">All Exams</SelectItem>
               {exams?.map((exam) => (
                 <SelectItem key={exam.id} value={exam.id.toString()}>
                   {exam.title}

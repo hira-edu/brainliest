@@ -155,6 +155,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk question operations for CSV import
+  app.post("/api/questions/bulk", async (req, res) => {
+    try {
+      const { questions } = req.body;
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return res.status(400).json({ message: "Invalid questions data" });
+      }
+
+      const createdQuestions = [];
+      for (const questionData of questions) {
+        const validation = insertQuestionSchema.safeParse(questionData);
+        if (validation.success) {
+          try {
+            const question = await storage.createQuestion(validation.data);
+            createdQuestions.push(question);
+          } catch (error) {
+            console.error("Failed to create question:", error);
+          }
+        }
+      }
+
+      res.status(201).json({ 
+        message: `Successfully imported ${createdQuestions.length} questions`,
+        created: createdQuestions.length,
+        total: questions.length
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to import questions" });
+    }
+  });
+
+  app.delete("/api/questions/all", async (req, res) => {
+    try {
+      const questions = await storage.getQuestions();
+      let deletedCount = 0;
+      
+      for (const question of questions) {
+        const success = await storage.deleteQuestion(question.id);
+        if (success) deletedCount++;
+      }
+
+      res.json({ 
+        message: `Successfully deleted ${deletedCount} questions`,
+        deleted: deletedCount,
+        total: questions.length
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete all questions" });
+    }
+  });
+
   // User Session routes
   app.post("/api/sessions", async (req, res) => {
     try {

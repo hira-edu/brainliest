@@ -9,7 +9,7 @@ import ExamSelection from "@/pages/exam-selection";
 import QuestionInterface from "@/pages/question-interface";
 import Results from "@/pages/results";
 import Analytics from "@/pages/analytics";
-import Admin from "@/pages/admin";
+import AdminSimple from "@/pages/admin-simple";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,7 +20,7 @@ function Router() {
       <Route path="/exam/:id" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
-      <Route path="/admin" component={Admin} />
+      <Route path="/admin" component={AdminSimple} />
       <Route component={NotFound} />
     </Switch>
   );
