@@ -12,6 +12,7 @@ import Analytics from "@/pages/analytics";
 import AdminSimple from "@/pages/admin-simple";
 import OurStory from "@/pages/our-story";
 import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsOfService from "@/pages/terms-of-service";
 import Contact from "@/pages/contact";
 import NotFound from "@/pages/not-found";
 
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/admin-simple" component={AdminSimple} />
       <Route path="/our-story" component={OurStory} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
       <Route component={NotFound} />
     </Switch>
