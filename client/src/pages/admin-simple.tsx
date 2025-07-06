@@ -23,13 +23,13 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
+  Edit,
   Database,
   AlertCircle,
   BarChart3,
   Users,
   BookOpen,
   Target,
-  Edit,
   Copy,
   Tag,
   Search,
@@ -377,6 +377,8 @@ export default function AdminSimple() {
   // Subject Management Component  
   function SubjectManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const subjectForm = useForm<InsertSubject>({
       resolver: zodResolver(insertSubjectSchema),
@@ -399,6 +401,28 @@ export default function AdminSimple() {
       },
     });
 
+    const editSubjectForm = useForm<InsertSubject>({
+      resolver: zodResolver(insertSubjectSchema),
+      defaultValues: {
+        name: "",
+        description: "",
+        icon: "",
+      }
+    });
+
+    const updateSubjectMutation = useMutation({
+      mutationFn: async ({ id, data }: { id: number; data: InsertSubject }) => {
+        await apiRequest("PUT", `/api/subjects/${id}`, data);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        toast({ title: "Subject updated successfully!" });
+        setIsEditDialogOpen(false);
+        setEditingSubject(null);
+        editSubjectForm.reset();
+      },
+    });
+
     const deleteSubjectMutation = useMutation({
       mutationFn: async (id: number) => {
         await apiRequest("DELETE", `/api/subjects/${id}`);
@@ -411,6 +435,22 @@ export default function AdminSimple() {
 
     const onSubmit = (data: InsertSubject) => {
       createSubjectMutation.mutate(data);
+    };
+
+    const onEditSubmit = (data: InsertSubject) => {
+      if (editingSubject) {
+        updateSubjectMutation.mutate({ id: editingSubject.id, data });
+      }
+    };
+
+    const handleEditSubject = (subject: Subject) => {
+      setEditingSubject(subject);
+      editSubjectForm.reset({
+        name: subject.name,
+        description: subject.description || "",
+        icon: subject.icon || "",
+      });
+      setIsEditDialogOpen(true);
     };
 
     return (
@@ -484,6 +524,66 @@ export default function AdminSimple() {
               </Form>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Subject Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Subject</DialogTitle>
+              </DialogHeader>
+              <Form {...editSubjectForm}>
+                <form onSubmit={editSubjectForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                  <FormField
+                    control={editSubjectForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subject Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., PMP Certification" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editSubjectForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Brief description..." {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editSubjectForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Icon class or emoji" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={updateSubjectMutation.isPending}>
+                      Update Subject
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid gap-4">
@@ -508,8 +608,17 @@ export default function AdminSimple() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleEditSubject(subject)}
+                      title="Edit subject"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => deleteSubjectMutation.mutate(subject.id)}
                       className="text-red-600 hover:text-red-700"
+                      title="Delete subject"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -526,6 +635,8 @@ export default function AdminSimple() {
   // Exam Management Component
   function ExamManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingExam, setEditingExam] = useState<Exam | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const examForm = useForm<InsertExam>({
       resolver: zodResolver(insertExamSchema),
@@ -560,6 +671,31 @@ export default function AdminSimple() {
       },
     });
 
+    const editExamForm = useForm<InsertExam>({
+      resolver: zodResolver(insertExamSchema),
+      defaultValues: {
+        subjectId: 0,
+        title: "",
+        description: "",
+        questionCount: 0,
+        duration: 0,
+        difficulty: "",
+      }
+    });
+
+    const updateExamMutation = useMutation({
+      mutationFn: async ({ id, data }: { id: number; data: InsertExam }) => {
+        await apiRequest("PUT", `/api/exams/${id}`, data);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        toast({ title: "Exam updated successfully!" });
+        setIsEditDialogOpen(false);
+        setEditingExam(null);
+        editExamForm.reset();
+      },
+    });
+
     const cloneExamMutation = useMutation({
       mutationFn: async (exam: Exam) => {
         const clonedExam = {
@@ -577,6 +713,25 @@ export default function AdminSimple() {
 
     const onSubmit = (data: InsertExam) => {
       createExamMutation.mutate(data);
+    };
+
+    const onEditSubmit = (data: InsertExam) => {
+      if (editingExam) {
+        updateExamMutation.mutate({ id: editingExam.id, data });
+      }
+    };
+
+    const handleEditExam = (exam: Exam) => {
+      setEditingExam(exam);
+      editExamForm.reset({
+        subjectId: exam.subjectId,
+        title: exam.title,
+        description: exam.description || "",
+        questionCount: exam.questionCount,
+        duration: exam.duration || 0,
+        difficulty: exam.difficulty,
+      });
+      setIsEditDialogOpen(true);
     };
 
     return (
@@ -702,6 +857,136 @@ export default function AdminSimple() {
               </Form>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Exam Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Exam</DialogTitle>
+              </DialogHeader>
+              <Form {...editExamForm}>
+                <form onSubmit={editExamForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                  <FormField
+                    control={editExamForm.control}
+                    name="subjectId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subject</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a subject" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {subjects?.map((subject) => (
+                              <SelectItem key={subject.id} value={subject.id.toString()}>
+                                {subject.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editExamForm.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Exam Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., PMP Practice Exam 1" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editExamForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Brief description..." {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={editExamForm.control}
+                      name="questionCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Count</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              onChange={(e) => field.onChange(parseInt(e.target.value))} 
+                              value={field.value || ""} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editExamForm.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duration (min)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              onChange={(e) => field.onChange(parseInt(e.target.value))} 
+                              value={field.value || ""} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editExamForm.control}
+                      name="difficulty"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Difficulty</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select difficulty" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Beginner">Beginner</SelectItem>
+                              <SelectItem value="Intermediate">Intermediate</SelectItem>
+                              <SelectItem value="Advanced">Advanced</SelectItem>
+                              <SelectItem value="Expert">Expert</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={updateExamMutation.isPending}>
+                      Update Exam
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid gap-4">
@@ -727,6 +1012,14 @@ export default function AdminSimple() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleEditExam(exam)}
+                        title="Edit exam"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => cloneExamMutation.mutate(exam)}
                         title="Clone exam"
                       >
@@ -737,6 +1030,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={() => deleteExamMutation.mutate(exam.id)}
                         className="text-red-600 hover:text-red-700"
+                        title="Delete exam"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -753,6 +1047,8 @@ export default function AdminSimple() {
 
   function QuestionManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     // Filter questions based on search and selections
     const filteredQuestions = questions?.filter(question => {
@@ -817,6 +1113,26 @@ export default function AdminSimple() {
 
     const onSubmit = (data: QuestionFormData) => {
       createQuestionMutation.mutate(data);
+    };
+
+    const handleEditQuestion = (question: Question) => {
+      setEditingQuestion(question);
+      const options = question.options || [];
+      questionForm.reset({
+        examId: question.examId,
+        subjectId: question.subjectId,
+        text: question.text,
+        option1: options[0] || "",
+        option2: options[1] || "",
+        option3: options[2] || "",
+        option4: options[3] || "",
+        correctAnswer: question.correctAnswer,
+        explanation: question.explanation || "",
+        domain: question.domain || "",
+        difficulty: question.difficulty,
+        order: question.order,
+      });
+      setIsEditDialogOpen(true);
     };
 
     return (
@@ -1027,14 +1343,25 @@ export default function AdminSimple() {
                       <CardTitle className="text-base mb-2">{question.text}</CardTitle>
                       <p className="text-sm text-gray-600">{subject?.name} - {exam?.title}</p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteQuestionMutation.mutate(question.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditQuestion(question)}
+                        title="Edit question"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteQuestionMutation.mutate(question.id)}
+                        className="text-red-600 hover:text-red-700"
+                        title="Delete question"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
