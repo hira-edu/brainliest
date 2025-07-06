@@ -1492,7 +1492,7 @@ export default function AdminSimple() {
                   Add Question
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Question</DialogTitle>
                 </DialogHeader>
@@ -1613,7 +1613,7 @@ export default function AdminSimple() {
 
             {/* Edit Question Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Edit Question</DialogTitle>
                 </DialogHeader>
