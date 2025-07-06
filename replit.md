@@ -103,7 +103,7 @@ The application uses four main entities:
 - **Complete database migration**: Successfully migrated from in-memory storage to PostgreSQL database
 - **DatabaseStorage implementation**: Created comprehensive DatabaseStorage class using Drizzle ORM
 - **Schema deployment**: Deployed all database tables (subjects, exams, questions, user_sessions, comments, users)
-- **Data seeding**: Implemented automatic database seeding with 5 subjects and sample exam data
+- **Data seeding**: Implemented automatic database seeding with 5 subjects, sample exam data, and 5 sample users
 - **Production ready**: All API endpoints now use PostgreSQL for persistent data storage
 - **Drizzle ORM integration**: Full integration with type-safe database operations
 - **Error handling**: Robust error handling for database operations with proper null safety
