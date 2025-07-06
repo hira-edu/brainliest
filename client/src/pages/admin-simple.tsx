@@ -795,11 +795,9 @@ export default function AdminSimple() {
                       <CardTitle className="text-base font-semibold">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
-                    <div className="flex items-center justify-center w-8 h-8 text-sm border rounded ml-3 overflow-hidden">
-                      <span className="text-xs truncate px-1" title={subject.icon || "📚"}>
-                        {subject.icon || "📚"}
-                      </span>
-                    </div>
+                    <span className="text-xs text-gray-500 ml-3" title={subject.icon || "📚"}>
+                      {subject.icon || "📚"}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Badge variant="outline">
