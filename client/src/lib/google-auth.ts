@@ -9,7 +9,9 @@ interface GoogleUser {
   email: string;
   name: string;
   picture: string;
-  sub: string;
+  id: string;
+  given_name?: string;
+  family_name?: string;
 }
 
 class GoogleAuthService {
@@ -292,7 +294,9 @@ class GoogleAuthService {
         email: payload.email,
         name: payload.name,
         picture: payload.picture,
-        sub: payload.sub
+        id: payload.sub,
+        given_name: payload.given_name,
+        family_name: payload.family_name
       };
     } catch (error) {
       throw new Error('Failed to parse Google credential');

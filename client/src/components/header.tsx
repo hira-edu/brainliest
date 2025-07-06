@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import AuthModal from "@/components/auth-modal";
+import AuthModalEnterprise from "@/components/auth-modal-enterprise";
 import { useState } from "react";
 import { 
   ChevronDown, 
@@ -205,7 +205,7 @@ export default function Header() {
         </div>
       </header>
 
-      <AuthModal 
+      <AuthModalEnterprise 
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />

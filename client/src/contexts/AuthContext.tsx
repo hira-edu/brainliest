@@ -1,20 +1,19 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { googleAuthService } from "@/lib/google-auth";
-
-interface User {
-  email: string;
-  name: string;
-  picture?: string;
-  provider: 'email' | 'google';
-}
+import { authAPI, authUtils, TokenStorage, type AuthUser } from "@/lib/auth-api";
 
 interface AuthContextType {
   isSignedIn: boolean;
   userName: string;
-  user: User | null;
-  signIn: (nameOrEmail: string) => void;
+  user: AuthUser | null;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
+  signUp: (email: string, password: string, userData?: { username?: string; firstName?: string; lastName?: string }) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
   signInWithGoogle: () => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<{ success: boolean; message: string }>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,53 +21,122 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userName, setUserName] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize Google Auth service
-    googleAuthService.initialize().catch(console.error);
-    
-    // Check for existing authentication state
-    const savedUser = localStorage.getItem('brainliest_user');
-    if (savedUser) {
+    // Initialize authentication state
+    const initAuth = async () => {
       try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        setUserName(userData.name);
-        setIsSignedIn(true);
+        // Initialize Google Auth service
+        await googleAuthService.initialize();
+        
+        // Check for existing JWT authentication
+        const authenticatedUser = await authUtils.initializeAuth();
+        if (authenticatedUser) {
+          setUser(authenticatedUser);
+          setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
+          setIsSignedIn(true);
+        }
       } catch (error) {
-        localStorage.removeItem('brainliest_user');
+        console.error('Auth initialization error:', error);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    initAuth();
   }, []);
 
-  const signIn = (nameOrEmail: string) => {
-    const userData: User = {
-      email: nameOrEmail.includes('@') ? nameOrEmail : `${nameOrEmail}@local.dev`,
-      name: nameOrEmail,
-      provider: 'email'
-    };
-    
-    setUser(userData);
-    setUserName(userData.name);
-    setIsSignedIn(true);
-    localStorage.setItem('brainliest_user', JSON.stringify(userData));
+  const signIn = async (email: string, password: string) => {
+    try {
+      const response = await authAPI.login(email, password);
+      
+      if (response.success && response.user) {
+        const authenticatedUser = authUtils.handleAuthSuccess(response);
+        if (authenticatedUser) {
+          setUser(authenticatedUser);
+          setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
+          setIsSignedIn(true);
+          return { success: true };
+        }
+      }
+
+      return {
+        success: false,
+        message: response.message || "Login failed",
+        requiresEmailVerification: response.requiresEmailVerification
+      };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return {
+        success: false,
+        message: "Login failed. Please try again."
+      };
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData?: { username?: string; firstName?: string; lastName?: string }) => {
+    try {
+      const response = await authAPI.register(email, password, userData);
+      
+      if (response.success && response.user) {
+        // Check if email verification is required
+        if (response.requiresEmailVerification) {
+          return {
+            success: true,
+            message: "Registration successful! Please check your email to verify your account.",
+            requiresEmailVerification: true
+          };
+        }
+        
+        // Auto-login if email verification is not required
+        const authenticatedUser = authUtils.handleAuthSuccess(response);
+        if (authenticatedUser) {
+          setUser(authenticatedUser);
+          setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
+          setIsSignedIn(true);
+        }
+        
+        return { success: true };
+      }
+
+      return {
+        success: false,
+        message: response.message || "Registration failed"
+      };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return {
+        success: false,
+        message: "Registration failed. Please try again."
+      };
+    }
   };
 
   const signInWithGoogle = async () => {
     try {
       const googleUser = await googleAuthService.signIn();
-      const userData: User = {
-        email: googleUser.email,
-        name: googleUser.name,
-        picture: googleUser.picture,
-        provider: 'google'
-      };
       
-      setUser(userData);
-      setUserName(userData.name);
-      setIsSignedIn(true);
-      localStorage.setItem('brainliest_user', JSON.stringify(userData));
+      // Send Google user data to backend for OAuth processing
+      const response = await authAPI.googleOAuth({
+        email: googleUser.email,
+        googleId: googleUser.id,
+        firstName: googleUser.given_name,
+        lastName: googleUser.family_name,
+        profileImage: googleUser.picture
+      });
+
+      if (response.success && response.user) {
+        const authenticatedUser = authUtils.handleAuthSuccess(response);
+        if (authenticatedUser) {
+          setUser(authenticatedUser);
+          setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
+          setIsSignedIn(true);
+        }
+      } else {
+        throw new Error(response.message || "Google sign-in failed");
+      }
     } catch (error) {
       console.error('Google sign-in failed:', error);
       throw error;
@@ -77,27 +145,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      if (user?.provider === 'google') {
-        await googleAuthService.signOut();
+      await authUtils.handleLogout();
+      
+      // Sign out from Google if user was signed in with Google
+      if (user?.oauthProvider === 'google') {
+        try {
+          await googleAuthService.signOut();
+        } catch (error) {
+          console.error('Google sign out error:', error);
+        }
       }
     } catch (error) {
       console.error('Sign out error:', error);
+    } finally {
+      setIsSignedIn(false);
+      setUserName("");
+      setUser(null);
     }
-    
-    setIsSignedIn(false);
-    setUserName("");
-    setUser(null);
-    localStorage.removeItem('brainliest_user');
+  };
+
+  const verifyEmail = async (token: string) => {
+    try {
+      return await authAPI.verifyEmail(token);
+    } catch (error) {
+      console.error('Email verification error:', error);
+      return {
+        success: false,
+        message: "Email verification failed. Please try again."
+      };
+    }
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    try {
+      return await authAPI.requestPasswordReset(email);
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      return {
+        success: false,
+        message: "Failed to send password reset email. Please try again."
+      };
+    }
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      return await authAPI.resetPassword(token, newPassword);
+    } catch (error) {
+      console.error('Password reset error:', error);
+      return {
+        success: false,
+        message: "Password reset failed. Please try again."
+      };
+    }
   };
 
   return (
     <AuthContext.Provider value={{ 
-      isSignedIn, 
-      userName, 
+      isSignedIn,
+      userName,
       user,
-      signIn, 
+      isLoading,
+      signIn,
+      signUp,
       signInWithGoogle,
-      signOut 
+      signOut,
+      verifyEmail,
+      requestPasswordReset,
+      resetPassword
     }}>
       {children}
     </AuthContext.Provider>
