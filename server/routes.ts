@@ -1112,10 +1112,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailVerified: true
         };
         
-        // Generate token using the auth service
+        // Generate token compatible with auth service
         const jwt = await import('jsonwebtoken');
         const token = jwt.default.sign(
-          adminUser,
+          { userId: adminUser.id }, // Auth service expects userId in token
           process.env.JWT_SECRET || 'fallback-secret',
           { expiresIn: '24h' }
         );
