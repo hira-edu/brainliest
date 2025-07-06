@@ -19,7 +19,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [showVerification, setShowVerification] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const { toast } = useToast();
 
   const handleSignIn = async () => {
@@ -151,12 +151,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      // Simulate Google sign-in
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock Google user data
-      const mockGoogleUser = "GoogleUser" + Math.floor(Math.random() * 1000);
-      signIn(mockGoogleUser);
+      await signInWithGoogle();
       
       toast({
         title: "Success",
@@ -166,9 +161,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
       resetForm();
     } catch (error) {
+      console.error('Google sign-in error:', error);
       toast({
-        title: "Error",
-        description: "Google sign-in failed",
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Google sign-in failed. Please try again.",
         variant: "destructive",
       });
     } finally {

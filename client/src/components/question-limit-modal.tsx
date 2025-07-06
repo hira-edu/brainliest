@@ -19,7 +19,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const { resetViewedQuestions } = useQuestionLimit();
 
   const handleSendCode = async () => {
@@ -49,11 +49,17 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
     }, 1000);
   };
 
-  const handleGoogleSignIn = () => {
-    // Simulate Google sign in
-    signIn("user@gmail.com");
-    resetViewedQuestions();
-    onOpenChange(false);
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      await signInWithGoogle();
+      resetViewedQuestions();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Google sign-in failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
