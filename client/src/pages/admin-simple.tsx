@@ -1433,55 +1433,25 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-1 relative">
-                            <FormControl>
-                              <Input 
-                                placeholder="Icon class or emoji" 
-                                {...field} 
-                                value={field.value || ""} 
-                              />
-                            </FormControl>
-                            {getUsedIcons().length > 0 && (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="absolute right-0 top-0 h-full px-2"
-                                    type="button"
-                                  >
-                                    ▼
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-64 p-0" onWheel={(e) => e.stopPropagation()}>
-                                  <div className="p-3 space-y-1 max-h-48 overflow-y-auto overscroll-contain scroll-smooth">
-                                    {getUsedIcons().map((icon, index) => (
-                                      <Button
-                                        key={index}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full h-8 justify-start text-xs p-2 font-mono"
-                                        onClick={() => field.onChange(icon)}
-                                        type="button"
-                                        title={icon}
-                                      >
-                                        <span className="truncate">{icon}</span>
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-                          </div>
-                          {field.value && (
-                            <div className="flex items-center justify-center w-8 h-8 text-sm border rounded overflow-hidden">
-                              <span className="text-xs truncate px-1" title={field.value}>
-                                {field.value}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: "", label: "No icon" },
+                              ...COMMON_ICONS,
+                              ...getUsedIcons().map(icon => ({ 
+                                value: icon, 
+                                label: `Previously used: ${icon}` 
+                              }))
+                            ]}
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                            placeholder="Select or search icon"
+                            searchPlaceholder="Search icon classes..."
+                            emptyText="No icons found"
+                            clearable
+                            allowCustomValue
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
