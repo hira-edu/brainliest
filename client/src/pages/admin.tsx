@@ -1238,9 +1238,10 @@ export default function Admin() {
                     </Button>
                   </div>
                 </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Filter Controls */}
