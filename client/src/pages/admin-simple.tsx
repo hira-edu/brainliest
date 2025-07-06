@@ -1101,6 +1101,25 @@ export default function AdminSimple() {
       },
     });
 
+    const updateQuestionMutation = useMutation({
+      mutationFn: async (data: QuestionFormData) => {
+        if (!editingQuestion) return;
+        const { option1, option2, option3, option4, ...questionData } = data;
+        const questionDataWithOptions: Partial<InsertQuestion> = {
+          ...questionData,
+          options: [option1, option2, option3, option4],
+        };
+        await apiRequest("PUT", `/api/questions/${editingQuestion.id}`, questionDataWithOptions);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        toast({ title: "Question updated successfully!" });
+        setIsEditDialogOpen(false);
+        setEditingQuestion(null);
+        questionForm.reset();
+      },
+    });
+
     const deleteQuestionMutation = useMutation({
       mutationFn: async (id: number) => {
         await apiRequest("DELETE", `/api/questions/${id}`);
@@ -1113,6 +1132,10 @@ export default function AdminSimple() {
 
     const onSubmit = (data: QuestionFormData) => {
       createQuestionMutation.mutate(data);
+    };
+
+    const onEditSubmit = (data: QuestionFormData) => {
+      updateQuestionMutation.mutate(data);
     };
 
     const handleEditQuestion = (question: Question) => {
@@ -1269,6 +1292,169 @@ export default function AdminSimple() {
                       <Button type="submit" disabled={createQuestionMutation.isPending}>
                         <Save className="w-4 h-4 mr-2" />
                         Create Question
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Question Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit Question</DialogTitle>
+                </DialogHeader>
+                <Form {...questionForm}>
+                  <form onSubmit={questionForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                    <FormField
+                      control={questionForm.control}
+                      name="text"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Text</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Enter the question..."
+                              className="min-h-[80px]"
+                              {...field} 
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={questionForm.control}
+                        name="option1"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Option A</FormLabel>
+                            <FormControl>
+                              <Input placeholder="First option..." {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={questionForm.control}
+                        name="option2"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Option B</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Second option..." {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={questionForm.control}
+                        name="option3"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Option C</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Third option..." {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={questionForm.control}
+                        name="option4"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Option D</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Fourth option..." {...field} value={field.value || ""} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={questionForm.control}
+                        name="correctAnswer"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Correct Answer</FormLabel>
+                            <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select correct option" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="0">Option A</SelectItem>
+                                <SelectItem value="1">Option B</SelectItem>
+                                <SelectItem value="2">Option C</SelectItem>
+                                <SelectItem value="3">Option D</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={questionForm.control}
+                        name="difficulty"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Difficulty</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select difficulty" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Beginner">Beginner</SelectItem>
+                                <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                <SelectItem value="Advanced">Advanced</SelectItem>
+                                <SelectItem value="Expert">Expert</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={questionForm.control}
+                      name="explanation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Explanation</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Explain why this is the correct answer..."
+                              className="min-h-[80px]"
+                              {...field} 
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex justify-end space-x-2">
+                      <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={updateQuestionMutation.isPending}>
+                        Update Question
                       </Button>
                     </div>
                   </form>
