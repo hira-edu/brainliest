@@ -792,7 +792,7 @@ export default function AdminSimple() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center justify-between flex-1">
                     <div>
-                      <CardTitle className="text-lg">{subject.name}</CardTitle>
+                      <CardTitle className="text-base font-semibold">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
                     <div className="flex items-center justify-center w-8 h-8 text-sm border rounded ml-3 overflow-hidden">
