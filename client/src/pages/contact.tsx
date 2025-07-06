@@ -113,15 +113,15 @@ export default function Contact() {
                 <CardContent className="space-y-3">
                   <div>
                     <p className="font-semibold">General Inquiries</p>
-                    <p className="text-muted-foreground">support@examprep.pro</p>
+                    <p className="text-muted-foreground">support@brainliest.com</p>
                   </div>
                   <div>
                     <p className="font-semibold">Technical Support</p>
-                    <p className="text-muted-foreground">tech@examprep.pro</p>
+                    <p className="text-muted-foreground">tech@brainliest.com</p>
                   </div>
                   <div>
                     <p className="font-semibold">Business & Partnerships</p>
-                    <p className="text-muted-foreground">business@examprep.pro</p>
+                    <p className="text-muted-foreground">business@brainliest.com</p>
                   </div>
                 </CardContent>
               </Card>
@@ -147,7 +147,7 @@ export default function Contact() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-semibold">ExamPrep Pro Headquarters</p>
+                  <p className="font-semibold">Brainliest Headquarters</p>
                   <p className="text-muted-foreground">
                     123 Education Ave<br />
                     San Francisco, CA 94105<br />

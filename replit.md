@@ -97,6 +97,17 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 06, 2025 - Complete Rebranding from ExamPrep Pro to Brainliest
+- **Complete brand name change**: Updated all references from "ExamPrep Pro" to "Brainliest" across the entire platform
+- **Email address updates**: Changed all email addresses from @examprep.pro to @brainliest.com domain
+- **Legal page updates**: Updated Terms of Service and Privacy Policy with new brand name and contact information
+- **Contact information refresh**: Updated Contact Us page with new company name and email addresses
+- **Footer and header updates**: Consistent branding across all navigation and footer components
+- **HTML title update**: Changed page title to "Brainliest - Exam Preparation Platform"
+- **Company information**: Updated Our Story page with new brand identity and messaging
+
+## Recent Changes
+
 ### July 06, 2025 - Complete Footer Section with Legal and Contact Pages
 - **Comprehensive footer component**: Added footer with company info, quick links, legal pages, and contact information
 - **Terms of Service page**: Created detailed legal terms covering service use, liability, privacy, and user agreements

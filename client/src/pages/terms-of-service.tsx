@@ -13,7 +13,7 @@ export default function TermsOfService() {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold tracking-tight mb-4">Terms of Service</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Please read these terms carefully before using ExamPrep Pro. 
+              Please read these terms carefully before using Brainliest. 
               By accessing our platform, you agree to these terms and conditions.
             </p>
             <p className="text-sm text-muted-foreground mt-4">
@@ -29,7 +29,7 @@ export default function TermsOfService() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  By accessing and using ExamPrep Pro ("the Service"), you accept and agree to be bound by the terms 
+                  By accessing and using Brainliest ("the Service"), you accept and agree to be bound by the terms 
                   and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
                 </p>
                 <p>
@@ -46,7 +46,7 @@ export default function TermsOfService() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  ExamPrep Pro provides online practice exams and study materials for various certification programs. 
+                  Brainliest provides online practice exams and study materials for various certification programs. 
                   The Service is intended for educational purposes only.
                 </p>
                 <p><strong>You agree to:</strong></p>
@@ -85,12 +85,12 @@ export default function TermsOfService() {
               <CardContent className="space-y-4">
                 <p>
                   All content provided through the Service, including but not limited to text, graphics, logos, 
-                  practice questions, and software, is the property of ExamPrep Pro or its content suppliers and 
+                  practice questions, and software, is the property of Brainliest or its content suppliers and 
                   is protected by copyright and other intellectual property laws.
                 </p>
                 <p>
                   You may not reproduce, distribute, modify, or create derivative works of any content without 
-                  express written permission from ExamPrep Pro.
+                  express written permission from Brainliest.
                 </p>
               </CardContent>
             </Card>
@@ -162,7 +162,7 @@ export default function TermsOfService() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  In no event shall ExamPrep Pro, its directors, employees, or agents be liable for any indirect, 
+                  In no event shall Brainliest, its directors, employees, or agents be liable for any indirect, 
                   consequential, or incidental damages arising out of your use of the Service.
                 </p>
                 <p>

@@ -20,7 +20,7 @@ export default function PrivacyPolicy() {
                 <section>
                   <h2 className="text-2xl font-bold mb-4">1. Information We Collect</h2>
                   <p className="text-muted-foreground leading-relaxed mb-4">
-                    At ExamPrep Pro, we collect information that you provide directly to us, 
+                    At Brainliest, we collect information that you provide directly to us, 
                     information we obtain automatically when you use our services, and information 
                     from third-party sources.
                   </p>
@@ -173,7 +173,7 @@ export default function PrivacyPolicy() {
                   </p>
                   
                   <div className="bg-slate-50 p-4 rounded-lg">
-                    <p className="text-sm"><strong>Email:</strong> privacy@examprep.pro</p>
+                    <p className="text-sm"><strong>Email:</strong> privacy@brainliest.com</p>
                     <p className="text-sm"><strong>Address:</strong> 123 Education Ave, San Francisco, CA 94105</p>
                     <p className="text-sm"><strong>Phone:</strong> +1 (555) 123-4567</p>
                   </div>

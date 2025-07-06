@@ -36,7 +36,7 @@ export default function OurStory() {
                   achieve their certification goals.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Founded in 2025, ExamPrep Pro emerged from the recognition that traditional 
+                  Founded in 2025, Brainliest emerged from the recognition that traditional 
                   study methods weren't keeping pace with the evolving demands of professional 
                   certifications and the diverse learning styles of modern professionals.
                 </p>

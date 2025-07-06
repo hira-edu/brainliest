@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold">ExamPrep Pro</h3>
+            <h3 className="text-xl font-bold">Brainliest</h3>
             <p className="text-slate-300 text-sm leading-relaxed">
               Empowering professionals and students worldwide with comprehensive exam preparation tools 
               and AI-powered learning insights since 2025.
@@ -90,7 +90,7 @@ export default function Footer() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-300">support@examprep.pro</span>
+                <span className="text-slate-300">support@brainliest.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-slate-400" />
