@@ -1,4 +1,43 @@
 import { useState, useRef } from "react";
+
+// Common certification and academic icons
+const COMMON_ICONS = [
+  { value: "fas fa-certificate", label: "Certificate (fas fa-certificate)" },
+  { value: "fas fa-graduation-cap", label: "Graduation Cap (fas fa-graduation-cap)" },
+  { value: "fas fa-award", label: "Award (fas fa-award)" },
+  { value: "fas fa-cloud", label: "Cloud (fas fa-cloud)" },
+  { value: "fas fa-server", label: "Server (fas fa-server)" },
+  { value: "fas fa-shield-alt", label: "Shield (fas fa-shield-alt)" },
+  { value: "fas fa-network-wired", label: "Network (fas fa-network-wired)" },
+  { value: "fas fa-database", label: "Database (fas fa-database)" },
+  { value: "fas fa-code", label: "Code (fas fa-code)" },
+  { value: "fas fa-laptop-code", label: "Laptop Code (fas fa-laptop-code)" },
+  { value: "fas fa-chart-line", label: "Chart Line (fas fa-chart-line)" },
+  { value: "fas fa-calculator", label: "Calculator (fas fa-calculator)" },
+  { value: "fas fa-brain", label: "Brain (fas fa-brain)" },
+  { value: "fas fa-book", label: "Book (fas fa-book)" },
+  { value: "fas fa-microscope", label: "Microscope (fas fa-microscope)" },
+  { value: "fas fa-atom", label: "Atom (fas fa-atom)" },
+  { value: "fas fa-heartbeat", label: "Heartbeat (fas fa-heartbeat)" },
+  { value: "fas fa-stethoscope", label: "Stethoscope (fas fa-stethoscope)" },
+  { value: "fas fa-briefcase", label: "Briefcase (fas fa-briefcase)" },
+  { value: "fas fa-chart-pie", label: "Chart Pie (fas fa-chart-pie)" },
+  { value: "fas fa-globe", label: "Globe (fas fa-globe)" },
+  { value: "fas fa-language", label: "Language (fas fa-language)" },
+  { value: "fas fa-pen", label: "Pen (fas fa-pen)" },
+  { value: "fas fa-users", label: "Users (fas fa-users)" },
+  { value: "fas fa-balance-scale", label: "Balance Scale (fas fa-balance-scale)" },
+  { value: "📚", label: "Books Emoji (📚)" },
+  { value: "💻", label: "Computer Emoji (💻)" },
+  { value: "🎓", label: "Graduation Cap Emoji (🎓)" },
+  { value: "🔬", label: "Microscope Emoji (🔬)" },
+  { value: "🧮", label: "Abacus Emoji (🧮)" },
+  { value: "⚗️", label: "Test Tube Emoji (⚗️)" },
+  { value: "🩺", label: "Stethoscope Emoji (🩺)" },
+  { value: "💼", label: "Briefcase Emoji (💼)" },
+  { value: "🌐", label: "Globe Emoji (🌐)" },
+  { value: "🔒", label: "Lock Emoji (🔒)" }
+];
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1903,23 +1942,20 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
-                        <Select 
-                          onValueChange={(value) => field.onChange(parseInt(value))}
-                          value={field.value?.toString() || ""}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a subject" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {subjects?.map((subject) => (
-                              <SelectItem key={subject.id} value={subject.id.toString()}>
-                                {subject.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={subjects?.map((subject) => ({
+                              value: subject.id.toString(),
+                              label: subject.name,
+                            })) || []}
+                            value={field.value?.toString()}
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            placeholder="Select a subject"
+                            searchPlaceholder="Search subjects..."
+                            emptyText="No subjects found"
+                            clearable
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1957,19 +1993,22 @@ export default function AdminSimple() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Difficulty</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select difficulty" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Beginner">Beginner</SelectItem>
-                            <SelectItem value="Intermediate">Intermediate</SelectItem>
-                            <SelectItem value="Advanced">Advanced</SelectItem>
-                            <SelectItem value="Expert">Expert</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SearchableSelect
+                            options={[
+                              { value: "Beginner", label: "Beginner" },
+                              { value: "Intermediate", label: "Intermediate" },
+                              { value: "Advanced", label: "Advanced" },
+                              { value: "Expert", label: "Expert" }
+                            ]}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select difficulty"
+                            searchPlaceholder="Search difficulty levels..."
+                            emptyText="No difficulty levels found"
+                            clearable
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
