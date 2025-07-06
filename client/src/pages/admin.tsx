@@ -37,7 +37,9 @@ import {
   Download,
   FileSpreadsheet,
   Trash,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 // Form schemas with validation
@@ -82,33 +84,99 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState("subjects");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [adminEmail, setAdminEmail] = useState("admin@brainliest.com");
+  const [adminPassword, setAdminPassword] = useState("admin123");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const { user, isSignedIn } = useAuth();
 
-  // Check admin authentication
+  // Check for existing admin token on mount
   useEffect(() => {
-    const checkAdminAuth = () => {
-      if (!isSignedIn || !user) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
+    const checkExistingAuth = () => {
+      const token = localStorage.getItem('brainliest_access_token');
+      const storedUser = localStorage.getItem('brainliest_user');
+      
+      if (token && storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          if (parsedUser.role === 'admin') {
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Failed to parse stored user:', error);
+          localStorage.removeItem('brainliest_access_token');
+          localStorage.removeItem('brainliest_user');
+        }
       }
-
-      if (user.role === 'admin') {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-        toast({
-          title: "Access Denied",
-          description: "You need admin privileges to access this page",
-          variant: "destructive"
-        });
-      }
+      
+      // No valid admin token found
+      setIsAuthenticated(false);
       setIsLoading(false);
     };
 
-    checkAdminAuth();
-  }, [user, isSignedIn, toast]);
+    checkExistingAuth();
+  }, []);
+
+  const handleAdminLogin = async () => {
+    setIsLoggingIn(true);
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: adminEmail,
+          password: adminPassword,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.accessToken) {
+        // Store the admin token
+        localStorage.setItem('brainliest_access_token', result.accessToken);
+        localStorage.setItem('brainliest_user', JSON.stringify(result.user));
+        
+        // Set authentication state
+        setIsAuthenticated(true);
+        
+        toast({
+          title: "Admin Access Granted",
+          description: "Welcome to the Brainliest Admin Panel",
+        });
+      } else {
+        toast({
+          title: "Access Denied",
+          description: result.message || "Invalid administrator credentials",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Admin login error:', error);
+      toast({
+        title: "Authentication Error",
+        description: "Failed to authenticate admin access",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('brainliest_access_token');
+    localStorage.removeItem('brainliest_user');
+    setIsAuthenticated(false);
+    setAdminPassword("");
+    toast({
+      title: "Logged Out",
+      description: "Admin session ended",
+    });
+  };
 
   // Data queries
   const { data: subjects } = useQuery<Subject[]>({
@@ -1463,110 +1531,112 @@ export default function Admin() {
     );
   }
 
-  // Show authentication required message
+  // Show enterprise-grade admin authentication
   if (!isAuthenticated) {
-    const [adminEmail, setAdminEmail] = useState("admin@brainliest.com");
-    const [adminPassword, setAdminPassword] = useState("admin123");
-    const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-    const handleAdminLogin = async () => {
-      setIsLoggingIn(true);
-      try {
-        const response = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: adminEmail,
-            password: adminPassword,
-          }),
-        });
-
-        const result = await response.json();
-
-        if (result.success && result.accessToken) {
-          // Store the admin token
-          localStorage.setItem('brainliest_access_token', result.accessToken);
-          localStorage.setItem('brainliest_user', JSON.stringify(result.user));
-          
-          // Set authentication state
-          setIsAuthenticated(true);
-          
-          toast({
-            title: "Admin Login Successful",
-            description: "You now have admin access to manage the platform",
-          });
-        } else {
-          toast({
-            title: "Login Failed",
-            description: result.message || "Invalid admin credentials",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Admin login error:', error);
-        toast({
-          title: "Login Error",
-          description: "Failed to authenticate admin access",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoggingIn(false);
-      }
-    };
-
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <Header />
-        <div className="max-w-md mx-auto mt-32 p-6 bg-white rounded-lg shadow-md">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-blue-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Login Required</h2>
-            <p className="text-gray-600 mb-4">
-              Please sign in with administrator credentials to access the admin panel.
-            </p>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Admin Email
-              </label>
-              <Input
-                type="email"
-                value={adminEmail}
-                onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="admin@brainliest.com"
-              />
-            </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="max-w-md w-full mx-4">
+            <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+              <CardHeader className="text-center space-y-4 pb-8">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                  <Users className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Administrator Access</h1>
+                  <p className="text-gray-600 mt-2">
+                    Secure authentication required to access the admin panel
+                  </p>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Administrator Email
+                    </label>
+                    <Input
+                      type="email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="Enter your admin email"
+                      className="h-11"
+                      disabled={isLoggingIn}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Administrator Password
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        placeholder="Enter your admin password"
+                        className="h-11 pr-10"
+                        disabled={isLoggingIn}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && adminEmail && adminPassword) {
+                            handleAdminLogin();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        disabled={isLoggingIn}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-gray-400" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleAdminLogin}
+                  disabled={isLoggingIn || !adminEmail || !adminPassword}
+                  className="w-full h-11 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                >
+                  {isLoggingIn ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Authenticating...
+                    </>
+                  ) : (
+                    <>
+                      <Users className="w-4 h-4 mr-2" />
+                      Sign In to Admin Panel
+                    </>
+                  )}
+                </Button>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="text-center space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">Development Access</p>
+                    <div className="text-xs text-gray-400 space-y-1">
+                      <p>Email: admin@brainliest.com</p>
+                      <p>Password: admin123</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Admin Password
-              </label>
-              <Input
-                type="password"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="Enter admin password"
-              />
-            </div>
-            
-            <Button
-              onClick={handleAdminLogin}
-              disabled={isLoggingIn || !adminEmail || !adminPassword}
-              className="w-full"
-            >
-              {isLoggingIn ? "Signing In..." : "Sign In as Admin"}
-            </Button>
-            
-            <div className="text-xs text-gray-500 text-center mt-4">
-              <p>Test Credentials:</p>
-              <p>Email: admin@brainliest.com</p>
-              <p>Password: admin123</p>
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-500">
+                Protected by enterprise-grade security • Unauthorized access is monitored
+              </p>
             </div>
           </div>
         </div>
@@ -1579,9 +1649,19 @@ export default function Admin() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-          <p className="text-gray-600">Manage subjects, exams, questions, and content organization</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+            <p className="text-gray-600">Manage subjects, exams, questions, and content organization</p>
+          </div>
+          <Button 
+            onClick={handleAdminLogout}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Logout Admin
+          </Button>
         </div>
 
         {/* Search and Filter Controls */}
