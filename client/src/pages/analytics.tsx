@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/header";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   BarChart, 
   Bar, 
@@ -18,376 +19,496 @@ import {
   Line,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  AreaChart,
+  Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ScatterChart,
+  Scatter,
+  ComposedChart
 } from 'recharts';
+import { TrendingUp, TrendingDown, Target, Clock, Brain, Award, BarChart3, PieChart as PieChartIcon, Activity, Users } from "lucide-react";
 
-interface AnalyticsData {
-  userProfile: {
-    totalExamsTaken: number;
-    totalQuestionsAnswered: number;
-    averageScore: number;
-    strongestSubjects: string[];
-    weakestSubjects: string[];
+interface AnalyticsOverview {
+  userProfile: any;
+  examAnalytics: any[];
+  answerHistory: any[];
+  performanceTrends: any[];
+  metrics: {
+    totalTimeSpent: number;
+    averageTimePerQuestion: number;
+    difficultyAnalysis: Record<string, { correct: number; total: number }>;
   };
-  examHistory: Array<{
-    examName: string;
-    score: number;
-    date: string;
-    timeSpent: number;
-    correctAnswers: number;
-    totalQuestions: number;
-  }>;
-  performanceTrends: Array<{
-    week: string;
-    averageScore: number;
-    examsTaken: number;
-  }>;
-  domainAnalysis: Array<{
-    domain: string;
-    accuracy: number;
-    questionsAnswered: number;
-  }>;
-  studyRecommendations: Array<{
-    id: number;
-    type: string;
-    content: string;
-    priority: number;
-    estimatedImpact: number;
-    isCompleted: boolean;
-  }>;
 }
 
 export default function Analytics() {
-  const { isSignedIn, userName } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState("30");
+  const { userName, isSignedIn } = useAuth();
+  const [selectedUser, setSelectedUser] = useState("john_doe");
 
-  // Mock data for demonstration - would come from API
-  const mockAnalyticsData: AnalyticsData = {
-    userProfile: {
-      totalExamsTaken: 12,
-      totalQuestionsAnswered: 480,
-      averageScore: 78.5,
-      strongestSubjects: ["Risk Management", "Quality Management"],
-      weakestSubjects: ["Integration Management", "Communications"]
-    },
-    examHistory: [
-      { examName: "PMP Practice Exam 1", score: 85, date: "2025-01-05", timeSpent: 3600, correctAnswers: 34, totalQuestions: 40 },
-      { examName: "PMP Mock Exam 2", score: 72, date: "2025-01-03", timeSpent: 3480, correctAnswers: 29, totalQuestions: 40 },
-      { examName: "AWS Fundamentals", score: 88, date: "2025-01-01", timeSpent: 2100, correctAnswers: 22, totalQuestions: 25 },
-      { examName: "PMP Practice Exam 1", score: 76, date: "2024-12-28", timeSpent: 3720, correctAnswers: 30, totalQuestions: 40 },
-      { examName: "PMP Mock Exam 2", score: 69, date: "2024-12-25", timeSpent: 3900, correctAnswers: 28, totalQuestions: 40 },
-    ],
-    performanceTrends: [
-      { week: "Week 1", averageScore: 75, examsTaken: 3 },
-      { week: "Week 2", averageScore: 78, examsTaken: 4 },
-      { week: "Week 3", averageScore: 82, examsTaken: 3 },
-      { week: "Week 4", averageScore: 85, examsTaken: 2 },
-    ],
-    domainAnalysis: [
-      { domain: "Project Management", accuracy: 85, questionsAnswered: 120 },
-      { domain: "Risk Management", accuracy: 92, questionsAnswered: 80 },
-      { domain: "Quality Management", accuracy: 88, questionsAnswered: 75 },
-      { domain: "Integration Management", accuracy: 65, questionsAnswered: 95 },
-      { domain: "Communications", accuracy: 70, questionsAnswered: 110 },
-    ],
-    studyRecommendations: [
-      {
-        id: 1,
-        type: "focus_area",
-        content: "Focus on Integration Management concepts - your accuracy is below average",
-        priority: 3,
-        estimatedImpact: 15.5,
-        isCompleted: false
-      },
-      {
-        id: 2,
-        type: "review",
-        content: "Review Communications Management - strengthen your foundation",
-        priority: 2,
-        estimatedImpact: 12.0,
-        isCompleted: false
-      },
-      {
-        id: 3,
-        type: "strength",
-        content: "Continue practicing Risk Management - you're performing excellently",
-        priority: 1,
-        estimatedImpact: 5.0,
-        isCompleted: true
-      }
-    ]
-  };
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  // Fetch real analytics data from our API
+  const { data: analyticsData, isLoading } = useQuery<AnalyticsOverview>({
+    queryKey: ['/api/analytics/overview', selectedUser],
+    enabled: !!selectedUser,
+  });
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <Header />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Analytics Dashboard</h1>
-            <p className="text-gray-600">Please sign in to view your performance analytics.</p>
-          </div>
+        <div className="container mx-auto px-4 py-8">
+          <Card className="max-w-md mx-auto">
+            <CardContent className="p-6 text-center">
+              <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
+              <p className="text-muted-foreground">Please sign in to view your analytics dashboard.</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">Loading analytics...</div>
+        </div>
+      </div>
+    );
+  }
 
-  const getPriorityBadgeVariant = (priority: number) => {
-    if (priority >= 3) return "destructive";
-    if (priority === 2) return "default";
-    return "secondary";
-  };
+  if (!analyticsData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <Card className="max-w-md mx-auto">
+            <CardContent className="p-6 text-center">
+              <h2 className="text-xl font-semibold mb-2">No Data Available</h2>
+              <p className="text-muted-foreground">Start taking exams to see your analytics data.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Process data for visualizations
+  const difficultyAccuracy = Object.entries(analyticsData.metrics.difficultyAnalysis).map(([difficulty, data]) => ({
+    difficulty,
+    accuracy: data.total > 0 ? parseFloat((data.correct / data.total * 100).toFixed(1)) : 0,
+    total: data.total,
+    correct: data.correct
+  }));
+
+  const domainPerformance = analyticsData.answerHistory.reduce((acc: any, answer: any) => {
+    const domain = answer.domain || 'Unknown';
+    if (!acc[domain]) {
+      acc[domain] = { correct: 0, total: 0 };
+    }
+    acc[domain].total++;
+    if (answer.isCorrect) acc[domain].correct++;
+    return acc;
+  }, {});
+
+  const domainData = Object.entries(domainPerformance).map(([domain, data]: [string, any]) => ({
+    domain,
+    accuracy: data.total > 0 ? parseFloat((data.correct / data.total * 100).toFixed(1)) : 0,
+    total: data.total
+  }));
+
+  const timeDistribution = analyticsData.answerHistory
+    .filter((answer: any) => answer.timeSpent > 0)
+    .map((answer: any) => ({
+      questionId: answer.questionId,
+      timeSpent: answer.timeSpent,
+      isCorrect: answer.isCorrect,
+      difficulty: answer.difficulty || 'Unknown'
+    }));
+
+  const examScoreHistory = analyticsData.examAnalytics
+    .map((exam: any) => ({
+      date: new Date(exam.completedAt).toLocaleDateString(),
+      score: parseFloat(exam.score),
+      timeSpent: exam.timeSpent ? Math.floor(exam.timeSpent / 60) : 0,
+      examId: exam.examId
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(-10); // Last 10 exams
+
+  const weeklyTrends = analyticsData.performanceTrends
+    .map((trend: any) => ({
+      week: new Date(trend.createdAt).toLocaleDateString(),
+      score: parseFloat(trend.averageScore || '0'),
+      questionsAttempted: trend.questionsAttempted || 0,
+      timeSpent: trend.timeSpentMinutes || 0
+    }))
+    .slice(-8); // Last 8 weeks
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
+
+  const userProfile = analyticsData.userProfile;
+  const averageScore = parseFloat(userProfile?.averageScore || '0');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <Header />
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {userName}! Here's your detailed performance analysis.</p>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Advanced Analytics Dashboard</h1>
+            <p className="text-muted-foreground mt-2">Comprehensive performance insights and learning patterns</p>
+          </div>
+          <div className="flex gap-4 items-center">
+            <Select value={selectedUser} onValueChange={setSelectedUser}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select User" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="john_doe">John Doe</SelectItem>
+                <SelectItem value="jane_smith">Jane Smith</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Overview Cards */}
+        {/* Key Metrics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Exams</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
+              <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockAnalyticsData.userProfile.totalExamsTaken}</div>
-              <p className="text-xs text-gray-500">+2 this week</p>
+              <div className="text-2xl font-bold">{userProfile?.totalExamsTaken || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {analyticsData.examAnalytics.length} completed
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Questions Answered</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Average Score</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockAnalyticsData.userProfile.totalQuestionsAnswered}</div>
-              <p className="text-xs text-gray-500">+80 this week</p>
+              <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
+              <p className="text-xs text-muted-foreground">
+                {userProfile?.totalQuestionsAnswered || 0} questions answered
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Average Score</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Time Spent</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockAnalyticsData.userProfile.averageScore}%</div>
-              <p className="text-xs text-green-600">+3.2% improvement</p>
+              <div className="text-2xl font-bold">
+                {Math.floor(analyticsData.metrics.totalTimeSpent / 3600)}h
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {analyticsData.metrics.averageTimePerQuestion.toFixed(1)}s avg per question
+              </p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Current Streak</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Answer Accuracy</CardTitle>
+              <Brain className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
-              <p className="text-xs text-gray-500">consecutive days</p>
+              <div className="text-2xl font-bold">
+                {analyticsData.answerHistory.length > 0 ? 
+                  ((analyticsData.answerHistory.filter((a: any) => a.isCorrect).length / analyticsData.answerHistory.length) * 100).toFixed(1) : 0}%
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {analyticsData.answerHistory.length} total answers
+              </p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Analytics Tabs */}
         <Tabs defaultValue="performance" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="domains">Domain Analysis</TabsTrigger>
-            <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-            <TabsTrigger value="history">Exam History</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="performance">Performance Trends</TabsTrigger>
+            <TabsTrigger value="difficulty">Difficulty Analysis</TabsTrigger>
+            <TabsTrigger value="domains">Domain Performance</TabsTrigger>
+            <TabsTrigger value="timing">Time Analysis</TabsTrigger>
+            <TabsTrigger value="behavior">Learning Behavior</TabsTrigger>
           </TabsList>
 
+          {/* Performance Trends Tab */}
           <TabsContent value="performance" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Performance Trends Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Performance Trends</CardTitle>
-                  <CardDescription>Your score improvement over time</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    Score Progression
+                  </CardTitle>
+                  <CardDescription>Exam scores over time</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={mockAnalyticsData.performanceTrends}>
+                    <LineChart data={examScoreHistory}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="week" />
+                      <XAxis dataKey="date" />
                       <YAxis domain={[0, 100]} />
                       <Tooltip />
                       <Line 
                         type="monotone" 
-                        dataKey="averageScore" 
-                        stroke="#8884d8" 
+                        dataKey="score" 
+                        stroke="#0088FE" 
                         strokeWidth={2}
-                        dot={{ fill: '#8884d8' }}
+                        dot={{ fill: '#0088FE', strokeWidth: 2 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              {/* Subject Performance */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Subject Performance</CardTitle>
-                  <CardDescription>Your strongest and weakest areas</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Weekly Activity
+                  </CardTitle>
+                  <CardDescription>Questions attempted and time spent</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-green-700 mb-2">Strongest Subjects</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {mockAnalyticsData.userProfile.strongestSubjects.map((subject, index) => (
-                        <Badge key={index} variant="secondary" className="bg-green-100 text-green-800">
-                          {subject}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium text-red-700 mb-2">Areas for Improvement</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {mockAnalyticsData.userProfile.weakestSubjects.map((subject, index) => (
-                        <Badge key={index} variant="secondary" className="bg-red-100 text-red-800">
-                          {subject}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ComposedChart data={weeklyTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis yAxisId="left" />
+                      <YAxis yAxisId="right" orientation="right" />
+                      <Tooltip />
+                      <Bar yAxisId="left" dataKey="questionsAttempted" fill="#00C49F" name="Questions" />
+                      <Line yAxisId="right" type="monotone" dataKey="score" stroke="#FF8042" strokeWidth={2} name="Score %" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="domains" className="space-y-6">
+          {/* Difficulty Analysis Tab */}
+          <TabsContent value="difficulty" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Domain Accuracy Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Domain Accuracy Analysis</CardTitle>
-                  <CardDescription>Accuracy percentage by knowledge domain</CardDescription>
+                  <CardTitle>Difficulty Level Performance</CardTitle>
+                  <CardDescription>Accuracy by question difficulty</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={mockAnalyticsData.domainAnalysis}>
+                    <BarChart data={difficultyAccuracy}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="domain" angle={-45} textAnchor="end" height={100} />
+                      <XAxis dataKey="difficulty" />
                       <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Bar dataKey="accuracy" fill="#8884d8" />
+                      <Tooltip formatter={(value) => [`${value}%`, 'Accuracy']} />
+                      <Bar dataKey="accuracy" fill="#8884D8" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              {/* Detailed Domain Breakdown */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Domain Details</CardTitle>
-                  <CardDescription>Questions answered and accuracy by domain</CardDescription>
+                  <CardTitle>Question Distribution</CardTitle>
+                  <CardDescription>Number of questions by difficulty</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={difficultyAccuracy}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="total"
+                        label={({ difficulty, total }) => `${difficulty}: ${total}`}
+                      >
+                        {difficultyAccuracy.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Domain Performance Tab */}
+          <TabsContent value="domains" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Domain Accuracy Comparison</CardTitle>
+                  <CardDescription>Performance across knowledge domains</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={domainData} layout="horizontal">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" domain={[0, 100]} />
+                      <YAxis dataKey="domain" type="category" width={150} />
+                      <Tooltip formatter={(value) => [`${value}%`, 'Accuracy']} />
+                      <Bar dataKey="accuracy" fill="#00C49F" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Radar Chart - Domain Strengths</CardTitle>
+                  <CardDescription>Overall performance comparison</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <RadarChart data={domainData}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="domain" />
+                      <PolarRadiusAxis domain={[0, 100]} />
+                      <Radar
+                        name="Accuracy"
+                        dataKey="accuracy"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.6}
+                      />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Time Analysis Tab */}
+          <TabsContent value="timing" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Time vs Accuracy</CardTitle>
+                  <CardDescription>Relationship between time spent and correctness</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ScatterChart data={timeDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="timeSpent" name="Time (seconds)" />
+                      <YAxis dataKey="isCorrect" name="Correct" domain={[0, 1]} />
+                      <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                      <Scatter name="Answers" data={timeDistribution} fill="#8884d8" />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Average Time by Difficulty</CardTitle>
+                  <CardDescription>Time spent on different difficulty levels</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {mockAnalyticsData.domainAnalysis.map((domain, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">{domain.domain}</span>
-                          <span>{domain.accuracy}%</span>
+                    {['Easy', 'Intermediate', 'Hard'].map((difficulty) => {
+                      const difficultyAnswers = timeDistribution.filter((d: any) => d.difficulty === difficulty);
+                      const avgTime = difficultyAnswers.length > 0 
+                        ? difficultyAnswers.reduce((sum: number, d: any) => sum + d.timeSpent, 0) / difficultyAnswers.length 
+                        : 0;
+                      
+                      return (
+                        <div key={difficulty} className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium">{difficulty}</span>
+                            <span className="text-sm text-muted-foreground">{avgTime.toFixed(1)}s</span>
+                          </div>
+                          <Progress value={(avgTime / 300) * 100} className="h-2" />
                         </div>
-                        <Progress value={domain.accuracy} className="h-2" />
-                        <div className="text-xs text-gray-500">
-                          {domain.questionsAnswered} questions answered
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="recommendations" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Personalized Study Recommendations</CardTitle>
-                <CardDescription>AI-powered suggestions to improve your performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockAnalyticsData.studyRecommendations.map((recommendation) => (
-                    <div 
-                      key={recommendation.id} 
-                      className={`p-4 border rounded-lg ${
-                        recommendation.isCompleted 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={getPriorityBadgeVariant(recommendation.priority)}>
-                            Priority {recommendation.priority}
-                          </Badge>
-                          <Badge variant="outline" className="capitalize">
-                            {recommendation.type.replace('_', ' ')}
-                          </Badge>
-                          {recommendation.isCompleted && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800">
-                              Completed
-                            </Badge>
-                          )}
-                        </div>
-                        <span className="text-sm text-gray-500">
-                          +{recommendation.estimatedImpact}% impact
-                        </span>
-                      </div>
-                      <p className="text-gray-800">{recommendation.content}</p>
+          {/* Learning Behavior Tab */}
+          <TabsContent value="behavior" className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Learning Patterns Analysis
+                  </CardTitle>
+                  <CardDescription>Insights into your study behavior and patterns</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Strongest Areas */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-green-600">Strongest Areas</h4>
+                      {userProfile?.strongestSubjects?.split(',').map((subject: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="bg-green-100 text-green-800">
+                          {subject.trim()}
+                        </Badge>
+                      )) || <p className="text-sm text-muted-foreground">No data available</p>}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="history" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Exam History</CardTitle>
-                <CardDescription>Detailed history of your exam attempts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mockAnalyticsData.examHistory.map((exam, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{exam.examName}</h4>
-                        <p className="text-sm text-gray-500">
-                          {new Date(exam.date).toLocaleDateString()} • {formatTime(exam.timeSpent)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${
-                          exam.score >= 80 ? 'text-green-600' : 
-                          exam.score >= 70 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {exam.score}%
+                    {/* Areas for Improvement */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-orange-600">Areas for Improvement</h4>
+                      {userProfile?.weakestSubjects?.split(',').map((subject: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="bg-orange-100 text-orange-800">
+                          {subject.trim()}
+                        </Badge>
+                      )) || <p className="text-sm text-muted-foreground">No data available</p>}
+                    </div>
+
+                    {/* Study Statistics */}
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-blue-600">Study Statistics</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Last Activity:</span>
+                          <span>{userProfile?.lastActiveAt ? new Date(userProfile.lastActiveAt).toLocaleDateString() : 'N/A'}</span>
                         </div>
-                        <p className="text-sm text-gray-500">
-                          {exam.correctAnswers}/{exam.totalQuestions} correct
-                        </p>
+                        <div className="flex justify-between">
+                          <span>Total Sessions:</span>
+                          <span>{analyticsData.examAnalytics.length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Avg Session Time:</span>
+                          <span>
+                            {analyticsData.examAnalytics.length > 0 
+                              ? Math.floor(analyticsData.examAnalytics.reduce((sum: number, exam: any) => sum + (exam.timeSpent || 0), 0) / analyticsData.examAnalytics.length / 60)
+                              : 0}m
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

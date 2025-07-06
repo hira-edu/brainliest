@@ -1,13 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { analyticsService } from "./analytics";
 import { getQuestionHelp, explainAnswer } from "./ai";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
   insertQuestionSchema,
   insertUserSessionSchema,
-  insertCommentSchema 
+  insertCommentSchema,
+  insertDetailedAnswerSchema,
+  insertExamAnalyticsSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -215,6 +218,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete all questions" });
+    }
+  });
+
+  // Analytics routes
+  app.get("/api/analytics/overview/:userName", async (req, res) => {
+    try {
+      const { userName } = req.params;
+      
+      // Get user profile
+      const userProfile = await analyticsService.getUserProfile(userName);
+      
+      // Get exam analytics
+      const examAnalytics = await analyticsService.getExamAnalytics(userName);
+      
+      // Get answer history for detailed analysis
+      const answerHistory = await analyticsService.getAnswerHistory(userName);
+      
+      // Get performance trends
+      const performanceTrends = await analyticsService.getPerformanceTrends(userName);
+      
+      // Calculate additional metrics
+      const totalTimeSpent = examAnalytics.reduce((sum, exam) => sum + (exam.timeSpent || 0), 0);
+      const averageTimePerQuestion = answerHistory.length > 0 ? totalTimeSpent / answerHistory.length : 0;
+      
+      // Calculate accuracy by difficulty
+      const difficultyAnalysis = answerHistory.reduce((acc, answer) => {
+        const difficulty = answer.difficulty || 'Unknown';
+        if (!acc[difficulty]) {
+          acc[difficulty] = { correct: 0, total: 0 };
+        }
+        acc[difficulty].total++;
+        if (answer.isCorrect) acc[difficulty].correct++;
+        return acc;
+      }, {} as Record<string, { correct: number; total: number }>);
+
+      res.json({
+        userProfile,
+        examAnalytics,
+        answerHistory,
+        performanceTrends,
+        metrics: {
+          totalTimeSpent,
+          averageTimePerQuestion,
+          difficultyAnalysis,
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics overview" });
+    }
+  });
+
+  app.post("/api/analytics/record-answer", async (req, res) => {
+    try {
+      const validation = insertDetailedAnswerSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid answer data", errors: validation.error.errors });
+      }
+      const answer = await analyticsService.recordAnswer(validation.data);
+      res.status(201).json(answer);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to record answer" });
+    }
+  });
+
+  app.post("/api/analytics/exam-completed", async (req, res) => {
+    try {
+      const validation = insertExamAnalyticsSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid exam analytics data", errors: validation.error.errors });
+      }
+      const analytics = await analyticsService.createExamAnalytics(validation.data);
+      
+      // Update user profile
+      await analyticsService.createOrUpdateUserProfile(req.body.userName, {
+        score: req.body.score,
+        totalQuestions: req.body.totalQuestions
+      });
+      
+      res.status(201).json(analytics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to record exam completion" });
+    }
+  });
+
+  app.get("/api/analytics/performance-trends/:userName", async (req, res) => {
+    try {
+      const { userName } = req.params;
+      const trends = await analyticsService.getPerformanceTrends(userName);
+      res.json(trends);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch performance trends" });
+    }
+  });
+
+  app.get("/api/analytics/study-recommendations/:userName", async (req, res) => {
+    try {
+      const { userName } = req.params;
+      const recommendations = await analyticsService.getStudyRecommendations(userName);
+      res.json(recommendations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch study recommendations" });
     }
   });
 
