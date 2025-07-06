@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertQuestionSchema, insertExamSchema, insertSubjectSchema } from "@shared/schema";
@@ -170,6 +171,12 @@ export default function AdminSimple() {
   const { data: questions } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
   });
+
+  // Track previously used icons
+  const getUsedIcons = () => {
+    const icons = subjects?.map(s => s.icon).filter(Boolean) || [];
+    return [...new Set(icons)]; // Remove duplicates
+  };
 
   // CSV Template Generation
   const generateCSVTemplate = () => {
@@ -606,14 +613,45 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <div className="flex items-center space-x-3">
-                          <FormControl>
-                            <Input 
-                              placeholder="Icon class or emoji" 
-                              {...field} 
-                              value={field.value || ""} 
-                              className="flex-1"
-                            />
-                          </FormControl>
+                          <div className="flex-1 relative">
+                            <FormControl>
+                              <Input 
+                                placeholder="Icon class or emoji" 
+                                {...field} 
+                                value={field.value || ""} 
+                              />
+                            </FormControl>
+                            {getUsedIcons().length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-2"
+                                    type="button"
+                                  >
+                                    ▼
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2">
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {getUsedIcons().map((icon, index) => (
+                                      <Button
+                                        key={index}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => field.onChange(icon)}
+                                        type="button"
+                                      >
+                                        {icon}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                          </div>
                           {field.value && (
                             <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
                               {field.value}
@@ -678,14 +716,45 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <div className="flex items-center space-x-3">
-                          <FormControl>
-                            <Input 
-                              placeholder="Icon class or emoji" 
-                              {...field} 
-                              value={field.value || ""} 
-                              className="flex-1"
-                            />
-                          </FormControl>
+                          <div className="flex-1 relative">
+                            <FormControl>
+                              <Input 
+                                placeholder="Icon class or emoji" 
+                                {...field} 
+                                value={field.value || ""} 
+                              />
+                            </FormControl>
+                            {getUsedIcons().length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-2"
+                                    type="button"
+                                  >
+                                    ▼
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-48 p-2">
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {getUsedIcons().map((icon, index) => (
+                                      <Button
+                                        key={index}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => field.onChange(icon)}
+                                        type="button"
+                                      >
+                                        {icon}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+                          </div>
                           {field.value && (
                             <div className="flex items-center justify-center w-8 h-8 text-lg border rounded">
                               {field.value}
@@ -715,11 +784,13 @@ export default function AdminSimple() {
             <Card key={subject.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{subject.icon || "📚"}</div>
+                  <div className="flex items-center justify-between flex-1">
                     <div>
                       <CardTitle className="text-lg">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
+                    </div>
+                    <div className="flex items-center justify-center w-8 h-8 text-lg border rounded ml-3">
+                      {subject.icon || "📚"}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
