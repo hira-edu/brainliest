@@ -569,6 +569,7 @@ export class AuthService {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       
       const [user] = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
+      
       if (!user) {
         return { valid: false };
       }

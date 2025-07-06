@@ -78,11 +78,18 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): a
 /**
  * Combined middleware for admin routes
  */
-export function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
-  authenticateToken(req, res, (error) => {
-    if (error) return next(error);
-    requireAdmin(req, res, next);
-  });
+export async function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
+  try {
+    await authenticateToken(req, res, () => {
+      requireAdmin(req, res, next);
+    });
+  } catch (error) {
+    console.error('RequireAdminAuth error:', error);
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Authentication failed' 
+    });
+  }
 }
 
 /**

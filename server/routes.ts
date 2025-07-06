@@ -1094,7 +1094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Temporary admin login endpoint for testing
+  // Admin login endpoint
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -1114,9 +1114,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Generate token compatible with auth service
         const jwt = await import('jsonwebtoken');
+        const JWT_SECRET = process.env.JWT_SECRET || (() => {
+          if (process.env.NODE_ENV === 'production') {
+            throw new Error('JWT_SECRET environment variable is required in production');
+          }
+          return 'dev-jwt-secret-key-not-for-production';
+        })();
         const token = jwt.default.sign(
           { userId: adminUser.id }, // Auth service expects userId in token
-          process.env.JWT_SECRET || 'fallback-secret',
+          JWT_SECRET,
           { expiresIn: '24h' }
         );
         
