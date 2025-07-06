@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertQuestionSchema, insertExamSchema, insertSubjectSchema } from "@shared/schema";
@@ -23,9 +24,21 @@ import {
   Upload,
   FileSpreadsheet,
   Database,
-  AlertCircle
+  AlertCircle,
+  BarChart3,
+  Users,
+  BookOpen,
+  Target,
+  Edit,
+  Copy,
+  Tag,
+  Search,
+  Filter,
+  Eye,
+  Settings
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 // Form schemas
 const questionFormSchema = insertQuestionSchema.extend({
@@ -42,6 +55,9 @@ export default function AdminSimple() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importStats, setImportStats] = useState<{created: number, total: number} | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [selectedExam, setSelectedExam] = useState<string>("all");
 
   const { data: subjects } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
@@ -246,8 +262,513 @@ export default function AdminSimple() {
     }
   });
 
+  // Dashboard Overview Component
+  function DashboardOverview() {
+    const totalSubjects = subjects?.length || 0;
+    const totalExams = exams?.length || 0;
+    const totalQuestions = questions?.length || 0;
+    
+    // Calculate question distribution
+    const questionsBySubject = subjects?.map(subject => ({
+      name: subject.name,
+      count: questions?.filter(q => q.subjectId === subject.id).length || 0
+    })) || [];
+
+    const questionsByExam = exams?.map(exam => ({
+      title: exam.title,
+      count: questions?.filter(q => q.examId === exam.id).length || 0
+    })) || [];
+
+    // Most popular exam (most questions)
+    const popularExam = questionsByExam.sort((a, b) => b.count - a.count)[0];
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Dashboard Overview</h2>
+          <p className="text-gray-600">Platform statistics and quick insights</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Subjects</CardTitle>
+              <BookOpen className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalSubjects}</div>
+              <p className="text-xs text-gray-600">Active certification categories</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Exams</CardTitle>
+              <Target className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalExams}</div>
+              <p className="text-xs text-gray-600">Practice exam sets</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Questions</CardTitle>
+              <Database className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalQuestions}</div>
+              <p className="text-xs text-gray-600">In question bank</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Most Popular</CardTitle>
+              <BarChart3 className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl font-bold">{popularExam?.title?.substring(0, 15) || "No Data"}</div>
+              <p className="text-xs text-gray-600">{popularExam?.count || 0} questions</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Insights */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Questions by Subject</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {questionsBySubject.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm">{item.name}</span>
+                    <Badge variant="outline">{item.count} questions</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Questions by Exam</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {questionsByExam.slice(0, 5).map((item, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span className="text-sm">{item.title}</span>
+                    <Badge variant="outline">{item.count} questions</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Subject Management Component  
+  function SubjectManager() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const subjectForm = useForm<InsertSubject>({
+      resolver: zodResolver(insertSubjectSchema),
+      defaultValues: {
+        name: "",
+        description: "",
+        icon: "",
+      }
+    });
+
+    const createSubjectMutation = useMutation({
+      mutationFn: async (data: InsertSubject) => {
+        await apiRequest("POST", "/api/subjects", data);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        toast({ title: "Subject created successfully!" });
+        setIsDialogOpen(false);
+        subjectForm.reset();
+      },
+    });
+
+    const deleteSubjectMutation = useMutation({
+      mutationFn: async (id: number) => {
+        await apiRequest("DELETE", `/api/subjects/${id}`);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        toast({ title: "Subject deleted successfully!" });
+      },
+    });
+
+    const onSubmit = (data: InsertSubject) => {
+      createSubjectMutation.mutate(data);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Manage Subjects</h2>
+            <p className="text-gray-600">Create and organize certification categories</p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Subject
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Subject</DialogTitle>
+              </DialogHeader>
+              <Form {...subjectForm}>
+                <form onSubmit={subjectForm.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={subjectForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subject Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., PMP Certification" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subjectForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Brief description..." {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subjectForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Icon class or emoji" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createSubjectMutation.isPending}>
+                      Create Subject
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="grid gap-4">
+          {subjects?.map((subject) => (
+            <Card key={subject.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">{subject.icon || "📚"}</div>
+                    <div>
+                      <CardTitle className="text-lg">{subject.name}</CardTitle>
+                      <p className="text-sm text-gray-600">{subject.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline">
+                      {exams?.filter(e => e.subjectId === subject.id).length || 0} exams
+                    </Badge>
+                    <Badge variant="outline">
+                      {questions?.filter(q => q.subjectId === subject.id).length || 0} questions
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteSubjectMutation.mutate(subject.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Exam Management Component
+  function ExamManager() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const examForm = useForm<InsertExam>({
+      resolver: zodResolver(insertExamSchema),
+      defaultValues: {
+        subjectId: 0,
+        title: "",
+        description: "",
+        duration: 0,
+        questionCount: 0,
+      }
+    });
+
+    const createExamMutation = useMutation({
+      mutationFn: async (data: InsertExam) => {
+        await apiRequest("POST", "/api/exams", data);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        toast({ title: "Exam created successfully!" });
+        setIsDialogOpen(false);
+        examForm.reset();
+      },
+    });
+
+    const deleteExamMutation = useMutation({
+      mutationFn: async (id: number) => {
+        await apiRequest("DELETE", `/api/exams/${id}`);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        toast({ title: "Exam deleted successfully!" });
+      },
+    });
+
+    const cloneExamMutation = useMutation({
+      mutationFn: async (exam: Exam) => {
+        const clonedExam = {
+          ...exam,
+          title: `${exam.title} (Copy)`,
+        };
+        delete (clonedExam as any).id;
+        await apiRequest("POST", "/api/exams", clonedExam);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        toast({ title: "Exam cloned successfully!" });
+      },
+    });
+
+    const onSubmit = (data: InsertExam) => {
+      createExamMutation.mutate(data);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Manage Exams</h2>
+            <p className="text-gray-600">Create, clone, and organize practice exams</p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Exam
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Exam</DialogTitle>
+              </DialogHeader>
+              <Form {...examForm}>
+                <form onSubmit={examForm.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={examForm.control}
+                    name="subjectId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subject</FormLabel>
+                        <Select 
+                          onValueChange={(value) => field.onChange(parseInt(value))}
+                          value={field.value?.toString() || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a subject" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {subjects?.map((subject) => (
+                              <SelectItem key={subject.id} value={subject.id.toString()}>
+                                {subject.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={examForm.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Exam Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., PMP Practice Exam 1" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={examForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Exam description..." {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={examForm.control}
+                      name="duration"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duration (minutes)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              {...field} 
+                              value={field.value || ""} 
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={examForm.control}
+                      name="questionCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Question Count</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              {...field} 
+                              value={field.value || ""} 
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createExamMutation.isPending}>
+                      Create Exam
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="grid gap-4">
+          {exams?.map((exam) => {
+            const subject = subjects?.find(s => s.id === exam.subjectId);
+            const questionCount = questions?.filter(q => q.examId === exam.id).length || 0;
+
+            return (
+              <Card key={exam.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{exam.title}</CardTitle>
+                      <p className="text-sm text-gray-600 mb-2">{exam.description}</p>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>Subject: {subject?.name}</span>
+                        <span>Duration: {exam.duration} min</span>
+                        <span>Target: {exam.questionCount} questions</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline">{questionCount} questions</Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => cloneExamMutation.mutate(exam)}
+                        title="Clone exam"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteExamMutation.mutate(exam.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function QuestionManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // Filter questions based on search and selections
+    const filteredQuestions = questions?.filter(question => {
+      const matchesSearch = !searchTerm || 
+        question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        question.explanation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        question.domain?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesSubject = selectedSubject === "all" || 
+        question.subjectId.toString() === selectedSubject;
+      
+      const matchesExam = selectedExam === "all" || 
+        question.examId.toString() === selectedExam;
+
+      return matchesSearch && matchesSubject && matchesExam;
+    }) || [];
 
     const questionForm = useForm<QuestionFormData>({
       resolver: zodResolver(questionFormSchema),
@@ -300,13 +821,14 @@ export default function AdminSimple() {
 
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold">Manage Questions</h2>
-            <p className="text-gray-600">Create and organize exam questions with CSV import/export</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={generateCSVTemplate}>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Manage Questions</h2>
+              <p className="text-gray-600">Create and organize exam questions with CSV import/export</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={generateCSVTemplate}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
               Download Template
             </Button>
@@ -437,6 +959,49 @@ export default function AdminSimple() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </div>
+          </div>
+
+          {/* Search and Filter Controls */}
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search questions by text, domain, or explanation..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by subject" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {subjects?.map((subject) => (
+                  <SelectItem key={subject.id} value={subject.id.toString()}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedExam} onValueChange={setSelectedExam}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by exam" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Exams</SelectItem>
+                {exams?.map((exam) => (
+                  <SelectItem key={exam.id} value={exam.id.toString()}>
+                    {exam.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Badge variant="outline">{filteredQuestions.length} questions</Badge>
           </div>
         </div>
 
@@ -450,7 +1015,7 @@ export default function AdminSimple() {
         )}
 
         <div className="space-y-4">
-          {questions?.map((question) => {
+          {filteredQuestions.map((question) => {
             const exam = exams?.find(e => e.id === question.examId);
             const subject = subjects?.find(s => s.id === question.subjectId);
             
@@ -511,13 +1076,39 @@ export default function AdminSimple() {
           <p className="text-gray-600">Manage questions, exams, and subjects with CSV import/export functionality</p>
         </div>
 
-        <Tabs defaultValue="questions" className="space-y-6">
-          <TabsList>
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="subjects">Subjects</TabsTrigger>
+            <TabsTrigger value="exams">Exams</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
-
+          <TabsContent value="dashboard">
+            <DashboardOverview />
+          </TabsContent>
+          <TabsContent value="subjects">
+            <SubjectManager />
+          </TabsContent>
+          <TabsContent value="exams">
+            <ExamManager />
+          </TabsContent>
           <TabsContent value="questions">
             <QuestionManager />
+          </TabsContent>
+          <TabsContent value="analytics">
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics & Reports</CardTitle>
+                <p className="text-gray-600">Advanced analytics features coming soon</p>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-4 text-gray-500">Detailed question performance, user stats, and exam analytics will be available here.</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

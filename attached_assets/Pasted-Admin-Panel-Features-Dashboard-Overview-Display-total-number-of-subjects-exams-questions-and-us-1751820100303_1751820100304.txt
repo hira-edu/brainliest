@@ -1,0 +1,97 @@
+Admin Panel Features:
+Dashboard Overview
+
+Display total number of subjects, exams, questions, and users.
+
+Quick stats: most popular exams, recent activity, pending updates.
+
+Category & Tag Management
+
+Create, edit, and delete subjects/categories (e.g., PMP, AWS, IELTS).
+
+Add/edit/delete tags for questions (e.g., “Risk”, “Cloud”, “Scheduling”) for easier searching/filtering.
+
+Exam Management
+
+Create, edit, clone, and delete exams under any subject/category.
+
+Set exam name, description, exam number (for organization), tags, and assign to subject.
+
+Specify number of questions per exam (can set as all, or choose a subset).
+
+Sort or reorder questions within an exam.
+
+Question Bank Management
+
+Add, edit, delete, import, or export MCQs (CSV or Excel import/export).
+
+Bulk import of questions with options/answers/explanations/tags.
+
+Assign questions to one or more exams and tag them.
+
+Edit questions in place:
+
+Question text
+
+4–5 answer options
+
+Mark the correct answer
+
+Add an explanation (optional, for user feedback)
+
+Attach tags/categories for searching/filtering
+
+Search/filter questions by keyword, tag, subject, exam, or status (active/inactive).
+
+Exam Structure & Settings
+
+Set randomization: shuffle question order and/or answer options.
+
+Set time limits per exam (if needed).
+
+Enable/disable explanations for users after answering.
+
+Set pass/fail thresholds, attempt limits, and display settings (score, show answers at end, etc.).
+
+User Management (if user accounts)
+
+View, search, edit, or remove users.
+
+See user progress/history, scores, exam attempts.
+
+Manually enroll users to specific exams or reset attempts.
+
+Analytics & Reports
+
+Detailed reports: question performance (most missed questions), average scores, popular exams.
+
+Exportable data (CSV/Excel): results, user stats, question banks.
+
+Access Control & Security
+
+Multiple admin roles (e.g., Super Admin, Editor, Question Setter).
+
+Activity logs: who changed what and when.
+
+Secure login, password reset, and permissions management.
+
+Usability Features
+
+Clean, responsive UI—admin panel should work well on desktop and tablet.
+
+Bulk actions (activate/deactivate, delete, tag, export, etc.).
+
+Preview exams/questions as user will see them.
+
+Extra Utilities
+
+Drag-and-drop question reordering.
+
+Rich text/markdown support for questions/answers.
+
+Media upload: attach images/diagrams to questions if needed.
+
+Multilingual support (optional).
+
+API for integration with other systems.
+
