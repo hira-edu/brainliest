@@ -92,11 +92,18 @@ class GoogleAuthService {
         window.google.accounts.id.prompt((notification: any) => {
           console.log('Google prompt notification:', notification);
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // If One Tap doesn't work, fall back to demo for now
-            console.log('Google One Tap not available - using demo authentication');
+            // Show user the domain configuration issue
+            const currentDomain = window.location.hostname;
+            console.error(`Google OAuth not configured for domain: ${currentDomain}`);
+            console.error('Please add this domain to your Google Cloud Console:');
+            console.error(`Authorized JavaScript origins: https://${currentDomain}`);
+            console.error(`Authorized redirect URIs: https://${currentDomain}/auth/callback`);
+            
+            // Fall back to demo but inform user
+            console.log('Using demo authentication until domain is configured');
             resolve({
               email: 'demo.user@gmail.com',
-              name: 'Demo User (Google One Tap Unavailable)',
+              name: 'Demo User (Configure Domain in Google Console)',
               picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
               sub: 'google_demo_' + Date.now()
             });
