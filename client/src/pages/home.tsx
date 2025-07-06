@@ -23,13 +23,31 @@ const categoryConfig = {
     title: "Professional Certifications",
     description: "Industry-recognized certifications",
     icon: Award,
-    keywords: ["certification", "aws", "pmp", "comptia", "cisco", "microsoft", "azure", "ccna"]
+    keywords: ["certification", "aws", "pmp", "comptia", "cisco", "microsoft", "azure", "ccna", "certified", "professional", "practitioner"]
   },
   university: {
     title: "University & College",
     description: "Academic subjects and courses",
     icon: BookOpen,
-    keywords: ["computer", "mathematics", "physics", "chemistry", "biology", "business", "engineering", "medical"]
+    keywords: [
+      // Mathematics & Statistics
+      "statistics", "mathematics", "calculus", "algebra", "geometry", "discrete", "pre-calculus",
+      "biostatistics", "business statistics", "elementary statistics", "intro to statistics",
+      // Sciences
+      "physics", "chemistry", "biology", "anatomy", "astronomy", "earth science",
+      // Computer Science
+      "computer science", "programming", "data structures", "web development", "database",
+      // Engineering
+      "engineering", "mechanical", "electrical",
+      // Business & Economics
+      "business", "accounting", "economics", "finance", "administration",
+      // Medical & Health
+      "medical", "nursing", "pharmacology", "health sciences", "hesi", "teas",
+      // Social Sciences & Humanities
+      "psychology", "history", "philosophy", "sociology", "political science", "english", "writing",
+      // Test Prep
+      "ged", "gre", "lsat", "toefl"
+    ]
   }
 };
 
@@ -53,6 +71,8 @@ export default function Home() {
   const { data: subjects, isLoading } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
   });
+
+
 
   const handleSelectSubject = (subjectId: number) => {
     setLocation(`/subject/${subjectId}`);

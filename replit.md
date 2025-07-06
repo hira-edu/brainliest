@@ -97,8 +97,9 @@ The application uses four main entities:
 
 ## Recent Changes
 
-### July 06, 2025 - Major Database Expansion with Comprehensive Academic Subjects
-- **Massive subject database expansion**: Added 50+ comprehensive subjects across 8 major categories
+### July 06, 2025 - Major Database Expansion with Comprehensive Academic Subjects (COMPLETED)
+- **Successfully resolved display issue**: Fixed technical problem where expanded subject database wasn't appearing on homepage
+- **Massive subject database expansion**: Added 47 comprehensive subjects across 8 major categories (now fully functional)
 - **Statistics subjects**: Added AP Statistics, Biostatistics, Business Statistics, Elementary Statistics, and Intro to Statistics
 - **Mathematics subjects**: Added Calculus, Linear Algebra, Geometry, Discrete Mathematics, and Pre-Calculus
 - **Computer Science subjects**: Added Programming, Data Structures, Web Development, Database Design, and Computer Science Fundamentals
@@ -108,8 +109,9 @@ The application uses four main entities:
 - **Business subjects**: Added Accounting, Economics, Finance, and Business Administration
 - **Social Sciences**: Added Psychology, History, Philosophy, Sociology, Political Science, English, and Writing
 - **Professional Exams**: Added HESI, TEAS, GRE, LSAT, TOEFL, and GED preparation
-- **Comprehensive exam coverage**: Added 80+ practice exams across all subject categories with realistic question counts and timing
-- **Enhanced categorization**: Organized subjects into Professional Certifications and University & College categories
+- **Comprehensive exam coverage**: Added 65 practice exams across all subject categories with realistic question counts and timing
+- **Enhanced categorization**: Fixed and improved subject categorization with expanded keywords for proper organization
+- **Technical resolution**: Fixed backend data seeding and frontend categorization to properly display all 47 subjects
 - **Font Awesome icons**: Fixed icon display issues by adding Font Awesome CSS library
 - **Admin panel optimization**: Removed duplicate filter sections for cleaner UI
 - **Sample questions**: Added representative questions for major subjects including PMP, AWS, CompTIA, Computer Science, Mathematics, and Statistics
