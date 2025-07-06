@@ -65,36 +65,8 @@ class GoogleAuthService {
       throw new Error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID environment variable.');
     }
 
-    // Use Google Identity Services directly with proper configuration
-    return new Promise((resolve, reject) => {
-      try {
-        // Initialize Google Identity Services with proper callback
-        window.google.accounts.id.initialize({
-          client_id: this.clientId,
-          callback: (response: any) => {
-            try {
-              const userInfo = this.parseJWT(response.credential);
-              resolve(userInfo);
-            } catch (error) {
-              reject(new Error('Failed to parse Google credential'));
-            }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: false,
-        });
-
-        // Show One Tap prompt
-        window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // If One Tap fails, use traditional OAuth popup
-            this.openGoogleOAuthPopup().then(resolve).catch(reject);
-          }
-        });
-
-      } catch (error) {
-        reject(error);
-      }
-    });
+    // Use direct OAuth 2.0 popup without One Tap to avoid domain issues
+    return this.openDirectOAuthPopup();
   }
 
   private async signInWithPopup(): Promise<GoogleUser> {
@@ -225,6 +197,80 @@ class GoogleAuthService {
           popup.close();
         }
         reject(new Error('Authentication timeout - please try again'));
+      }, 120000);
+    });
+  }
+
+  private async openDirectOAuthPopup(): Promise<GoogleUser> {
+    return new Promise((resolve, reject) => {
+      // Create a simple OAuth URL that works without pre-configured domains
+      const state = 'auth_' + Math.random().toString(36).substring(2);
+      const nonce = Date.now().toString();
+      
+      const authUrl = 'https://accounts.google.com/oauth/authorize?' + 
+        new URLSearchParams({
+          client_id: this.clientId!,
+          response_type: 'id_token',
+          scope: 'openid email profile',
+          redirect_uri: 'postmessage',
+          state: state,
+          nonce: nonce,
+        }).toString();
+
+      // Open popup
+      const popup = window.open(
+        authUrl,
+        'google_auth',
+        'width=500,height=600,resizable=yes,scrollbars=yes'
+      );
+
+      if (!popup) {
+        reject(new Error('Popup blocked. Please allow popups for this site.'));
+        return;
+      }
+
+      // Monitor popup
+      const checkInterval = setInterval(() => {
+        try {
+          if (popup.closed) {
+            clearInterval(checkInterval);
+            reject(new Error('Authentication cancelled'));
+            return;
+          }
+
+          // Try to access popup URL (limited by CORS but may work)
+          try {
+            const url = popup.location.href;
+            if (url.includes('id_token=')) {
+              clearInterval(checkInterval);
+              popup.close();
+              
+              // Extract and parse the ID token
+              const fragment = url.split('#')[1];
+              const params = new URLSearchParams(fragment);
+              const idToken = params.get('id_token');
+              
+              if (idToken) {
+                const userInfo = this.parseJWT(idToken);
+                resolve(userInfo);
+                return;
+              }
+            }
+          } catch (e) {
+            // Expected CORS error - continue monitoring
+          }
+        } catch (e) {
+          // Continue monitoring
+        }
+      }, 1000);
+
+      // Set timeout
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        if (!popup.closed) {
+          popup.close();
+        }
+        reject(new Error('Authentication timeout. Please try again.'));
       }, 120000);
     });
   }
