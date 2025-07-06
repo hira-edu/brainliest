@@ -1152,6 +1152,8 @@ export default function AdminSimple() {
         name: "",
         description: "",
         icon: "",
+        categoryId: undefined,
+        subcategoryId: undefined,
       }
     });
 
@@ -1194,6 +1196,8 @@ export default function AdminSimple() {
         name: subject.name,
         description: subject.description || "",
         icon: subject.icon || "",
+        categoryId: subject.categoryId || undefined,
+        subcategoryId: subject.subcategoryId || undefined,
       });
       setIsEditDialogOpen(true);
     };
@@ -1487,6 +1491,144 @@ export default function AdminSimple() {
                         <FormControl>
                           <Textarea placeholder="Brief description..." {...field} value={field.value || ""} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editSubjectForm.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <div className="flex items-center space-x-2">
+                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories?.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" type="button">
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Create New Category</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <Input placeholder="Category name" id="edit-quick-category-name" />
+                                <Textarea placeholder="Description (optional)" id="edit-quick-category-desc" />
+                                <Input placeholder="Icon (optional)" id="edit-quick-category-icon" />
+                                <Button onClick={() => {
+                                  const name = (document.getElementById('edit-quick-category-name') as HTMLInputElement)?.value;
+                                  const description = (document.getElementById('edit-quick-category-desc') as HTMLTextAreaElement)?.value;
+                                  const icon = (document.getElementById('edit-quick-category-icon') as HTMLInputElement)?.value;
+                                  if (name) {
+                                    createCategoryMutation.mutate({
+                                      name,
+                                      description: description || "",
+                                      icon: icon || "",
+                                      color: "",
+                                      isActive: true,
+                                      sortOrder: categories?.length || 0
+                                    });
+                                  }
+                                }}>
+                                  Create Category
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editSubjectForm.control}
+                    name="subcategoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subcategory</FormLabel>
+                        <div className="flex items-center space-x-2">
+                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a subcategory" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {subcategories?.map((subcategory) => (
+                                <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
+                                  {subcategory.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" type="button">
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Create New Subcategory</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <Select onValueChange={(value) => {
+                                  const elem = document.getElementById('edit-quick-subcategory-parent') as HTMLInputElement;
+                                  if (elem) elem.value = value;
+                                }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select parent category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {categories?.map((category) => (
+                                      <SelectItem key={category.id} value={category.id.toString()}>
+                                        {category.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <input type="hidden" id="edit-quick-subcategory-parent" />
+                                <Input placeholder="Subcategory name" id="edit-quick-subcategory-name" />
+                                <Textarea placeholder="Description (optional)" id="edit-quick-subcategory-desc" />
+                                <Input placeholder="Icon (optional)" id="edit-quick-subcategory-icon" />
+                                <Button onClick={() => {
+                                  const categoryId = (document.getElementById('edit-quick-subcategory-parent') as HTMLInputElement)?.value;
+                                  const name = (document.getElementById('edit-quick-subcategory-name') as HTMLInputElement)?.value;
+                                  const description = (document.getElementById('edit-quick-subcategory-desc') as HTMLTextAreaElement)?.value;
+                                  const icon = (document.getElementById('edit-quick-subcategory-icon') as HTMLInputElement)?.value;
+                                  if (categoryId && name) {
+                                    createSubcategoryMutation.mutate({
+                                      categoryId: parseInt(categoryId),
+                                      name,
+                                      description: description || "",
+                                      icon: icon || "",
+                                      color: "",
+                                      isActive: true,
+                                      sortOrder: subcategories?.length || 0
+                                    });
+                                  }
+                                }}>
+                                  Create Subcategory
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
