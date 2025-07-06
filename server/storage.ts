@@ -4,6 +4,7 @@ import {
   questions, 
   userSessions,
   comments,
+  users,
   type Subject, 
   type InsertSubject,
   type Exam,
@@ -13,7 +14,9 @@ import {
   type UserSession,
   type InsertUserSession,
   type Comment,
-  type InsertComment
+  type InsertComment,
+  type User,
+  type InsertUser
 } from "@shared/schema";
 
 export interface IStorage {
@@ -54,6 +57,23 @@ export interface IStorage {
   createComment(comment: InsertComment): Promise<Comment>;
   updateComment(id: number, comment: Partial<InsertComment>): Promise<Comment | undefined>;
   deleteComment(id: number): Promise<boolean>;
+
+  // Users
+  getUsers(): Promise<User[]>;
+  getUser(id: number): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
+  banUser(id: number, reason: string): Promise<boolean>;
+  unbanUser(id: number): Promise<boolean>;
+  getUsersWithFilters(filters: {
+    role?: string;
+    isActive?: boolean;
+    isBanned?: boolean;
+    search?: string;
+  }): Promise<User[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -62,11 +82,13 @@ export class MemStorage implements IStorage {
   private questions: Map<number, Question>;
   private userSessions: Map<number, UserSession>;
   private comments: Map<number, Comment>;
+  private users: Map<number, User>;
   private currentSubjectId: number;
   private currentExamId: number;
   private currentQuestionId: number;
   private currentSessionId: number;
   private currentCommentId: number;
+  private currentUserId: number;
 
   constructor() {
     this.subjects = new Map();
@@ -74,11 +96,13 @@ export class MemStorage implements IStorage {
     this.questions = new Map();
     this.userSessions = new Map();
     this.comments = new Map();
+    this.users = new Map();
     this.currentSubjectId = 1;
     this.currentExamId = 1;
     this.currentQuestionId = 1;
     this.currentSessionId = 1;
     this.currentCommentId = 1;
+    this.currentUserId = 1;
 
     this.seedData();
   }
@@ -586,6 +610,78 @@ export class MemStorage implements IStorage {
       difficulty: "Intermediate",
       order: 1,
     });
+
+    // Add sample users
+    this.createUserSync({
+      email: "admin@brainliest.com",
+      username: "admin",
+      firstName: "Admin",
+      lastName: "User",
+      role: "admin",
+      isActive: true,
+      isBanned: false,
+      lastLoginAt: new Date(),
+      lastLoginIp: "192.168.1.100",
+      registrationIp: "192.168.1.100",
+      metadata: JSON.stringify({ loginCount: 45 })
+    });
+
+    this.createUserSync({
+      email: "john.smith@example.com",
+      username: "johnsmith",
+      firstName: "John",
+      lastName: "Smith",
+      role: "user",
+      isActive: true,
+      isBanned: false,
+      lastLoginAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      lastLoginIp: "10.0.0.15",
+      registrationIp: "10.0.0.15",
+      metadata: JSON.stringify({ loginCount: 12, examsTaken: 3 })
+    });
+
+    this.createUserSync({
+      email: "sarah.wilson@gmail.com",
+      username: "sarahw",
+      firstName: "Sarah",
+      lastName: "Wilson",
+      role: "user",
+      isActive: true,
+      isBanned: false,
+      lastLoginAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      lastLoginIp: "172.16.0.25",
+      registrationIp: "172.16.0.25",
+      metadata: JSON.stringify({ loginCount: 8, examsTaken: 1 })
+    });
+
+    this.createUserSync({
+      email: "mike.banned@example.com",
+      username: "mikebanned",
+      firstName: "Mike",
+      lastName: "Banned",
+      role: "user",
+      isActive: false,
+      isBanned: true,
+      banReason: "Inappropriate behavior in comments",
+      lastLoginAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      lastLoginIp: "203.0.113.50",
+      registrationIp: "203.0.113.50",
+      metadata: JSON.stringify({ loginCount: 25, violations: 3 })
+    });
+
+    this.createUserSync({
+      email: "moderator@brainliest.com",
+      username: "moderator",
+      firstName: "Content",
+      lastName: "Moderator",
+      role: "moderator",
+      isActive: true,
+      isBanned: false,
+      lastLoginAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+      lastLoginIp: "192.168.1.101",
+      registrationIp: "192.168.1.101",
+      metadata: JSON.stringify({ loginCount: 89, moderatedComments: 156 })
+    });
   }
 
   private createSubjectSync(subject: InsertSubject): Subject {
@@ -794,6 +890,124 @@ export class MemStorage implements IStorage {
   async deleteComment(id: number): Promise<boolean> {
     return this.comments.delete(id);
   }
+
+  // User management methods
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.email === email);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.username === username);
+  }
+
+  private createUserSync(user: InsertUser): User {
+    const id = this.currentUserId++;
+    const newUser: User = { 
+      id, 
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      profileImage: user.profileImage || null,
+      role: user.role || "user",
+      isActive: user.isActive ?? true,
+      isBanned: user.isBanned ?? false,
+      banReason: user.banReason || null,
+      lastLoginAt: user.lastLoginAt || null,
+      lastLoginIp: user.lastLoginIp || null,
+      registrationIp: user.registrationIp || null,
+      metadata: user.metadata || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(id, newUser);
+    return newUser;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    return this.createUserSync(user);
+  }
+
+  async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
+    const existing = this.users.get(id);
+    if (!existing) return undefined;
+    const updated: User = { ...existing, ...user, updatedAt: new Date() };
+    this.users.set(id, updated);
+    return updated;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    return this.users.delete(id);
+  }
+
+  async banUser(id: number, reason: string): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) return false;
+    const updated: User = { 
+      ...user, 
+      isBanned: true, 
+      banReason: reason,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updated);
+    return true;
+  }
+
+  async unbanUser(id: number): Promise<boolean> {
+    const user = this.users.get(id);
+    if (!user) return false;
+    const updated: User = { 
+      ...user, 
+      isBanned: false, 
+      banReason: null,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updated);
+    return true;
+  }
+
+  async getUsersWithFilters(filters: {
+    role?: string;
+    isActive?: boolean;
+    isBanned?: boolean;
+    search?: string;
+  }): Promise<User[]> {
+    let users = Array.from(this.users.values());
+
+    if (filters.role) {
+      users = users.filter(user => user.role === filters.role);
+    }
+
+    if (filters.isActive !== undefined) {
+      users = users.filter(user => user.isActive === filters.isActive);
+    }
+
+    if (filters.isBanned !== undefined) {
+      users = users.filter(user => user.isBanned === filters.isBanned);
+    }
+
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      users = users.filter(user => 
+        user.email?.toLowerCase().includes(searchTerm) ||
+        user.username?.toLowerCase().includes(searchTerm) ||
+        user.firstName?.toLowerCase().includes(searchTerm) ||
+        user.lastName?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return users;
+  }
 }
+
+
 
 export const storage = new MemStorage();

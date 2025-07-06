@@ -59,6 +59,25 @@ export const comments = pgTable("comments", {
   parentId: integer("parent_id"), // For nested replies
 });
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").unique().notNull(),
+  username: text("username").unique().notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImage: text("profile_image"),
+  isActive: boolean("is_active").default(true),
+  isBanned: boolean("is_banned").default(false),
+  banReason: text("ban_reason"),
+  role: text("role").default("user"), // user, admin, moderator
+  lastLoginAt: timestamp("last_login_at"),
+  lastLoginIp: text("last_login_ip"),
+  registrationIp: text("registration_ip"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  metadata: text("metadata"), // JSON string for additional data
+});
+
 // Analytics and Performance Tracking Tables
 export const userProfiles = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
@@ -156,6 +175,12 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   createdAt: true,
 });
 
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   id: true,
   createdAt: true,
@@ -192,6 +217,9 @@ export type UserSession = typeof userSessions.$inferSelect;
 export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
 
 // Analytics Types
 export type UserProfile = typeof userProfiles.$inferSelect;

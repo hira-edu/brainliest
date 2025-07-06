@@ -10,7 +10,8 @@ import {
   insertUserSessionSchema,
   insertCommentSchema,
   insertDetailedAnswerSchema,
-  insertExamAnalyticsSchema
+  insertExamAnalyticsSchema,
+  insertUserSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -595,6 +596,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to process account deletion" });
+    }
+  });
+
+  // User Management routes
+  app.get("/api/users", async (req, res) => {
+    try {
+      const { role, isActive, isBanned, search } = req.query;
+      const filters = {
+        role: role as string,
+        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+        isBanned: isBanned === 'true' ? true : isBanned === 'false' ? false : undefined,
+        search: search as string,
+      };
+      
+      const users = await storage.getUsersWithFilters(filters);
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/users", async (req, res) => {
+    try {
+      const validation = insertUserSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid user data", errors: validation.error.errors });
+      }
+      const user = await storage.createUser(validation.data);
+      res.status(201).json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validation = insertUserSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid user data", errors: validation.error.errors });
+      }
+      const user = await storage.updateUser(id, validation.data);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteUser(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  app.post("/api/users/:id/ban", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reason } = req.body;
+      if (!reason) {
+        return res.status(400).json({ message: "Ban reason is required" });
+      }
+      const success = await storage.banUser(id, reason);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ message: "User banned successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to ban user" });
+    }
+  });
+
+  app.post("/api/users/:id/unban", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.unbanUser(id);
+      if (!success) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ message: "User unbanned successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unban user" });
+    }
+  });
+
+  app.get("/api/users/export/csv", async (req, res) => {
+    try {
+      const { role, isActive, isBanned, search } = req.query;
+      const filters = {
+        role: role as string,
+        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+        isBanned: isBanned === 'true' ? true : isBanned === 'false' ? false : undefined,
+        search: search as string,
+      };
+      
+      const users = await storage.getUsersWithFilters(filters);
+      
+      // Convert to CSV format
+      const csvHeader = "ID,Email,Username,First Name,Last Name,Role,Active,Banned,Ban Reason,Last Login,Last Login IP,Registration IP,Created At,Updated At\n";
+      const csvRows = users.map(user => {
+        const formatDate = (date: Date | null) => date ? date.toISOString() : '';
+        return [
+          user.id,
+          user.email,
+          user.username,
+          user.firstName || '',
+          user.lastName || '',
+          user.role,
+          user.isActive,
+          user.isBanned,
+          user.banReason || '',
+          formatDate(user.lastLoginAt),
+          user.lastLoginIp || '',
+          user.registrationIp || '',
+          formatDate(user.createdAt),
+          formatDate(user.updatedAt)
+        ].map(field => `"${field}"`).join(',');
+      }).join('\n');
+      
+      const csv = csvHeader + csvRows;
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+      res.send(csv);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to export users" });
     }
   });
 

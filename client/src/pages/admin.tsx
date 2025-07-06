@@ -4,6 +4,7 @@ import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject } fr
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
+import AdminUsers from "@/pages/admin-users";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +29,7 @@ import {
   Award,
   Settings,
   Tag,
+  Users,
   Filter,
   Search,
   Upload,
@@ -1357,7 +1359,7 @@ export default function Admin() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="subjects" className="flex items-center space-x-2">
               <Book className="w-4 h-4" />
               <span>Subjects</span>
@@ -1369,6 +1371,10 @@ export default function Admin() {
             <TabsTrigger value="questions" className="flex items-center space-x-2">
               <Settings className="w-4 h-4" />
               <span>Questions</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center space-x-2">
+              <Users className="w-4 h-4" />
+              <span>Users</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1382,6 +1388,10 @@ export default function Admin() {
 
           <TabsContent value="questions">
             <QuestionManager />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <AdminUsers />
           </TabsContent>
         </Tabs>
       </main>
