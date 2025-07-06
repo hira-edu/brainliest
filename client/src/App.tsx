@@ -19,6 +19,7 @@ import TermsOfService from "@/pages/terms-of-service";
 import Contact from "@/pages/contact";
 import CategoriesPage from "@/pages/categories";
 import CategoryDetailPage from "@/pages/category-detail";
+import AuthCallback from "@/pages/auth-callback";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route component={NotFound} />
     </Switch>
   );

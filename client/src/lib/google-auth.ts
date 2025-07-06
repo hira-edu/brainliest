@@ -100,31 +100,62 @@ class GoogleAuthService {
         return;
       }
 
-      // Use Google Identity Services popup
-      try {
-        window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // For development demo - simulate successful Google sign-in
-            // In production, this would be handled by the actual Google OAuth flow
-            console.log('Google sign-in demo mode - simulating successful authentication');
-            resolve({
-              email: 'demo.user@gmail.com',
-              name: 'Demo Google User',
-              picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-              sub: 'google_demo_' + Date.now()
-            });
-          }
-        });
-      } catch (error) {
-        // Fallback demo for development
-        console.log('Google authentication service not available - using demo mode');
-        resolve({
-          email: 'demo.user@gmail.com',
-          name: 'Demo Google User',
-          picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-          sub: 'google_demo_' + Date.now()
-        });
+      // Create OAuth 2.0 popup flow
+      const authUrl = `https://accounts.google.com/oauth/authorize?` +
+        `client_id=${this.clientId}&` +
+        `redirect_uri=${encodeURIComponent(window.location.origin + '/auth/callback')}&` +
+        `response_type=token&` +
+        `scope=openid email profile&` +
+        `state=popup`;
+
+      // Open popup window
+      const popup = window.open(
+        authUrl,
+        'google-signin',
+        'width=500,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        reject(new Error('Popup blocked. Please allow popups for this site.'));
+        return;
       }
+
+      // Listen for popup completion
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          reject(new Error('Sign-in cancelled by user'));
+        }
+      }, 1000);
+
+      // Listen for successful authentication
+      const messageHandler = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageHandler);
+          popup.close();
+          resolve(event.data.user);
+        } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageHandler);
+          popup.close();
+          reject(new Error(event.data.error || 'Authentication failed'));
+        }
+      };
+
+      window.addEventListener('message', messageHandler);
+
+      // Fallback timeout
+      setTimeout(() => {
+        if (!popup.closed) {
+          popup.close();
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageHandler);
+          reject(new Error('Authentication timeout'));
+        }
+      }, 60000); // 60 second timeout
     });
   }
 
