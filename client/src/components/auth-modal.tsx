@@ -96,13 +96,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       const data = await response.json();
 
       if (data.success) {
-        // Extract username from email for signin
-        const username = email.split('@')[0];
-        signIn(username);
+        // Handle successful email verification by updating auth state directly
+        if (data.user) {
+          setUser(data.user);
+          setUserName(data.user.firstName || data.user.username || data.user.email);
+          setIsSignedIn(true);
+        }
         
         toast({
           title: "Welcome!",
-          description: "Successfully signed in!",
+          description: "Email verified successfully!",
         });
         
         onClose();

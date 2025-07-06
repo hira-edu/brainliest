@@ -213,7 +213,8 @@ export default function Admin() {
                         <FormControl>
                           <Textarea 
                             placeholder="Brief description of the subject..."
-                            {...field} 
+                            {...field}
+                            value={field.value || ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -229,7 +230,7 @@ export default function Admin() {
                         <FormItem>
                           <FormLabel>Icon Class</FormLabel>
                           <FormControl>
-                            <Input placeholder="fas fa-book" {...field} />
+                            <Input placeholder="fas fa-book" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -241,7 +242,7 @@ export default function Admin() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Color</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -469,7 +470,8 @@ export default function Admin() {
                         <FormControl>
                           <Textarea 
                             placeholder="Brief description of the exam..."
-                            {...field} 
+                            {...field}
+                            value={field.value || ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -505,6 +507,7 @@ export default function Admin() {
                             <Input 
                               type="number" 
                               {...field} 
+                              value={field.value?.toString() || ''}
                               onChange={(e) => field.onChange(Number(e.target.value))}
                             />
                           </FormControl>
@@ -1185,7 +1188,7 @@ export default function Admin() {
                         <FormItem>
                           <FormLabel>Domain/Topic</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Planning, Security" {...field} />
+                            <Input placeholder="e.g., Planning, Security" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1201,6 +1204,7 @@ export default function Admin() {
                             <Input 
                               type="number" 
                               {...field} 
+                              value={field.value?.toString() || ''}
                               onChange={(e) => field.onChange(Number(e.target.value))}
                             />
                           </FormControl>
@@ -1220,7 +1224,8 @@ export default function Admin() {
                           <Textarea 
                             placeholder="Explain why this is the correct answer..."
                             className="min-h-[80px]"
-                            {...field} 
+                            {...field}
+                            value={field.value || ''}
                           />
                         </FormControl>
                         <FormMessage />

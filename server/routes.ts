@@ -881,7 +881,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clean up expired codes periodically
   setInterval(() => {
     const now = Date.now();
-    for (const [email, data] of verificationCodes.entries()) {
+    const entries = Array.from(verificationCodes.entries());
+    for (const [email, data] of entries) {
       if (now > data.expires) {
         verificationCodes.delete(email);
       }
@@ -898,13 +899,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await authService.register(
         email, 
         password, 
-        {
-          username,
-          firstName,
-          lastName,
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        }
+        firstName,
+        lastName,
+        req.ip,
+        req.get('User-Agent')
       );
       
       res.json(result);
@@ -940,15 +938,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = await authService.oauthLogin(
         'google',
-        {
-          email,
-          googleId,
-          firstName,
-          lastName,
-          profileImage,
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent')
-        }
+        googleId,
+        email,
+        firstName,
+        lastName,
+        profileImage,
+        req.ip,
+        req.get('User-Agent')
       );
       
       res.json(result);
@@ -1064,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Email test error:", error);
       res.status(500).json({ 
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         emailServiceWorking: false,
         resendConfigured: !!process.env.RESEND_API_KEY
       });

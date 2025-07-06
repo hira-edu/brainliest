@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { db } from './db';
 import { users, authLogs, authSessions } from '@shared/schema';
-import { eq, and, or, lt } from 'drizzle-orm';
+import { eq, and, or, lt, gt } from 'drizzle-orm';
 import { emailService } from './email-service';
 
 // Environment configuration
@@ -449,7 +449,7 @@ export class AuthService {
       const [user] = await db.select().from(users).where(
         and(
           eq(users.emailVerificationToken, token),
-          lt(new Date(), users.emailVerificationExpires!)
+          gt(users.emailVerificationExpires, new Date())
         )
       ).limit(1);
 
@@ -521,7 +521,7 @@ export class AuthService {
       const [user] = await db.select().from(users).where(
         and(
           eq(users.passwordResetToken, token),
-          lt(new Date(), users.passwordResetExpires!)
+          gt(users.passwordResetExpires, new Date())
         )
       ).limit(1);
 
@@ -595,7 +595,7 @@ export class AuthService {
         and(
           eq(authSessions.refreshToken, refreshToken),
           eq(authSessions.isActive, true),
-          lt(new Date(), authSessions.expiresAt)
+          gt(authSessions.expiresAt, new Date())
         )
       ).limit(1);
 

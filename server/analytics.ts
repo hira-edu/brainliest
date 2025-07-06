@@ -176,11 +176,14 @@ export class MemAnalyticsService implements IAnalyticsService {
           id: this.currentPerformanceTrendsId++,
           userName,
           subjectId: 1,
-          weeklyScore: Math.floor(Math.random() * 30) + 70, // 70-100
-          improvementRate: (Math.random() * 20 - 10).toFixed(1), // -10 to +10
-          questionsAttempted: Math.floor(Math.random() * 50) + 20,
-          timeSpentMinutes: Math.floor(Math.random() * 300) + 60,
-          streakCount: Math.floor(Math.random() * 7),
+          week: weekDate.toISOString().split('T')[0],
+          examsTaken: Math.floor(Math.random() * 10) + 1,
+          questionsAnswered: Math.floor(Math.random() * 50) + 20,
+          averageScore: (Math.floor(Math.random() * 30) + 70).toString(), // 70-100
+          accuracyTrend: (Math.random() * 20 - 10).toFixed(1), // -10 to +10
+          speedTrend: (Math.random() * 2 + 1).toFixed(1), // questions per minute
+          strongDomains: JSON.stringify(["Planning", "Risk Management"]),
+          weakDomains: JSON.stringify(["Quality", "Communications"]),
           createdAt: weekDate
         };
         trends.push(trend);
@@ -259,7 +262,14 @@ export class MemAnalyticsService implements IAnalyticsService {
   async recordAnswer(answerData: InsertDetailedAnswer): Promise<DetailedAnswer> {
     const newAnswer: DetailedAnswer = {
       id: this.currentDetailedAnswerId++,
-      ...answerData,
+      sessionId: answerData.sessionId,
+      questionId: answerData.questionId,
+      userAnswer: answerData.userAnswer,
+      correctAnswer: answerData.correctAnswer,
+      isCorrect: answerData.isCorrect,
+      timeSpent: answerData.timeSpent ?? null,
+      difficulty: answerData.difficulty ?? null,
+      domain: answerData.domain ?? null,
       answeredAt: new Date(),
     };
     this.detailedAnswers.set(newAnswer.id, newAnswer);
@@ -280,7 +290,17 @@ export class MemAnalyticsService implements IAnalyticsService {
   async createExamAnalytics(analyticsData: InsertExamAnalytics): Promise<ExamAnalytics> {
     const newAnalytics: ExamAnalytics = {
       id: this.currentExamAnalyticsId++,
-      ...analyticsData,
+      userName: analyticsData.userName,
+      sessionId: analyticsData.sessionId,
+      examId: analyticsData.examId,
+      totalQuestions: analyticsData.totalQuestions,
+      correctAnswers: analyticsData.correctAnswers,
+      score: analyticsData.score,
+      timeSpent: analyticsData.timeSpent ?? null,
+      completionRate: analyticsData.completionRate ?? null,
+      domainScores: analyticsData.domainScores ?? null,
+      difficultyBreakdown: analyticsData.difficultyBreakdown ?? null,
+      streakData: analyticsData.streakData ?? null,
       completedAt: new Date(),
     };
     this.examAnalytics.set(newAnalytics.id, newAnalytics);
@@ -382,12 +402,15 @@ export class MemAnalyticsService implements IAnalyticsService {
 
   async markRecommendationCompleted(recommendationId: number): Promise<boolean> {
     // Find and mark recommendation as completed
-    for (const [userName, recommendations] of this.studyRecommendations.entries()) {
-      const recommendation = recommendations.find(r => r.id === recommendationId);
-      if (recommendation) {
-        recommendation.isCompleted = true;
-        return true;
-      }
+    const allRecommendations: StudyRecommendations[] = [];
+    this.studyRecommendations.forEach((recommendations) => {
+      allRecommendations.push(...recommendations);
+    });
+    
+    const recommendation = allRecommendations.find((r: StudyRecommendations) => r.id === recommendationId);
+    if (recommendation) {
+      recommendation.isCompleted = true;
+      return true;
     }
     return false;
   }

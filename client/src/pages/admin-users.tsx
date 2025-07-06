@@ -176,7 +176,7 @@ export default function AdminUsers() {
     });
   };
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeColor = (role: string | null) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'moderator': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
@@ -387,7 +387,7 @@ export default function AdminUsers() {
                     </td>
                     <td className="py-3 px-4">
                       <Badge className={getRoleBadgeColor(user.role)}>
-                        {user.role}
+                        {user.role || 'user'}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">

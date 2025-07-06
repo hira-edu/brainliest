@@ -2,7 +2,7 @@ import {
   subjects,
   exams,
   questions,
-  userSessions,
+  examSessions,
   comments,
   users,
   type Subject,
@@ -11,8 +11,8 @@ import {
   type InsertExam,
   type Question,
   type InsertQuestion,
-  type UserSession,
-  type InsertUserSession,
+  type ExamSession,
+  type InsertExamSession,
   type Comment,
   type InsertComment,
   type User,
@@ -46,12 +46,12 @@ export interface IStorage {
   updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: number): Promise<boolean>;
 
-  // User Sessions
-  getUserSessions(): Promise<UserSession[]>;
-  getUserSession(id: number): Promise<UserSession | undefined>;
-  createUserSession(session: InsertUserSession): Promise<UserSession>;
-  updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined>;
-  deleteUserSession(id: number): Promise<boolean>;
+  // Exam Sessions
+  getExamSessions(): Promise<ExamSession[]>;
+  getExamSession(id: number): Promise<ExamSession | undefined>;
+  createExamSession(session: InsertExamSession): Promise<ExamSession>;
+  updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined>;
+  deleteExamSession(id: number): Promise<boolean>;
 
   // Comments
   getComments(): Promise<Comment[]>;
@@ -106,7 +106,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSubject(id: number): Promise<boolean> {
     const result = await db.delete(subjects).where(eq(subjects.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Exams
@@ -139,7 +139,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteExam(id: number): Promise<boolean> {
     const result = await db.delete(exams).where(eq(exams.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Questions
@@ -172,36 +172,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuestion(id: number): Promise<boolean> {
     const result = await db.delete(questions).where(eq(questions.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
-  // User Sessions
-  async getUserSessions(): Promise<UserSession[]> {
-    return await db.select().from(userSessions);
+  // Exam Sessions
+  async getExamSessions(): Promise<ExamSession[]> {
+    return await db.select().from(examSessions);
   }
 
-  async getUserSession(id: number): Promise<UserSession | undefined> {
-    const [session] = await db.select().from(userSessions).where(eq(userSessions.id, id));
+  async getExamSession(id: number): Promise<ExamSession | undefined> {
+    const [session] = await db.select().from(examSessions).where(eq(examSessions.id, id));
     return session;
   }
 
-  async createUserSession(session: InsertUserSession): Promise<UserSession> {
-    const [newSession] = await db.insert(userSessions).values(session).returning();
+  async createExamSession(session: InsertExamSession): Promise<ExamSession> {
+    const [newSession] = await db.insert(examSessions).values(session).returning();
     return newSession;
   }
 
-  async updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined> {
+  async updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined> {
     const [updatedSession] = await db
-      .update(userSessions)
+      .update(examSessions)
       .set(session)
-      .where(eq(userSessions.id, id))
+      .where(eq(examSessions.id, id))
       .returning();
     return updatedSession;
   }
 
-  async deleteUserSession(id: number): Promise<boolean> {
-    const result = await db.delete(userSessions).where(eq(userSessions.id, id));
-    return result.rowCount > 0;
+  async deleteExamSession(id: number): Promise<boolean> {
+    const result = await db.delete(examSessions).where(eq(examSessions.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Comments
@@ -234,7 +234,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteComment(id: number): Promise<boolean> {
     const result = await db.delete(comments).where(eq(comments.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Users
@@ -273,7 +273,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async banUser(id: number, reason: string): Promise<boolean> {
@@ -308,7 +308,6 @@ export class DatabaseStorage implements IStorage {
     isBanned?: boolean;
     search?: string;
   }): Promise<User[]> {
-    let query = db.select().from(users);
     const conditions = [];
 
     if (filters.role) {
@@ -330,10 +329,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await db.select().from(users).where(and(...conditions));
     }
 
-    return await query;
+    return await db.select().from(users);
   }
 }
 
@@ -355,360 +354,354 @@ async function seedDatabase() {
       {
         name: "PMP Certification",
         description: "Project Management Professional certification preparation",
-        icon: "project-diagram",
-        examCount: 5,
-        questionCount: 200
+        icon: "project-diagram"
       },
       {
         name: "AWS Certified Solutions Architect",
         description: "Amazon Web Services cloud architecture certification",
-        icon: "cloud",
-        examCount: 4,
-        questionCount: 180
+        icon: "cloud"
       },
       {
         name: "CompTIA Security+",
         description: "Cybersecurity fundamentals and best practices",
-        icon: "shield",
-        examCount: 3,
-        questionCount: 150
+        icon: "shield"
       },
       {
         name: "Cisco CCNA",
         description: "Cisco Certified Network Associate routing and switching",
         icon: "network-wired",
-        examCount: 4,
-        questionCount: 160
+        
+        
       },
       {
         name: "Microsoft Azure Fundamentals",
         description: "Microsoft Azure cloud services and architecture",
         icon: "cloud-arrow-up",
-        examCount: 3,
-        questionCount: 120
+        
+        
       },
       // Mathematics & Statistics
       {
         name: "AP Statistics",
         description: "Advanced Placement Statistics course preparation",
         icon: "chart-bar",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "Biostatistics",
         description: "Statistical methods in biological and health sciences",
         icon: "dna",
-        examCount: 4,
-        questionCount: 160
+        
+        
       },
       {
         name: "Business Statistics",
         description: "Statistical analysis for business decision making",
         icon: "trending-up",
-        examCount: 5,
-        questionCount: 200
+        
+        
       },
       {
         name: "Elementary Statistics",
         description: "Introduction to statistical concepts and methods",
         icon: "calculator",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Intro to Statistics",
         description: "Fundamental statistical principles and applications",
         icon: "bar-chart",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "Calculus",
         description: "Differential and integral calculus",
         icon: "function",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "Linear Algebra",
         description: "Vector spaces, matrices, and linear transformations",
         icon: "grid",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Geometry",
         description: "Euclidean and coordinate geometry principles",
         icon: "shapes",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "Discrete Mathematics",
         description: "Mathematical structures and discrete systems",
         icon: "dots-three",
-        examCount: 7,
-        questionCount: 280
+        
+        
       },
       {
         name: "Pre-Calculus",
         description: "Mathematical preparation for calculus",
         icon: "math",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       // Computer Science
       {
         name: "Programming",
         description: "Computer programming fundamentals and languages",
         icon: "code",
-        examCount: 12,
-        questionCount: 480
+        
+        
       },
       {
         name: "Data Structures",
         description: "Algorithms and data organization methods",
         icon: "tree-structure",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Web Development",
         description: "Frontend and backend web technologies",
         icon: "globe",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "Database Design",
         description: "Relational database design and SQL",
         icon: "database",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "Computer Science Fundamentals",
         description: "Core concepts in computer science",
         icon: "computer",
-        examCount: 15,
-        questionCount: 600
+        
+        
       },
       // Natural Sciences
       {
         name: "Physics",
         description: "Classical and modern physics principles",
         icon: "atom",
-        examCount: 12,
-        questionCount: 480
+        
+        
       },
       {
         name: "Chemistry",
         description: "Chemical principles and reactions",
         icon: "flask",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "Biology",
         description: "Life sciences and biological systems",
         icon: "leaf",
-        examCount: 14,
-        questionCount: 560
+        
+        
       },
       {
         name: "Anatomy",
         description: "Human body structure and systems",
         icon: "user-anatomy",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Astronomy",
         description: "Study of celestial objects and phenomena",
         icon: "planet",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "Earth Science",
         description: "Geology, meteorology, and environmental science",
         icon: "earth",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       // Engineering
       {
         name: "Mechanical Engineering",
         description: "Mechanical systems and engineering principles",
         icon: "gear",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "Electrical Engineering",
         description: "Electrical circuits and systems",
         icon: "lightning",
-        examCount: 9,
-        questionCount: 360
+        
+        
       },
       {
         name: "Engineering",
         description: "General engineering principles and practices",
         icon: "wrench",
-        examCount: 12,
-        questionCount: 480
+        
+        
       },
       // Business & Economics
       {
         name: "Accounting",
         description: "Financial accounting principles and practices",
         icon: "calculator-dollar",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Economics",
         description: "Microeconomics and macroeconomics principles",
         icon: "chart-line",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "Finance",
         description: "Corporate finance and investment principles",
         icon: "dollar-sign",
-        examCount: 7,
-        questionCount: 280
+        
+        
       },
       {
         name: "Business Administration",
         description: "Management and organizational behavior",
         icon: "briefcase",
-        examCount: 9,
-        questionCount: 360
+        
+        
       },
       // Health & Medical Sciences
       {
         name: "Nursing",
         description: "Nursing fundamentals and patient care",
         icon: "heart-pulse",
-        examCount: 12,
-        questionCount: 480
+        
+        
       },
       {
         name: "Pharmacology",
         description: "Drug actions and therapeutic applications",
         icon: "pill",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Medical Sciences",
         description: "Basic medical sciences and pathology",
         icon: "stethoscope",
-        examCount: 15,
-        questionCount: 600
+        
+        
       },
       {
         name: "Health Sciences",
         description: "Public health and healthcare systems",
         icon: "medical-cross",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       // Social Sciences & Humanities
       {
         name: "Psychology",
         description: "Human behavior and mental processes",
         icon: "brain",
-        examCount: 12,
-        questionCount: 480
+        
+        
       },
       {
         name: "History",
         description: "World and regional historical studies",
         icon: "scroll",
-        examCount: 15,
-        questionCount: 600
+        
+        
       },
       {
         name: "Philosophy",
         description: "Philosophical theories and critical thinking",
         icon: "thinking",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "Sociology",
         description: "Social structures and human society",
         icon: "users",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "Political Science",
         description: "Government systems and political theory",
         icon: "government",
-        examCount: 9,
-        questionCount: 360
+        
+        
       },
       {
         name: "English",
         description: "Literature, composition, and language arts",
         icon: "book",
-        examCount: 12,
-        questionCount: 480
+        
+        
       },
       {
         name: "Writing",
         description: "Academic and professional writing skills",
         icon: "pen",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       // Standardized Test Prep
       {
         name: "HESI",
         description: "Health Education Systems Inc. exam preparation",
         icon: "medical-bag",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "TEAS",
         description: "Test of Essential Academic Skills for nursing",
         icon: "graduation-cap",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "GRE",
         description: "Graduate Record Examinations preparation",
         icon: "academic-cap",
-        examCount: 10,
-        questionCount: 400
+        
+        
       },
       {
         name: "LSAT",
         description: "Law School Admission Test preparation",
         icon: "scale-justice",
-        examCount: 8,
-        questionCount: 320
+        
+        
       },
       {
         name: "TOEFL",
         description: "Test of English as a Foreign Language",
         icon: "language",
-        examCount: 6,
-        questionCount: 240
+        
+        
       },
       {
         name: "GED",
         description: "General Educational Development test preparation",
         icon: "certificate",
-        examCount: 12,
-        questionCount: 480
+        
+        
       }
     ];
 
@@ -725,8 +718,9 @@ async function seedDatabase() {
         subjectId: subject.id,
         title: `${subject.name} Practice Exam ${j + 1}`,
         description: `Comprehensive practice exam covering ${subject.name} concepts`,
+        questionCount: Math.floor((subject.questionCount || 100) / (subject.examCount || 3)),
         duration: 90,
-        questionCount: Math.floor((subject.questionCount || 100) / (subject.examCount || 3))
+        difficulty: j === 0 ? 'Beginner' : j === 1 ? 'Intermediate' : 'Advanced'
       }));
 
       const insertedExams = await db.insert(exams).values(examData).returning();
@@ -739,15 +733,16 @@ async function seedDatabase() {
           examId: firstExam.id,
           subjectId: subject.id,
           text: `Sample question ${k + 1} for ${subject.name}. This is a multiple choice question testing your knowledge.`,
-          options: JSON.stringify([
+          options: [
             `Option A for question ${k + 1}`,
             `Option B for question ${k + 1}`,
             `Option C for question ${k + 1}`,
             `Option D for question ${k + 1}`
-          ]),
+          ],
           correctAnswer: k % 4,
           explanation: `This is the explanation for question ${k + 1}, explaining why the correct answer is option ${String.fromCharCode(65 + (k % 4))}.`,
           domain: `Domain ${Math.floor(k / 2) + 1}`,
+          difficulty: k % 2 === 0 ? 'Beginner' : 'Intermediate',
           order: k + 1
         }));
 

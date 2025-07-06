@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { Question, UserSession, Exam } from "@shared/schema";
+import { Question, ExamSession, Exam } from "@shared/schema";
 import { TimerState } from "@/lib/types";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,7 +48,7 @@ export default function QuestionInterface() {
     enabled: !!examId,
   });
 
-  const { data: session } = useQuery<UserSession>({
+  const { data: session } = useQuery<ExamSession>({
     queryKey: [`/api/sessions/${sessionId}`],
     enabled: !!sessionId,
   });
@@ -58,7 +58,7 @@ export default function QuestionInterface() {
       const response = await apiRequest("POST", "/api/sessions", { examId });
       return response.json();
     },
-    onSuccess: (session: UserSession) => {
+    onSuccess: (session: ExamSession) => {
       setSessionId(session.id);
       if (exam?.duration) {
         setTimer({
@@ -71,7 +71,7 @@ export default function QuestionInterface() {
   });
 
   const updateSessionMutation = useMutation({
-    mutationFn: async (data: { sessionId: number; updates: Partial<UserSession> }) => {
+    mutationFn: async (data: { sessionId: number; updates: Partial<ExamSession> }) => {
       const response = await apiRequest("PUT", `/api/sessions/${data.sessionId}`, data.updates);
       return response.json();
     },
@@ -193,7 +193,7 @@ export default function QuestionInterface() {
     
     // Calculate score
     let correctAnswers = 0;
-    session.answers?.forEach((answer, index) => {
+    session.answers?.forEach((answer: string, index: number) => {
       if (questions[index] && parseInt(answer) === questions[index].correctAnswer) {
         correctAnswers++;
       }
