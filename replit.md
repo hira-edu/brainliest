@@ -97,6 +97,23 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 06, 2025 - Major Database Expansion with Comprehensive Academic Subjects
+- **Massive subject database expansion**: Added 50+ comprehensive subjects across 8 major categories
+- **Statistics subjects**: Added AP Statistics, Biostatistics, Business Statistics, Elementary Statistics, and Intro to Statistics
+- **Mathematics subjects**: Added Calculus, Linear Algebra, Geometry, Discrete Mathematics, and Pre-Calculus
+- **Computer Science subjects**: Added Programming, Data Structures, Web Development, Database Design, and Computer Science Fundamentals
+- **Engineering subjects**: Added Mechanical Engineering, Electrical Engineering, and general Engineering
+- **Medical/Nursing subjects**: Added Nursing, Pharmacology, Medical Sciences, Anatomy, and Health Sciences
+- **Science subjects**: Added Physics, Chemistry, Biology, Astronomy, and Earth Science
+- **Business subjects**: Added Accounting, Economics, Finance, and Business Administration
+- **Social Sciences**: Added Psychology, History, Philosophy, Sociology, Political Science, English, and Writing
+- **Professional Exams**: Added HESI, TEAS, GRE, LSAT, TOEFL, and GED preparation
+- **Comprehensive exam coverage**: Added 80+ practice exams across all subject categories with realistic question counts and timing
+- **Enhanced categorization**: Organized subjects into Professional Certifications and University & College categories
+- **Font Awesome icons**: Fixed icon display issues by adding Font Awesome CSS library
+- **Admin panel optimization**: Removed duplicate filter sections for cleaner UI
+- **Sample questions**: Added representative questions for major subjects including PMP, AWS, CompTIA, Computer Science, Mathematics, and Statistics
+
 ### July 06, 2025 - Google Gemini AI Integration
 - **Switched from OpenAI to Google Gemini**: Replaced OpenAI API with Google Gemini Pro for all AI features
 - **Updated AI question help**: Now uses Gemini for generating hints and guidance without revealing answers

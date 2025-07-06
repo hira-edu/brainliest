@@ -108,7 +108,7 @@ export class MemStorage implements IStorage {
   }
 
   private seedData() {
-    // Professional Certifications
+    // Professional Certifications & IT
     const pmpSubject = this.createSubjectSync({
       name: "PMP Certification",
       description: "Project Management Professional certification practice exams",
@@ -144,85 +144,316 @@ export class MemStorage implements IStorage {
       color: "cyan",
     });
 
-    // University/College Computer Science
+    // Statistics & Data Science
+    const statisticsSubject = this.createSubjectSync({
+      name: "Statistics",
+      description: "AP Statistics, Biostatistics, Business Statistics, Statistical Methods",
+      icon: "fas fa-chart-bar",
+      color: "blue",
+    });
+
+    const apStatisticsSubject = this.createSubjectSync({
+      name: "AP Statistics",
+      description: "Advanced Placement Statistics course and exam preparation",
+      icon: "fas fa-graduation-cap",
+      color: "purple",
+    });
+
+    const biostatisticsSubject = this.createSubjectSync({
+      name: "Biostatistics",
+      description: "Statistical methods for biological and health data analysis",
+      icon: "fas fa-microscope",
+      color: "green",
+    });
+
+    // Mathematics
+    const calculusSubject = this.createSubjectSync({
+      name: "Calculus",
+      description: "Calculus 1, 2, 3, Differential & Integral Calculus, Multivariable",
+      icon: "fas fa-square-root-alt",
+      color: "blue",
+    });
+
+    const algebraSubject = this.createSubjectSync({
+      name: "Algebra",
+      description: "Elementary Algebra, Linear Algebra, Advanced Functions",
+      icon: "fas fa-calculator",
+      color: "teal",
+    });
+
+    const geometrySubject = this.createSubjectSync({
+      name: "Geometry",
+      description: "Euclidean Geometry, Analytical Geometry, Trigonometry",
+      icon: "fas fa-ruler-combined",
+      color: "indigo",
+    });
+
+    const discreteMathSubject = this.createSubjectSync({
+      name: "Discrete Mathematics",
+      description: "Discrete Structures, Finite Mathematics, Logic",
+      icon: "fas fa-sitemap",
+      color: "purple",
+    });
+
+    const precalculusSubject = this.createSubjectSync({
+      name: "Precalculus",
+      description: "Pre-calculus preparation, Functions, Trigonometry",
+      icon: "fas fa-function",
+      color: "orange",
+    });
+
+    // Science
+    const biologySubject = this.createSubjectSync({
+      name: "Biology",
+      description: "Cell Biology, Genetics, Ecology, Evolutionary Biology, Microbiology",
+      icon: "fas fa-dna",
+      color: "green",
+    });
+
+    const chemistrySubject = this.createSubjectSync({
+      name: "Chemistry",
+      description: "General, Inorganic, Organic Chemistry, Biochemistry",
+      icon: "fas fa-flask",
+      color: "emerald",
+    });
+
+    const physicsSubject = this.createSubjectSync({
+      name: "Physics",
+      description: "Classical Mechanics, Thermodynamics, Modern Physics",
+      icon: "fas fa-atom",
+      color: "blue",
+    });
+
+    const anatomySubject = this.createSubjectSync({
+      name: "Anatomy & Physiology",
+      description: "Human anatomy, physiology, medical terminology",
+      icon: "fas fa-heart",
+      color: "red",
+    });
+
+    const astronomySubject = this.createSubjectSync({
+      name: "Astronomy",
+      description: "Stellar astronomy, planetary science, cosmology",
+      icon: "fas fa-moon",
+      color: "indigo",
+    });
+
+    const earthScienceSubject = this.createSubjectSync({
+      name: "Earth Science",
+      description: "Geology, Geophysics, Environmental Science, Oceanography",
+      icon: "fas fa-globe-americas",
+      color: "brown",
+    });
+
+    // Business & Economics
+    const businessSubject = this.createSubjectSync({
+      name: "Business Administration",
+      description: "Management, Marketing, Operations, Business Law, MBA Courses",
+      icon: "fas fa-briefcase",
+      color: "navy",
+    });
+
+    const accountingSubject = this.createSubjectSync({
+      name: "Accounting",
+      description: "Principles of Accounting, Cost Accounting, Auditing, Financial Reporting",
+      icon: "fas fa-file-invoice-dollar",
+      color: "green",
+    });
+
+    const economicsSubject = this.createSubjectSync({
+      name: "Economics",
+      description: "Microeconomics, Macroeconomics, Econometrics, International Economics",
+      icon: "fas fa-coins",
+      color: "yellow",
+    });
+
+    const financeSubject = this.createSubjectSync({
+      name: "Finance",
+      description: "Corporate Finance, Financial Institutions, Investment Banking",
+      icon: "fas fa-chart-line",
+      color: "green",
+    });
+
+    // English & Literature
+    const englishSubject = this.createSubjectSync({
+      name: "English Literature",
+      description: "English Literature, Creative Writing, Critical Reading, Essays",
+      icon: "fas fa-book-open",
+      color: "purple",
+    });
+
+    const writingSubject = this.createSubjectSync({
+      name: "Writing",
+      description: "Business Writing, Creative Writing, Expository & Persuasive Writing",
+      icon: "fas fa-pen",
+      color: "blue",
+    });
+
+    // Humanities & Social Sciences
+    const psychologySubject = this.createSubjectSync({
+      name: "Psychology",
+      description: "General Psychology, Cognitive Psychology, Social Psychology",
+      icon: "fas fa-brain",
+      color: "pink",
+    });
+
+    const historySubject = this.createSubjectSync({
+      name: "History",
+      description: "World History, American History, European History",
+      icon: "fas fa-landmark",
+      color: "brown",
+    });
+
+    const philosophySubject = this.createSubjectSync({
+      name: "Philosophy",
+      description: "Ethics, Logic, Metaphysics, Greek and Roman Philosophy",
+      icon: "fas fa-lightbulb",
+      color: "yellow",
+    });
+
+    const sociologySubject = this.createSubjectSync({
+      name: "Sociology",
+      description: "Social Theory, Social Research Methods, Social Psychology",
+      icon: "fas fa-users",
+      color: "teal",
+    });
+
+    const politicalScienceSubject = this.createSubjectSync({
+      name: "Political Science",
+      description: "American Government, International Relations, Political Theory",
+      icon: "fas fa-vote-yea",
+      color: "red",
+    });
+
+    // Computer Science & Programming
     const computerScienceSubject = this.createSubjectSync({
       name: "Computer Science",
-      description: "Programming, algorithms, data structures, and software engineering",
+      description: "Programming, Data Structures, Algorithms, Software Engineering",
       icon: "fas fa-laptop-code",
       color: "purple",
     });
 
     const dataStructuresSubject = this.createSubjectSync({
       name: "Data Structures & Algorithms",
-      description: "Arrays, trees, graphs, sorting, and algorithmic problem solving",
+      description: "Arrays, Trees, Graphs, Sorting, Algorithm Design",
       icon: "fas fa-sitemap",
       color: "indigo",
     });
 
-    // University/College Mathematics & Sciences
-    const mathematicsSubject = this.createSubjectSync({
-      name: "Mathematics",
-      description: "Calculus, algebra, statistics, and discrete mathematics",
-      icon: "fas fa-calculator",
-      color: "teal",
+    const programmingSubject = this.createSubjectSync({
+      name: "Programming",
+      description: "Java, Python, C++, JavaScript, Object-Oriented Programming",
+      icon: "fas fa-code",
+      color: "green",
     });
 
-    const physicsSubject = this.createSubjectSync({
-      name: "Physics",
-      description: "Classical mechanics, thermodynamics, and modern physics",
-      icon: "fas fa-atom",
+    const webDevelopmentSubject = this.createSubjectSync({
+      name: "Web Development",
+      description: "HTML, CSS, JavaScript, React, Node.js, Full-Stack Development",
+      icon: "fas fa-globe",
       color: "blue",
     });
 
-    const chemistrySubject = this.createSubjectSync({
-      name: "Chemistry",
-      description: "Organic, inorganic, and physical chemistry fundamentals",
-      icon: "fas fa-flask",
-      color: "emerald",
+    const databaseSubject = this.createSubjectSync({
+      name: "Database Systems",
+      description: "SQL, MySQL, NoSQL, Database Design, Data Management",
+      icon: "fas fa-database",
+      color: "orange",
     });
 
-    // University/College Business & Economics
-    const businessSubject = this.createSubjectSync({
-      name: "Business Administration",
-      description: "Management, finance, marketing, and business strategy",
-      icon: "fas fa-chart-line",
-      color: "red",
-    });
-
-    const economicsSubject = this.createSubjectSync({
-      name: "Economics",
-      description: "Microeconomics, macroeconomics, and economic theory",
-      icon: "fas fa-coins",
-      color: "yellow",
-    });
-
-    // University/College Engineering
+    // Engineering
     const engineeringSubject = this.createSubjectSync({
       name: "Engineering",
-      description: "Mechanical, electrical, civil, and software engineering",
+      description: "Mechanical, Electrical, Civil, Software Engineering",
       icon: "fas fa-cogs",
       color: "gray",
     });
 
-    // University/College Health & Medical
-    const medicalSubject = this.createSubjectSync({
-      name: "Medical Sciences",
-      description: "Anatomy, physiology, pharmacology, and medical procedures",
-      icon: "fas fa-user-md",
-      color: "pink",
+    const mechanicalEngSubject = this.createSubjectSync({
+      name: "Mechanical Engineering",
+      description: "Thermodynamics, Fluid Mechanics, Materials Science",
+      icon: "fas fa-gear",
+      color: "steel",
     });
 
-    const biologySubject = this.createSubjectSync({
-      name: "Biology",
-      description: "Cell biology, genetics, ecology, and evolutionary biology",
-      icon: "fas fa-dna",
+    const electricalEngSubject = this.createSubjectSync({
+      name: "Electrical Engineering",
+      description: "Circuit Analysis, Electronics, Signal Processing",
+      icon: "fas fa-bolt",
+      color: "yellow",
+    });
+
+    // Medical & Health Sciences
+    const medicalSubject = this.createSubjectSync({
+      name: "Medical Sciences",
+      description: "Anatomy, Physiology, Pharmacology, Medical Procedures",
+      icon: "fas fa-user-md",
+      color: "red",
+    });
+
+    const nursingSubject = this.createSubjectSync({
+      name: "Nursing",
+      description: "RN Fundamentals, Medical-Surgical, Pharmacology, Maternal Health",
+      icon: "fas fa-user-nurse",
+      color: "blue",
+    });
+
+    const pharmacologySubject = this.createSubjectSync({
+      name: "Pharmacology",
+      description: "Drug Mechanisms, Interactions, Therapeutic Applications",
+      icon: "fas fa-pills",
       color: "green",
     });
 
+    // Professional Exams
+    const hesiSubject = this.createSubjectSync({
+      name: "HESI",
+      description: "HESI A2, HESI Exit Exam, Nursing School Entrance",
+      icon: "fas fa-stethoscope",
+      color: "blue",
+    });
+
+    const teasSubject = this.createSubjectSync({
+      name: "TEAS",
+      description: "Test of Essential Academic Skills for Nursing",
+      icon: "fas fa-clipboard-check",
+      color: "green",
+    });
+
+    const greSubject = this.createSubjectSync({
+      name: "GRE",
+      description: "Graduate Record Examination preparation",
+      icon: "fas fa-graduation-cap",
+      color: "purple",
+    });
+
+    const lsatSubject = this.createSubjectSync({
+      name: "LSAT",
+      description: "Law School Admission Test preparation",
+      icon: "fas fa-gavel",
+      color: "brown",
+    });
+
+    const toeflSubject = this.createSubjectSync({
+      name: "TOEFL",
+      description: "Test of English as a Foreign Language",
+      icon: "fas fa-language",
+      color: "blue",
+    });
+
+    const gedSubject = this.createSubjectSync({
+      name: "GED",
+      description: "General Educational Development test preparation",
+      icon: "fas fa-certificate",
+      color: "orange",
+    });
 
 
-    // Create sample exams
-    const pmpExam1 = this.createExamSync({
+
+    // Create comprehensive exams for all subjects
+    
+    // Professional Certifications
+    this.createExamSync({
       subjectId: pmpSubject.id,
       title: "PMP Practice Exam 1",
       description: "Comprehensive practice test covering all PMP domains",
@@ -231,7 +462,7 @@ export class MemStorage implements IStorage {
       difficulty: "Intermediate",
     });
 
-    const pmpExam2 = this.createExamSync({
+    this.createExamSync({
       subjectId: pmpSubject.id,
       title: "PMP Mock Exam 2",
       description: "Advanced practice test with scenario-based questions",
@@ -240,7 +471,8 @@ export class MemStorage implements IStorage {
       difficulty: "Advanced",
     });
 
-    const awsExam1 = this.createExamSync({
+    // AWS Exams
+    this.createExamSync({
       subjectId: awsSubject.id,
       title: "AWS Fundamentals",
       description: "Basic AWS services and concepts",
@@ -249,7 +481,7 @@ export class MemStorage implements IStorage {
       difficulty: "Beginner",
     });
 
-    const awsExam2 = this.createExamSync({
+    this.createExamSync({
       subjectId: awsSubject.id,
       title: "AWS Advanced Concepts",
       description: "Advanced AWS architecture and security practices",
@@ -353,27 +585,91 @@ export class MemStorage implements IStorage {
       difficulty: "Advanced",
     });
 
-    // Add exams for Mathematics
-    const mathExam1 = this.createExamSync({
-      subjectId: mathematicsSubject.id,
-      title: "Calculus Fundamentals",
-      description: "Limits, derivatives, and basic integration",
+    // Statistics Exams
+    this.createExamSync({
+      subjectId: statisticsSubject.id,
+      title: "Elementary Statistics",
+      description: "Descriptive statistics, probability, and hypothesis testing",
+      questionCount: 40,
+      duration: 75,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: apStatisticsSubject.id,
+      title: "AP Statistics Practice Test",
+      description: "Complete AP Statistics exam preparation",
       questionCount: 40,
       duration: 90,
       difficulty: "Intermediate",
     });
 
-    const mathExam2 = this.createExamSync({
-      subjectId: mathematicsSubject.id,
-      title: "Advanced Statistics",
-      description: "Probability theory and statistical inference",
-      questionCount: 50,
-      duration: 100,
-      difficulty: "Advanced",
+    this.createExamSync({
+      subjectId: biostatisticsSubject.id,
+      title: "Biostatistics Fundamentals",
+      description: "Statistical methods for biological research",
+      questionCount: 35,
+      duration: 80,
+      difficulty: "Intermediate",
     });
 
-    // Add exams for Physics
-    const physicsExam1 = this.createExamSync({
+    // Mathematics Exams
+    this.createExamSync({
+      subjectId: calculusSubject.id,
+      title: "Calculus 1 - Limits and Derivatives",
+      description: "Fundamental concepts of differential calculus",
+      questionCount: 40,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: calculusSubject.id,
+      title: "Calculus 2 - Integration",
+      description: "Integral calculus and applications",
+      questionCount: 45,
+      duration: 100,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: algebraSubject.id,
+      title: "Linear Algebra",
+      description: "Matrices, vector spaces, and linear transformations",
+      questionCount: 35,
+      duration: 85,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: geometrySubject.id,
+      title: "Euclidean Geometry",
+      description: "Plane geometry, proofs, and constructions",
+      questionCount: 30,
+      duration: 75,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: discreteMathSubject.id,
+      title: "Discrete Mathematics",
+      description: "Logic, set theory, and combinatorics",
+      questionCount: 40,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: precalculusSubject.id,
+      title: "Pre-Calculus Functions",
+      description: "Functions, trigonometry, and analytic geometry",
+      questionCount: 35,
+      duration: 80,
+      difficulty: "Beginner",
+    });
+
+    // Science Exams
+    this.createExamSync({
       subjectId: physicsSubject.id,
       title: "Classical Mechanics",
       description: "Newton's laws, energy, and momentum",
@@ -382,7 +678,7 @@ export class MemStorage implements IStorage {
       difficulty: "Intermediate",
     });
 
-    const physicsExam2 = this.createExamSync({
+    this.createExamSync({
       subjectId: physicsSubject.id,
       title: "Quantum Physics Basics",
       description: "Wave-particle duality and quantum mechanics principles",
@@ -391,8 +687,7 @@ export class MemStorage implements IStorage {
       difficulty: "Advanced",
     });
 
-    // Add exams for Chemistry
-    const chemExam1 = this.createExamSync({
+    this.createExamSync({
       subjectId: chemistrySubject.id,
       title: "General Chemistry",
       description: "Atomic structure, bonding, and stoichiometry",
@@ -401,7 +696,7 @@ export class MemStorage implements IStorage {
       difficulty: "Beginner",
     });
 
-    const chemExam2 = this.createExamSync({
+    this.createExamSync({
       subjectId: chemistrySubject.id,
       title: "Organic Chemistry",
       description: "Functional groups, reactions, and mechanisms",
@@ -410,8 +705,53 @@ export class MemStorage implements IStorage {
       difficulty: "Intermediate",
     });
 
-    // Add exams for Business Administration
-    const bizExam1 = this.createExamSync({
+    this.createExamSync({
+      subjectId: biologySubject.id,
+      title: "Cell Biology Fundamentals",
+      description: "Cell structure, organelles, and cellular processes",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: biologySubject.id,
+      title: "Genetics and Evolution",
+      description: "Heredity, DNA, and evolutionary biology",
+      questionCount: 45,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: anatomySubject.id,
+      title: "Human Anatomy Systems",
+      description: "Body systems, organs, and physiological processes",
+      questionCount: 50,
+      duration: 100,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: astronomySubject.id,
+      title: "Solar System and Planets",
+      description: "Planetary science and solar system exploration",
+      questionCount: 30,
+      duration: 70,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: earthScienceSubject.id,
+      title: "Geology and Earth Processes",
+      description: "Rock formation, plate tectonics, and earth history",
+      questionCount: 35,
+      duration: 80,
+      difficulty: "Intermediate",
+    });
+
+    // Business & Economics Exams
+    this.createExamSync({
       subjectId: businessSubject.id,
       title: "Business Strategy Fundamentals",
       description: "Strategic planning, competitive analysis, and market positioning",
@@ -420,7 +760,7 @@ export class MemStorage implements IStorage {
       difficulty: "Intermediate",
     });
 
-    const bizExam2 = this.createExamSync({
+    this.createExamSync({
       subjectId: businessSubject.id,
       title: "Financial Management",
       description: "Corporate finance, budgeting, and financial analysis",
@@ -429,8 +769,25 @@ export class MemStorage implements IStorage {
       difficulty: "Advanced",
     });
 
-    // Add exams for Economics
-    const econExam1 = this.createExamSync({
+    this.createExamSync({
+      subjectId: accountingSubject.id,
+      title: "Principles of Accounting",
+      description: "Financial statements, accounting principles, and basic bookkeeping",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: accountingSubject.id,
+      title: "Cost Accounting",
+      description: "Cost analysis, budgeting, and managerial accounting",
+      questionCount: 45,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
       subjectId: economicsSubject.id,
       title: "Microeconomics Principles",
       description: "Supply and demand, market structures, and consumer behavior",
@@ -439,76 +796,275 @@ export class MemStorage implements IStorage {
       difficulty: "Beginner",
     });
 
-    const econExam2 = this.createExamSync({
+    this.createExamSync({
       subjectId: economicsSubject.id,
       title: "Macroeconomics Analysis",
       description: "GDP, inflation, monetary policy, and international trade",
-      questionCount: 50,
-      duration: 95,
+      questionCount: 45,
+      duration: 90,
       difficulty: "Intermediate",
     });
 
-    // Add exams for Engineering
-    const engExam1 = this.createExamSync({
+    this.createExamSync({
+      subjectId: financeSubject.id,
+      title: "Corporate Finance",
+      description: "Investment decisions, capital structure, and financial analysis",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Intermediate",
+    });
+
+    // English & Literature Exams
+    this.createExamSync({
+      subjectId: englishSubject.id,
+      title: "English Literature Survey",
+      description: "Major works, literary periods, and critical analysis",
+      questionCount: 35,
+      duration: 80,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: writingSubject.id,
+      title: "Business Writing",
+      description: "Professional communication, reports, and presentations",
+      questionCount: 30,
+      duration: 75,
+      difficulty: "Beginner",
+    });
+
+    // Social Sciences Exams
+    this.createExamSync({
+      subjectId: psychologySubject.id,
+      title: "General Psychology",
+      description: "Learning, memory, cognition, and behavior",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: historySubject.id,
+      title: "World History",
+      description: "Major civilizations, events, and historical analysis",
+      questionCount: 45,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: philosophySubject.id,
+      title: "Introduction to Philosophy",
+      description: "Ethics, logic, metaphysics, and philosophical reasoning",
+      questionCount: 35,
+      duration: 80,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: sociologySubject.id,
+      title: "Sociology Fundamentals",
+      description: "Social theory, institutions, and research methods",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: politicalScienceSubject.id,
+      title: "American Government",
+      description: "Constitution, political institutions, and public policy",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Intermediate",
+    });
+
+    // Computer Science & Programming Exams
+    this.createExamSync({
+      subjectId: computerScienceSubject.id,
+      title: "Programming Fundamentals",
+      description: "Basic programming concepts and problem solving",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: computerScienceSubject.id,
+      title: "Advanced Software Engineering",
+      description: "Design patterns, algorithms, and system architecture",
+      questionCount: 50,
+      duration: 100,
+      difficulty: "Advanced",
+    });
+
+    this.createExamSync({
+      subjectId: dataStructuresSubject.id,
+      title: "Data Structures Basics",
+      description: "Arrays, linked lists, stacks, and queues",
+      questionCount: 35,
+      duration: 75,
+      difficulty: "Beginner",
+    });
+
+    this.createExamSync({
+      subjectId: programmingSubject.id,
+      title: "Object-Oriented Programming",
+      description: "Classes, inheritance, polymorphism, and design patterns",
+      questionCount: 40,
+      duration: 85,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: webDevelopmentSubject.id,
+      title: "Full-Stack Web Development",
+      description: "HTML, CSS, JavaScript, React, and backend development",
+      questionCount: 45,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: databaseSubject.id,
+      title: "Database Design and SQL",
+      description: "Relational databases, SQL queries, and database optimization",
+      questionCount: 35,
+      duration: 80,
+      difficulty: "Intermediate",
+    });
+
+    // Engineering Exams
+    this.createExamSync({
       subjectId: engineeringSubject.id,
       title: "Engineering Mechanics",
       description: "Statics, dynamics, and material properties",
-      questionCount: 45,
+      questionCount: 40,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: mechanicalEngSubject.id,
+      title: "Thermodynamics",
+      description: "Heat transfer, energy systems, and thermal analysis",
+      questionCount: 35,
+      duration: 85,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: electricalEngSubject.id,
+      title: "Circuit Analysis",
+      description: "Electrical circuits, components, and circuit design",
+      questionCount: 40,
+      duration: 90,
+      difficulty: "Intermediate",
+    });
+
+    // Medical & Health Sciences Exams
+    this.createExamSync({
+      subjectId: medicalSubject.id,
+      title: "Human Anatomy",
+      description: "Body systems, organs, and physiological processes",
+      questionCount: 50,
       duration: 100,
       difficulty: "Intermediate",
     });
 
-    const engExam2 = this.createExamSync({
-      subjectId: engineeringSubject.id,
-      title: "Systems Design",
-      description: "Design principles, optimization, and project management",
-      questionCount: 55,
-      duration: 120,
-      difficulty: "Advanced",
-    });
-
-    // Add exams for Medical Sciences
-    const medExam1 = this.createExamSync({
-      subjectId: medicalSubject.id,
-      title: "Human Anatomy",
-      description: "Body systems, organs, and physiological processes",
+    this.createExamSync({
+      subjectId: nursingSubject.id,
+      title: "RN Fundamentals",
+      description: "Nursing fundamentals and patient care basics",
       questionCount: 60,
-      duration: 110,
+      duration: 120,
       difficulty: "Intermediate",
     });
 
-    const medExam2 = this.createExamSync({
-      subjectId: medicalSubject.id,
-      title: "Pharmacology Basics",
-      description: "Drug mechanisms, interactions, and therapeutic applications",
-      questionCount: 70,
-      duration: 130,
+    this.createExamSync({
+      subjectId: nursingSubject.id,
+      title: "Medical-Surgical Nursing",
+      description: "Adult health nursing and medical-surgical procedures",
+      questionCount: 75,
+      duration: 150,
       difficulty: "Advanced",
     });
 
-    // Add exams for Biology
-    const bioExam1 = this.createExamSync({
-      subjectId: biologySubject.id,
-      title: "Cell Biology",
-      description: "Cell structure, organelles, and cellular processes",
-      questionCount: 45,
-      duration: 90,
+    this.createExamSync({
+      subjectId: pharmacologySubject.id,
+      title: "Pharmacology Basics",
+      description: "Drug mechanisms, interactions, and therapeutic applications",
+      questionCount: 50,
+      duration: 100,
+      difficulty: "Intermediate",
+    });
+
+    // Professional Exams
+    this.createExamSync({
+      subjectId: hesiSubject.id,
+      title: "HESI A2 Practice Test",
+      description: "Comprehensive HESI admission assessment preparation",
+      questionCount: 75,
+      duration: 180,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: teasSubject.id,
+      title: "TEAS 7 Practice Exam",
+      description: "Test of Essential Academic Skills for nursing programs",
+      questionCount: 170,
+      duration: 209,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: greSubject.id,
+      title: "GRE General Test",
+      description: "Graduate Record Examination practice test",
+      questionCount: 80,
+      duration: 200,
+      difficulty: "Advanced",
+    });
+
+    this.createExamSync({
+      subjectId: lsatSubject.id,
+      title: "LSAT Practice Test",
+      description: "Law School Admission Test preparation",
+      questionCount: 100,
+      duration: 180,
+      difficulty: "Advanced",
+    });
+
+    this.createExamSync({
+      subjectId: toeflSubject.id,
+      title: "TOEFL iBT Practice",
+      description: "Test of English as a Foreign Language preparation",
+      questionCount: 60,
+      duration: 180,
+      difficulty: "Intermediate",
+    });
+
+    this.createExamSync({
+      subjectId: gedSubject.id,
+      title: "GED Practice Test",
+      description: "General Educational Development test preparation",
+      questionCount: 50,
+      duration: 150,
       difficulty: "Beginner",
     });
 
-    const bioExam2 = this.createExamSync({
-      subjectId: biologySubject.id,
-      title: "Genetics and Evolution",
-      description: "DNA, heredity, natural selection, and evolutionary biology",
-      questionCount: 55,
-      duration: 105,
-      difficulty: "Intermediate",
-    });
+    // Create exam references for questions
+    const pmpExam = Array.from(this.exams.values()).find(e => e.subjectId === pmpSubject.id);
+    const awsExam = Array.from(this.exams.values()).find(e => e.subjectId === awsSubject.id);
+    const statisticsExam = Array.from(this.exams.values()).find(e => e.subjectId === statisticsSubject.id);
+    const calculusExam = Array.from(this.exams.values()).find(e => e.subjectId === calculusSubject.id);
 
     // Create sample questions
-    this.createQuestionSync({
-      examId: pmpExam1.id,
-      subjectId: pmpSubject.id,
+    if (pmpExam) {
+      this.createQuestionSync({
+        examId: pmpExam.id,
+        subjectId: pmpSubject.id,
       text: "You are managing a software development project with a team of 12 developers. During the planning phase, you realize that one of the key requirements has significant technical risks that could impact the project timeline. What should be your immediate next step according to PMI best practices?",
       options: [
         "Proceed with the original plan and address risks as they occur during execution",
@@ -523,44 +1079,49 @@ export class MemStorage implements IStorage {
       order: 1,
     });
 
-    this.createQuestionSync({
-      examId: pmpExam1.id,
-      subjectId: pmpSubject.id,
-      text: "What is the primary purpose of a project charter in project management?",
-      options: [
-        "To define detailed project requirements",
-        "To formally authorize the project and provide high-level direction",
-        "To create a detailed project schedule",
-        "To identify all project stakeholders"
-      ],
-      correctAnswer: 1,
-      explanation: "The project charter formally authorizes the project and provides the project manager with the authority to apply organizational resources to project activities. It establishes the high-level direction and rationale for the project.",
-      domain: "Initiating",
-      difficulty: "Beginner",
-      order: 2,
-    });
+      this.createQuestionSync({
+        examId: pmpExam.id,
+        subjectId: pmpSubject.id,
+        text: "What is the primary purpose of a project charter in project management?",
+        options: [
+          "To define detailed project requirements",
+          "To formally authorize the project and provide high-level direction",
+          "To create a detailed project schedule",
+          "To identify all project stakeholders"
+        ],
+        correctAnswer: 1,
+        explanation: "The project charter formally authorizes the project and provides the project manager with the authority to apply organizational resources to project activities. It establishes the high-level direction and rationale for the project.",
+        domain: "Initiating",
+        difficulty: "Beginner",
+        order: 2,
+      });
+    }
 
-    this.createQuestionSync({
-      examId: awsExam1.id,
-      subjectId: awsSubject.id,
-      text: "Which AWS service is primarily used for hosting static websites?",
-      options: [
-        "Amazon EC2",
-        "Amazon S3",
-        "Amazon RDS",
-        "Amazon Lambda"
-      ],
-      correctAnswer: 1,
-      explanation: "Amazon S3 (Simple Storage Service) is commonly used for hosting static websites. It provides a cost-effective way to serve static content like HTML, CSS, JavaScript, and images.",
-      domain: "Core Services",
-      difficulty: "Beginner",
-      order: 1,
-    });
+    if (awsExam) {
+      this.createQuestionSync({
+        examId: awsExam.id,
+        subjectId: awsSubject.id,
+        text: "Which AWS service is primarily used for hosting static websites?",
+        options: [
+          "Amazon EC2",
+          "Amazon S3",
+          "Amazon RDS",
+          "Amazon Lambda"
+        ],
+        correctAnswer: 1,
+        explanation: "Amazon S3 (Simple Storage Service) is commonly used for hosting static websites. It provides a cost-effective way to serve static content like HTML, CSS, JavaScript, and images.",
+        domain: "Core Services",
+        difficulty: "Beginner",
+        order: 1,
+      });
+    }
 
     // Add sample questions for CompTIA Security+
-    this.createQuestionSync({
-      examId: comptiaExam1.id,
-      subjectId: comptiaSubject.id,
+    const comptiaExam = Array.from(this.exams.values()).find(e => e.subjectId === comptiaSubject.id);
+    if (comptiaExam) {
+      this.createQuestionSync({
+        examId: comptiaExam.id,
+        subjectId: comptiaSubject.id,
       text: "Which of the following is the BEST method to prevent unauthorized access to a wireless network?",
       options: [
         "Enable WEP encryption",
@@ -575,28 +1136,34 @@ export class MemStorage implements IStorage {
       order: 1,
     });
 
+    }
+
     // Add sample questions for Computer Science
-    this.createQuestionSync({
-      examId: csExam1.id,
-      subjectId: computerScienceSubject.id,
-      text: "What is the time complexity of searching for an element in a binary search tree in the average case?",
-      options: [
-        "O(1)",
-        "O(log n)",
-        "O(n)",
-        "O(n log n)"
-      ],
-      correctAnswer: 1,
-      explanation: "In a balanced binary search tree, searching for an element takes O(log n) time on average because we can eliminate half of the remaining nodes at each level by comparing with the current node.",
-      domain: "Data Structures",
-      difficulty: "Intermediate",
-      order: 1,
-    });
+    const csExam = Array.from(this.exams.values()).find(e => e.subjectId === computerScienceSubject.id);
+    if (csExam) {
+      this.createQuestionSync({
+        examId: csExam.id,
+        subjectId: computerScienceSubject.id,
+        text: "What is the time complexity of searching for an element in a binary search tree in the average case?",
+        options: [
+          "O(1)",
+          "O(log n)",
+          "O(n)",
+          "O(n log n)"
+        ],
+        correctAnswer: 1,
+        explanation: "In a balanced binary search tree, searching for an element takes O(log n) time on average because we can eliminate half of the remaining nodes at each level by comparing with the current node.",
+        domain: "Data Structures",
+        difficulty: "Intermediate",
+        order: 1,
+      });
+    }
 
     // Add sample questions for Mathematics
-    this.createQuestionSync({
-      examId: mathExam1.id,
-      subjectId: mathematicsSubject.id,
+    if (calculusExam) {
+      this.createQuestionSync({
+        examId: calculusExam.id,
+        subjectId: calculusSubject.id,
       text: "What is the derivative of f(x) = x³ + 2x² - 5x + 3?",
       options: [
         "3x² + 4x - 5",
@@ -609,7 +1176,28 @@ export class MemStorage implements IStorage {
       domain: "Calculus",
       difficulty: "Intermediate",
       order: 1,
-    });
+      });
+    }
+
+    // Add sample questions for Statistics
+    if (statisticsExam) {
+      this.createQuestionSync({
+        examId: statisticsExam.id,
+        subjectId: statisticsSubject.id,
+        text: "What is the difference between a parameter and a statistic?",
+        options: [
+          "A parameter describes a population, while a statistic describes a sample",
+          "A parameter describes a sample, while a statistic describes a population",
+          "They are the same thing",
+          "A parameter is always larger than a statistic"
+        ],
+        correctAnswer: 0,
+        explanation: "A parameter is a numerical measure that describes a characteristic of a population, while a statistic is a numerical measure that describes a characteristic of a sample drawn from that population.",
+        domain: "Descriptive Statistics",
+        difficulty: "Beginner",
+        order: 1,
+      });
+    }
 
     // Add sample users
     this.createUserSync({
