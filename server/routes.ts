@@ -15,6 +15,27 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Test database connection by fetching one subject
+      await storage.getSubjects();
+      res.json({ 
+        status: "healthy", 
+        timestamp: new Date().toISOString(),
+        database: "connected",
+        version: "1.0.0"
+      });
+    } catch (error) {
+      res.status(503).json({ 
+        status: "unhealthy", 
+        timestamp: new Date().toISOString(),
+        database: "disconnected",
+        error: "Database connection failed"
+      });
+    }
+  });
+
   // Subject routes
   app.get("/api/subjects", async (req, res) => {
     try {
