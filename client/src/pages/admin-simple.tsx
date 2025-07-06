@@ -875,6 +875,7 @@ export default function AdminSimple() {
         description: "",
         duration: 0,
         questionCount: 0,
+        difficulty: "Intermediate",
       }
     });
 
@@ -1074,6 +1075,31 @@ export default function AdminSimple() {
                       )}
                     />
                   </div>
+                  
+                  <FormField
+                    control={examForm.control}
+                    name="difficulty"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Difficulty</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select difficulty" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Beginner">Beginner</SelectItem>
+                            <SelectItem value="Intermediate">Intermediate</SelectItem>
+                            <SelectItem value="Advanced">Advanced</SelectItem>
+                            <SelectItem value="Expert">Expert</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
