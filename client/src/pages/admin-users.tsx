@@ -25,9 +25,9 @@ export default function AdminUsers() {
   const queryClient = useQueryClient();
   
   const [filters, setFilters] = useState<UserFilters>({
-    role: "",
-    isActive: "",
-    isBanned: "",
+    role: "all",
+    isActive: "all",
+    isBanned: "all",
     search: ""
   });
   
@@ -41,7 +41,7 @@ export default function AdminUsers() {
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (value && value !== "all") params.append(key, value);
       });
       const response = await fetch(`/api/users?${params}`);
       if (!response.ok) throw new Error('Failed to fetch users');
@@ -137,7 +137,7 @@ export default function AdminUsers() {
   const handleExportCSV = () => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.append(key, value);
+      if (value && value !== "all") params.append(key, value);
     });
     
     // Open CSV export in new tab
@@ -306,7 +306,7 @@ export default function AdminUsers() {
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All roles</SelectItem>
+                  <SelectItem value="all">All roles</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="moderator">Moderator</SelectItem>
                   <SelectItem value="user">User</SelectItem>
@@ -321,7 +321,7 @@ export default function AdminUsers() {
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="true">Active</SelectItem>
                   <SelectItem value="false">Inactive</SelectItem>
                 </SelectContent>
@@ -335,7 +335,7 @@ export default function AdminUsers() {
                   <SelectValue placeholder="All users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All users</SelectItem>
+                  <SelectItem value="all">All users</SelectItem>
                   <SelectItem value="false">Not banned</SelectItem>
                   <SelectItem value="true">Banned</SelectItem>
                 </SelectContent>
