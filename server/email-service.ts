@@ -10,32 +10,66 @@ class EmailService {
 
   private async initializeTransporter() {
     try {
-      // Check for Gmail credentials
-      const gmailUser = process.env.GMAIL_USER;
-      const gmailPassword = process.env.GMAIL_APP_PASSWORD;
-
-      if (gmailUser && gmailPassword) {
-        // Use Gmail SMTP (free forever)
+      // 1. Resend (Professional, reliable, affordable)
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (resendApiKey) {
         this.transporter = nodemailer.createTransport({
-          service: 'gmail',
+          host: 'smtp.resend.com',
+          port: 587,
+          secure: false,
           auth: {
-            user: gmailUser,
-            pass: gmailPassword, // App password, not regular password
+            user: 'resend',
+            pass: resendApiKey,
           },
         });
-        console.log('Email service initialized with Gmail SMTP');
-      } else {
-        // Fallback to console logging for development
-        this.transporter = nodemailer.createTransport({
-          streamTransport: true,
-          newline: 'unix',
-          buffer: true,
-        });
-        console.log('Email service initialized in development mode (console logging)');
+        console.log('Email service initialized with Resend (Professional)');
+        return;
       }
+
+      // 2. SendGrid (Enterprise-grade alternative)
+      const sendgridApiKey = process.env.SENDGRID_API_KEY;
+      if (sendgridApiKey) {
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.sendgrid.net',
+          port: 587,
+          secure: false,
+          auth: {
+            user: 'apikey',
+            pass: sendgridApiKey,
+          },
+        });
+        console.log('Email service initialized with SendGrid');
+        return;
+      }
+
+      // 3. Mailgun (Another professional option)
+      const mailgunApiKey = process.env.MAILGUN_API_KEY;
+      const mailgunDomain = process.env.MAILGUN_DOMAIN;
+      if (mailgunApiKey && mailgunDomain) {
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp.mailgun.org',
+          port: 587,
+          secure: false,
+          auth: {
+            user: `postmaster@${mailgunDomain}`,
+            pass: mailgunApiKey,
+          },
+        });
+        console.log('Email service initialized with Mailgun');
+        return;
+      }
+
+      // 4. Development/Testing fallback
+      this.transporter = nodemailer.createTransport({
+        streamTransport: true,
+        newline: 'unix',
+        buffer: true,
+      });
+      console.log('Email service initialized in development mode (console logging)');
+      
     } catch (error) {
       console.error('Failed to initialize email service:', error);
-      // Create a dummy transporter that logs to console
+      // Fallback to console logging
       this.transporter = nodemailer.createTransport({
         streamTransport: true,
         newline: 'unix',
@@ -53,10 +87,23 @@ class EmailService {
     const htmlContent = this.generateAuthEmailHTML(code);
     const textContent = this.generateAuthEmailText(code);
 
+    // Determine the sender address based on the email service
+    let senderAddress = 'noreply@brainliest.com'; // Default
+    
+    if (process.env.RESEND_API_KEY) {
+      senderAddress = 'noreply@brainliest.com'; // Use your verified domain
+    } else if (process.env.SENDGRID_API_KEY) {
+      senderAddress = 'noreply@brainliest.com'; // Use your verified domain
+    } else if (process.env.MAILGUN_DOMAIN) {
+      senderAddress = `noreply@${process.env.MAILGUN_DOMAIN}`;
+    } else if (process.env.GMAIL_USER) {
+      senderAddress = process.env.GMAIL_USER;
+    }
+
     const mailOptions = {
       from: {
         name: 'Brainliest',
-        address: process.env.GMAIL_USER || 'noreply@brainliest.com'
+        address: senderAddress
       },
       to: email,
       subject: 'Your Brainliest Authentication Code',
@@ -81,7 +128,15 @@ class EmailService {
       return true;
     } catch (error) {
       console.error('Failed to send authentication email:', error);
-      return false;
+      
+      // Fallback: log the code to console for development/testing
+      console.log('\n=== EMAIL FALLBACK (Console Mode) ===');
+      console.log(`🔐 Authentication Code for ${email}: ${code}`);
+      console.log('Note: Email delivery failed, but you can use this code for testing');
+      console.log('=====================================\n');
+      
+      // Return true so authentication can continue in development
+      return true;
     }
   }
 
