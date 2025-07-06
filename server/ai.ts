@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyC2kp4B
 
 export async function getQuestionHelp(questionText: string, options: string[], subject: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert tutor helping students prepare for ${subject} certification exams. 
 
@@ -42,7 +42,7 @@ export async function explainAnswer(
   subject: string
 ): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert ${subject} instructor explaining why an answer is correct or incorrect.
 
