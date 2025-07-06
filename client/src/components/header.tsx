@@ -1,9 +1,12 @@
 import { Link, useLocation } from "wouter";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/auth-modal";
 
 export default function Header() {
   const [location] = useLocation();
-  const { isSignedIn, userName, signIn, signOut } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { isSignedIn, userName, signOut } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -37,12 +40,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {!isSignedIn ? (
               <button 
-                onClick={() => {
-                  const name = prompt("Enter your name to sign in:");
-                  if (name?.trim()) {
-                    signIn(name.trim());
-                  }
-                }}
+                onClick={() => setShowAuthModal(true)}
                 className="bg-primary text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 Sign In
@@ -61,6 +59,11 @@ export default function Header() {
           </div>
         </div>
       </div>
+      
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </header>
   );
 }

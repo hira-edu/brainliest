@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/auth-modal";
 
 interface FeedbackCardProps {
   question: Question;
@@ -18,6 +19,7 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
   const [showAiExplanation, setShowAiExplanation] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [newComment, setNewComment] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { isSignedIn, userName, signIn } = useAuth();
   const { toast } = useToast();
 
@@ -80,10 +82,7 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
 
   const handleAddComment = () => {
     if (!isSignedIn) {
-      const name = prompt("Enter your name to sign in:");
-      if (name?.trim()) {
-        signIn(name.trim());
-      }
+      setShowAuthModal(true);
       return;
     }
     
@@ -186,12 +185,7 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
               <div className="text-center py-4">
                 <p className="text-gray-600 mb-3">Please sign in to join the discussion</p>
                 <button
-                  onClick={() => {
-                    const name = prompt("Enter your name to sign in:");
-                    if (name?.trim()) {
-                      signIn(name.trim());
-                    }
-                  }}
+                  onClick={() => setShowAuthModal(true)}
                   className="px-4 py-2 bg-primary text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                 >
                   Sign In to Comment
@@ -245,6 +239,11 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
           )}
         </div>
       </div>
+      
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </div>
   );
 }
