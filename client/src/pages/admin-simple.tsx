@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
+import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertQuestionSchema, insertExamSchema, insertSubjectSchema } from "@shared/schema";
+import { insertCategorySchema, insertSubcategorySchema, insertQuestionSchema, insertExamSchema, insertSubjectSchema } from "@shared/schema";
 import { z } from "zod";
 import { 
   Plus, 
@@ -171,6 +171,41 @@ export default function AdminSimple() {
 
   const { data: questions } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
+  });
+
+  const { data: categories } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
+
+  const { data: subcategories } = useQuery<Subcategory[]>({
+    queryKey: ["/api/subcategories"],
+  });
+
+  // Shared mutations for creating categories and subcategories
+  const createCategoryMutation = useMutation({
+    mutationFn: (data: z.infer<typeof insertCategorySchema>) => 
+      apiRequest("POST", `/api/categories`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      toast({ title: "Category created successfully!" });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to create category", variant: "destructive" });
+      console.error("Error creating category:", error);
+    },
+  });
+
+  const createSubcategoryMutation = useMutation({
+    mutationFn: (data: z.infer<typeof insertSubcategorySchema>) => 
+      apiRequest("POST", `/api/subcategories`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
+      toast({ title: "Subcategory created successfully!" });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to create subcategory", variant: "destructive" });
+      console.error("Error creating subcategory:", error);
+    },
   });
 
   // Track previously used icons
@@ -483,6 +518,606 @@ export default function AdminSimple() {
   }
 
   // Subject Management Component  
+  // Categories Management Component
+  function CategoryManager() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    const categoryForm = useForm<z.infer<typeof insertCategorySchema>>({
+      resolver: zodResolver(insertCategorySchema),
+      defaultValues: {
+        name: "",
+        description: "",
+        icon: "",
+        color: "",
+        isActive: true,
+        sortOrder: 0,
+      },
+    });
+
+    const editCategoryForm = useForm<z.infer<typeof insertCategorySchema>>({
+      resolver: zodResolver(insertCategorySchema),
+      defaultValues: {
+        name: "",
+        description: "",
+        icon: "",
+        color: "",
+        isActive: true,
+        sortOrder: 0,
+      },
+    });
+
+    const updateCategoryMutation = useMutation({
+      mutationFn: ({ id, data }: { id: number; data: z.infer<typeof insertCategorySchema> }) => 
+        apiRequest("PUT", `/api/categories/${id}`, data),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+        editCategoryForm.reset();
+        setIsEditDialogOpen(false);
+        setEditingCategory(null);
+        toast({ title: "Category updated successfully!" });
+      },
+      onError: (error) => {
+        toast({ title: "Failed to update category", variant: "destructive" });
+        console.error("Error updating category:", error);
+      },
+    });
+
+    const deleteCategoryMutation = useMutation({
+      mutationFn: (id: number) => apiRequest("DELETE", `/api/categories/${id}`),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+        toast({ title: "Category deleted successfully!" });
+      },
+      onError: (error) => {
+        toast({ title: "Failed to delete category", variant: "destructive" });
+        console.error("Error deleting category:", error);
+      },
+    });
+
+    const onSubmit = (data: z.infer<typeof insertCategorySchema>) => {
+      createCategoryMutation.mutate(data);
+    };
+
+    const onEditSubmit = (data: z.infer<typeof insertCategorySchema>) => {
+      if (editingCategory) {
+        updateCategoryMutation.mutate({ id: editingCategory.id, data });
+      }
+    };
+
+    const handleEditCategory = (category: Category) => {
+      setEditingCategory(category);
+      editCategoryForm.reset({
+        name: category.name,
+        description: category.description || "",
+        icon: category.icon || "",
+        color: category.color || "",
+        isActive: category.isActive,
+        sortOrder: category.sortOrder,
+      });
+      setIsEditDialogOpen(true);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Manage Categories</h2>
+            <p className="text-gray-600">Create and organize main subject categories</p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Category
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Category</DialogTitle>
+              </DialogHeader>
+              <Form {...categoryForm}>
+                <form onSubmit={categoryForm.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={categoryForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Professional Certifications" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={categoryForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Brief description..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={categoryForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., fas fa-certificate" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={categoryForm.control}
+                    name="sortOrder"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sort Order</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={createCategoryMutation.isPending}>
+                    {createCategoryMutation.isPending ? "Creating..." : "Create Category"}
+                  </Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Categories ({categories?.length || 0})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {categories?.map((category) => (
+                <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    {category.icon && <span className={category.icon}></span>}
+                    <div>
+                      <h3 className="font-medium">{category.name}</h3>
+                      <p className="text-sm text-gray-600">{category.description}</p>
+                      <p className="text-xs text-gray-500">Sort Order: {category.sortOrder}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditCategory(category)}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteCategoryMutation.mutate(category.id)}
+                      disabled={deleteCategoryMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+            </DialogHeader>
+            <Form {...editCategoryForm}>
+              <form onSubmit={editCategoryForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <FormField
+                  control={editCategoryForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Professional Certifications" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editCategoryForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Brief description..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editCategoryForm.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., fas fa-certificate" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editCategoryForm.control}
+                  name="sortOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sort Order</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={updateCategoryMutation.isPending}>
+                  {updateCategoryMutation.isPending ? "Updating..." : "Update Category"}
+                </Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // Subcategories Management Component  
+  function SubcategoryManager() {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    const subcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
+      resolver: zodResolver(insertSubcategorySchema),
+      defaultValues: {
+        categoryId: 0,
+        name: "",
+        description: "",
+        icon: "",
+        color: "",
+        isActive: true,
+        sortOrder: 0,
+      },
+    });
+
+    const editSubcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
+      resolver: zodResolver(insertSubcategorySchema),
+      defaultValues: {
+        categoryId: 0,
+        name: "",
+        description: "",
+        icon: "",
+        color: "",
+        isActive: true,
+        sortOrder: 0,
+      },
+    });
+
+    const updateSubcategoryMutation = useMutation({
+      mutationFn: ({ id, data }: { id: number; data: z.infer<typeof insertSubcategorySchema> }) => 
+        apiRequest("PUT", `/api/subcategories/${id}`, data),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
+        editSubcategoryForm.reset();
+        setIsEditDialogOpen(false);
+        setEditingSubcategory(null);
+        toast({ title: "Subcategory updated successfully!" });
+      },
+      onError: (error) => {
+        toast({ title: "Failed to update subcategory", variant: "destructive" });
+        console.error("Error updating subcategory:", error);
+      },
+    });
+
+    const deleteSubcategoryMutation = useMutation({
+      mutationFn: (id: number) => apiRequest("DELETE", `/api/subcategories/${id}`),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
+        toast({ title: "Subcategory deleted successfully!" });
+      },
+      onError: (error) => {
+        toast({ title: "Failed to delete subcategory", variant: "destructive" });
+        console.error("Error deleting subcategory:", error);
+      },
+    });
+
+    const onSubmit = (data: z.infer<typeof insertSubcategorySchema>) => {
+      createSubcategoryMutation.mutate(data);
+    };
+
+    const onEditSubmit = (data: z.infer<typeof insertSubcategorySchema>) => {
+      if (editingSubcategory) {
+        updateSubcategoryMutation.mutate({ id: editingSubcategory.id, data });
+      }
+    };
+
+    const handleEditSubcategory = (subcategory: Subcategory) => {
+      setEditingSubcategory(subcategory);
+      editSubcategoryForm.reset({
+        categoryId: subcategory.categoryId,
+        name: subcategory.name,
+        description: subcategory.description || "",
+        icon: subcategory.icon || "",
+        color: subcategory.color || "",
+        isActive: subcategory.isActive,
+        sortOrder: subcategory.sortOrder,
+      });
+      setIsEditDialogOpen(true);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Manage Subcategories</h2>
+            <p className="text-gray-600">Create subcategories within main categories</p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Subcategory
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Subcategory</DialogTitle>
+              </DialogHeader>
+              <Form {...subcategoryForm}>
+                <form onSubmit={subcategoryForm.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={subcategoryForm.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Parent Category</FormLabel>
+                        <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories?.map((category) => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subcategoryForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subcategory Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., IT & Cloud Computing" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subcategoryForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Brief description..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subcategoryForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., fas fa-cloud" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subcategoryForm.control}
+                    name="sortOrder"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sort Order</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={createSubcategoryMutation.isPending}>
+                    {createSubcategoryMutation.isPending ? "Creating..." : "Create Subcategory"}
+                  </Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Subcategories ({subcategories?.length || 0})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {subcategories?.map((subcategory) => {
+                const parentCategory = categories?.find(cat => cat.id === subcategory.categoryId);
+                return (
+                  <div key={subcategory.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      {subcategory.icon && <span className={subcategory.icon}></span>}
+                      <div>
+                        <h3 className="font-medium">{subcategory.name}</h3>
+                        <p className="text-sm text-gray-600">{subcategory.description}</p>
+                        <p className="text-xs text-gray-500">
+                          Parent: {parentCategory?.name} | Sort Order: {subcategory.sortOrder}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditSubcategory(subcategory)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deleteSubcategoryMutation.mutate(subcategory.id)}
+                        disabled={deleteSubcategoryMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Subcategory</DialogTitle>
+            </DialogHeader>
+            <Form {...editSubcategoryForm}>
+              <form onSubmit={editSubcategoryForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <FormField
+                  control={editSubcategoryForm.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Parent Category</FormLabel>
+                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories?.map((category) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editSubcategoryForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subcategory Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., IT & Cloud Computing" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editSubcategoryForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Brief description..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editSubcategoryForm.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., fas fa-cloud" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editSubcategoryForm.control}
+                  name="sortOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sort Order</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" disabled={updateSubcategoryMutation.isPending}>
+                  {updateSubcategoryMutation.isPending ? "Updating..." : "Update Subcategory"}
+                </Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
   function SubjectManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -494,6 +1129,8 @@ export default function AdminSimple() {
         name: "",
         description: "",
         icon: "",
+        categoryId: undefined,
+        subcategoryId: undefined,
       }
     });
 
@@ -606,6 +1243,144 @@ export default function AdminSimple() {
                         <FormControl>
                           <Textarea placeholder="Brief description..." {...field} value={field.value || ""} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subjectForm.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <div className="flex items-center space-x-2">
+                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {categories?.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" type="button">
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Create New Category</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <Input placeholder="Category name" id="quick-category-name" />
+                                <Textarea placeholder="Description (optional)" id="quick-category-desc" />
+                                <Input placeholder="Icon (optional)" id="quick-category-icon" />
+                                <Button onClick={() => {
+                                  const name = (document.getElementById('quick-category-name') as HTMLInputElement)?.value;
+                                  const description = (document.getElementById('quick-category-desc') as HTMLTextAreaElement)?.value;
+                                  const icon = (document.getElementById('quick-category-icon') as HTMLInputElement)?.value;
+                                  if (name) {
+                                    createCategoryMutation.mutate({
+                                      name,
+                                      description: description || "",
+                                      icon: icon || "",
+                                      color: "",
+                                      isActive: true,
+                                      sortOrder: categories?.length || 0
+                                    });
+                                  }
+                                }}>
+                                  Create Category
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={subjectForm.control}
+                    name="subcategoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subcategory</FormLabel>
+                        <div className="flex items-center space-x-2">
+                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a subcategory" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {subcategories?.map((subcategory) => (
+                                <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
+                                  {subcategory.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" type="button">
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Create New Subcategory</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <Select onValueChange={(value) => {
+                                  const elem = document.getElementById('quick-subcategory-parent') as HTMLInputElement;
+                                  if (elem) elem.value = value;
+                                }}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select parent category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {categories?.map((category) => (
+                                      <SelectItem key={category.id} value={category.id.toString()}>
+                                        {category.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <input type="hidden" id="quick-subcategory-parent" />
+                                <Input placeholder="Subcategory name" id="quick-subcategory-name" />
+                                <Textarea placeholder="Description (optional)" id="quick-subcategory-desc" />
+                                <Input placeholder="Icon (optional)" id="quick-subcategory-icon" />
+                                <Button onClick={() => {
+                                  const categoryId = (document.getElementById('quick-subcategory-parent') as HTMLInputElement)?.value;
+                                  const name = (document.getElementById('quick-subcategory-name') as HTMLInputElement)?.value;
+                                  const description = (document.getElementById('quick-subcategory-desc') as HTMLTextAreaElement)?.value;
+                                  const icon = (document.getElementById('quick-subcategory-icon') as HTMLInputElement)?.value;
+                                  if (categoryId && name) {
+                                    createSubcategoryMutation.mutate({
+                                      categoryId: parseInt(categoryId),
+                                      name,
+                                      description: description || "",
+                                      icon: icon || "",
+                                      color: "",
+                                      isActive: true,
+                                      sortOrder: subcategories?.length || 0
+                                    });
+                                  }
+                                }}>
+                                  Create Subcategory
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1998,8 +2773,10 @@ export default function AdminSimple() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="subcategories">Subcategories</TabsTrigger>
             <TabsTrigger value="subjects">Subjects</TabsTrigger>
             <TabsTrigger value="exams">Exams</TabsTrigger>
             <TabsTrigger value="questions">Questions</TabsTrigger>
@@ -2008,6 +2785,12 @@ export default function AdminSimple() {
           </TabsList>
           <TabsContent value="dashboard">
             <DashboardOverview />
+          </TabsContent>
+          <TabsContent value="categories">
+            <CategoryManager />
+          </TabsContent>
+          <TabsContent value="subcategories">
+            <SubcategoryManager />
           </TabsContent>
           <TabsContent value="subjects">
             <SubjectManager />

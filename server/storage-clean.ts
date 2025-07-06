@@ -1,10 +1,16 @@
 import {
+  categories,
+  subcategories,
   subjects,
   exams,
   questions,
   examSessions,
   comments,
   users,
+  type Category,
+  type InsertCategory,
+  type Subcategory,
+  type InsertSubcategory,
   type Subject,
   type InsertSubject,
   type Exam,
@@ -23,6 +29,21 @@ import { eq, like, and, or } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
+  // Categories
+  getCategories(): Promise<Category[]>;
+  getCategory(id: number): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
+
+  // Subcategories
+  getSubcategories(): Promise<Subcategory[]>;
+  getSubcategoriesByCategory(categoryId: number): Promise<Subcategory[]>;
+  getSubcategory(id: number): Promise<Subcategory | undefined>;
+  createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
+  updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
+  deleteSubcategory(id: number): Promise<boolean>;
+
   // Subjects
   getSubjects(): Promise<Subject[]>;
   getSubject(id: number): Promise<Subject | undefined>;
@@ -80,6 +101,68 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Categories
+  async getCategories(): Promise<Category[]> {
+    return await db.select().from(categories).orderBy(categories.sortOrder);
+  }
+
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category;
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db.insert(categories).values(category).returning();
+    return newCategory;
+  }
+
+  async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined> {
+    const [updatedCategory] = await db
+      .update(categories)
+      .set(category)
+      .where(eq(categories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Subcategories
+  async getSubcategories(): Promise<Subcategory[]> {
+    return await db.select().from(subcategories).orderBy(subcategories.sortOrder);
+  }
+
+  async getSubcategoriesByCategory(categoryId: number): Promise<Subcategory[]> {
+    return await db.select().from(subcategories).where(eq(subcategories.categoryId, categoryId)).orderBy(subcategories.sortOrder);
+  }
+
+  async getSubcategory(id: number): Promise<Subcategory | undefined> {
+    const [subcategory] = await db.select().from(subcategories).where(eq(subcategories.id, id));
+    return subcategory;
+  }
+
+  async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
+    const [newSubcategory] = await db.insert(subcategories).values(subcategory).returning();
+    return newSubcategory;
+  }
+
+  async updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
+    const [updatedSubcategory] = await db
+      .update(subcategories)
+      .set(subcategory)
+      .where(eq(subcategories.id, id))
+      .returning();
+    return updatedSubcategory;
+  }
+
+  async deleteSubcategory(id: number): Promise<boolean> {
+    const result = await db.delete(subcategories).where(eq(subcategories.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
   // Subjects
   async getSubjects(): Promise<Subject[]> {
     return await db.select().from(subjects);
