@@ -19,10 +19,15 @@ export default function ExamCard({ exam, onStart, lastScore, isCompleted }: Exam
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group">
+    <div 
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02]"
+      onClick={onStart}
+    >
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{exam.title}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
+            {exam.title}
+          </h3>
           {isCompleted ? (
             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
               Completed
@@ -33,15 +38,17 @@ export default function ExamCard({ exam, onStart, lastScore, isCompleted }: Exam
             </span>
           )}
         </div>
-        <p className="text-gray-600 mb-4">{exam.description}</p>
+        <p className="text-gray-600 mb-4 group-hover:text-gray-800 transition-colors">
+          {exam.description}
+        </p>
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-gray-500">
             <span>Questions:</span>
-            <span>{exam.questionCount}</span>
+            <span className="font-medium">{exam.questionCount}</span>
           </div>
           <div className="flex justify-between text-sm text-gray-500">
             <span>Duration:</span>
-            <span>{exam.duration} minutes</span>
+            <span className="font-medium">{exam.duration} minutes</span>
           </div>
           <div className="flex justify-between text-sm text-gray-500">
             <span>Difficulty:</span>
@@ -56,16 +63,13 @@ export default function ExamCard({ exam, onStart, lastScore, isCompleted }: Exam
             </div>
           )}
         </div>
-        <button 
-          onClick={onStart}
-          className={`w-full mt-4 py-2 px-4 rounded-lg transition-colors font-medium ${
-            isCompleted 
-              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-              : 'bg-primary text-white hover:bg-blue-700'
-          }`}
-        >
+        <div className={`w-full mt-4 py-2 px-4 rounded-lg text-center font-medium transition-colors ${
+          isCompleted 
+            ? 'bg-gray-100 text-gray-700 group-hover:bg-gray-200' 
+            : 'bg-primary text-white group-hover:bg-blue-700'
+        }`}>
           {isCompleted ? 'Retake Exam' : 'Start Exam'}
-        </button>
+        </div>
       </div>
     </div>
   );

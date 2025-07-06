@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -161,6 +161,9 @@ export default function Admin() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create New Subject</DialogTitle>
+                <DialogDescription>
+                  Add a new subject category to organize your practice exams.
+                </DialogDescription>
               </DialogHeader>
               <Form {...subjectForm}>
                 <form onSubmit={subjectForm.handleSubmit(onSubmit)} className="space-y-4">
@@ -418,6 +421,9 @@ export default function Admin() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create New Exam</DialogTitle>
+                <DialogDescription>
+                  Create a new practice exam for your selected subject category.
+                </DialogDescription>
               </DialogHeader>
               <Form {...examForm}>
                 <form onSubmit={examForm.handleSubmit(onSubmit)} className="space-y-4">
@@ -906,6 +912,9 @@ export default function Admin() {
               <DialogContent className="max-w-4xl">
                 <DialogHeader>
                   <DialogTitle>Import Questions from CSV</DialogTitle>
+                  <DialogDescription>
+                    Upload a CSV file to import multiple questions at once. Download the template first for proper formatting.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
@@ -1003,6 +1012,9 @@ export default function Admin() {
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Question</DialogTitle>
+                  <DialogDescription>
+                    Add a new practice question with multiple choice options and explanations.
+                  </DialogDescription>
                 </DialogHeader>
                 <Form {...questionForm}>
                 <form onSubmit={questionForm.handleSubmit(onSubmit)} className="space-y-4">
