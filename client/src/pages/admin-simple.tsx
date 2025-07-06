@@ -633,18 +633,19 @@ export default function AdminSimple() {
                                     ▼
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-48 p-2">
-                                  <div className="grid grid-cols-4 gap-2">
+                                <PopoverContent className="w-64 p-3">
+                                  <div className="space-y-1 max-h-48 overflow-y-auto">
                                     {getUsedIcons().map((icon, index) => (
                                       <Button
                                         key={index}
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0"
+                                        className="w-full h-8 justify-start text-xs p-2 font-mono"
                                         onClick={() => field.onChange(icon)}
                                         type="button"
+                                        title={icon}
                                       >
-                                        {icon}
+                                        <span className="truncate">{icon}</span>
                                       </Button>
                                     ))}
                                   </div>
@@ -738,18 +739,19 @@ export default function AdminSimple() {
                                     ▼
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-48 p-2">
-                                  <div className="grid grid-cols-4 gap-2">
+                                <PopoverContent className="w-64 p-3">
+                                  <div className="space-y-1 max-h-48 overflow-y-auto">
                                     {getUsedIcons().map((icon, index) => (
                                       <Button
                                         key={index}
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 w-8 p-0"
+                                        className="w-full h-8 justify-start text-xs p-2 font-mono"
                                         onClick={() => field.onChange(icon)}
                                         type="button"
+                                        title={icon}
                                       >
-                                        {icon}
+                                        <span className="truncate">{icon}</span>
                                       </Button>
                                     ))}
                                   </div>
