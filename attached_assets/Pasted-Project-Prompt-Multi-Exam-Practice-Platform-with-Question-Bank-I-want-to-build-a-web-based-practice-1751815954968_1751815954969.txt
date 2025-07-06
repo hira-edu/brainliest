@@ -1,0 +1,59 @@
+Project Prompt: Multi-Exam Practice Platform with Question Bank
+I want to build a web-based practice exam platform for users preparing for certification exams like PMP, AWS, and more.
+
+Key Requirements:
+Question Bank Organization
+
+Each major subject (e.g., PMP, AWS) has multiple exams/sets (e.g., "PMP Practice Exam 1", "PMP Mock 2", etc.).
+
+Each exam contains multiple-choice questions (MCQs), each with 4-5 answer options and a single correct answer.
+
+User Flow
+
+User visits the site and selects a subject (e.g., PMP, AWS).
+
+User sees a list of available exams within that subject.
+
+User selects an exam to start practicing.
+
+The exam starts, showing one question at a time:
+
+User reads the question and selects their answer.
+
+On submitting, user receives immediate feedback: "Correct" or "Incorrect" (and optionally, a short explanation or the correct answer).
+
+User moves to the next question; repeats until the exam is complete.
+
+At the end, user can see their score/summary and optionally review correct answers.
+
+Navigation
+
+Users can go back to select other exams or switch to other subjects at any time.
+
+Admin Functionality
+
+Admins can easily upload/edit/delete questions, answers, and explanations per exam and subject (through dashboard or via data import like CSV).
+
+Optional Features (nice to have)
+
+Track user progress/history (if user accounts are needed).
+
+Explanations for each question.
+
+Timer or progress bar.
+
+Randomize question order.
+
+Mobile responsive.
+
+Technical Preferences:
+Frontend: Modern JS (React preferred, but open to Vue/Angular).
+
+Backend: Node.js, Python, or PHP (Laravel/WordPress acceptable for quick MVP).
+
+Data: Store questions in database (MySQL, PostgreSQL, MongoDB, or flat file for MVP).
+
+Clean, simple UI/UX for exam practice (desktop and mobile friendly).
+
+Summary:
+Build a multi-exam practice platform where users can pick a subject (e.g., PMP, AWS), choose an exam, answer one MCQ at a time with instant feedback, and review their results at the end. Admins can manage questions easily.
