@@ -88,35 +88,35 @@ export class MemStorage implements IStorage {
     const pmpSubject = this.createSubjectSync({
       name: "PMP Certification",
       description: "Project Management Professional certification practice exams",
-      icon: "PMP",
+      icon: "chart",
       color: "blue",
     });
 
     const awsSubject = this.createSubjectSync({
       name: "AWS Cloud Practitioner",
       description: "Amazon Web Services foundational certification prep",
-      icon: "AWS",
+      icon: "cloud",
       color: "orange",
     });
 
     const comptiaSubject = this.createSubjectSync({
       name: "CompTIA Security+",
       description: "CompTIA Security+ certification for cybersecurity professionals",
-      icon: "SEC+",
+      icon: "shield",
       color: "red",
     });
 
     const ciscoSubject = this.createSubjectSync({
       name: "CCNA Certification",
       description: "Cisco Certified Network Associate certification",
-      icon: "CCNA",
+      icon: "network",
       color: "green",
     });
 
     const microsoftSubject = this.createSubjectSync({
       name: "Microsoft Azure AZ-900",
       description: "Azure Fundamentals certification for cloud computing",
-      icon: "AZ900",
+      icon: "server",
       color: "cyan",
     });
 
@@ -124,14 +124,14 @@ export class MemStorage implements IStorage {
     const computerScienceSubject = this.createSubjectSync({
       name: "Computer Science",
       description: "Programming, algorithms, data structures, and software engineering",
-      icon: "CS",
+      icon: "laptop",
       color: "purple",
     });
 
     const dataStructuresSubject = this.createSubjectSync({
       name: "Data Structures & Algorithms",
       description: "Arrays, trees, graphs, sorting, and algorithmic problem solving",
-      icon: "DSA",
+      icon: "tree",
       color: "indigo",
     });
 
@@ -139,21 +139,21 @@ export class MemStorage implements IStorage {
     const mathematicsSubject = this.createSubjectSync({
       name: "Mathematics",
       description: "Calculus, algebra, statistics, and discrete mathematics",
-      icon: "MATH",
+      icon: "calculator",
       color: "teal",
     });
 
     const physicsSubject = this.createSubjectSync({
       name: "Physics",
       description: "Classical mechanics, thermodynamics, and modern physics",
-      icon: "PHY",
+      icon: "atom",
       color: "blue",
     });
 
     const chemistrySubject = this.createSubjectSync({
       name: "Chemistry",
       description: "Organic, inorganic, and physical chemistry fundamentals",
-      icon: "CHEM",
+      icon: "beaker",
       color: "emerald",
     });
 
@@ -161,14 +161,14 @@ export class MemStorage implements IStorage {
     const businessSubject = this.createSubjectSync({
       name: "Business Administration",
       description: "Management, finance, marketing, and business strategy",
-      icon: "BIZ",
+      icon: "briefcase",
       color: "red",
     });
 
     const economicsSubject = this.createSubjectSync({
       name: "Economics",
       description: "Microeconomics, macroeconomics, and economic theory",
-      icon: "ECON",
+      icon: "coins",
       color: "yellow",
     });
 
@@ -176,7 +176,7 @@ export class MemStorage implements IStorage {
     const engineeringSubject = this.createSubjectSync({
       name: "Engineering",
       description: "Mechanical, electrical, civil, and software engineering",
-      icon: "ENG",
+      icon: "wrench",
       color: "gray",
     });
 
@@ -184,14 +184,14 @@ export class MemStorage implements IStorage {
     const medicalSubject = this.createSubjectSync({
       name: "Medical Sciences",
       description: "Anatomy, physiology, pharmacology, and medical procedures",
-      icon: "MED",
+      icon: "heart",
       color: "pink",
     });
 
     const biologySubject = this.createSubjectSync({
       name: "Biology",
       description: "Cell biology, genetics, ecology, and evolutionary biology",
-      icon: "BIO",
+      icon: "leaf",
       color: "green",
     });
 
