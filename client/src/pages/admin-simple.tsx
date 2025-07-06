@@ -789,8 +789,10 @@ export default function AdminSimple() {
                       <CardTitle className="text-lg">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
-                    <div className="flex items-center justify-center w-8 h-8 text-lg border rounded ml-3">
-                      {subject.icon || "📚"}
+                    <div className="flex items-center justify-center w-8 h-8 text-base border rounded ml-3 overflow-hidden">
+                      <span className="truncate text-center">
+                        {(subject.icon && subject.icon.length <= 3) ? subject.icon : "📚"}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
