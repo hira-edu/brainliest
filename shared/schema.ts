@@ -38,7 +38,7 @@ export const questions = pgTable("questions", {
   order: integer("order").default(0),
 });
 
-export const userSessions = pgTable("user_sessions", {
+export const examSessions = pgTable("exam_sessions", {
   id: serial("id").primaryKey(),
   examId: integer("exam_id").notNull(),
   startedAt: timestamp("started_at").defaultNow(),
@@ -62,7 +62,7 @@ export const comments = pgTable("comments", {
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").unique().notNull(),
-  username: text("username").unique().notNull(),
+  username: text("username").unique(),
   firstName: text("first_name"),
   lastName: text("last_name"),
   profileImage: text("profile_image"),
@@ -76,6 +76,27 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   metadata: text("metadata"), // JSON string for additional data
+  
+  // Authentication fields
+  passwordHash: text("password_hash"), // bcrypt hash
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires"),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  
+  // OAuth fields
+  googleId: text("google_id").unique(),
+  oauthProvider: text("oauth_provider"), // 'google', 'facebook', etc.
+  
+  // Security fields
+  failedLoginAttempts: integer("failed_login_attempts").default(0),
+  lockedUntil: timestamp("locked_until"),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  twoFactorSecret: text("two_factor_secret"),
+  
+  // Login tracking
+  loginCount: integer("login_count").default(0),
 });
 
 // Analytics and Performance Tracking Tables
@@ -150,6 +171,35 @@ export const studyRecommendations = pgTable("study_recommendations", {
   expiresAt: timestamp("expires_at"),
 });
 
+// Authentication Audit Logging
+export const authLogs = pgTable("auth_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  email: text("email"),
+  action: text("action").notNull(), // login_success, login_failed, register, logout, password_reset, etc.
+  method: text("method"), // email, google, facebook, etc.
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  success: boolean("success").notNull(),
+  failureReason: text("failure_reason"),
+  metadata: text("metadata"), // JSON string for additional data
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Session Management for JWT tokens
+export const authSessions = pgTable("auth_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionToken: text("session_token").unique().notNull(),
+  refreshToken: text("refresh_token").unique(),
+  isActive: boolean("is_active").default(true),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at").defaultNow(),
+});
+
 export const insertSubjectSchema = createInsertSchema(subjects).omit({
   id: true,
   examCount: true,
@@ -164,7 +214,7 @@ export const insertQuestionSchema = createInsertSchema(questions).omit({
   id: true,
 });
 
-export const insertUserSessionSchema = createInsertSchema(userSessions).omit({
+export const insertExamSessionSchema = createInsertSchema(examSessions).omit({
   id: true,
   startedAt: true,
   completedAt: true,
@@ -179,6 +229,13 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  emailVerificationToken: true,
+  emailVerificationExpires: true,
+  passwordResetToken: true,
+  passwordResetExpires: true,
+  failedLoginAttempts: true,
+  lockedUntil: true,
+  twoFactorSecret: true,
 });
 
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
@@ -207,14 +264,25 @@ export const insertStudyRecommendationsSchema = createInsertSchema(studyRecommen
   createdAt: true,
 });
 
+export const insertAuthLogSchema = createInsertSchema(authLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAuthSessionSchema = createInsertSchema(authSessions).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+
 export type Subject = typeof subjects.$inferSelect;
 export type InsertSubject = z.infer<typeof insertSubjectSchema>;
 export type Exam = typeof exams.$inferSelect;
 export type InsertExam = z.infer<typeof insertExamSchema>;
 export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
-export type UserSession = typeof userSessions.$inferSelect;
-export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
+export type ExamSession = typeof examSessions.$inferSelect;
+export type InsertExamSession = z.infer<typeof insertExamSessionSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 
@@ -232,3 +300,9 @@ export type PerformanceTrends = typeof performanceTrends.$inferSelect;
 export type InsertPerformanceTrends = z.infer<typeof insertPerformanceTrendsSchema>;
 export type StudyRecommendations = typeof studyRecommendations.$inferSelect;
 export type InsertStudyRecommendations = z.infer<typeof insertStudyRecommendationsSchema>;
+
+// Authentication Types
+export type AuthLog = typeof authLogs.$inferSelect;
+export type InsertAuthLog = z.infer<typeof insertAuthLogSchema>;
+export type AuthSession = typeof authSessions.$inferSelect;
+export type InsertAuthSession = z.infer<typeof insertAuthSessionSchema>;

@@ -4,11 +4,12 @@ import { storage } from "./storage";
 import { analyticsService } from "./analytics";
 import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
+import { authService } from "./auth-service";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
   insertQuestionSchema,
-  insertUserSessionSchema,
+  insertExamSessionSchema,
   insertCommentSchema,
   insertDetailedAnswerSchema,
   insertExamAnalyticsSchema,
@@ -886,6 +887,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   }, 5 * 60 * 1000); // Clean up every 5 minutes
+
+  // ==================== ENHANCED AUTHENTICATION ROUTES ====================
+  
+  // Register with email/password
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, password, username, firstName, lastName } = req.body;
+      
+      const result = await authService.register(
+        email, 
+        password, 
+        {
+          username,
+          firstName,
+          lastName,
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent')
+        }
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ success: false, message: "Registration failed" });
+    }
+  });
+
+  // Login with email/password
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      const result = await authService.login(
+        email, 
+        password, 
+        req.ip, 
+        req.get('User-Agent')
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ success: false, message: "Login failed" });
+    }
+  });
+
+  // OAuth Google login
+  app.post("/api/auth/oauth/google", async (req, res) => {
+    try {
+      const { email, googleId, firstName, lastName, profileImage } = req.body;
+      
+      const result = await authService.oauthLogin(
+        'google',
+        {
+          email,
+          googleId,
+          firstName,
+          lastName,
+          profileImage,
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent')
+        }
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("OAuth login error:", error);
+      res.status(500).json({ success: false, message: "OAuth login failed" });
+    }
+  });
+
+  // Verify email
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const result = await authService.verifyEmail(token);
+      res.json(result);
+    } catch (error) {
+      console.error("Email verification error:", error);
+      res.status(500).json({ success: false, message: "Email verification failed" });
+    }
+  });
+
+  // Request password reset
+  app.post("/api/auth/request-password-reset", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      const result = await authService.requestPasswordReset(
+        email, 
+        req.ip, 
+        req.get('User-Agent')
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ success: false, message: "Password reset request failed" });
+    }
+  });
+
+  // Reset password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+      const result = await authService.resetPassword(token, newPassword);
+      res.json(result);
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ success: false, message: "Password reset failed" });
+    }
+  });
+
+  // Verify token and get user
+  app.post("/api/auth/verify-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const result = await authService.verifyToken(token);
+      res.json(result);
+    } catch (error) {
+      console.error("Token verification error:", error);
+      res.status(500).json({ valid: false, message: "Token verification failed" });
+    }
+  });
+
+  // Refresh token
+  app.post("/api/auth/refresh-token", async (req, res) => {
+    try {
+      const { refreshToken } = req.body;
+      const result = await authService.refreshToken(refreshToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      res.status(500).json({ success: false, message: "Token refresh failed" });
+    }
+  });
+
+  // Logout
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const result = await authService.logout(token);
+      res.json(result);
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ success: false, message: "Logout failed" });
+    }
+  });
+
+  // Logout all sessions
+  app.post("/api/auth/logout-all", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const result = await authService.logoutAll(userId);
+      res.json(result);
+    } catch (error) {
+      console.error("Logout all error:", error);
+      res.status(500).json({ success: false, message: "Logout all failed" });
+    }
+  });
+
+  // ==================== END ENHANCED AUTHENTICATION ====================
 
   // Email service test endpoint
   app.get("/api/email-test", async (req, res) => {

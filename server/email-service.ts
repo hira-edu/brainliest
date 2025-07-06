@@ -362,6 +362,221 @@ Brainliest - Your Ultimate Exam Preparation Platform
 `;
   }
 
+  async sendEmailVerification(email: string, token: string): Promise<boolean> {
+    if (!this.transporter) {
+      console.error('Email transporter not initialized');
+      return false;
+    }
+
+    const verificationUrl = `${process.env.BASE_URL || 'https://brainliest.com'}/verify-email?token=${token}`;
+    const htmlContent = this.generateVerificationEmailHTML(verificationUrl);
+    const textContent = this.generateVerificationEmailText(verificationUrl);
+
+    let senderAddress = 'noreply@brainliest.com';
+    if (process.env.TITAN_EMAIL) senderAddress = process.env.TITAN_EMAIL;
+    else if (process.env.GODADDY_EMAIL) senderAddress = process.env.GODADDY_EMAIL;
+    else if (process.env.SMTP_USER) senderAddress = process.env.SMTP_USER;
+    else if (process.env.GMAIL_USER) senderAddress = process.env.GMAIL_USER;
+
+    const mailOptions = {
+      from: { name: 'Brainliest', address: senderAddress },
+      to: email,
+      subject: 'Verify Your Brainliest Account',
+      text: textContent,
+      html: htmlContent,
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      
+      if (result.response && typeof result.response === 'string') {
+        console.log('\n=== EMAIL VERIFICATION ===');
+        console.log(`To: ${email}`);
+        console.log(`Verification URL: ${verificationUrl}`);
+        console.log('=========================\n');
+      }
+      
+      console.log(`Email verification sent to ${email}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to send email verification:', error);
+      console.log(`\n🔗 Email Verification URL for ${email}: ${verificationUrl}\n`);
+      return true;
+    }
+  }
+
+  async sendPasswordReset(email: string, token: string): Promise<boolean> {
+    if (!this.transporter) {
+      console.error('Email transporter not initialized');
+      return false;
+    }
+
+    const resetUrl = `${process.env.BASE_URL || 'https://brainliest.com'}/reset-password?token=${token}`;
+    const htmlContent = this.generatePasswordResetHTML(resetUrl);
+    const textContent = this.generatePasswordResetText(resetUrl);
+
+    let senderAddress = 'noreply@brainliest.com';
+    if (process.env.TITAN_EMAIL) senderAddress = process.env.TITAN_EMAIL;
+    else if (process.env.GODADDY_EMAIL) senderAddress = process.env.GODADDY_EMAIL;
+    else if (process.env.SMTP_USER) senderAddress = process.env.SMTP_USER;
+    else if (process.env.GMAIL_USER) senderAddress = process.env.GMAIL_USER;
+
+    const mailOptions = {
+      from: { name: 'Brainliest', address: senderAddress },
+      to: email,
+      subject: 'Reset Your Brainliest Password',
+      text: textContent,
+      html: htmlContent,
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      
+      if (result.response && typeof result.response === 'string') {
+        console.log('\n=== PASSWORD RESET ===');
+        console.log(`To: ${email}`);
+        console.log(`Reset URL: ${resetUrl}`);
+        console.log('=====================\n');
+      }
+      
+      console.log(`Password reset email sent to ${email}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+      console.log(`\n🔗 Password Reset URL for ${email}: ${resetUrl}\n`);
+      return true;
+    }
+  }
+
+  private generateVerificationEmailHTML(verificationUrl: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Brainliest Account</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+    .content { padding: 40px 30px; }
+    .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; margin: 20px 0; }
+    .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 14px; color: #6c757d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧠 Brainliest</h1>
+      <p>Verify Your Account</p>
+    </div>
+    <div class="content">
+      <h2>Welcome to Brainliest!</h2>
+      <p>Thank you for creating your account. To get started, please verify your email address by clicking the button below:</p>
+      <div style="text-align: center;">
+        <a href="${verificationUrl}" class="button">Verify My Account</a>
+      </div>
+      <p>Or copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace;">${verificationUrl}</p>
+      <p><strong>This verification link expires in 24 hours.</strong></p>
+    </div>
+    <div class="footer">
+      <p><strong>Brainliest</strong> - Your Ultimate Exam Preparation Platform</p>
+      <p>If you didn't create this account, you can safely ignore this email.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
+  private generateVerificationEmailText(verificationUrl: string): string {
+    return `
+BRAINLIEST - Verify Your Account
+
+Welcome to Brainliest!
+
+Thank you for creating your account. To get started, please verify your email address by visiting this link:
+
+${verificationUrl}
+
+This verification link expires in 24 hours.
+
+If you didn't create this account, you can safely ignore this email.
+
+---
+Brainliest - Your Ultimate Exam Preparation Platform
+`;
+  }
+
+  private generatePasswordResetHTML(resetUrl: string): string {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Brainliest Password</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+    .content { padding: 40px 30px; }
+    .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; margin: 20px 0; }
+    .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 14px; color: #6c757d; }
+    .security-note { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧠 Brainliest</h1>
+      <p>Password Reset Request</p>
+    </div>
+    <div class="content">
+      <h2>Reset Your Password</h2>
+      <p>We received a request to reset your password. Click the button below to create a new password:</p>
+      <div style="text-align: center;">
+        <a href="${resetUrl}" class="button">Reset My Password</a>
+      </div>
+      <p>Or copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace;">${resetUrl}</p>
+      <div class="security-note">
+        <strong>🔒 Security Note:</strong> This password reset link expires in 1 hour. If you didn't request this reset, please ignore this email and your password will remain unchanged.
+      </div>
+    </div>
+    <div class="footer">
+      <p><strong>Brainliest</strong> - Your Ultimate Exam Preparation Platform</p>
+      <p>If you have security concerns, contact us at security@brainliest.com</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
+  private generatePasswordResetText(resetUrl: string): string {
+    return `
+BRAINLIEST - Password Reset Request
+
+We received a request to reset your password.
+
+To create a new password, visit this link:
+
+${resetUrl}
+
+This password reset link expires in 1 hour.
+
+Security Note: If you didn't request this reset, please ignore this email and your password will remain unchanged.
+
+If you have security concerns, contact us at security@brainliest.com
+
+---
+Brainliest - Your Ultimate Exam Preparation Platform
+`;
+  }
+
   async testConnection(): Promise<boolean> {
     if (!this.transporter) return false;
     

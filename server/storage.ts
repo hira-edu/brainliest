@@ -2,7 +2,7 @@ import {
   subjects,
   exams,
   questions,
-  userSessions,
+  examSessions,
   comments,
   users,
   type Subject,
@@ -11,8 +11,8 @@ import {
   type InsertExam,
   type Question,
   type InsertQuestion,
-  type UserSession,
-  type InsertUserSession,
+  type ExamSession,
+  type InsertExamSession,
   type Comment,
   type InsertComment,
   type User,
@@ -46,11 +46,11 @@ export interface IStorage {
   updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: number): Promise<boolean>;
 
-  // User Sessions
-  getUserSessions(): Promise<UserSession[]>;
-  getUserSession(id: number): Promise<UserSession | undefined>;
-  createUserSession(session: InsertUserSession): Promise<UserSession>;
-  updateUserSession(id: number, session: Partial<InsertUserSession>): Promise<UserSession | undefined>;
+  // Exam Sessions
+  getUserSessions(): Promise<ExamSession[]>;
+  getUserSession(id: number): Promise<ExamSession | undefined>;
+  createUserSession(session: InsertExamSession): Promise<ExamSession>;
+  updateUserSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined>;
   deleteUserSession(id: number): Promise<boolean>;
 
   // Comments

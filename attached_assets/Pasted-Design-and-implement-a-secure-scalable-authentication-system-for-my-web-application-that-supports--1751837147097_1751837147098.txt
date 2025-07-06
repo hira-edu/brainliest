@@ -1,0 +1,73 @@
+Design and implement a secure, scalable authentication system for my web application that supports:
+
+Email/password sign-up and sign-in
+
+Google OAuth login/sign-up
+
+Requirements:
+
+Modern security best practices:
+
+Hash passwords using bcrypt or argon2
+
+Enforce strong password rules and email verification
+
+Rate limiting, lockouts, and brute-force protection
+
+Store minimal user data; never log raw passwords
+
+Use HTTPS for all authentication endpoints
+
+Google OAuth 2.0 integration:
+
+Allow users to sign in or sign up with Google
+
+Handle “account linking” if a user registers via Google and later uses the same email for email/password
+
+Show clear prompts if an email is already linked to a Google account
+
+Comprehensive error handling and feedback:
+
+Display user-friendly messages for invalid credentials, network errors, or account issues
+
+Log server-side errors for diagnostics, but never expose sensitive info to users
+
+Gracefully handle revoked permissions or Google OAuth errors
+
+Multiple sign-in options:
+
+On the login/register page, provide visually clear buttons for “Continue with Google” and a separate, accessible email/password form
+
+Allow users to set or update a password even if they originally registered via Google OAuth
+
+Session management:
+
+Use secure HTTP-only cookies or JWTs for session tokens
+
+Support sign out everywhere, token refresh, and remember-me options
+
+Detect and handle duplicate sessions or token theft
+
+Accessibility & UX:
+
+Forms must be accessible, mobile-friendly, and responsive
+
+Fast, clear error feedback (field-level and global)
+
+Support for password reset, resend verification, and account recovery
+
+Audit logging:
+
+Track and log authentication attempts, failures, and social login events for admin review
+
+Future extensibility:
+
+Modular structure so more OAuth providers (Facebook, Apple, etc.) can be added
+
+Deliver:
+
+All code (frontend + backend), with documentation
+
+Clear UI/UX flows for login, registration, linking/unlinking accounts
+
+Sample error scenarios and how the system responds
