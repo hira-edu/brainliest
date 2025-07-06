@@ -1094,6 +1094,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Temporary admin login endpoint for testing
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // For testing, allow a simple admin login
+      if (email === "admin@brainliest.com" && password === "admin123") {
+        // Create a test admin user token
+        const adminUser = {
+          id: 999,
+          email: "admin@brainliest.com",
+          username: "admin",
+          firstName: "Test",
+          lastName: "Admin",
+          role: "admin",
+          emailVerified: true
+        };
+        
+        // Generate token using the auth service
+        const token = require('jsonwebtoken').sign(
+          adminUser,
+          process.env.JWT_SECRET || 'fallback-secret',
+          { expiresIn: '24h' }
+        );
+        
+        res.json({
+          success: true,
+          user: adminUser,
+          accessToken: token,
+          message: "Admin login successful"
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          message: "Invalid admin credentials"
+        });
+      }
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Admin login failed"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

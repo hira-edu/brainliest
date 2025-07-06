@@ -37,8 +37,7 @@ import {
   Download,
   FileSpreadsheet,
   Trash,
-  RefreshCw,
-  Users
+  RefreshCw
 } from "lucide-react";
 
 // Form schemas with validation
@@ -1466,21 +1465,108 @@ export default function Admin() {
 
   // Show authentication required message
   if (!isAuthenticated) {
+    const [adminEmail, setAdminEmail] = useState("admin@brainliest.com");
+    const [adminPassword, setAdminPassword] = useState("admin123");
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+    const handleAdminLogin = async () => {
+      setIsLoggingIn(true);
+      try {
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: adminEmail,
+            password: adminPassword,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.accessToken) {
+          // Store the admin token
+          localStorage.setItem('brainliest_access_token', result.accessToken);
+          localStorage.setItem('brainliest_user', JSON.stringify(result.user));
+          
+          // Set authentication state
+          setIsAuthenticated(true);
+          
+          toast({
+            title: "Admin Login Successful",
+            description: "You now have admin access to manage the platform",
+          });
+        } else {
+          toast({
+            title: "Login Failed",
+            description: result.message || "Invalid admin credentials",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Admin login error:', error);
+        toast({
+          title: "Login Error",
+          description: "Failed to authenticate admin access",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoggingIn(false);
+      }
+    };
+
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="max-w-md mx-auto mt-32 p-6 bg-white rounded-lg shadow-md">
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <Users className="w-8 h-8 text-red-600" />
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Access Required</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Admin Login Required</h2>
             <p className="text-gray-600 mb-4">
-              You need administrator privileges to access this page. Please contact your system administrator if you believe this is an error.
+              Please sign in with administrator credentials to access the admin panel.
             </p>
-            <div className="space-y-2 text-sm text-gray-500">
-              <p>Required: Authenticated user with admin role</p>
-              <p>Current status: {!isSignedIn ? "Not signed in" : "Insufficient privileges"}</p>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Admin Email
+              </label>
+              <Input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="admin@brainliest.com"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Admin Password
+              </label>
+              <Input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                placeholder="Enter admin password"
+              />
+            </div>
+            
+            <Button
+              onClick={handleAdminLogin}
+              disabled={isLoggingIn || !adminEmail || !adminPassword}
+              className="w-full"
+            >
+              {isLoggingIn ? "Signing In..." : "Sign In as Admin"}
+            </Button>
+            
+            <div className="text-xs text-gray-500 text-center mt-4">
+              <p>Test Credentials:</p>
+              <p>Email: admin@brainliest.com</p>
+              <p>Password: admin123</p>
             </div>
           </div>
         </div>
