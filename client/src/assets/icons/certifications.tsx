@@ -199,7 +199,70 @@ export const CertificationIcons: Record<string, React.ComponentType<{ className?
 };
 
 // Helper function to get icon component by name
-export const getIconComponent = (iconName: string): React.ComponentType<{ className?: string }> | null => {
-  const normalizedName = iconName.toLowerCase().replace(/[^a-z0-9]/g, '');
+export const getIconComponent = (subjectName: string): React.ComponentType<{ className?: string }> | null => {
+  if (!subjectName) return null;
+  
+  const name = subjectName.toLowerCase();
+  
+  // Direct mapping for better accuracy
+  const iconMapping: Record<string, string> = {
+    'pmp certification': 'pmp',
+    'aws certified solutions architect': 'aws',
+    'aws cloud practitioner': 'aws',
+    'aws': 'aws',
+    'comptia security+': 'comptia',
+    'comptia': 'comptia',
+    'cisco ccna': 'cisco',
+    'cisco': 'cisco',
+    'microsoft azure fundamentals': 'azure',
+    'azure fundamentals': 'azure',
+    'azure': 'azure',
+    'google cloud platform': 'googlecloud',
+    'google cloud': 'googlecloud',
+    'gcp': 'googlecloud',
+    'oracle': 'oracle',
+    'vmware': 'vmware',
+    'kubernetes': 'kubernetes',
+    'docker': 'docker',
+    'mathematics': 'math',
+    'statistics': 'statistics',
+    'ap statistics': 'statistics',
+    'biostatistics': 'statistics',
+    'business statistics': 'statistics',
+    'elementary statistics': 'statistics',
+    'intro to statistics': 'statistics',
+    'science': 'science',
+    'biology': 'science',
+    'chemistry': 'science',
+    'physics': 'science',
+    'engineering': 'engineering',
+    'mechanical engineering': 'engineering',
+    'electrical engineering': 'engineering',
+    'business': 'business',
+    'business administration': 'business',
+    'accounting': 'business',
+    'economics': 'business',
+    'finance': 'business',
+    'medical': 'medical',
+    'nursing': 'medical',
+    'health sciences': 'medical',
+    'medical sciences': 'medical',
+    'pharmacology': 'medical'
+  };
+  
+  // Check direct mapping first
+  if (iconMapping[name]) {
+    return CertificationIcons[iconMapping[name]] || null;
+  }
+  
+  // Check if subject name contains any of our certification keywords
+  for (const [keyword, iconKey] of Object.entries(iconMapping)) {
+    if (name.includes(keyword)) {
+      return CertificationIcons[iconKey] || null;
+    }
+  }
+  
+  // Fallback: try direct match with normalized name
+  const normalizedName = name.replace(/[^a-z0-9]/g, '');
   return CertificationIcons[normalizedName] || null;
 };
