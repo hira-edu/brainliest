@@ -35,7 +35,6 @@ export default function Header() {
     { href: "/", label: "Home", icon: Home },
     { href: "/categories", label: "Categories", icon: BookOpen },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/admin", label: "Admin", icon: Settings },
   ];
 
   const subjectCategories = [
