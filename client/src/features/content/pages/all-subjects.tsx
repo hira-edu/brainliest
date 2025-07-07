@@ -126,7 +126,7 @@ export default function AllSubjects() {
 
   const handleSelectSubject = (subject: Subject) => {
     if (subject.slug) {
-      setLocation(`/exams/${subject.slug}`);
+      setLocation(`/subject/${subject.slug}`);
     } else {
       // Fallback to ID-based routing if no slug
       setLocation(`/subject/${subject.id}`);
