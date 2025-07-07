@@ -115,12 +115,15 @@ export default function SEOHead({
     generateSEO();
   }, [title, description, location, type, canonical, keywords, openGraph, twitter]);
 
-  // Update document head
+  // Update document head with cleanup
   useEffect(() => {
     if (!seoData) return;
 
     // Update title
     document.title = seoData.title;
+    
+    // Track created elements for cleanup
+    const createdElements: HTMLElement[] = [];
 
     // Function to update or create meta tag
     const updateMetaTag = (name: string, content: string, property?: boolean) => {
@@ -130,7 +133,9 @@ export default function SEOHead({
       if (!meta) {
         meta = document.createElement('meta');
         meta.setAttribute(attribute, name);
+        meta.setAttribute('data-dynamic-seo', 'true'); // Mark for cleanup
         document.head.appendChild(meta);
+        createdElements.push(meta);
       }
       meta.content = content;
     };
@@ -144,9 +149,22 @@ export default function SEOHead({
     if (!canonical) {
       canonical = document.createElement('link');
       canonical.rel = 'canonical';
+      canonical.setAttribute('data-dynamic-seo', 'true');
       document.head.appendChild(canonical);
+      createdElements.push(canonical);
     }
     canonical.href = seoData.canonical;
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      // Remove only dynamically created SEO elements
+      const dynamicElements = document.querySelectorAll('[data-dynamic-seo="true"]');
+      dynamicElements.forEach(element => {
+        if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+      });
+    };
 
     // Update Open Graph tags
     updateMetaTag('og:title', seoData.openGraph.title, true);
