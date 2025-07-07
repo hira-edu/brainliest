@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { AlertCircle, Lock, Mail } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 interface AdminLoginModalProps {
-  onLogin: (email: string, password: string) => Promise<void>;
+  onLogin: (email: string, password: string, recaptchaToken?: string) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
@@ -15,12 +16,22 @@ interface AdminLoginModalProps {
 export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     
-    await onLogin(email, password);
+    let recaptchaToken: string | undefined;
+    if (executeRecaptcha) {
+      try {
+        recaptchaToken = await executeRecaptcha('admin_login');
+      } catch (error) {
+        console.error('reCAPTCHA error:', error);
+      }
+    }
+    
+    await onLogin(email, password, recaptchaToken);
   };
 
   return (
@@ -53,7 +64,6 @@ export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalPr
               <Input
                 id="admin-email"
                 type="email"
-                placeholder="admin@brainliest.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -85,7 +95,7 @@ export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalPr
                 <div className="ml-2">
                   <p className="text-xs text-amber-800 dark:text-amber-200">
                     <strong>Security Notice:</strong> Admin access is restricted to authorized personnel only. 
-                    All login attempts are logged and monitored.
+                    All login attempts are logged and monitored. This form is protected by reCAPTCHA.
                   </p>
                 </div>
               </div>

@@ -14,8 +14,8 @@ interface AdminContextType {
   adminUser: AdminUser | null;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string, recaptchaToken?: string) => Promise<void>;
+  logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
 }
 
@@ -79,7 +79,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, recaptchaToken?: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -89,13 +89,13 @@ export function AdminProvider({ children }: AdminProviderProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, recaptchaToken }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        localStorage.setItem('admin_token', data.accessToken);
+        localStorage.setItem('admin_token', data.token);
         setAdminUser(data.user);
       } else {
         throw new Error(data.message || 'Admin login failed');
@@ -108,10 +108,26 @@ export function AdminProvider({ children }: AdminProviderProps) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('admin_token');
-    setAdminUser(null);
-    setError(null);
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      if (token) {
+        // Call backend logout endpoint
+        await fetch('/api/admin/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Admin logout error:', error);
+    } finally {
+      localStorage.removeItem('admin_token');
+      setAdminUser(null);
+      setError(null);
+    }
   };
 
   useEffect(() => {

@@ -80,10 +80,12 @@ import {
   Search,
   Filter,
   Eye,
-  Settings
+  Settings,
+  LogOut
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { useAdmin } from "../AdminContext";
 
 // Pagination component
 function PaginationControls({ 
@@ -183,6 +185,7 @@ const questionFormSchema = insertQuestionSchema.extend({
 type QuestionFormData = z.infer<typeof questionFormSchema>;
 
 export default function AdminSimple() {
+  const { adminUser, logout } = useAdmin();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvFileInputRef = useRef<HTMLInputElement>(null);
@@ -2855,8 +2858,21 @@ export default function AdminSimple() {
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-          <p className="text-gray-600">Manage questions, exams, and subjects with CSV import/export functionality</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+              <p className="text-gray-600">Manage questions, exams, and subjects with CSV import/export functionality</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="flex items-center space-x-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
