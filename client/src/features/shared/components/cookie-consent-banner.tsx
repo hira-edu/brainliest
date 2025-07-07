@@ -7,10 +7,11 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Cookie, Settings, Shield, BarChart, Target, X } from 'lucide-react';
-import { CookieManager, COOKIE_REGISTRY } from '@/utils/cookie-utils';
+import { IndustrialCookieManager, type CookieConsentPreferences } from '@/utils/industrial-cookie-manager';
+import { COOKIE_REGISTRY } from '@/utils/cookie-utils';
 
 interface CookieConsentBannerProps {
-  onConsentChange?: (preferences: Record<string, boolean>) => void;
+  onConsentChange?: (preferences: CookieConsentPreferences) => void;
 }
 
 export default function CookieConsentBanner({ onConsentChange }: CookieConsentBannerProps) {
@@ -24,12 +25,12 @@ export default function CookieConsentBanner({ onConsentChange }: CookieConsentBa
   });
 
   useEffect(() => {
-    // Check if user has already consented
-    const { hasConsented, preferences: existingPrefs } = CookieManager.getConsentStatus();
+    // Check if user has already consented using BULLETPROOF system
+    const { hasConsented, preferences: existingPrefs } = IndustrialCookieManager.getConsentStatus();
     
-    // Debug logging to track cookie status
-    console.log('Cookie consent status:', { hasConsented, existingPrefs });
-    console.log('All cookies:', CookieManager.getAllCookies());
+    // Debug logging for troubleshooting
+    console.log('🍪 BULLETPROOF Cookie consent status:', { hasConsented, existingPrefs });
+    console.log('🔍 BULLETPROOF Diagnostics:', IndustrialCookieManager.getDiagnostics());
     
     setShowBanner(!hasConsented);
 
@@ -47,13 +48,13 @@ export default function CookieConsentBanner({ onConsentChange }: CookieConsentBa
       marketing: true
     };
     
-    console.log('Setting consent preferences:', allAccepted);
-    CookieManager.setConsentPreferences(allAccepted);
+    console.log('🔒 BULLETPROOF: Setting consent preferences:', allAccepted);
+    IndustrialCookieManager.setConsentPreferences(allAccepted);
     
     // Debug: Check if cookie was actually set
-    const { hasConsented } = CookieManager.getConsentStatus();
-    console.log('After setting consent, hasConsented:', hasConsented);
-    console.log('Updated cookies:', CookieManager.getAllCookies());
+    const { hasConsented } = IndustrialCookieManager.getConsentStatus();
+    console.log('✅ BULLETPROOF: After setting consent, hasConsented:', hasConsented);
+    console.log('🔍 BULLETPROOF: Updated diagnostics:', IndustrialCookieManager.getDiagnostics());
     
     setPreferences(allAccepted);
     setShowBanner(false);
@@ -61,7 +62,8 @@ export default function CookieConsentBanner({ onConsentChange }: CookieConsentBa
   };
 
   const handleAcceptSelected = () => {
-    CookieManager.setConsentPreferences(preferences);
+    console.log('🔒 BULLETPROOF: Setting selected preferences:', preferences);
+    IndustrialCookieManager.setConsentPreferences(preferences);
     setShowBanner(false);
     setShowSettings(false);
     onConsentChange?.(preferences);
@@ -75,7 +77,8 @@ export default function CookieConsentBanner({ onConsentChange }: CookieConsentBa
       marketing: false
     };
     
-    CookieManager.setConsentPreferences(essentialOnly);
+    console.log('🔒 BULLETPROOF: Setting essential-only preferences:', essentialOnly);
+    IndustrialCookieManager.setConsentPreferences(essentialOnly);
     setPreferences(essentialOnly);
     setShowBanner(false);
     onConsentChange?.(essentialOnly);
