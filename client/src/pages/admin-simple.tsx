@@ -2869,11 +2869,28 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = '/api/csv/template/subjects';
-                          link.download = 'subjects_template.csv';
-                          link.click();
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch('/api/csv/template/subjects', {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'subjects_template.csv';
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                            } else {
+                              toast({ title: "Download failed", description: "Could not download template", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Download failed", description: "An error occurred", variant: "destructive" });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -2882,11 +2899,28 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = '/api/csv/export/subjects?includeNames=true';
-                          link.download = 'subjects_export.csv';
-                          link.click();
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch('/api/csv/export/subjects?includeNames=true', {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'subjects_export.csv';
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                            } else {
+                              toast({ title: "Export failed", description: "Could not export data", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Export failed", description: "An error occurred", variant: "destructive" });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -2906,9 +2940,13 @@ export default function AdminSimple() {
                             reader.onload = async (event) => {
                               const csvContent = event.target?.result as string;
                               try {
+                                const token = localStorage.getItem('admin_token');
                                 const response = await fetch('/api/csv/import/subjects', {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                  },
                                   body: JSON.stringify({ csvContent })
                                 });
                                 const result = await response.json();
@@ -2944,11 +2982,28 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = '/api/csv/template/exams';
-                          link.download = 'exams_template.csv';
-                          link.click();
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch('/api/csv/template/exams', {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'exams_template.csv';
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                            } else {
+                              toast({ title: "Download failed", description: "Could not download template", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Download failed", description: "An error occurred", variant: "destructive" });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -2957,11 +3012,28 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = '/api/csv/export/exams?includeNames=true';
-                          link.download = 'exams_export.csv';
-                          link.click();
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch('/api/csv/export/exams?includeNames=true', {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'exams_export.csv';
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                            } else {
+                              toast({ title: "Export failed", description: "Could not export data", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Export failed", description: "An error occurred", variant: "destructive" });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -2981,9 +3053,13 @@ export default function AdminSimple() {
                             reader.onload = async (event) => {
                               const csvContent = event.target?.result as string;
                               try {
+                                const token = localStorage.getItem('admin_token');
                                 const response = await fetch('/api/csv/import/exams', {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                  },
                                   body: JSON.stringify({ csvContent })
                                 });
                                 const result = await response.json();
@@ -3019,11 +3095,28 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = '/api/csv/template/questions';
-                          link.download = 'questions_template.csv';
-                          link.click();
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch('/api/csv/template/questions', {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'questions_template.csv';
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                            } else {
+                              toast({ title: "Download failed", description: "Could not download template", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Download failed", description: "An error occurred", variant: "destructive" });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -3032,11 +3125,28 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = '/api/csv/export/questions?includeNames=true';
-                          link.download = 'questions_export.csv';
-                          link.click();
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch('/api/csv/export/questions?includeNames=true', {
+                              headers: {
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'questions_export.csv';
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                            } else {
+                              toast({ title: "Export failed", description: "Could not export data", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Export failed", description: "An error occurred", variant: "destructive" });
+                          }
                         }}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -3056,9 +3166,13 @@ export default function AdminSimple() {
                             reader.onload = async (event) => {
                               const csvContent = event.target?.result as string;
                               try {
+                                const token = localStorage.getItem('admin_token');
                                 const response = await fetch('/api/csv/import/questions', {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
+                                  headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                  },
                                   body: JSON.stringify({ csvContent })
                                 });
                                 const result = await response.json();
