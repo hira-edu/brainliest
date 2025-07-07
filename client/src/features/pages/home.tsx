@@ -379,7 +379,7 @@ export default function Home() {
                     
                     return (
                       <>
-                        {categorySubjects.length > 12 && (
+                        {categorySubjects.length > 6 && (
                           <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-4">
                               <span className="text-sm text-gray-600">Show:</span>
@@ -473,7 +473,7 @@ export default function Home() {
                           ))}
                         </div>
                         
-                        {categorySubjects.length > 12 && totalPages > 1 && (
+                        {categorySubjects.length > 6 && totalPages > 1 && (
                           <div className="flex justify-center mt-8">
                             <div className="flex items-center space-x-2">
                               <Button
