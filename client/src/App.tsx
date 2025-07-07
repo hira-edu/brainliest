@@ -1,30 +1,25 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient } from "./services/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { QuestionLimitProvider } from "@/contexts/QuestionLimitContext";
-import Home from "@/pages/home";
-import AllSubjects from "@/pages/all-subjects";
-import ExamSelection from "@/pages/exam-selection";
-import QuestionInterface from "@/pages/question-interface";
-import Results from "@/pages/results";
-import Analytics from "@/pages/analytics";
-import AdminSimple from "@/pages/admin-simple";
-import AdminClean from "@/pages/admin-clean";
-import AdminSecure from "@/pages/admin-secure";
-import Settings from "@/pages/settings";
-import CookieSettings from "@/pages/cookie-settings";
-import OurStory from "@/pages/our-story";
-import PrivacyPolicy from "@/pages/privacy-policy";
-import TermsOfService from "@/pages/terms-of-service";
-import Contact from "@/pages/contact";
-import CategoriesPage from "@/pages/categories";
-import CategoryDetailPage from "@/pages/category-detail";
-import AuthCallback from "@/pages/auth-callback";
-import NotFound from "@/pages/not-found";
-import CookieConsentBanner from "@/components/cookie-consent-banner";
+import { AuthProvider } from "@/features/auth/AuthContext";
+import { QuestionLimitProvider } from "@/features/shared/QuestionLimitContext";
+import Home from "@/features/pages/home";
+import { AllSubjects } from "@/features/content";
+import { ExamSelection, QuestionInterface, Results } from "@/features/exam";
+import { Analytics } from "@/features/analytics";
+import { AdminSimple, AdminClean, AdminSecure } from "@/features/admin";
+import Settings from "@/features/pages/settings";
+import CookieSettings from "@/features/pages/cookie-settings";
+import OurStory from "@/features/pages/static/our-story";
+import PrivacyPolicy from "@/features/pages/static/privacy-policy";
+import TermsOfService from "@/features/pages/static/terms-of-service";
+import Contact from "@/features/pages/static/contact";
+import { Categories, CategoryDetail } from "@/features/content";
+import { AuthCallback } from "@/features/auth";
+import NotFound from "@/features/pages/static/not-found";
+import { CookieConsentBanner } from "@/features/shared";
 
 function Router() {
   return (
