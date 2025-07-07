@@ -8,6 +8,7 @@ import { useLocation } from 'wouter';
 import { Clock, FileText, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Exam } from "@shared/schema";
 
 interface Exam {
   id: number;
@@ -26,15 +27,13 @@ interface ExamListProps {
   useSlugRouting?: boolean;
 }
 
-export function ExamList({ exams, subjectName, useSlugRouting = false }: ExamListProps) {
+export function ExamList({ exams, subjectName, useSlugRouting = true }: ExamListProps) {
   const [, setLocation] = useLocation();
 
   const handleStartExam = (exam: Exam) => {
-    if (useSlugRouting && exam.slug) {
-      setLocation(`/exam/${exam.slug}`);
-    } else {
-      setLocation(`/exam/${exam.id}`);
-    }
+    // Use centralized slug navigation with primary slug-based routing
+    const examUrl = exam.slug ? `/exam/${exam.slug}` : `/exam/${exam.id}`;
+    setLocation(examUrl);
   };
 
   const getDifficultyColor = (difficulty: string) => {

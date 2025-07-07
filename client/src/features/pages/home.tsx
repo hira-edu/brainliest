@@ -35,6 +35,7 @@ import {
   BusinessIcon,
   MedicalIcon
 } from "@/utils/certification-icons";
+import { navigateToSubject } from "@/utils/slug-navigation";
 
 // Category configuration for better organization
 const categoryConfig = {
@@ -132,9 +133,8 @@ export default function Home() {
 
 
   const handleSelectSubject = (subject: Subject) => {
-    // Use slug-based routing with fallback to ID for backward compatibility
-    const url = subject.slug ? `/subject/${subject.slug}` : `/subject/${subject.id}`;
-    setLocation(url);
+    // Use centralized slug navigation
+    navigateToSubject(setLocation, subject);
   };
 
   // Categorize and filter subjects

@@ -40,13 +40,13 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
-      {/* Legacy ID-based routes for backward compatibility */}
-      <Route path="/subject/:id(\d+)" component={ExamSelection} />
-      <Route path="/exam/:id(\d+)" component={QuestionInterface} />
-      
-      {/* New slug-based routes */}
+      {/* Primary slug-based routes - must come first for proper matching */}
       <Route path="/subject/:slug" component={SubjectSlugPage} />
       <Route path="/exam/:slug" component={ExamSlugPage} />
+      
+      {/* Legacy ID-based routes for backward compatibility - numeric only */}
+      <Route path="/subject/:id(\d+)" component={ExamSelection} />
+      <Route path="/exam/:id(\d+)" component={QuestionInterface} />
       <Route path="/results/:id(\d+)" component={Results} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />

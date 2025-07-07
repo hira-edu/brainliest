@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { navigateToSubject } from "@/utils/slug-navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -125,9 +126,8 @@ export default function AllSubjects() {
   });
 
   const handleSelectSubject = (subject: Subject) => {
-    // Use slug-based routing with fallback to ID for backward compatibility
-    const url = subject.slug ? `/subject/${subject.slug}` : `/subject/${subject.id}`;
-    setLocation(url);
+    // Use centralized slug navigation
+    navigateToSubject(setLocation, subject);
   };
 
   const categorizedSubjects = useMemo(() => {

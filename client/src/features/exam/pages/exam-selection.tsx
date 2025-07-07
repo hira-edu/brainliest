@@ -26,8 +26,10 @@ export default function ExamSelection() {
     enabled: !!subjectId,
   });
 
-  const handleStartExam = (examId: number) => {
-    setLocation(`/exam/${examId}`);
+  const handleStartExam = (exam: Exam) => {
+    // Primary slug-based routing with ID fallback for backward compatibility
+    const examUrl = exam.slug ? `/exam/${exam.slug}` : `/exam/${exam.id}`;
+    setLocation(examUrl);
   };
 
   const handleGoBack = () => {
@@ -120,7 +122,7 @@ export default function ExamSelection() {
             <ExamCard 
               key={exam.id} 
               exam={exam} 
-              onStart={() => handleStartExam(exam.id)}
+              onStart={() => handleStartExam(exam)}
               // Completion tracking implemented via user sessions and analytics
             />
           ))}
