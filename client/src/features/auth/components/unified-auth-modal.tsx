@@ -45,6 +45,8 @@ function UnifiedAuthModalContent({
   const [verificationCode, setVerificationCode] = useState('');
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [isVerificationLoading, setIsVerificationLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [canResend, setCanResend] = useState(false);
 
   const { signIn, signUp, signInWithGoogle, verifyEmail } = useAuth();
   const { toast } = useToast();
@@ -118,6 +120,7 @@ function UnifiedAuthModalContent({
         if (result.success) {
           if (result.requiresEmailVerification) {
             setIsEmailSent(true);
+            startResendTimer();
             toast({
               title: "Email Verification Required",
               description: "Please check your email for a verification code.",
@@ -147,6 +150,7 @@ function UnifiedAuthModalContent({
         if (result.success) {
           if (result.requiresEmailVerification) {
             setIsEmailSent(true);
+            startResendTimer();
             toast({
               title: "Account Created",
               description: "Please check your email for a verification code.",
@@ -267,11 +271,81 @@ function UnifiedAuthModalContent({
     setErrors({});
     setShowPassword(false);
     setShowConfirmPassword(false);
+    setResendTimer(0);
+    setCanResend(false);
   };
 
   const switchMode = () => {
     setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
     setErrors({});
+  };
+
+  // Start resend timer (60 seconds)
+  const startResendTimer = () => {
+    setResendTimer(60);
+    setCanResend(false);
+  };
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer(prev => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // Resend email verification
+  const handleResendEmail = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Generate reCAPTCHA token for resend
+      let recaptchaToken = '';
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('resend_verification');
+        } catch (error) {
+          console.warn('reCAPTCHA execution failed:', error);
+        }
+      }
+
+      const result = await signUp(formData.email, formData.password, {
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName
+      }, recaptchaToken);
+      
+      if (result.success) {
+        startResendTimer();
+        toast({
+          title: "Email Resent",
+          description: "We've sent a new verification code to your email.",
+        });
+      } else {
+        toast({
+          title: "Resend Failed",
+          description: result.message || "Failed to resend email. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to resend email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Reset form when modal closes
@@ -328,6 +402,23 @@ function UnifiedAuthModalContent({
                 disabled={isVerificationLoading}
               >
                 Back
+              </Button>
+            </div>
+
+            {/* Resend Email Section */}
+            <div className="text-center text-sm text-gray-600">
+              <p>Didn't receive the email?</p>
+              <Button
+                onClick={handleResendEmail}
+                variant="link"
+                disabled={!canResend || isLoading}
+                className="p-0 h-auto text-blue-600 hover:text-blue-800"
+              >
+                {resendTimer > 0 ? (
+                  `Resend in ${resendTimer}s`
+                ) : (
+                  "Resend verification email"
+                )}
               </Button>
             </div>
           </div>
@@ -448,6 +539,21 @@ function UnifiedAuthModalContent({
                     )}
                   </Button>
                 </div>
+                {authMode === 'signup' && (
+                  <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-md">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Shield className="h-3 w-3" />
+                      <span className="font-medium">Password Requirements:</span>
+                    </div>
+                    <ul className="space-y-1 ml-5">
+                      <li>• At least 8 characters long</li>
+                      <li>• One uppercase letter (A-Z)</li>
+                      <li>• One lowercase letter (a-z)</li>
+                      <li>• One number (0-9)</li>
+                      <li>• One special character (!@#$%^&*)</li>
+                    </ul>
+                  </div>
+                )}
                 {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
               </div>
 
