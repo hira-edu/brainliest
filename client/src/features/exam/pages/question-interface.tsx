@@ -46,7 +46,7 @@ export default function QuestionInterface() {
     enabled: !!examId,
   });
 
-  const { data: questions, isLoading } = useQuery<Question[]>({
+  const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
     queryKey: ["/api/questions", examId],
     queryFn: async () => {
       const response = await fetch(`/api/questions?examId=${examId}`);
@@ -55,6 +55,8 @@ export default function QuestionInterface() {
     },
     enabled: !!examId,
   });
+
+  const questions = questionsData?.questions || [];
 
   const { data: session } = useQuery<ExamSession>({
     queryKey: [`/api/sessions/${sessionId}`],
