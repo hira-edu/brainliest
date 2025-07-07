@@ -8,6 +8,7 @@ import { authService } from "./auth-service";
 import { requireAdminAuth, logAdminAction } from "./middleware/auth";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
+import { trendingService } from "./trending-service";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -1594,6 +1595,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deletedCount: 0,
         errors: []
       });
+    }
+  });
+
+  // Trending API routes
+  app.get("/api/trending/certifications", async (req, res) => {
+    try {
+      const trending = await trendingService.getTrendingCertifications();
+      res.json(trending);
+    } catch (error) {
+      console.error('Error fetching trending certifications:', error);
+      res.status(500).json({ error: "Failed to fetch trending certifications" });
+    }
+  });
+
+  app.post("/api/tracking/interaction", async (req, res) => {
+    try {
+      const { subjectId, interactionType, userId, sessionId } = req.body;
+      const ipAddress = req.ip;
+      const userAgent = req.get('User-Agent');
+
+      await trendingService.trackInteraction({
+        subjectId,
+        interactionType,
+        userId,
+        sessionId,
+        ipAddress,
+        userAgent,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error tracking interaction:', error);
+      res.status(500).json({ error: "Failed to track interaction" });
     }
   });
 

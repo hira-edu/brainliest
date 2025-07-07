@@ -17,7 +17,24 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Search, Filter, TrendingUp, Users, Award, BookOpen } from "lucide-react";
-import { PMPIcon, AWSIcon, CompTIAIcon, AzureIcon } from "@/assets/icons/certifications";
+import { 
+  PMPIcon, 
+  AWSIcon, 
+  CompTIAIcon, 
+  AzureIcon,
+  CiscoIcon,
+  GoogleCloudIcon,
+  OracleIcon,
+  VMwareIcon,
+  KubernetesIcon,
+  DockerIcon,
+  MathIcon,
+  StatisticsIcon,
+  ScienceIcon,
+  EngineeringIcon,
+  BusinessIcon,
+  MedicalIcon
+} from "@/assets/icons/certifications";
 
 // Category configuration for better organization
 const categoryConfig = {
@@ -80,6 +97,10 @@ export default function Home() {
     queryKey: ["/api/subjects"],
   });
 
+  const { data: trendingCerts } = useQuery<any[]>({
+    queryKey: ["/api/trending/certifications"],
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
 
 
   const handleSelectSubject = (subjectId: number) => {
@@ -241,31 +262,45 @@ export default function Home() {
             <TrendingUp className="w-6 h-6 text-green-500" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { name: 'PMP Certification', trend: '+15%', IconComponent: PMPIcon, searchTerm: 'pmp' },
-              { name: 'AWS Cloud Practitioner', trend: '+23%', IconComponent: AWSIcon, searchTerm: 'aws' },
-              { name: 'CompTIA Security+', trend: '+18%', IconComponent: CompTIAIcon, searchTerm: 'comptia' },
-              { name: 'Azure Fundamentals', trend: '+12%', IconComponent: AzureIcon, searchTerm: 'azure' }
-            ].map((cert) => (
-              <div 
-                key={cert.name}
-                className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors group"
-                onClick={() => {
-                  setSearchQuery(cert.searchTerm);
-                  setSelectedCategory("certifications");
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <cert.IconComponent className="w-8 h-8" />
-                  <Badge variant="outline" className="text-xs text-green-600">
-                    {cert.trend}
-                  </Badge>
+            {(trendingCerts ? trendingCerts : [
+              { name: 'PMP Certification', trend: '+15%', searchTerm: 'pmp' },
+              { name: 'AWS Cloud Practitioner', trend: '+23%', searchTerm: 'aws' },
+              { name: 'CompTIA Security+', trend: '+18%', searchTerm: 'comptia' },
+              { name: 'Azure Fundamentals', trend: '+12%', searchTerm: 'azure' }
+            ]).map((cert: any) => {
+              // Get appropriate icon based on subject name
+              const getIconForSubject = (name: string) => {
+                const nameLower = name.toLowerCase();
+                if (nameLower.includes('pmp')) return PMPIcon;
+                if (nameLower.includes('aws')) return AWSIcon;
+                if (nameLower.includes('comptia')) return CompTIAIcon;
+                if (nameLower.includes('azure') || nameLower.includes('microsoft')) return AzureIcon;
+                return BookOpen; // Default icon
+              };
+              
+              const IconComponent = getIconForSubject(cert.name);
+              
+              return (
+                <div 
+                  key={cert.name}
+                  className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors group"
+                  onClick={() => {
+                    setSearchQuery(cert.searchTerm);
+                    setSelectedCategory("certifications");
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <IconComponent className="w-8 h-8" />
+                    <Badge variant="outline" className="text-xs text-green-600">
+                      {cert.trend}
+                    </Badge>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
+                    {cert.name}
+                  </span>
                 </div>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
-                  {cert.name}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
 

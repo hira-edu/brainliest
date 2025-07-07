@@ -242,6 +242,39 @@ export const authSessions = pgTable("auth_sessions", {
   lastUsedAt: timestamp("last_used_at").defaultNow(),
 });
 
+// User interaction tracking tables for trending calculations
+export const userSubjectInteractions = pgTable("user_subject_interactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"), // nullable for anonymous users
+  subjectId: integer("subject_id").notNull(),
+  sessionId: text("session_id"), // for anonymous tracking
+  interactionType: text("interaction_type").notNull(), // 'view', 'search', 'click', 'exam_start', 'exam_complete'
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const subjectTrendingStats = pgTable("subject_trending_stats", {
+  id: serial("id").primaryKey(),
+  subjectId: integer("subject_id").notNull(),
+  date: timestamp("date").notNull(),
+  viewCount: integer("view_count").default(0),
+  searchCount: integer("search_count").default(0),
+  clickCount: integer("click_count").default(0),
+  examStartCount: integer("exam_start_count").default(0),
+  examCompleteCount: integer("exam_complete_count").default(0),
+  trendingScore: integer("trending_score").default(0),
+  growthPercentage: text("growth_percentage").default("0%"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const dailyTrendingSnapshot = pgTable("daily_trending_snapshot", {
+  id: serial("id").primaryKey(),
+  date: timestamp("date").notNull(),
+  topSubjects: text("top_subjects").notNull(), // JSON string of top trending subjects
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertCategorySchema = createInsertSchema(categories).omit({
   id: true,
   createdAt: true,
@@ -335,6 +368,21 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
   timestamp: true,
 });
 
+export const insertUserSubjectInteractionSchema = createInsertSchema(userSubjectInteractions).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertSubjectTrendingStatsSchema = createInsertSchema(subjectTrendingStats).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+export const insertDailyTrendingSnapshotSchema = createInsertSchema(dailyTrendingSnapshot).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Subcategory = typeof subcategories.$inferSelect;
@@ -364,6 +412,14 @@ export type PerformanceTrends = typeof performanceTrends.$inferSelect;
 export type InsertPerformanceTrends = z.infer<typeof insertPerformanceTrendsSchema>;
 export type StudyRecommendations = typeof studyRecommendations.$inferSelect;
 export type InsertStudyRecommendations = z.infer<typeof insertStudyRecommendationsSchema>;
+
+// Trending Types
+export type UserSubjectInteraction = typeof userSubjectInteractions.$inferSelect;
+export type InsertUserSubjectInteraction = z.infer<typeof insertUserSubjectInteractionSchema>;
+export type SubjectTrendingStats = typeof subjectTrendingStats.$inferSelect;
+export type InsertSubjectTrendingStats = z.infer<typeof insertSubjectTrendingStatsSchema>;
+export type DailyTrendingSnapshot = typeof dailyTrendingSnapshot.$inferSelect;
+export type InsertDailyTrendingSnapshot = z.infer<typeof insertDailyTrendingSnapshotSchema>;
 
 // Authentication Types
 export type AuthLog = typeof authLogs.$inferSelect;
