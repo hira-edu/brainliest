@@ -104,7 +104,7 @@ export default function Home() {
   };
 
   // Helper function to get items per page for a category
-  const getItemsPerPage = (categoryKey: string) => itemsPerPage[categoryKey] || 12;
+  const getItemsPerPage = (categoryKey: string) => itemsPerPage[categoryKey] || 10;
   
   // Helper function to set items per page for a category
   const setItemsPerPageForCategory = (categoryKey: string, items: number) => {

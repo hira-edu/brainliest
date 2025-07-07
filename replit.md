@@ -277,6 +277,7 @@ The application uses four main entities:
 - **Fixed pagination placement bug**: Resolved issue where Professional Certifications pagination was appearing in University & College section
 - **Adjusted pagination threshold**: Changed threshold from 12 to 6 subjects to ensure both categories show pagination controls when appropriate
 - **Removed duplicate bottom pagination**: Eliminated redundant pagination controls at bottom of each category, keeping only the controls after category headers
+- **Set default pagination to 10 cards**: Changed default cards per page from 12 to 10 for better user experience and consistent display
 
 ### July 07, 2025 - Fixed Question Interface Empty State to Match Card Design (COMPLETED)
 - **Fixed no questions display issue**: Applied same card layout structure when no questions are available
