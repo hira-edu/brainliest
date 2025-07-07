@@ -174,11 +174,14 @@ export class AuthService {
         return { success: false, message: 'Email address is already registered and verified' };
       }
       
-      // If user exists but not verified, delete the old unverified account
+      // If user exists but not verified, delete the old unverified account in a transaction
       if (existingUser.length > 0 && !existingUser[0].emailVerified) {
-        // Delete user (auth_logs will be auto-deleted via CASCADE)
-        await db.delete(users).where(eq(users.email, email));
-        await logAuthEvent(null, email, 'unverified_account_replaced', 'email', true, ipAddress, userAgent);
+        await db.transaction(async (trx) => {
+          // Delete user (all related records will be auto-deleted via CASCADE)
+          await trx.delete(users).where(eq(users.email, email));
+          // Log the replacement event
+          await logAuthEvent(null, email, 'unverified_account_replaced', 'email', true, ipAddress, userAgent);
+        });
       }
 
       // Hash password
@@ -192,18 +195,25 @@ export class AuthService {
       // Generate username from email if not provided
       const generatedUsername = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
       
-      // Create user
-      const [newUser] = await db.insert(users).values({
-        email,
-        username: generatedUsername,
-        firstName: firstName || null,
-        lastName: lastName || null,
-        passwordHash,
-        emailVerificationToken,
-        emailVerificationExpires,
-        emailVerified: false,
-        registrationIp: ipAddress || null,
-      }).returning();
+      // Create user and log registration in a transaction
+      const [newUser] = await db.transaction(async (trx) => {
+        const [user] = await trx.insert(users).values({
+          email,
+          username: generatedUsername,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          passwordHash,
+          emailVerificationToken,
+          emailVerificationExpires,
+          emailVerified: false,
+          registrationIp: ipAddress || null,
+        }).returning();
+        
+        // Log successful registration
+        await logAuthEvent(user.id, email, 'register_success', 'email', true, ipAddress, userAgent);
+        
+        return [user];
+      });
 
       // Send verification email
       try {
@@ -223,8 +233,6 @@ export class AuthService {
         role: newUser.role || 'user',
         emailVerified: newUser.emailVerified || false,
       };
-
-      await logAuthEvent(newUser.id, email, 'register_success', 'email', true, ipAddress, userAgent);
 
       return {
         success: true,
