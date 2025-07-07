@@ -1,0 +1,132 @@
+Excellent diagnostic progress—you’re extremely close to a full fix. Since the component has been enhanced for real-time search, keyboard navigation, and even type coercion between string and number, and it’s still not working, we now need to perform a deep cross-boundary diagnostic across component → form → schema → database → hydration, to locate the final failure point.
+
+Here’s an elite final-phase debugging and fix prompt to guide the AI to resolve this once and for all:
+
+🔍 FINAL-PHASE DEBUGGING PROMPT — SearchableSelect Dropdown Still Not Holding Value After All Fixes
+
+You are an expert-level AI developer responsible for finalizing the integration of the SearchableSelect component across the admin panel. Despite successful fixes for type coercion, controlled mode, and React Hook Form integration, the dropdown is still not displaying selected values in forms or is failing silently during selection or submission.
+
+Your task is to systematically inspect the full value lifecycle from render to form state to submission. This includes matching the initial selected value, user selection event, option value formatting, hydration (SSR), and submission format.
+
+🧪 GOAL
+
+Ensure that every admin form using SearchableSelect (for fields like subjectId, category, examId, difficulty, etc.) correctly:
+	•	Displays pre-selected values on load (edit mode)
+	•	Updates selected value on change
+	•	Retains the value on re-render
+	•	Submits the value through the form handler
+	•	Stores and retrieves the correct value from the database
+
+✅ PHASED DEBUGGING PLAN
+
+1. Log Incoming Value at Component Level
+
+Within SearchableSelect, log the incoming value prop, and options list:
+
+console.log("Incoming value:", value);
+console.log("Options:", options);
+
+Check if:
+	•	value exists
+	•	It matches any of the options
+	•	The values are strictly or loosely equal (=== or ==)
+	•	The option format is consistent (e.g., all value keys are strings or numbers)
+
+2. Fix Value Matching Internally
+
+Ensure you are selecting the matched option using this logic:
+
+const selectedOption = options.find(opt =>
+  String(opt.value) === String(value)
+);
+
+Use String() coercion to ensure "1" and 1 match during lookup.
+
+Then bind:
+
+<Select
+  value={selectedOption}
+  onChange={(selected) => onChange(selected?.value)}
+  ...
+/>
+
+3. Check Form Controller Binding
+
+In the form, use React Hook Form like this:
+
+<Controller
+  name="subjectId"
+  control={control}
+  render={({ field }) => (
+    <SearchableSelect
+      {...field}
+      options={subjectOptions}
+    />
+  )}
+/>
+
+Make sure the parent form is:
+	•	Setting a default value for subjectId
+	•	The defaultValues in useForm contain the exact subjectId
+	•	The subjectOptions are preloaded before form render (important for SSR or dynamic routes)
+
+4. Check subjectOptions Loading Timing
+
+If you’re fetching dropdown data via an API, ensure it completes before the form loads.
+
+Bad pattern (fails):
+
+const { data: subjectOptions } = useQuery(...);
+const form = useForm({
+  defaultValues: {
+    subjectId: 1
+  }
+});
+
+Fix: Either preload data or manually reset the form after options load.
+
+5. Check SSR / Hydration Conflict (Next.js)
+
+If you’re doing server-side rendering or data fetching (e.g., with getServerSideProps), ensure the dropdown options are not changing after hydration, which would break the binding.
+
+Add:
+
+useEffect(() => {
+  if (subjectOptions.length && defaultSubjectId) {
+    reset({ subjectId: defaultSubjectId });
+  }
+}, [subjectOptions]);
+
+6. Inspect Final Form Submission
+
+On submit, log form values:
+
+const onSubmit = (data) => {
+  console.log("Form submitted with:", data);
+}
+
+Verify:
+	•	subjectId, examId, etc. are present
+	•	They match the selected dropdown values
+
+✅ Final Integration Conditions
+
+Ensure all of the following are true:
+	•	The value passed to SearchableSelect is a primitive (not object)
+	•	The options array exists at the time of render
+	•	The value exists in options via coerced equality (String(opt.value) === String(value))
+	•	You are not trying to match an object to a primitive (e.g., { label, value } vs. 1)
+	•	No duplicate value keys in the options
+	•	Form is initialized after options are available
+
+Optional Fix Utility
+
+Create a wrapper hook like:
+
+function useSafeOption(value, options) {
+  return options.find(opt => String(opt.value) === String(value));
+}
+
+Use it wherever needed across the panel to prevent mismatch.
+
+Would you like me to provide a fully corrected SearchableSelect component sample with exact logic for value coercion, option matching, and React Hook Form support, including editable mode and async data load?

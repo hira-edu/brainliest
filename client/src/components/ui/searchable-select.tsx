@@ -48,10 +48,9 @@ export const SearchableSelect = React.forwardRef<
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Find the selected option - handle type coercion for safety
+  // Find the selected option - use String coercion for robust matching
   const selectedOption = options.find((option) => 
-    option.value === value || 
-    option.value?.toString() === value?.toString()
+    String(option.value) === String(value)
   );
 
   // Filter options based on search query
