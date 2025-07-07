@@ -85,6 +85,17 @@ export const comments = pgTable("comments", {
   parentId: integer("parent_id"), // For nested replies
 });
 
+// IP-based freemium session tracking table
+export const anonQuestionSessions = pgTable("anon_question_sessions", {
+  id: serial("id").primaryKey(),
+  ipAddress: text("ip_address").unique().notNull(), // Normalized IP (supports IPv4/IPv6)
+  questionsAnswered: integer("questions_answered").default(0).notNull(),
+  lastReset: timestamp("last_reset").defaultNow().notNull(),
+  userAgentHash: text("user_agent_hash"), // Optional: hashed UA for better granularity
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").unique().notNull(),

@@ -6,6 +6,7 @@ import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { requireAdminAuth, logAdminAction } from "./middleware/auth";
+import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
@@ -112,6 +113,19 @@ function generateVerificationCode(): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Freemium status endpoint
+  app.get("/api/freemium/status", checkFreemiumStatus(), async (req, res) => {
+    try {
+      res.json({
+        freemiumSession: req.freemiumSession,
+        isAuthenticated: false, // This would be true if user is logged in
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get freemium status" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
     try {
@@ -216,26 +230,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Question routes
-  app.get("/api/questions", async (req, res) => {
+  app.get("/api/questions", checkFreemiumStatus(), async (req, res) => {
     try {
       const examId = parseOptionalId(req.query.examId as string);
       const questions = examId 
         ? await storage.getQuestionsByExam(examId)
         : await storage.getQuestions();
-      res.json(questions);
+      
+      // Add freemium session info to response for frontend
+      const responseData = {
+        questions,
+        freemiumSession: req.freemiumSession
+      };
+      
+      res.json(responseData);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch questions" });
     }
   });
 
-  app.get("/api/questions/:id", async (req, res) => {
+  app.get("/api/questions/:id", enforceFreemiumLimit(), recordFreemiumQuestionView(), async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const question = await storage.getQuestion(id);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
       }
-      res.json(question);
+      
+      // Add freemium session info to response
+      const responseData = {
+        ...question,
+        freemiumSession: req.freemiumSession
+      };
+      
+      res.json(responseData);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch question" });
     }
@@ -1638,6 +1666,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deletedCount: 0,
         errors: []
       });
+    }
+  });
+
+  // Freemium API routes
+  app.get("/api/freemium/status", checkFreemiumStatus(), async (req, res) => {
+    try {
+      const sessionInfo = req.freemiumSession;
+      if (!sessionInfo) {
+        return res.status(500).json({ error: "Failed to get freemium session info" });
+      }
+      res.json(sessionInfo);
+    } catch (error) {
+      console.error('Error fetching freemium status:', error);
+      res.status(500).json({ error: "Failed to fetch freemium status" });
     }
   });
 
