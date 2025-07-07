@@ -53,8 +53,8 @@ async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
     
     // Determine the correct redirect URI based on environment
     const redirectUri = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:5000/api/auth/oauth/google/callback'
-      : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/oauth/google/callback`;
+      ? 'http://localhost:5000/api/auth/google/callback'
+      : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/google/callback`;
     
     console.log('🔗 Using redirect URI:', redirectUri);
     
@@ -1161,37 +1161,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // OAuth Google callback - handles the authorization code from Google
-  app.get("/api/auth/oauth/google/callback", async (req, res) => {
+  // Google OAuth initiate flow
+  app.get("/api/auth/google/start", (req, res) => {
     try {
-      const { code, state, error } = req.query;
+      console.log('🚀 Starting Google OAuth flow...');
       
-      console.log('🔍 Google OAuth callback received:', { code: code ? 'present' : 'missing', state, error });
+      // Determine the correct redirect URI based on environment
+      const redirectUri = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:5000/api/auth/google/callback'
+        : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/google/callback`;
+      
+      const params = new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID!,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: 'openid email profile',
+        access_type: 'offline',
+        prompt: 'select_account'
+      });
+      
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+      console.log('🔗 Redirecting to Google OAuth:', authUrl);
+      
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('❌ OAuth start error:', error);
+      res.status(500).json({ success: false, message: 'Failed to start OAuth flow' });
+    }
+  });
+
+  // OAuth Google callback - handles the authorization code from Google
+  app.get("/api/auth/google/callback", async (req, res) => {
+    try {
+      const { code, error } = req.query;
+      
+      console.log('🔍 Google OAuth callback received:', { code: code ? 'present' : 'missing', error });
       
       if (error) {
         console.error('❌ Google OAuth error:', error);
-        return res.send(`
-          <script>
-            window.opener.postMessage({
-              type: 'GOOGLE_AUTH_ERROR',
-              error: '${error}'
-            }, window.location.origin);
-            window.close();
-          </script>
-        `);
+        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=${encodeURIComponent(error as string)}`);
       }
       
       if (!code) {
         console.error('❌ No authorization code received');
-        return res.send(`
-          <script>
-            window.opener.postMessage({
-              type: 'GOOGLE_AUTH_ERROR',
-              error: 'No authorization code received'
-            }, window.location.origin);
-            window.close();
-          </script>
-        `);
+        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=No+authorization+code+received`);
       }
       
       // Exchange authorization code for tokens
@@ -1209,42 +1222,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.get('User-Agent')
       );
       
-      if (result.success) {
+      if (result.success && result.accessToken) {
         console.log('✅ Google OAuth login successful');
-        res.send(`
-          <script>
-            window.opener.postMessage({
-              type: 'GOOGLE_AUTH_SUCCESS',
-              user: ${JSON.stringify(googleUser)},
-              state: '${state}',
-              authResult: ${JSON.stringify(result)}
-            }, window.location.origin);
-            window.close();
-          </script>
-        `);
+        
+        // Set session cookie with JWT token
+        res.cookie('session', result.accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+        
+        // Redirect to dashboard with success message
+        const redirectUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?auth=success&user=${encodeURIComponent(googleUser.email)}`;
+        res.redirect(redirectUrl);
       } else {
         console.error('❌ OAuth login failed:', result.message);
-        res.send(`
-          <script>
-            window.opener.postMessage({
-              type: 'GOOGLE_AUTH_ERROR',
-              error: '${result.message || 'Login failed'}'
-            }, window.location.origin);
-            window.close();
-          </script>
-        `);
+        const redirectUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=login_failed&message=${encodeURIComponent(result.message || 'Login failed')}`;
+        res.redirect(redirectUrl);
       }
     } catch (error) {
       console.error("OAuth callback error:", error);
-      res.send(`
-        <script>
-          window.opener.postMessage({
-            type: 'GOOGLE_AUTH_ERROR',
-            error: 'Authentication failed. Please try again.'
-          }, window.location.origin);
-          window.close();
-        </script>
-      `);
+      const redirectUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=auth_failed&message=Authentication+failed`;
+      res.redirect(redirectUrl);
     }
   });
 

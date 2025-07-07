@@ -28,15 +28,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Initialize authentication state
     const initAuth = async () => {
       try {
-        // Initialize Google Auth service
-        await googleAuthService.initialize();
-        
-        // Check for existing JWT authentication
-        const authenticatedUser = await authUtils.initializeAuth();
-        if (authenticatedUser) {
-          setUser(authenticatedUser);
-          setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
-          setIsSignedIn(true);
+        // Check for OAuth callback parameters first
+        const urlParams = new URLSearchParams(window.location.search);
+        const authStatus = urlParams.get('auth');
+        const userEmail = urlParams.get('user');
+        const error = urlParams.get('error');
+        const errorMessage = urlParams.get('message');
+
+        if (authStatus === 'success' && userEmail) {
+          console.log('✅ OAuth callback success, user:', userEmail);
+          
+          // Check session cookie for JWT token (set by server)
+          const authenticatedUser = await authUtils.initializeAuth();
+          if (authenticatedUser) {
+            setUser(authenticatedUser);
+            setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
+            setIsSignedIn(true);
+          }
+          
+          // Clean up URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (error) {
+          console.error('❌ OAuth error:', error, errorMessage);
+          // Clean up URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          // Initialize Google Auth service for popup fallback (if needed)
+          await googleAuthService.initialize();
+          
+          // Check for existing JWT authentication
+          const authenticatedUser = await authUtils.initializeAuth();
+          if (authenticatedUser) {
+            setUser(authenticatedUser);
+            setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
+            setIsSignedIn(true);
+          }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -116,36 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      console.log('🚀 Starting Google sign-in process...');
+      console.log('🚀 Starting Google sign-in redirect...');
       
-      // The new OAuth flow handles authentication entirely through the callback
-      // and returns the authentication result via postMessage
-      const authResult = await googleAuthService.signIn();
-      
-      console.log('✅ Google sign-in successful:', authResult);
-      
-      // The authentication is already processed by the server callback
-      // We just need to handle the final user state update
-      if (authResult && authResult.email) {
-        // Create a simplified user object from Google user data
-        const user = {
-          id: 0, // Will be set by backend
-          email: authResult.email,
-          username: authResult.email,
-          firstName: authResult.given_name || authResult.name?.split(' ')[0],
-          lastName: authResult.family_name || authResult.name?.split(' ')[1],
-          profileImage: authResult.picture,
-          role: 'user',
-          emailVerified: true,
-          oauthProvider: 'google'
-        };
-        
-        setUser(user);
-        setUserName(user.firstName || user.username || user.email);
-        setIsSignedIn(true);
-      } else {
-        throw new Error("Invalid authentication response");
-      }
+      // Use simple redirect-based OAuth flow (enterprise-grade approach)
+      // This redirects the user to Google, then back to our callback
+      window.location.href = '/api/auth/google/start';
     } catch (error) {
       console.error('Google sign-in failed:', error);
       throw error;
