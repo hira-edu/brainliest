@@ -265,7 +265,7 @@ export default function Home() {
           {/* Browse Categories Button */}
           <div className="mt-4 text-center">
             <Link href="/categories">
-              <Button variant="outline" className="bg-primary/5 hover:bg-primary/10 border-primary/20">
+              <Button variant="outline" className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-gray-700 hover:text-gray-900">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Browse All Categories
               </Button>
