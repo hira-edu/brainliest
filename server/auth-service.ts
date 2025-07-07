@@ -176,8 +176,11 @@ export class AuthService {
       
       // If user exists but not verified, delete the old unverified account
       if (existingUser.length > 0 && !existingUser[0].emailVerified) {
+        // First delete auth logs to avoid foreign key constraint
+        await db.delete(authLogs).where(eq(authLogs.userId, existingUser[0].id));
+        // Then delete the user
         await db.delete(users).where(eq(users.email, email));
-        await logAuthEvent(existingUser[0].id, email, 'unverified_account_replaced', 'email', true, ipAddress, userAgent);
+        await logAuthEvent(null, email, 'unverified_account_replaced', 'email', true, ipAddress, userAgent);
       }
 
       // Hash password
