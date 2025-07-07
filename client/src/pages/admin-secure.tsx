@@ -13,8 +13,8 @@ export default function AdminSecure() {
   // Authentication state - ALWAYS starts as false
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [adminEmail, setAdminEmail] = useState("admin@brainliest.com");
-  const [adminPassword, setAdminPassword] = useState("admin123");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
@@ -188,15 +188,7 @@ export default function AdminSecure() {
                   )}
                 </Button>
                 
-                <div className="pt-4 border-t border-red-200">
-                  <div className="text-center space-y-2">
-                    <p className="text-xs text-red-600 font-medium">Development Credentials</p>
-                    <div className="text-xs text-gray-500 space-y-1">
-                      <p>Email: admin@brainliest.com</p>
-                      <p>Password: admin123</p>
-                    </div>
-                  </div>
-                </div>
+
               </CardContent>
             </Card>
             

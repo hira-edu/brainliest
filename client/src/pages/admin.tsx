@@ -82,8 +82,8 @@ export default function Admin() {
   // Authentication must be checked first - set to false by default
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [adminEmail, setAdminEmail] = useState("admin@brainliest.com");
-  const [adminPassword, setAdminPassword] = useState("admin123");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
@@ -1611,15 +1611,7 @@ export default function Admin() {
                   )}
                 </Button>
                 
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="text-center space-y-2">
-                    <p className="text-xs text-gray-500 font-medium">Development Access</p>
-                    <div className="text-xs text-gray-400 space-y-1">
-                      <p>Email: admin@brainliest.com</p>
-                      <p>Password: admin123</p>
-                    </div>
-                  </div>
-                </div>
+
               </CardContent>
             </Card>
             
