@@ -133,12 +133,8 @@ export const SearchableSelect = React.forwardRef<
       <PopoverContent 
         className="w-full p-0" 
         align="start"
-        onOpenAutoFocus={(e) => {
-          console.log("PopoverContent onOpenAutoFocus");
-          // Don't prevent default - let focus work naturally
-        }}
       >
-        <Command>
+        <Command shouldFilter={false}>
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -147,19 +143,9 @@ export const SearchableSelect = React.forwardRef<
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="border-0 p-2 focus:ring-0 focus:ring-offset-0"
-              onMouseDown={(e) => {
-                console.log("Search input onMouseDown");
-                // Don't prevent default to allow typing but stop propagation
-                e.stopPropagation();
-              }}
             />
           </div>
-          <CommandList
-            onMouseDown={(e) => {
-              console.log("CommandList onMouseDown");
-              // Don't stop propagation here to allow item selection
-            }}
-          >
+          <CommandList>
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 Loading...
@@ -185,21 +171,10 @@ export const SearchableSelect = React.forwardRef<
                     key={option.value}
                     value={option.value}
                     onSelect={(selectedValue) => {
-                      console.log("CommandItem onSelect triggered:", selectedValue);
                       handleSelect(selectedValue);
                     }}
-                    onClick={(e) => {
-                      console.log("CommandItem onClick triggered:", option.value);
-                      e.stopPropagation();
-                      handleSelect(option.value);
-                    }}
-                    onMouseDown={(e) => {
-                      console.log("CommandItem onMouseDown triggered:", option.value);
-                      e.preventDefault();
-                      handleSelect(option.value);
-                    }}
                     disabled={option.disabled}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-accent"
                   >
                     <Check
                       className={cn(
