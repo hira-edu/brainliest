@@ -15,6 +15,7 @@ import AdminSimple from "@/pages/admin-simple";
 import AdminClean from "@/pages/admin-clean";
 import AdminSecure from "@/pages/admin-secure";
 import Settings from "@/pages/settings";
+import CookieSettings from "@/pages/cookie-settings";
 import OurStory from "@/pages/our-story";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
@@ -23,6 +24,7 @@ import CategoriesPage from "@/pages/categories";
 import CategoryDetailPage from "@/pages/category-detail";
 import AuthCallback from "@/pages/auth-callback";
 import NotFound from "@/pages/not-found";
+import CookieConsentBanner from "@/components/cookie-consent-banner";
 
 function Router() {
   return (
@@ -43,6 +45,7 @@ function Router() {
       <Route path="/admin" component={AdminSecure} />
       <Route path="/admin-simple" component={AdminSimple} />
       <Route path="/settings" component={Settings} />
+      <Route path="/cookie-settings" component={CookieSettings} />
       <Route path="/our-story" component={OurStory} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-of-service" component={TermsOfService} />
@@ -61,6 +64,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <CookieConsentBanner />
           </TooltipProvider>
         </QuestionLimitProvider>
       </AuthProvider>
