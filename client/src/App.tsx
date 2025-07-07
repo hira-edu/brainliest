@@ -12,8 +12,6 @@ import QuestionInterface from "./features/exam/pages/question-interface";
 import Results from "./features/exam/pages/results";
 import Analytics from "./features/analytics/pages/analytics";
 import AdminSimple from "./features/admin/pages/admin-simple";
-import AdminClean from "./features/admin/pages/admin-clean";
-import AdminSecure from "./features/admin/pages/admin-secure";
 import Settings from "./features/pages/settings";
 import CookieSettings from "./features/pages/cookie-settings";
 import OurStory from "./features/pages/static/our-story";
@@ -42,8 +40,7 @@ function Router() {
       <Route path="/exam/:id" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
-      <Route path="/admin" component={AdminSecure} />
-      <Route path="/admin-simple" component={AdminSimple} />
+      <Route path="/admin" component={AdminSimple} />
       <Route path="/settings" component={Settings} />
       <Route path="/cookie-settings" component={CookieSettings} />
       <Route path="/our-story" component={OurStory} />
