@@ -215,32 +215,45 @@ export const SearchableSelect = React.forwardRef<
             ) : (
               <CommandGroup>
                 {filteredOptions.map((option, i) => (
-                  <CommandItem
+                  <div
                     key={option.value}
                     id={`option-${option.value}`}
-                    value={option.value}
-                    data-command-selectable="true"
-                    onSelect={() => handleSelect(option.value)}
-                    onClick={() => handleSelect(option.value)}
-                    disabled={option.disabled || false}
-                    tabIndex={-1}
-                    onMouseEnter={() => handleMouseEnter(i)}
-                    aria-selected={String(option.value) === String(value)}
                     role="option"
-                    className={cn(
-                      "cursor-pointer hover:bg-accent pointer-events-auto",
-                      "focus:bg-accent active:bg-accent",
-                      highlightedIdx === i ? "bg-accent" : ""
-                    )}
+                    tabIndex={0}
+                    aria-selected={String(option.value) === String(value)}
+                    onMouseEnter={() => handleMouseEnter(i)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log("Direct click on:", option.value);
+                      handleSelect(option.value);
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      console.log("Mouse down on:", option.value);
+                    }}
+                    style={{
+                      cursor: "pointer",
+                      background: highlightedIdx === i ? "#f1f5f9" : "white",
+                      padding: "8px 12px",
+                      zIndex: 10000,
+                      position: "relative",
+                      border: "1px solid transparent",
+                      borderRadius: "4px",
+                      margin: "1px"
+                    }}
+                    className="hover:bg-slate-100 active:bg-slate-200 pointer-events-auto"
                   >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        String(value) === String(option.value) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <span className="truncate">{option.label}</span>
-                  </CommandItem>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          String(value) === String(option.value) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{option.label}</span>
+                    </div>
+                  </div>
                 ))}
               </CommandGroup>
             )}
