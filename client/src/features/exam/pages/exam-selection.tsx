@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { Subject, Exam } from "@shared/schema";
 import ExamCard from "../components/exam-card";
 import { Header } from "../../shared";
@@ -7,7 +7,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
-  const [, setLocation] = useLocation();
   
   // Check both ID and slug routes
   const [matchId, paramsId] = useRoute("/subject/:id");
@@ -32,18 +31,9 @@ export default function ExamSelection() {
     enabled: !!subject?.id,
   });
 
-  const handleStartExam = (exam: Exam) => {
-    // Navigate to the new slug-based exam URL
-    if (subject && exam.slug && subject.slug) {
-      setLocation(`/exam/${subject.slug}/${exam.slug}`);
-    } else {
-      console.error('Missing slugs for navigation:', { subject: subject?.slug, exam: exam.slug });
-    }
-  };
+  // No redirect function needed - using Link components directly
 
-  const handleGoBack = () => {
-    setLocation("/");
-  };
+  // No redirect function needed - using Link components directly
 
   if (isLoading) {
     return (
@@ -56,15 +46,16 @@ export default function ExamSelection() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleGoBack}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Subjects
-                  </Button>
+                  <Link href="/">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Subjects
+                    </Button>
+                  </Link>
                   <div className="h-6 w-px bg-gray-300"></div>
                   <div>
                     <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
@@ -99,15 +90,16 @@ export default function ExamSelection() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleGoBack}
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Subjects
-                </Button>
+                <Link href="/">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Subjects
+                  </Button>
+                </Link>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
@@ -131,7 +123,7 @@ export default function ExamSelection() {
             <ExamCard 
               key={exam.id} 
               exam={exam} 
-              onStart={() => handleStartExam(exam)}
+              subject={subject}
               // Completion tracking implemented via user sessions and analytics
             />
           ))}

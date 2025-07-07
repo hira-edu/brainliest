@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { UserSession, Question, Exam } from "@shared/schema";
 import { ExamResult, DomainResult } from "../../../shared/types";
 import { Header } from "../../shared";
 
 export default function Results() {
-  const [, setLocation] = useLocation();
+  // No redirect logic - using Link components directly
   const [match, params] = useRoute("/results/:id");
   const sessionId = params?.id ? parseInt(params.id) : null;
 
@@ -87,15 +87,7 @@ export default function Results() {
     console.log("Review answers not implemented yet");
   };
 
-  const handleRetakeExam = () => {
-    if (session?.examId) {
-      setLocation(`/exam/${session.examId}`);
-    }
-  };
-
-  const handleGoToExams = () => {
-    setLocation("/");
-  };
+  // No redirect functions needed - using Link components directly
 
   if (!session || !results) {
     return (
@@ -174,18 +166,20 @@ export default function Results() {
             >
               <i className="fas fa-eye mr-2"></i>Review Answers
             </button>
-            <button 
-              onClick={handleRetakeExam}
-              className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-            >
-              <i className="fas fa-redo mr-2"></i>Retake Exam
-            </button>
-            <button 
-              onClick={handleGoToExams}
-              className="flex-1 bg-secondary text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              <i className="fas fa-list mr-2"></i>Back to Exams
-            </button>
+            <Link href={`/subject/${exam?.subjectId}`} className="flex-1">
+              <button 
+                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                <i className="fas fa-redo mr-2"></i>Retake Exam
+              </button>
+            </Link>
+            <Link href="/" className="flex-1">
+              <button 
+                className="w-full bg-secondary text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                <i className="fas fa-list mr-2"></i>Back to Exams
+              </button>
+            </Link>
           </div>
         </div>
       </div>

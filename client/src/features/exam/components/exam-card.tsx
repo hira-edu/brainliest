@@ -1,13 +1,14 @@
-import { Exam } from "@shared/schema";
+import { Exam, Subject } from "@shared/schema";
+import { Link } from "wouter";
 
 interface ExamCardProps {
   exam: Exam;
-  onStart: () => void;
+  subject?: Subject;
   lastScore?: number;
   isCompleted?: boolean;
 }
 
-export default function ExamCard({ exam, onStart, lastScore, isCompleted }: ExamCardProps) {
+export default function ExamCard({ exam, subject, lastScore, isCompleted }: ExamCardProps) {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
       case 'beginner': return 'text-green-600';
@@ -18,11 +19,13 @@ export default function ExamCard({ exam, onStart, lastScore, isCompleted }: Exam
     }
   };
 
+  const examUrl = subject?.slug && exam.slug ? `/exam/${subject.slug}/${exam.slug}` : `/exam/${exam.id}`;
+
   return (
-    <div 
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02]"
-      onClick={onStart}
-    >
+    <Link href={examUrl}>
+      <div 
+        className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02]"
+      >
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
@@ -71,6 +74,7 @@ export default function ExamCard({ exam, onStart, lastScore, isCompleted }: Exam
           {isCompleted ? 'Retake Exam' : 'Start Exam'}
         </div>
       </div>
-    </div>
+      </div>
+    </Link>
   );
 }

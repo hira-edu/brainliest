@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation, useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { Question, ExamSession, Exam } from "@shared/schema";
 import { TimerState } from "../../../shared/types";
 import { apiRequest, queryClient } from "../../../services/queryClient";
@@ -17,7 +17,6 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
-  const [, setLocation] = useLocation();
   
   // War-tested slug system: Only handle slug-based routes
   const [slugMatch, slugParams] = useRoute("/exam/:subjectSlug/:examSlug");
@@ -137,9 +136,9 @@ export default function QuestionInterface() {
           score: `${Math.round((session?.score || 0) * 100)}%`,
         },
       });
-      setLocation("/results");
+      // Results are now handled in components directly - no redirect needed
     }
-  }, [sessionId, questions, currentQuestionIndex, session?.score, updateSessionMutation, setLocation]);
+  }, [sessionId, questions, currentQuestionIndex, session?.score, updateSessionMutation]);
 
   useEffect(() => {
     // Clear any existing timer
@@ -295,7 +294,7 @@ export default function QuestionInterface() {
       },
     });
 
-    setLocation(`/results/${sessionId}`);
+    // Results displayed in component - no redirect needed
   };
 
   if (isLoading) {
@@ -323,15 +322,16 @@ export default function QuestionInterface() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => subject?.slug ? setLocation(`/subject/${subject.slug}`) : setLocation(`/subject/${exam.subjectId}`)}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Exams
-                  </Button>
+                  <Link href={subject?.slug ? `/subject/${subject.slug}` : `/subject/${exam.subjectId}`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Exams
+                    </Button>
+                  </Link>
                   <div className="h-6 w-px bg-gray-300"></div>
                   <div>
                     <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
@@ -364,13 +364,14 @@ export default function QuestionInterface() {
               <p className="text-gray-600 mb-6">
                 This exam doesn't have any questions yet. Please check back later or contact support.
               </p>
-              <Button 
-                onClick={() => subject?.slug ? setLocation(`/subject/${subject.slug}`) : setLocation(`/subject/${exam?.subjectId}`)}
-                variant="default"
-                className="px-6 py-2"
-              >
-                Back to Exams
-              </Button>
+              <Link href={subject?.slug ? `/subject/${subject.slug}` : `/subject/${exam?.subjectId}`}>
+                <Button 
+                  variant="default"
+                  className="px-6 py-2"
+                >
+                  Back to Exams
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -398,15 +399,16 @@ export default function QuestionInterface() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLocation(`/subject/${exam.subjectId}`)}
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Exams
-                </Button>
+                <Link href={`/subject/${exam.subjectId}`}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Exams
+                  </Button>
+                </Link>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>

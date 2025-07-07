@@ -1,5 +1,5 @@
 import { useAdmin } from "../AdminContext";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,15 +67,16 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
                 Admin Sign In
               </Button>
               <div className="flex gap-2 mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setLocation("/")}
-                  className="flex-1"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-1" />
-                  Go Home
-                </Button>
+                <Link href="/" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Go Home
+                  </Button>
+                </Link>
               </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400">

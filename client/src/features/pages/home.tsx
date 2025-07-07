@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
+import { Link } from "wouter";
 import { Subject } from "@shared/schema";
 import SubjectCard from "@/features/content/components/subject-card";
 import Header from "@/features/shared/components/header";
@@ -89,7 +89,7 @@ function getCategoryForSubject(subject: Subject): string {
 }
 
 export default function Home() {
-  const [, setLocation] = useLocation();
+  // No redirect logic - using Link components directly
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [itemsPerPage, setItemsPerPage] = useState<Record<string, number>>({});
@@ -131,10 +131,7 @@ export default function Home() {
   });
 
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Navigate to subject selection page - let it handle exam navigation logic
-    setLocation(`/subject/${subject.slug || subject.id}`);
-  };
+  // No redirect function needed - using Link components directly
 
   // Categorize and filter subjects
   const { categorizedSubjects, filteredSubjects } = useMemo(() => {
@@ -466,11 +463,11 @@ export default function Home() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                           {paginatedSubjects.map((subject) => (
-                            <SubjectCard 
-                              key={subject.id} 
-                              subject={subject} 
-                              onClick={() => handleSelectSubject(subject)}
-                            />
+                            <Link key={subject.id} href={`/subject/${subject.slug || subject.id}`}>
+                              <SubjectCard 
+                                subject={subject} 
+                              />
+                            </Link>
                           ))}
                         </div>
                         
@@ -491,11 +488,11 @@ export default function Home() {
             {filteredSubjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredSubjects.map((subject) => (
-                  <SubjectCard 
-                    key={subject.id} 
-                    subject={subject} 
-                    onClick={() => handleSelectSubject(subject)}
-                  />
+                  <Link key={subject.id} href={`/subject/${subject.slug || subject.id}`}>
+                    <SubjectCard 
+                      subject={subject} 
+                    />
+                  </Link>
                 ))}
               </div>
             ) : (

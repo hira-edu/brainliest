@@ -3,10 +3,9 @@ import { getIconComponent } from "@/utils/certification-icons";
 
 interface SubjectCardProps {
   subject: Subject;
-  onClick: () => void;
 }
 
-export default function SubjectCard({ subject, onClick }: SubjectCardProps) {
+export default function SubjectCard({ subject }: SubjectCardProps) {
   const getIconClass = () => {
     switch (subject.color) {
       case 'blue': return 'bg-blue-100 group-hover:bg-blue-200 text-primary';
@@ -22,7 +21,6 @@ export default function SubjectCard({ subject, onClick }: SubjectCardProps) {
   return (
     <div 
       className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group"
-      onClick={onClick}
     >
       <div className="p-6">
         <div className="flex items-center justify-center w-16 h-16 rounded-lg mb-4 transition-colors">

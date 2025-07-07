@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,7 +109,7 @@ function SubjectCard({ subject, onClick }: SubjectCardProps) {
 }
 
 export default function AllSubjects() {
-  const [, setLocation] = useLocation();
+  // No redirect logic - using Link components directly
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("name");
@@ -124,10 +124,7 @@ export default function AllSubjects() {
     refetchInterval: 60000, // Refetch every minute
   });
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Navigate to subject selection page - let it handle exam navigation logic
-    setLocation(`/subject/${subject.slug || subject.id}`);
-  };
+  // No redirect function needed - using Link components directly
 
   const categorizedSubjects = useMemo(() => {
     if (!subjects) return {};
@@ -434,13 +431,14 @@ export default function AllSubjects() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleSelectSubject(subject)}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          Start Practice
-                        </Button>
+                        <Link href={`/subject/${subject.slug || subject.id}`}>
+                          <Button 
+                            size="sm" 
+                            className="bg-primary hover:bg-primary/90"
+                          >
+                            Start Practice
+                          </Button>
+                        </Link>
                       </TableCell>
                     </TableRow>
                   );
