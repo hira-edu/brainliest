@@ -174,7 +174,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.user) {
+        if (data.valid && data.user) {
           setAdminUser(data.user);
           trackActivity();
         } else {
