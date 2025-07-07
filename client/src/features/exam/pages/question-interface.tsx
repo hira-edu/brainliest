@@ -18,8 +18,16 @@ import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/exam/:id");
-  const examId = params?.id ? parseInt(params.id) : null;
+  
+  // Try slug-based route first, then fall back to ID-based route
+  const [slugMatch, slugParams] = useRoute("/exam/:slug");
+  const [idMatch, idParams] = useRoute("/exam/id/:id");
+  
+  const isSlugRoute = slugMatch && slugParams?.slug;
+  const isIdRoute = idMatch && idParams?.id;
+  
+  const examSlug = isSlugRoute ? slugParams.slug : null;
+  const examId = isIdRoute ? parseInt(idParams.id) : null;
 
   const { isSignedIn } = useAuth();
   const { 
@@ -41,19 +49,20 @@ export default function QuestionInterface() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
 
+  // Fetch exam by slug or ID
   const { data: exam } = useQuery<Exam>({
-    queryKey: [`/api/exams/${examId}`],
-    enabled: !!examId,
+    queryKey: isSlugRoute ? [`/api/exams/by-slug/${examSlug}`] : [`/api/exams/${examId}`],
+    enabled: !!(examSlug || examId),
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
-    queryKey: ["/api/questions", examId],
+    queryKey: ["/api/questions", exam?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/questions?examId=${examId}`);
+      const response = await fetch(`/api/questions?examId=${exam?.id}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: !!examId,
+    enabled: !!exam?.id,
   });
 
   const questions = questionsData?.questions || [];
@@ -92,10 +101,10 @@ export default function QuestionInterface() {
 
   // Initialize session when exam loads
   useEffect(() => {
-    if (examId && !sessionId) {
-      createSessionMutation.mutate(examId);
+    if (exam?.id && !sessionId) {
+      createSessionMutation.mutate(exam.id);
     }
-  }, [examId, sessionId]);
+  }, [exam?.id, sessionId]);
 
   // PERFORMANCE OPTIMIZED: Timer countdown with proper cleanup
   const handleFinishExamCallback = useCallback(() => {

@@ -8,26 +8,37 @@ import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/subject/:id");
-  const subjectId = params?.id ? parseInt(params.id) : null;
+  
+  // Try slug-based route first, then fall back to ID-based route
+  const [slugMatch, slugParams] = useRoute("/subject/:slug");
+  const [idMatch, idParams] = useRoute("/subject/id/:id");
+  
+  const isSlugRoute = slugMatch && slugParams?.slug;
+  const isIdRoute = idMatch && idParams?.id;
+  
+  const subjectSlug = isSlugRoute ? slugParams.slug : null;
+  const subjectId = isIdRoute ? parseInt(idParams.id) : null;
 
+  // Fetch subject by slug or ID
   const { data: subject } = useQuery<Subject>({
-    queryKey: [`/api/subjects/${subjectId}`],
-    enabled: !!subjectId,
+    queryKey: isSlugRoute ? [`/api/subjects/by-slug/${subjectSlug}`] : [`/api/subjects/${subjectId}`],
+    enabled: !!(subjectSlug || subjectId),
   });
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
-    queryKey: ["/api/exams", subjectId],
+    queryKey: ["/api/exams", subject?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/exams?subjectId=${subjectId}`);
+      const response = await fetch(`/api/exams?subjectId=${subject?.id}`);
       if (!response.ok) throw new Error('Failed to fetch exams');
       return response.json();
     },
-    enabled: !!subjectId,
+    enabled: !!subject?.id,
   });
 
-  const handleStartExam = (examId: number) => {
-    setLocation(`/exam/${examId}`);
+  const handleStartExam = (exam: Exam) => {
+    // Use slug-based navigation if exam has slug, otherwise use ID
+    const examPath = exam.slug ? `/exam/${exam.slug}` : `/exam/id/${exam.id}`;
+    setLocation(examPath);
   };
 
   const handleGoBack = () => {
@@ -126,7 +137,7 @@ export default function ExamSelection() {
               <ExamCard 
                 key={exam.id} 
                 exam={exam} 
-                onStart={() => handleStartExam(exam.id)}
+                onStart={() => handleStartExam(exam)}
                 // Completion tracking implemented via user sessions and analytics
               />
             ))}

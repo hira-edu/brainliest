@@ -39,9 +39,15 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
-      <Route path="/subject/:id" component={ExamSelection} />
-      <Route path="/exam/:id" component={QuestionInterface} />
-      <Route path="/results/:id" component={Results} />
+      {/* New slug-based routes */}
+      <Route path="/subject/:slug" component={ExamSelection} />
+      <Route path="/exam/:slug" component={QuestionInterface} />
+      <Route path="/results/:slug" component={Results} />
+      
+      {/* Backup ID-based routes for backward compatibility */}
+      <Route path="/subject/id/:id" component={ExamSelection} />
+      <Route path="/exam/id/:id" component={QuestionInterface} />
+      <Route path="/results/id/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/admin">
         {() => (
