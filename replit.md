@@ -266,6 +266,13 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 07, 2025 - Fixed Question Interface Empty State to Match Card Design (COMPLETED)
+- **Fixed no questions display issue**: Applied same card layout structure when no questions are available
+- **Maintained consistent UI**: Added back button, exam name, progress bar, and timer to empty state
+- **Same visual design**: Used identical card styling with rounded corners, shadow, and padding
+- **Proper navigation**: Ensured back button functionality works in all states
+- **Complete user experience**: Empty state now matches the design and functionality of normal question interface
+
 ### July 07, 2025 - Icon System Fixes and Subject Coverage Improvement (COMPLETED)
 - **Fixed missing icons**: Added ComputerScienceIcon, HistoryIcon, PsychologyIcon, TestPrepIcon, and LanguageIcon for complete subject coverage
 - **Improved icon mapping**: Updated subject-to-icon mapping to eliminate repeated icons and provide more specific visual representation

@@ -282,13 +282,66 @@ export default function QuestionInterface() {
     );
   }
 
-  if (!currentQuestion) {
+  if (!questions || questions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
+        
+        {/* Exam Header with Back Button - Same as when questions exist */}
+        {exam && (
+          <div className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Exams
+                  </Button>
+                  <div className="h-6 w-px bg-gray-300"></div>
+                  <div>
+                    <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
+                    <p className="text-sm text-gray-600">{exam.description}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">No questions available</div>
+                  <div className="text-xs text-gray-500">{exam.duration} minutes • {exam.difficulty}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <ProgressBar 
+          currentQuestion={0}
+          totalQuestions={0}
+          timer={timer}
+        />
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <p className="text-gray-600">No questions found for this exam.</p>
+          {/* Same card structure as QuestionCard */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <div className="text-center py-12">
+              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <i className="fas fa-question-circle text-gray-400 text-2xl"></i>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Questions Available</h3>
+              <p className="text-gray-600 mb-6">
+                This exam doesn't have any questions yet. Please check back later or contact support.
+              </p>
+              <Button 
+                onClick={() => setLocation(`/subject/${exam?.subjectId}`)}
+                variant="default"
+                className="px-6 py-2"
+              >
+                Back to Exams
+              </Button>
+            </div>
           </div>
         </div>
       </div>
