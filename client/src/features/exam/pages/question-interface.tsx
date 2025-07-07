@@ -310,7 +310,16 @@ export default function QuestionInterface() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                    onClick={() => {
+                      // Use subject slug if available, otherwise fallback to ID route
+                      if (subject?.slug) {
+                        setLocation(`/subject/${subject.slug}`);
+                      } else if (exam.subjectId) {
+                        setLocation(`/subject/${exam.subjectId}`);
+                      } else {
+                        setLocation('/subjects');
+                      }
+                    }}
                     className="text-gray-600 hover:text-gray-900"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -349,7 +358,16 @@ export default function QuestionInterface() {
                 This exam doesn't have any questions yet. Please check back later or contact support.
               </p>
               <Button 
-                onClick={() => setLocation(`/subject/${exam?.subjectId}`)}
+                onClick={() => {
+                  // Use subject slug if available, otherwise fallback to ID route
+                  if (subject?.slug) {
+                    setLocation(`/subject/${subject.slug}`);
+                  } else if (exam?.subjectId) {
+                    setLocation(`/subject/${exam.subjectId}`);
+                  } else {
+                    setLocation('/subjects');
+                  }
+                }}
                 variant="default"
                 className="px-6 py-2"
               >
@@ -386,10 +404,14 @@ export default function QuestionInterface() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
+                    // Check if we have subject slug from loaded data
                     if (subject?.slug) {
                       setLocation(`/subject/${subject.slug}`);
+                    } else if (exam?.subjectId) {
+                      // Fallback to subject ID route temporarily
+                      setLocation(`/subject/${exam.subjectId}`);
                     } else {
-                      console.error('Subject slug missing for back navigation, redirecting to subjects page');
+                      // Last resort - go to subjects page
                       setLocation('/subjects');
                     }
                   }}
