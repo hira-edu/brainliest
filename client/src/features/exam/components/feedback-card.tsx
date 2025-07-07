@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/services/queryClient";
 import { useToast } from "@/features/shared/hooks/use-toast";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAuthContext } from "@/features/auth/AuthContext";
 import AuthModal from "@/features/auth/components/unified-auth-modal";
 
 interface FeedbackCardProps {
@@ -20,7 +20,7 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
   const [aiExplanation, setAiExplanation] = useState<string>("");
   const [newComment, setNewComment] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const { isSignedIn, userName, signIn } = useAuth();
+  const { isSignedIn, userName, signIn } = useAuthContext();
   const { toast } = useToast();
 
   const { data: comments } = useQuery<Comment[]>({
@@ -34,7 +34,7 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
 
   const getAiExplanationMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/ai/explain-answer", { 
+      const response = await apiRequest("/api/ai/explain-answer", "POST", { 
         questionId: question.id, 
         userAnswer 
       });
@@ -60,7 +60,7 @@ export default function FeedbackCard({ question, userAnswer, onNext, isLastQuest
       if (!isSignedIn) {
         throw new Error("Please sign in to comment");
       }
-      const response = await apiRequest("POST", "/api/comments", commentData);
+      const response = await apiRequest("/api/comments", "POST", commentData);
       return response.json();
     },
     onSuccess: () => {

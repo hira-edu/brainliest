@@ -35,7 +35,7 @@ export function useApiMutation<TData = any, TVariables = any>(
           ? options.url(variables) 
           : options.url;
         
-        const response = await apiRequest(options.method, url, variables);
+        const response = await apiRequest(url, options.method, variables);
         const data = await response.json();
         return data;
       } finally {

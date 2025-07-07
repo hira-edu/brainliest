@@ -35,7 +35,7 @@ export default function QuestionCard({
 
   const getAiHelpMutation = useMutation({
     mutationFn: async (questionId: number) => {
-      const response = await apiRequest("POST", "/api/ai/question-help", { questionId });
+      const response = await apiRequest("/api/ai/question-help", "POST", { questionId });
       return response.json();
     },
     onSuccess: (data) => {

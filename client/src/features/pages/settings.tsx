@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/features/shared/hooks/use-toast";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAuthContext } from "@/features/auth/AuthContext";
 import { 
   User, 
   Shield, 
@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 export default function Settings() {
-  const { userName, signOut } = useAuth();
+  const { userName, signOut } = useAuthContext();
   const { toast } = useToast();
   
   // Profile settings

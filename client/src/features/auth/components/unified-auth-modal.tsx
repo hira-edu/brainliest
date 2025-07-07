@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useAuth } from "../AuthContext";
+import { useAuthContext } from "../AuthContext";
 import { useToast } from "../../shared/hooks/use-toast";
 import { Loader2, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
@@ -48,7 +48,7 @@ function UnifiedAuthModalContent({
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
 
-  const { signIn, signUp, signInWithGoogle, verifyEmail } = useAuth();
+  const { signIn, signUp, signInWithGoogle, verifyEmail } = useAuthContext();
   const { toast } = useToast();
   const { executeRecaptcha } = useGoogleReCaptcha();
 

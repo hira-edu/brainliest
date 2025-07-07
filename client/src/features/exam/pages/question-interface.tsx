@@ -4,7 +4,7 @@ import { useLocation, useRoute } from "wouter";
 import { Question, ExamSession, Exam } from "@shared/schema";
 import { TimerState } from "../../../shared/types";
 import { apiRequest, queryClient } from "../../../services/queryClient";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuthContext } from "../../auth/AuthContext";
 import { useQuestionLimit } from "../../shared/QuestionLimitContext";
 import { Header } from "../../shared";
 import ProgressBar from "../components/progress-bar";
@@ -21,7 +21,7 @@ export default function QuestionInterface() {
   const [match, params] = useRoute("/exam/:slug");
   const examSlug = params?.slug;
 
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useAuthContext();
   const { 
     canViewMoreQuestions, 
     addViewedQuestion, 
@@ -72,15 +72,12 @@ export default function QuestionInterface() {
   const createSessionMutation = useMutation({
     mutationFn: async () => {
       if (!exam?.id) throw new Error('No exam available');
-      return apiRequest("/api/sessions", {
-        method: 'POST',
-        body: {
-          examId: exam.id,
-          startTime: new Date().toISOString(),
-          userName: isSignedIn ? 'authenticated-user' : 'anonymous-user',
-          completed: false,
-          score: "0%"
-        }
+      return apiRequest("/api/sessions", "POST", {
+        examId: exam.id,
+        startTime: new Date().toISOString(),
+        userName: isSignedIn ? 'authenticated-user' : 'anonymous-user',
+        completed: false,
+        score: "0%"
       });
     },
     onSuccess: (session: ExamSession) => {
@@ -98,10 +95,7 @@ export default function QuestionInterface() {
 
   const updateSessionMutation = useMutation({
     mutationFn: async (data: { sessionId: number; updates: Partial<ExamSession> }) => {
-      return apiRequest(`/api/sessions/${data.sessionId}`, {
-        method: 'PUT',
-        body: data.updates
-      });
+      return apiRequest(`/api/sessions/${data.sessionId}`, "PUT", data.updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}`] });
