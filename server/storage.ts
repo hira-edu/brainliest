@@ -120,9 +120,12 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
+  // PERFORMANCE OPTIMIZED: Use SQL COUNT instead of fetching all records
   async getSubjectCount(): Promise<number> {
-    const result = await db.select().from(subjects);
-    return result.length;
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(subjects);
+    return result.count;
   }
 
   // Exams
@@ -201,18 +204,21 @@ export class DatabaseStorage implements IStorage {
     return question;
   }
 
+  // PERFORMANCE OPTIMIZED: Use transaction for atomic operations
   async createQuestion(question: InsertQuestion): Promise<Question> {
-    const [newQuestion] = await db.insert(questions).values(question).returning();
-    
-    // Update subject question count
-    await db
-      .update(subjects)
-      .set({
-        questionCount: sql`${subjects.questionCount} + 1`
-      })
-      .where(eq(subjects.id, question.subjectId));
-    
-    return newQuestion;
+    return await db.transaction(async (tx) => {
+      const [newQuestion] = await tx.insert(questions).values(question).returning();
+      
+      // Atomically update subject question count
+      await tx
+        .update(subjects)
+        .set({
+          questionCount: sql`${subjects.questionCount} + 1`
+        })
+        .where(eq(subjects.id, question.subjectId));
+      
+      return newQuestion;
+    });
   }
 
   async updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined> {
@@ -224,29 +230,35 @@ export class DatabaseStorage implements IStorage {
     return updatedQuestion;
   }
 
+  // PERFORMANCE OPTIMIZED: Use transaction for atomic operations
   async deleteQuestion(id: number): Promise<boolean> {
-    // Get the question before deleting to know which subject to update
-    const [question] = await db.select().from(questions).where(eq(questions.id, id));
-    if (!question) return false;
-    
-    const result = await db.delete(questions).where(eq(questions.id, id));
-    
-    if ((result.rowCount || 0) > 0) {
-      // Update subject question count
-      await db
-        .update(subjects)
-        .set({
-          questionCount: sql`GREATEST(${subjects.questionCount} - 1, 0)`
-        })
-        .where(eq(subjects.id, question.subjectId));
-      return true;
-    }
-    return false;
+    return await db.transaction(async (tx) => {
+      // Get the question before deleting to know which subject to update
+      const [question] = await tx.select().from(questions).where(eq(questions.id, id));
+      if (!question) return false;
+      
+      const result = await tx.delete(questions).where(eq(questions.id, id));
+      
+      if ((result.rowCount || 0) > 0) {
+        // Atomically update subject question count
+        await tx
+          .update(subjects)
+          .set({
+            questionCount: sql`GREATEST(${subjects.questionCount} - 1, 0)`
+          })
+          .where(eq(subjects.id, question.subjectId));
+        return true;
+      }
+      return false;
+    });
   }
 
+  // PERFORMANCE OPTIMIZED: Use SQL COUNT instead of fetching all records
   async getQuestionCount(): Promise<number> {
-    const result = await db.select().from(questions);
-    return result.length;
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(questions);
+    return result.count;
   }
 
   // Exam Sessions

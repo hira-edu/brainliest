@@ -60,3 +60,20 @@ CREATE INDEX CONCURRENTLY idx_exam_analytics_performance
 -- Trending analysis time series index
 CREATE INDEX CONCURRENTLY idx_trends_time_series 
   ON performance_trends(subject_id, week, user_name);
+
+-- Additional composite indexes for complex filtering
+CREATE INDEX CONCURRENTLY idx_exams_subject_active 
+  ON exams(subject_id, is_active);
+CREATE INDEX CONCURRENTLY idx_questions_exam_difficulty 
+  ON questions(exam_id, difficulty);
+CREATE INDEX CONCURRENTLY idx_questions_subject_domain 
+  ON questions(subject_id, domain);
+
+-- Analytics performance indexes for dashboard queries
+CREATE INDEX CONCURRENTLY idx_detailed_answers_session_correct 
+  ON detailed_answers(session_id, is_correct);
+CREATE INDEX CONCURRENTLY idx_exam_analytics_user_exam 
+  ON exam_analytics(user_name, exam_id);
+
+-- Remove redundant index to optimize write performance
+DROP INDEX IF EXISTS idx_auth_sessions_token;
