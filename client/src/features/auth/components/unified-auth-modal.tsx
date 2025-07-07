@@ -82,6 +82,15 @@ function UnifiedAuthModalContent({
         newErrors.password = 'Password is required';
       }
     } else {
+      // Signup validation
+      if (!formData.firstName) {
+        newErrors.firstName = 'First name is required';
+      }
+      
+      if (!formData.lastName) {
+        newErrors.lastName = 'Last name is required';
+      }
+      
       if (!formData.password) {
         newErrors.password = 'Password is required';
       } else if (formData.password.length < 8) {
@@ -478,6 +487,7 @@ function UnifiedAuthModalContent({
                         disabled={isLoading}
                         autoComplete="given-name"
                       />
+                      {errors.firstName && <p className="text-sm text-red-600">{errors.firstName}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
@@ -489,6 +499,7 @@ function UnifiedAuthModalContent({
                         disabled={isLoading}
                         autoComplete="family-name"
                       />
+                      {errors.lastName && <p className="text-sm text-red-600">{errors.lastName}</p>}
                     </div>
                   </div>
 

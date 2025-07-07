@@ -990,9 +990,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, username, firstName, lastName, recaptchaToken } = req.body;
       
+      // Debug: Log the incoming request body (without password for security)
+      console.log('Registration request body:', {
+        email,
+        firstName,
+        lastName,
+        username,
+        hasPassword: !!password,
+        hasRecaptcha: !!recaptchaToken
+      });
+      
       // Validate required fields
       if (!email || !password) {
         return res.status(400).json({ success: false, message: "Email and password are required" });
+      }
+      
+      // Validate first and last name for signup
+      if (!firstName || !lastName) {
+        console.log('Missing name fields:', { firstName, lastName });
+        return res.status(400).json({ success: false, message: "First name and last name are required" });
       }
       
       // Validate email format
