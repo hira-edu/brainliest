@@ -4,9 +4,9 @@ import { useLocation } from "wouter";
 import { Search, Filter, BookOpen, Clock, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import SEOHead from "@/components/seo-head";
@@ -218,38 +218,32 @@ export default function AllSubjects() {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-blue-600">{subjects?.length || 0}</div>
+        {/* Statistics Summary */}
+        <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-6 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-primary">{subjects?.length || 0}</div>
               <div className="text-sm text-gray-600">Total Subjects</div>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-green-600">
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-primary">
                 {subjects?.reduce((sum, s) => sum + (s.examCount || 0), 0) || 0}
               </div>
               <div className="text-sm text-gray-600">Practice Exams</div>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-purple-600">
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-primary">
                 {subjects?.reduce((sum, s) => sum + (s.questionCount || 0), 0) || 0}
               </div>
               <div className="text-sm text-gray-600">Practice Questions</div>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="p-4">
-              <div className="text-2xl font-bold text-orange-600">
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-primary">
                 {Object.keys(categorizedSubjects).length}
               </div>
               <div className="text-sm text-gray-600">Categories</div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -347,16 +341,65 @@ export default function AllSubjects() {
           </p>
         </div>
 
-        {/* Subjects Grid */}
+        {/* Subjects Table */}
         {filteredAndSortedSubjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAndSortedSubjects.map((subject) => (
-              <SubjectCard 
-                key={subject.id} 
-                subject={subject} 
-                onClick={() => handleSelectSubject(subject.id)}
-              />
-            ))}
+          <div className="bg-white rounded-lg border shadow-sm">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-semibold">Subject Name</TableHead>
+                  <TableHead className="font-semibold">Category</TableHead>
+                  <TableHead className="font-semibold text-center">Exams</TableHead>
+                  <TableHead className="font-semibold text-center">Questions</TableHead>
+                  <TableHead className="font-semibold text-center">Rating</TableHead>
+                  <TableHead className="font-semibold text-center">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSortedSubjects.map((subject) => {
+                  const category = getCategoryForSubject(subject);
+                  const categoryData = categoryConfig[category as keyof typeof categoryConfig];
+                  const IconComponent = categoryData?.icon || BookOpen;
+                  
+                  return (
+                    <TableRow key={subject.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center space-x-3">
+                          <IconComponent className="w-5 h-5 text-primary" />
+                          <span>{subject.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {categoryData?.label || "Other"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-medium">{subject.examCount || 0}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-medium">{subject.questionCount || 0}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center space-x-1">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium">4.8</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleSelectSubject(subject.id)}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          Start Practice
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center py-16">
