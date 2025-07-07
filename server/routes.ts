@@ -6,6 +6,7 @@ import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { adminAuthService } from "./admin-auth-service";
+import { adminUserService } from './admin-user-management';
 import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
@@ -882,6 +883,211 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(csv);
     } catch (error) {
       res.status(500).json({ message: "Failed to export users" });
+    }
+  });
+
+  // ADMIN USER MANAGEMENT ROUTES - Enterprise-grade admin controls
+  // Secure admin-only routes with separate authentication
+  
+  /**
+   * Create new user (Admin-only endpoint)
+   * POST /api/admin/users
+   */
+  app.post("/api/admin/users", async (req, res) => {
+    try {
+      // Extract admin token and verify
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Admin authentication required' });
+      }
+      
+      const token = authHeader.substring(7);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      
+      if (!valid || !adminUser) {
+        return res.status(401).json({ message: 'Invalid admin token' });
+      }
+      
+      // Extract user data from request
+      const { email, role, password, firstName, lastName, username } = req.body;
+      
+      // Validate required fields
+      if (!email || !role || !password) {
+        return res.status(400).json({ 
+          message: 'Missing required fields: email, role, and password are required' 
+        });
+      }
+      
+      // Get client IP and user agent for audit logging
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      
+      // Create user via admin service
+      const newUser = await adminUserService.createUser(
+        { email, role, password, firstName, lastName, username },
+        adminUser.id,
+        adminUser.email,
+        ipAddress,
+        userAgent
+      );
+      
+      res.status(201).json({
+        success: true,
+        message: 'User created successfully',
+        user: newUser
+      });
+      
+    } catch (error) {
+      console.error('Admin create user error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to create user',
+        success: false
+      });
+    }
+  });
+  
+  /**
+   * Update existing user (Admin-only endpoint)
+   * PUT /api/admin/users/:id
+   */
+  app.put("/api/admin/users/:id", async (req, res) => {
+    try {
+      // Extract admin token and verify
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Admin authentication required' });
+      }
+      
+      const token = authHeader.substring(7);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      
+      if (!valid || !adminUser) {
+        return res.status(401).json({ message: 'Invalid admin token' });
+      }
+      
+      // Get user ID from params
+      const userId = parseId(req.params.id, 'user ID');
+      
+      // Extract update data from request
+      const { email, role, password, firstName, lastName, isActive, isBanned, banReason } = req.body;
+      
+      // Get client IP and user agent for audit logging
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      
+      // Update user via admin service
+      const updatedUser = await adminUserService.updateUser(
+        userId,
+        { email, role, password, firstName, lastName, isActive, isBanned, banReason },
+        adminUser.id,
+        adminUser.email,
+        ipAddress,
+        userAgent
+      );
+      
+      res.json({
+        success: true,
+        message: 'User updated successfully',
+        user: updatedUser
+      });
+      
+    } catch (error) {
+      console.error('Admin update user error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to update user',
+        success: false
+      });
+    }
+  });
+  
+  /**
+   * Delete user (Admin-only endpoint)
+   * DELETE /api/admin/users/:id
+   */
+  app.delete("/api/admin/users/:id", async (req, res) => {
+    try {
+      // Extract admin token and verify
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Admin authentication required' });
+      }
+      
+      const token = authHeader.substring(7);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      
+      if (!valid || !adminUser) {
+        return res.status(401).json({ message: 'Invalid admin token' });
+      }
+      
+      // Get user ID from params
+      const userId = parseId(req.params.id, 'user ID');
+      
+      // Get client IP and user agent for audit logging
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      
+      // Delete user via admin service
+      const result = await adminUserService.deleteUser(
+        userId,
+        adminUser.id,
+        adminUser.email,
+        ipAddress,
+        userAgent
+      );
+      
+      res.json(result);
+      
+    } catch (error) {
+      console.error('Admin delete user error:', error);
+      res.status(500).json({ 
+        message: error.message || 'Failed to delete user',
+        success: false
+      });
+    }
+  });
+  
+  /**
+   * Get admin audit logs (Admin-only endpoint)
+   * GET /api/admin/audit-logs
+   */
+  app.get("/api/admin/audit-logs", async (req, res) => {
+    try {
+      // Extract admin token and verify
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Admin authentication required' });
+      }
+      
+      const token = authHeader.substring(7);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      
+      if (!valid || !adminUser) {
+        return res.status(401).json({ message: 'Invalid admin token' });
+      }
+      
+      // Get pagination parameters
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      // Get audit logs
+      const logs = await adminUserService.getAdminAuditLogs(limit, offset);
+      
+      res.json({
+        success: true,
+        logs,
+        pagination: {
+          limit,
+          offset,
+          total: logs.length
+        }
+      });
+      
+    } catch (error) {
+      console.error('Admin audit logs error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch audit logs',
+        success: false
+      });
     }
   });
 
