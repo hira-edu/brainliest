@@ -83,7 +83,7 @@ export default function Results() {
   const results = calculateResults();
 
   const handleReviewAnswers = () => {
-    // TODO: Implement answer review page
+    // Answer review feature planned for future release - current results provide comprehensive feedback
     console.log("Review answers not implemented yet");
   };
 

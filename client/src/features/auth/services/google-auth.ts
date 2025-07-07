@@ -206,16 +206,12 @@ class GoogleAuthService {
   private async openOAuthPopupWithCallback(): Promise<GoogleUser> {
     return new Promise((resolve, reject) => {
       try {
-        console.log('🔧 Debug: Starting popup callback flow...');
-        
-        // Generate secure state parameter
+        // Generate secure state parameter for OAuth flow
         const state = 'oauth_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-        console.log('🔧 Debug: Generated state:', state);
         
-        // Get current domain for proper redirect URI
+        // Configure redirect URI for current domain
         const currentOrigin = window.location.origin;
         const redirectUri = `${currentOrigin}/api/auth/oauth/google/callback`;
-        console.log('🔧 Debug: Redirect URI:', redirectUri);
         
         // Create proper OAuth 2.0 Authorization Code flow URL
         const authUrl = 'https://accounts.google.com/oauth/authorize?' + 
@@ -229,10 +225,7 @@ class GoogleAuthService {
             prompt: 'select_account'
           }).toString();
 
-        console.log('🔗 Full OAuth URL:', authUrl);
-
-        // Open popup window
-        console.log('🔧 Debug: Opening popup window...');
+        // Open popup window for OAuth authentication
         const popup = window.open(
           authUrl,
           'google_oauth',
@@ -240,21 +233,14 @@ class GoogleAuthService {
         );
 
         if (!popup) {
-          const error = new Error('Popup blocked. Please allow popups for this site and try again.');
-          console.error('❌ Popup blocked:', error);
-          reject(error);
+          reject(new Error('Popup blocked. Please allow popups for this site and try again.'));
           return;
         }
-        
-        console.log('✅ Popup opened successfully');
 
       // Listen for callback completion via postMessage
       const messageHandler = (event: MessageEvent) => {
-        console.log('📩 Received postMessage:', event.origin, event.data);
-        
         // Verify origin for security
         if (event.origin !== currentOrigin) {
-          console.warn('⚠️ Ignoring message from unauthorized origin:', event.origin);
           return;
         }
         
@@ -262,15 +248,11 @@ class GoogleAuthService {
           clearInterval(popupChecker);
           window.removeEventListener('message', messageHandler);
           popup.close();
-          
-          console.log('✅ Google authentication successful:', event.data.user);
           resolve(event.data.user);
         } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
           clearInterval(popupChecker);
           window.removeEventListener('message', messageHandler);
           popup.close();
-          
-          console.error('❌ Google authentication error:', event.data);
           reject(new Error(event.data.error || 'Google authentication failed'));
         }
       };
@@ -296,7 +278,6 @@ class GoogleAuthService {
         reject(new Error('Authentication timeout. Please try again.'));
       }, 300000); // 5 minutes timeout
       } catch (error) {
-        console.error('❌ Popup callback error:', error);
         reject(error);
       }
     });
