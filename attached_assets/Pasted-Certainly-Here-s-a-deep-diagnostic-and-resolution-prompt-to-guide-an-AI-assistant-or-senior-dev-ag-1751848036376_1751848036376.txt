@@ -1,0 +1,108 @@
+Certainly. Here’s a deep diagnostic and resolution prompt to guide an AI assistant (or senior dev agent) to systematically troubleshoot and fix a non-functional SearchableSelect dropdown component, even after an elite-level refactor was completed.
+
+This prompt assumes the dropdowns have been rebuilt with forwardRef, React Hook Form compatibility, and should support real-time search and controlled selection—but they’re still not holding values or rendering expected behavior.
+
+🔧 Expert Diagnostic & Repair Prompt for SearchableSelect Component Malfunction (Elite Form Integration)
+
+You are a highly experienced React + Next.js developer working within an enterprise admin panel. A critical UI component—SearchableSelect—has been refactored to support advanced features including forwardRef, dynamic search, keyboard navigation, controlled value support, custom options, and integration with React Hook Form. Despite these updates, the dropdown component still fails to properly select, retain, or display values inside the admin panel forms.
+
+Your task is to perform a line-by-line diagnostic review and surgically fix the issue with SearchableSelect so that it becomes 100% functional, React Hook Form-compatible, and behaviorally correct in all admin forms.
+
+✅ Primary Goals
+
+	•	Ensure that the dropdown:
+	•	Renders selected values properly when set programmatically (edit mode)
+	•	Allows user to select from options and updates form state correctly
+	•	Filters options in real time as the user types
+	•	Works with React Hook Form via control, register, or Controller
+	•	Preserves values across re-renders (e.g., edit vs. create)
+	•	Confirm that values selected in the dropdown are actually submitted in the form payload.
+	•	All dropdown fields (e.g., subjectId, category, tags) must:
+	•	Bind to the correct field name
+	•	Store the correct format (ID, slug, or label as per schema)
+	•	Pass validation when required
+
+🧠 Troubleshooting Instructions
+
+	1.	Check Controlled State Wiring
+Open the SearchableSelect component and confirm it is implemented as a fully controlled component using value and onChange props. If it relies on internal state, ensure it’s synced with parent form state.
+
+<Select
+  options={options}
+  value={options.find(opt => opt.value === value)}
+  onChange={(selected) => onChange(selected?.value)}
+/>
+
+
+	2.	Verify forwardRef Usage and Compatibility with Controller
+Confirm forwardRef is implemented correctly on the top-level component:
+
+const SearchableSelect = forwardRef(({ value, onChange, ...props }, ref) => {
+  return (
+    <Select
+      ref={ref}
+      value={...}
+      onChange={...}
+      {...props}
+    />
+  );
+});
+
+
+	3.	Inspect React Hook Form Integration
+Check that the parent form uses the component correctly via Controller:
+
+<Controller
+  control={control}
+  name="subjectId"
+  render={({ field }) => (
+    <SearchableSelect {...field} options={subjectOptions} />
+  )}
+/>
+
+Ensure value and onChange are passed correctly from field.
+
+	4.	Validate Option Shape Consistency
+Ensure all dropdown options are shaped consistently:
+
+const options = subjects.map((subj) => ({
+  label: subj.name,
+  value: subj.id,
+}));
+
+Use .find(opt => opt.value === field.value) to derive the value prop.
+
+	5.	Debug Pre-Selected Value on Form Edit
+In edit mode, make sure that the value passed to SearchableSelect matches an existing option (same type and value). Watch out for type mismatches: e.g., value === "1" (string) vs. value === 1 (number).
+Consider coercing types consistently before comparison.
+	6.	Test Real-Time Search Filtering Logic
+If using react-select, confirm that filterOption, isSearchable, and onInputChange handlers are properly configured and not suppressed.
+For async options, validate that input value is used to query backend and results update via onInputChange.
+	7.	Test Controlled Mode + DefaultValue Together
+In some cases, incorrect usage of both defaultValue and value can break reactivity. Prefer controlled mode using value/onChange exclusively when using Controller.
+
+🧪 Test Instructions
+
+	•	Load a form where dropdowns are used (e.g., Add/Edit Question, Subject, Exam).
+	•	Confirm initial rendering shows correct preselected values.
+	•	Test typing in dropdown → ensure filtered options show.
+	•	Select an option → verify that it:
+	•	Appears correctly in the dropdown
+	•	Is submitted via the form
+	•	Triggers any validation or state change
+	•	Refresh form with pre-filled value → confirm selection persists
+	•	Export to CSV → ensure the correct value (ID/slug) is present
+	•	Import CSV with that value → form should show preselected dropdown
+
+Final Deliverables
+
+	•	A working, reusable SearchableSelect component that:
+	•	Uses forwardRef correctly
+	•	Supports dynamic or static options
+	•	Integrates seamlessly with React Hook Form
+	•	Preserves selection state across create/edit modes
+	•	Submits the correct value in form payloads
+	•	Optional: include prop support for multiple, creatable, or async modes
+	•	A test suite (Jest or Playwright) that verifies core functionality
+
+Would you like me to scaffold a corrected SearchableSelect component with full forwardRef + Controller support, static + async support, and default value testing examples?

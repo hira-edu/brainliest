@@ -950,8 +950,10 @@ export default function AdminSimple() {
                               value: category.id.toString(),
                               label: category.name,
                             })) || []}
-                            value={field.value?.toString()}
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            value={field.value?.toString() || ""}
+                            onValueChange={(value) => {
+                              field.onChange(value ? parseInt(value) : undefined);
+                            }}
                             placeholder="Select a category"
                             searchPlaceholder="Search categories..."
                             emptyText="No categories found"

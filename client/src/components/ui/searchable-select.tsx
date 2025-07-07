@@ -48,8 +48,11 @@ export const SearchableSelect = React.forwardRef<
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Find the selected option
-  const selectedOption = options.find((option) => option.value === value);
+  // Find the selected option - handle type coercion for safety
+  const selectedOption = options.find((option) => 
+    option.value === value || 
+    option.value?.toString() === value?.toString()
+  );
 
   // Filter options based on search query
   const filteredOptions = options.filter((option) =>
@@ -164,7 +167,7 @@ export const SearchableSelect = React.forwardRef<
                   <CommandItem
                     key={option.value}
                     value={option.value}
-                    onSelect={() => handleSelect(option.value)}
+                    onSelect={(selectedValue) => handleSelect(selectedValue)}
                     disabled={option.disabled}
                     className="cursor-pointer"
                   >
