@@ -117,6 +117,7 @@ function generateRefreshToken(user: AuthUser): string {
 // Audit logging
 async function logAuthEvent(
   userId: number | null,
+  email: string,
   action: string,
   method: string,
   success: boolean,
@@ -128,6 +129,7 @@ async function logAuthEvent(
   try {
     await db.insert(authLogs).values({
       userId,
+      email,
       action,
       method,
       success,
@@ -154,21 +156,21 @@ export class AuthService {
     try {
       // Validate email
       if (!validateEmail(email)) {
-        await logAuthEvent(null, 'register_failed', 'email', false, ipAddress, userAgent, 'Invalid email format');
+        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Invalid email format');
         return { success: false, message: 'Invalid email address' };
       }
 
       // Validate password
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.valid) {
-        await logAuthEvent(null, 'register_failed', 'email', false, ipAddress, userAgent, 'Weak password');
+        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Weak password');
         return { success: false, message: passwordValidation.errors.join('. ') };
       }
 
       // Check if user already exists
       const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
       if (existingUser.length > 0) {
-        await logAuthEvent(null, 'register_failed', 'email', false, ipAddress, userAgent, 'Email already exists');
+        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Email already exists');
         return { success: false, message: 'Email address is already registered' };
       }
 
@@ -215,7 +217,7 @@ export class AuthService {
         emailVerified: newUser.emailVerified || false,
       };
 
-      await logAuthEvent(newUser.id, 'register_success', 'email', true, ipAddress, userAgent);
+      await logAuthEvent(newUser.id, email, 'register_success', 'email', true, ipAddress, userAgent);
 
       return {
         success: true,
@@ -226,7 +228,7 @@ export class AuthService {
 
     } catch (error) {
       console.error('Registration error:', error);
-      await logAuthEvent(null, 'register_failed', 'email', false, ipAddress, userAgent, 'Internal error');
+      await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Internal error');
       return { success: false, message: 'Registration failed. Please try again.' };
     }
   }

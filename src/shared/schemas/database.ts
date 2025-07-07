@@ -217,6 +217,7 @@ export const studyRecommendations = pgTable("study_recommendations", {
 export const authLogs = pgTable("auth_logs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
+  email: text("email"),
   action: text("action").notNull(), // login_success, login_failed, register, logout, password_reset, etc.
   method: text("method"), // email, google, facebook, etc.
   ipAddress: text("ip_address"),
