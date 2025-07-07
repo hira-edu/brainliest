@@ -373,7 +373,10 @@ export default function QuestionInterface() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                  onClick={() => {
+                    // TODO: Use subject slug when available
+                    setLocation(`/subject/${exam.subjectId}`);
+                  }}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />

@@ -43,10 +43,11 @@ function Router() {
       {/* Legacy ID-based routes for backward compatibility */}
       <Route path="/subject/:id(\d+)" component={ExamSelection} />
       <Route path="/exam/:id(\d+)" component={QuestionInterface} />
-      <Route path="/results/:id(\d+)" component={Results} />
-      {/* New slug-based routes - catch non-numeric paths */}
+      
+      {/* New slug-based routes */}
       <Route path="/subject/:slug" component={SubjectSlugPage} />
       <Route path="/exam/:slug" component={ExamSlugPage} />
+      <Route path="/results/:id(\d+)" component={Results} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
       <Route path="/cookie-settings" component={CookieSettings} />

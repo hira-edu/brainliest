@@ -131,8 +131,10 @@ export default function Home() {
   });
 
 
-  const handleSelectSubject = (subjectId: number) => {
-    setLocation(`/subject/${subjectId}`);
+  const handleSelectSubject = (subject: Subject) => {
+    // Use slug-based routing with fallback to ID for backward compatibility
+    const url = subject.slug ? `/subject/${subject.slug}` : `/subject/${subject.id}`;
+    setLocation(url);
   };
 
   // Categorize and filter subjects
@@ -468,7 +470,7 @@ export default function Home() {
                             <SubjectCard 
                               key={subject.id} 
                               subject={subject} 
-                              onClick={() => handleSelectSubject(subject.id)}
+                              onClick={() => handleSelectSubject(subject)}
                             />
                           ))}
                         </div>
@@ -493,7 +495,7 @@ export default function Home() {
                   <SubjectCard 
                     key={subject.id} 
                     subject={subject} 
-                    onClick={() => handleSelectSubject(subject.id)}
+                    onClick={() => handleSelectSubject(subject)}
                   />
                 ))}
               </div>
