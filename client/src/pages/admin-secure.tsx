@@ -4,12 +4,14 @@ import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Users, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Users, Eye, EyeOff, RefreshCw, Shield } from "lucide-react";
+import RecaptchaProvider from "@/components/recaptcha-provider";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 // Import the main admin content
 import AdminSimple from "@/pages/admin-simple";
 
-export default function AdminSecure() {
+function AdminSecureContent() {
   // Authentication state - ALWAYS starts as false
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +21,7 @@ export default function AdminSecure() {
   const [showPassword, setShowPassword] = useState(false);
   
   const { toast } = useToast();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   // Clear any existing admin tokens on mount
   useEffect(() => {
@@ -33,6 +36,14 @@ export default function AdminSecure() {
     setIsLoggingIn(true);
     try {
       console.log('🔐 Attempting admin authentication...');
+      
+      // Generate reCAPTCHA token
+      let recaptchaToken = '';
+      if (executeRecaptcha) {
+        recaptchaToken = await executeRecaptcha('admin_login');
+        console.log('🛡️ reCAPTCHA token generated for admin login');
+      }
+      
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: {
@@ -41,6 +52,7 @@ export default function AdminSecure() {
         body: JSON.stringify({
           email: adminEmail,
           password: adminPassword,
+          recaptchaToken,
         }),
       });
 
@@ -192,7 +204,11 @@ export default function AdminSecure() {
               </CardContent>
             </Card>
             
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
+              <div className="flex items-center justify-center space-x-2 text-xs text-blue-600">
+                <Shield className="h-3 w-3" />
+                <span>Protected by reCAPTCHA v3</span>
+              </div>
               <p className="text-xs text-red-600 font-medium">
                 🛡️ Protected by enterprise security • All access attempts are logged
               </p>
@@ -229,5 +245,13 @@ export default function AdminSecure() {
       </div>
       <AdminSimple />
     </div>
+  );
+}
+
+export default function AdminSecure() {
+  return (
+    <RecaptchaProvider>
+      <AdminSecureContent />
+    </RecaptchaProvider>
   );
 }

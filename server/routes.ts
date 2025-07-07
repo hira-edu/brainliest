@@ -1522,7 +1522,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin login endpoint
   app.post("/api/admin/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, recaptchaToken } = req.body;
+      
+      // Verify reCAPTCHA token if provided
+      if (recaptchaToken && recaptchaService.isConfigured()) {
+        console.log('🛡️ Verifying reCAPTCHA token for admin login');
+        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'admin_login');
+        
+        if (!recaptchaResult.success) {
+          console.log('❌ reCAPTCHA verification failed for admin login');
+          return res.status(400).json({
+            success: false,
+            message: "reCAPTCHA verification failed. Please try again."
+          });
+        }
+        
+        console.log('✅ reCAPTCHA verification successful for admin login');
+      }
       
       // For testing, allow a simple admin login
       if (email === "admin@brainliest.com" && password === "admin123") {
