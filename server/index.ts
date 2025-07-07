@@ -3,7 +3,6 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
-import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { validateSecurityConfig } from './config/security';
@@ -77,9 +76,6 @@ app.use("/api", speedLimiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
-
-// Note: Cookie parsing removed as per user request to remove cookie-based sessions
-// app.use(cookieParser());
 
 app.use((req, res, next) => {
   const start = Date.now();
