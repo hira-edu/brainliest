@@ -10,22 +10,22 @@ const router = express.Router();
  * Skip static assets and API routes
  */
 router.get('/:subjectSlug/:examSlug', async (req, res, next) => {
-  // Skip if path contains file extensions or starts with reserved paths
   const { subjectSlug, examSlug } = req.params;
+  const fullPath = req.path;
   
-  // Skip static assets (files with extensions)
+  // Skip if this looks like a static asset request
+  if (fullPath.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map)$/i)) {
+    return next();
+  }
+  
+  // Skip API routes and known paths
+  const reservedPaths = ['api', 'src', 'assets', 'public', 'node_modules', '@vite', '@fs'];
+  if (reservedPaths.includes(subjectSlug) || reservedPaths.includes(examSlug)) {
+    return next();
+  }
+  
+  // Skip if contains file extensions
   if (subjectSlug.includes('.') || examSlug.includes('.')) {
-    return next();
-  }
-  
-  // Skip API routes
-  if (subjectSlug === 'api' || examSlug === 'api') {
-    return next();
-  }
-  
-  // Skip known static paths
-  const staticPaths = ['src', 'assets', 'public', 'node_modules'];
-  if (staticPaths.includes(subjectSlug)) {
     return next();
   }
   try {

@@ -139,9 +139,9 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
-  // TODO: Re-enable slug routes after fixing static file serving
-  // const { default: slugRoutes } = await import("./routes/slug-routes.js");
-  // app.use("/", slugRoutes);
+  // Import and register slug routes with proper static asset filtering
+  const { default: slugRoutes } = await import("./routes/slug-routes.js");
+  app.use("/", slugRoutes);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
