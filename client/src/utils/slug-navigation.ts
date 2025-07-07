@@ -34,6 +34,39 @@ export function getExamUrl(exam: Exam | { id: number; slug?: string }, options: 
 }
 
 /**
+ * Generate hierarchical subject exam URL - deep linking support
+ */
+export function getHierarchicalExamUrl(subjectSlug: string, examSlug: string): string {
+  if (!subjectSlug || !examSlug) {
+    console.error('Missing slugs for hierarchical exam URL:', { subjectSlug, examSlug });
+    return '/subjects';
+  }
+  return `/subject/${subjectSlug}/exam/${examSlug}`;
+}
+
+/**
+ * Generate hierarchical question URL - deep linking support
+ */
+export function getHierarchicalQuestionUrl(subjectSlug: string, examSlug: string, questionId: string): string {
+  if (!subjectSlug || !examSlug || !questionId) {
+    console.error('Missing parameters for hierarchical question URL:', { subjectSlug, examSlug, questionId });
+    return '/subjects';
+  }
+  return `/subject/${subjectSlug}/exam/${examSlug}/question/${questionId}`;
+}
+
+/**
+ * Generate hierarchical results URL - deep linking support
+ */
+export function getHierarchicalResultsUrl(subjectSlug: string, examSlug: string, sessionId: string): string {
+  if (!subjectSlug || !examSlug || !sessionId) {
+    console.error('Missing parameters for hierarchical results URL:', { subjectSlug, examSlug, sessionId });
+    return '/subjects';
+  }
+  return `/subject/${subjectSlug}/exam/${examSlug}/results/${sessionId}`;
+}
+
+/**
  * Navigation helper for subject selection
  */
 export function navigateToSubject(setLocation: (path: string) => void, subject: Subject | { id: number; slug?: string }) {

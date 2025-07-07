@@ -261,6 +261,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hierarchical API endpoints for deep linking
+  app.get("/api/subject/:subjectSlug/exams", async (req, res) => {
+    try {
+      const { subjectSlug } = req.params;
+      const subject = await storage.getSubjectBySlug(subjectSlug);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      
+      const exams = await storage.getExamsBySubject(subject.id);
+      res.json(exams);
+    } catch (error) {
+      console.error("Error fetching exams for subject:", error);
+      res.status(500).json({ message: "Failed to fetch exams" });
+    }
+  });
+
+  app.get("/api/subject/:subjectSlug/exam/:examSlug", async (req, res) => {
+    try {
+      const { subjectSlug, examSlug } = req.params;
+      
+      // Verify subject exists
+      const subject = await storage.getSubjectBySlug(subjectSlug);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      
+      // Get exam by slug and verify it belongs to the subject
+      const exam = await storage.getExamBySlug(examSlug);
+      if (!exam || exam.subjectId !== subject.id) {
+        return res.status(404).json({ message: "Exam not found in this subject" });
+      }
+      
+      res.json(exam);
+    } catch (error) {
+      console.error("Error fetching hierarchical exam:", error);
+      res.status(500).json({ message: "Failed to fetch exam" });
+    }
+  });
+
+  app.get("/api/subject/:subjectSlug/exam/:examSlug/questions", async (req, res) => {
+    try {
+      const { subjectSlug, examSlug } = req.params;
+      
+      // Verify subject exists
+      const subject = await storage.getSubjectBySlug(subjectSlug);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      
+      // Get exam by slug and verify it belongs to the subject
+      const exam = await storage.getExamBySlug(examSlug);
+      if (!exam || exam.subjectId !== subject.id) {
+        return res.status(404).json({ message: "Exam not found in this subject" });
+      }
+      
+      const questions = await storage.getQuestionsByExam(exam.id);
+      res.json({ questions });
+    } catch (error) {
+      console.error("Error fetching hierarchical questions:", error);
+      res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
   app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
     try {
       const validation = insertExamSchema.safeParse(req.body);

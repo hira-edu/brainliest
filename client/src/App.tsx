@@ -27,6 +27,8 @@ import AuthCallback from "./features/auth/pages/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
+import HierarchicalQuestionInterface from "./features/exam/pages/hierarchical-question-interface";
+import HierarchicalResults from "./features/exam/pages/hierarchical-results";
 
 function Router() {
   return (
@@ -40,6 +42,17 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
+      {/* Hierarchical slug-based routes for deep linking */}
+      <Route path="/subject/:subjectSlug/exam/:examSlug/question/:questionId">
+        {(params) => <HierarchicalQuestionInterface subjectSlug={params.subjectSlug} examSlug={params.examSlug} questionId={params.questionId} />}
+      </Route>
+      <Route path="/subject/:subjectSlug/exam/:examSlug/results/:sessionId">
+        {(params) => <HierarchicalResults subjectSlug={params.subjectSlug} examSlug={params.examSlug} sessionId={params.sessionId} />}
+      </Route>
+      <Route path="/subject/:subjectSlug/exam/:examSlug">
+        {(params) => <HierarchicalQuestionInterface subjectSlug={params.subjectSlug} examSlug={params.examSlug} />}
+      </Route>
+      
       {/* Primary slug-based routes - must come first for proper matching */}
       <Route path="/subject/:slug" component={SubjectSlugPage} />
       <Route path="/exam/:slug" component={ExamSlugPage} />
