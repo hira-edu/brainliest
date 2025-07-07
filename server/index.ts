@@ -3,9 +3,11 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { validateSecurityConfig } from './config/security';
+import { enforceSubdomainRestrictions, configureAdminSessionCookies, getAdminSessionConfig } from './subdomain-manager';
 
 const app = express();
 
@@ -15,11 +17,11 @@ validateSecurityConfig();
 // Trust proxy for accurate IP addresses behind reverse proxies
 app.set('trust proxy', 1);
 
-// CORS configuration
+// CORS configuration with subdomain support
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://brainliest.com', 'https://www.brainliest.com'] 
-    : ['http://localhost:5000', 'http://127.0.0.1:5000'],
+    ? ['https://brainliest.com', 'https://www.brainliest.com', 'https://admin.brainliest.com'] 
+    : ['http://localhost:5000', 'http://127.0.0.1:5000', 'http://admin.localhost:5000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -76,6 +78,13 @@ app.use("/api", speedLimiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Subdomain management middleware
+app.use(enforceSubdomainRestrictions);
+app.use(configureAdminSessionCookies);
+
+// Admin session configuration
+app.use(session(getAdminSessionConfig()));
 
 app.use((req, res, next) => {
   const start = Date.now();

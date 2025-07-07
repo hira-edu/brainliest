@@ -8,6 +8,8 @@ import { authService } from "./auth-service";
 import { adminAuthService } from "./admin-auth-service";
 import { adminUserService } from './admin-user-management';
 import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
+import { stickyAdminSessionService, authenticateAdminSession } from './sticky-admin-session';
+import { getSubdomainContext } from './subdomain-manager';
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
@@ -2404,6 +2406,278 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('Error generating sitemap');
     }
   });
+
+  // ==================== ADMIN SUBDOMAIN ENDPOINTS ====================
+  
+  /**
+   * Admin presence endpoint - lightweight check for admin badge on main site
+   * GET /api/admin/presence
+   */
+  app.get("/api/admin/presence", async (req, res) => {
+    try {
+      // Check subdomain context
+      const subdomainContext = getSubdomainContext(req);
+      
+      // Only allow this endpoint on main site (not admin subdomain)
+      if (subdomainContext.isAdmin) {
+        return res.status(403).json({ 
+          admin: false, 
+          message: "Admin presence check not allowed on admin subdomain" 
+        });
+      }
+      
+      // Check for admin session token in cookies or Authorization header
+      let adminToken = null;
+      
+      // Try Authorization header first
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        adminToken = authHeader.substring(7);
+      } else {
+        // Try admin session cookie
+        if (req.cookies && req.cookies['admin_access_token']) {
+          adminToken = req.cookies['admin_access_token'];
+        }
+      }
+      
+      if (!adminToken) {
+        return res.json({ admin: false });
+      }
+      
+      // Verify admin session using sticky session service
+      const sessionResult = await stickyAdminSessionService.validateSession(adminToken);
+      
+      if (sessionResult.valid && sessionResult.user) {
+        return res.json({ 
+          admin: true,
+          role: sessionResult.user.role 
+        });
+      }
+      
+      // Fallback: try legacy admin auth service
+      const { valid, user } = await adminAuthService.verifyToken(adminToken);
+      
+      if (valid && user && user.role === 'admin') {
+        return res.json({ 
+          admin: true,
+          role: user.role 
+        });
+      }
+      
+      return res.json({ admin: false });
+      
+    } catch (error) {
+      console.error('Admin presence check error:', error);
+      // Never expose errors in presence endpoint - always return false for security
+      return res.json({ admin: false });
+    }
+  });
+
+  /**
+   * Admin session creation endpoint (for admin subdomain only)
+   * POST /api/admin/session
+   */
+  app.post("/api/admin/session", async (req, res) => {
+    try {
+      // Check subdomain context - only allow on admin subdomain
+      const subdomainContext = getSubdomainContext(req);
+      
+      if (!subdomainContext.isAdmin) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Admin session creation only allowed on admin subdomain" 
+        });
+      }
+      
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email and password are required" 
+        });
+      }
+      
+      // Get client info for logging
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      
+      // Authenticate admin using admin auth service
+      const loginResult = await adminAuthService.login(email, password, ipAddress, userAgent);
+      
+      if (!loginResult.success || !loginResult.user) {
+        return res.status(401).json({
+          success: false,
+          message: loginResult.message || "Invalid credentials",
+          accountLocked: loginResult.accountLocked,
+          lockoutExpires: loginResult.lockoutExpires
+        });
+      }
+      
+      // Create sticky admin session
+      const sessionResult = await stickyAdminSessionService.createSession(loginResult.user);
+      
+      if (!sessionResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create admin session"
+        });
+      }
+      
+      // Set secure cookies for admin session
+      res.cookie('admin_access_token', sessionResult.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none', // Allow cross-subdomain access
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        domain: process.env.NODE_ENV === 'production' ? '.brainliest.com' : 'localhost'
+      });
+      
+      res.cookie('admin_refresh_token', sessionResult.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none', // Allow cross-subdomain access
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        domain: process.env.NODE_ENV === 'production' ? '.brainliest.com' : 'localhost'
+      });
+      
+      return res.json({
+        success: true,
+        message: "Admin session created successfully",
+        user: sessionResult.user,
+        accessToken: sessionResult.accessToken // For Authorization header use
+      });
+      
+    } catch (error) {
+      console.error('Admin session creation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  });
+
+  /**
+   * Admin session refresh endpoint (for admin subdomain only)
+   * POST /api/admin/session/refresh
+   */
+  app.post("/api/admin/session/refresh", async (req, res) => {
+    try {
+      // Check subdomain context - only allow on admin subdomain
+      const subdomainContext = getSubdomainContext(req);
+      
+      if (!subdomainContext.isAdmin) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Admin session refresh only allowed on admin subdomain" 
+        });
+      }
+      
+      const refreshToken = (req.cookies && req.cookies['admin_refresh_token']) || req.body.refreshToken;
+      
+      if (!refreshToken) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Refresh token required" 
+        });
+      }
+      
+      // Refresh admin session
+      const sessionResult = await stickyAdminSessionService.refreshSession(refreshToken);
+      
+      if (!sessionResult.success) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid or expired refresh token"
+        });
+      }
+      
+      // Update cookies with new tokens
+      res.cookie('admin_access_token', sessionResult.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        domain: process.env.NODE_ENV === 'production' ? '.brainliest.com' : 'localhost'
+      });
+      
+      res.cookie('admin_refresh_token', sessionResult.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        domain: process.env.NODE_ENV === 'production' ? '.brainliest.com' : 'localhost'
+      });
+      
+      return res.json({
+        success: true,
+        message: "Admin session refreshed successfully",
+        user: sessionResult.user,
+        accessToken: sessionResult.accessToken
+      });
+      
+    } catch (error) {
+      console.error('Admin session refresh error:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  });
+
+  /**
+   * Admin logout endpoint (for admin subdomain only)
+   * POST /api/admin/logout
+   */
+  app.post("/api/admin/logout", async (req, res) => {
+    try {
+      // Check subdomain context - only allow on admin subdomain
+      const subdomainContext = getSubdomainContext(req);
+      
+      if (!subdomainContext.isAdmin) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Admin logout only allowed on admin subdomain" 
+        });
+      }
+      
+      const accessToken = (req.cookies && req.cookies['admin_access_token']) || 
+                         (req.headers.authorization?.startsWith('Bearer ') ? 
+                          req.headers.authorization.substring(7) : null);
+      
+      if (accessToken) {
+        // Validate session to get session ID
+        const sessionResult = await stickyAdminSessionService.validateSession(accessToken);
+        
+        if (sessionResult.valid && sessionResult.user?.sessionId) {
+          // Destroy the session
+          await stickyAdminSessionService.destroySession(sessionResult.user.sessionId);
+        }
+      }
+      
+      // Clear cookies
+      res.clearCookie('admin_access_token', {
+        domain: process.env.NODE_ENV === 'production' ? '.brainliest.com' : 'localhost'
+      });
+      res.clearCookie('admin_refresh_token', {
+        domain: process.env.NODE_ENV === 'production' ? '.brainliest.com' : 'localhost'
+      });
+      
+      return res.json({
+        success: true,
+        message: "Admin logout successful"
+      });
+      
+    } catch (error) {
+      console.error('Admin logout error:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  });
+
+  // ==================== END ADMIN SUBDOMAIN ENDPOINTS ====================
 
   const httpServer = createServer(app);
   return httpServer;
