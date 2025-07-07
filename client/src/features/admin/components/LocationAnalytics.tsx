@@ -141,11 +141,15 @@ export function LocationAnalytics() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-medium mb-2">Location Information</h4>
-                    <div className="space-y-1 text-sm">
-                      <div><strong>IP:</strong> {locationResult.ip}</div>
-                      <div><strong>Location:</strong> {formatLocation(locationResult)}</div>
+                    <div className="space-y-2 text-sm">
+                      <div className="bg-blue-50 p-3 rounded-lg border">
+                        <div className="text-lg font-semibold text-blue-800 mb-1">
+                          {getCountryFlag(locationResult.countryCode)} {formatLocation(locationResult)}
+                        </div>
+                        <div className="font-mono text-sm text-gray-600">{locationResult.ip}</div>
+                      </div>
                       {locationResult.countryCode && (
-                        <div><strong>Country:</strong> {getCountryFlag(locationResult.countryCode)} {locationResult.country}</div>
+                        <div><strong>Country Code:</strong> {locationResult.countryCode}</div>
                       )}
                       {locationResult.timezone && (
                         <div><strong>Timezone:</strong> {locationResult.timezone}</div>
@@ -281,16 +285,19 @@ export function LocationAnalytics() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>Location & IP Address</TableHead>
                   <TableHead>Timestamp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {stats.recentLookups.slice(0, 10).map((lookup, index) => (
                   <TableRow key={index}>
-                    <TableCell className="font-mono text-sm">{lookup.ip}</TableCell>
-                    <TableCell>{lookup.location}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-base text-blue-600">{lookup.location}</span>
+                        <span className="font-mono text-sm text-gray-600">{lookup.ip}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm text-gray-600">
                       {new Date(lookup.timestamp).toLocaleString()}
                     </TableCell>
