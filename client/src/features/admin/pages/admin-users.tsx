@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Users, Search, Download, Ban, UserX, Eye, Calendar, MapPin, Plus, Edit, Trash2, Shield, User as UserIcon, Settings } from "lucide-react";
+import { LocationAnalytics } from "../components/LocationAnalytics";
 import type { User } from "@shared/schema";
 
 interface UserFilters {
@@ -782,6 +783,22 @@ export default function AdminUsers() {
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Location Analytics Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Location Analytics
+          </CardTitle>
+          <CardDescription>
+            Real-time geolocation data for user analytics and insights
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LocationAnalytics />
         </CardContent>
       </Card>
 

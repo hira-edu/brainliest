@@ -12,6 +12,7 @@ import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus }
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
+import { geolocationService } from "./geolocation-service";
 import { parseId, parseOptionalId, validateEmail, validatePassword } from "./utils/validation";
 import { sanitizeInput, sanitizeRequestBody, checkRateLimit } from './security/input-sanitizer';
 import { logAdminAction, createAuditMiddleware } from './security/admin-audit';
@@ -1088,6 +1089,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Failed to fetch audit logs',
         success: false
       });
+    }
+  });
+
+  // Geolocation API endpoints
+  app.get("/api/geolocation/ip/:ip", async (req, res) => {
+    try {
+      const ip = req.params.ip;
+      
+      // Validate IP format (basic validation)
+      if (!ip || ip === 'undefined' || ip === 'null') {
+        return res.status(400).json({ 
+          message: "Valid IP address is required",
+          ip: ip
+        });
+      }
+
+      // Get location data using geolocation service
+      const location = await geolocationService.getLocationForIP(ip);
+      
+      res.json({
+        success: true,
+        location,
+        formatted: geolocationService.formatLocation(location),
+        flag: geolocationService.getCountryFlag(location.countryCode),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Geolocation error:', error);
+      res.status(500).json({ 
+        message: "Failed to get location data",
+        success: false
+      });
+    }
+  });
+
+  app.post("/api/geolocation/bulk", async (req, res) => {
+    try {
+      const { ips } = req.body;
+      
+      if (!Array.isArray(ips) || ips.length === 0) {
+        return res.status(400).json({ 
+          message: "Array of IP addresses is required",
+          example: { ips: ["192.168.1.1", "8.8.8.8"] }
+        });
+      }
+
+      // Limit to 50 IPs per request to prevent abuse
+      if (ips.length > 50) {
+        return res.status(400).json({ 
+          message: "Maximum 50 IP addresses allowed per request"
+        });
+      }
+
+      // Get location data for all IPs
+      const locations = await geolocationService.getLocationsForIPs(ips);
+      
+      // Format response
+      const results = Array.from(locations.entries()).map(([ip, location]) => ({
+        ip,
+        location,
+        formatted: geolocationService.formatLocation(location),
+        flag: geolocationService.getCountryFlag(location.countryCode)
+      }));
+      
+      res.json({
+        success: true,
+        results,
+        total: results.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Bulk geolocation error:', error);
+      res.status(500).json({ 
+        message: "Failed to get bulk location data",
+        success: false
+      });
+    }
+  });
+
+  app.get("/api/geolocation/stats", async (req, res) => {
+    try {
+      const stats = geolocationService.getCacheStats();
+      
+      res.json({
+        success: true,
+        cache: stats,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Geolocation stats error:', error);
+      res.status(500).json({ 
+        message: "Failed to get geolocation stats",
+        success: false
+      });
+    }
+  });
+
+  // Enhanced user endpoints with location data
+  app.get("/api/users/with-locations", async (req, res) => {
+    try {
+      const { role, isActive, isBanned, search } = req.query;
+      const filters = {
+        role: role as string,
+        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+        isBanned: isBanned === 'true' ? true : isBanned === 'false' ? false : undefined,
+        search: search as string,
+      };
+      
+      // Get users
+      const users = await storage.getUsersWithFilters(filters);
+      
+      // Extract unique IP addresses
+      const loginIPs = users
+        .map(user => user.lastLoginIp)
+        .filter(ip => ip && ip !== '::1' && ip !== '127.0.0.1');
+      
+      const registrationIPs = users
+        .map(user => user.registrationIp)
+        .filter(ip => ip && ip !== '::1' && ip !== '127.0.0.1');
+      
+      const allIPs = [...new Set([...loginIPs, ...registrationIPs])];
+      
+      // Get location data for all unique IPs
+      const locations = allIPs.length > 0 
+        ? await geolocationService.getLocationsForIPs(allIPs)
+        : new Map();
+      
+      // Enhanced users with location data
+      const usersWithLocations = users.map(user => ({
+        ...user,
+        locationData: {
+          lastLogin: user.lastLoginIp ? {
+            ip: user.lastLoginIp,
+            location: locations.get(user.lastLoginIp),
+            formatted: locations.get(user.lastLoginIp) 
+              ? geolocationService.formatLocation(locations.get(user.lastLoginIp)!)
+              : 'Unknown',
+            flag: locations.get(user.lastLoginIp)
+              ? geolocationService.getCountryFlag(locations.get(user.lastLoginIp)!.countryCode)
+              : '🌍'
+          } : null,
+          registration: user.registrationIp ? {
+            ip: user.registrationIp,
+            location: locations.get(user.registrationIp),
+            formatted: locations.get(user.registrationIp)
+              ? geolocationService.formatLocation(locations.get(user.registrationIp)!)
+              : 'Unknown',
+            flag: locations.get(user.registrationIp)
+              ? geolocationService.getCountryFlag(locations.get(user.registrationIp)!.countryCode)
+              : '🌍'
+          } : null
+        }
+      }));
+      
+      res.json(usersWithLocations);
+    } catch (error) {
+      console.error('Users with locations error:', error);
+      res.status(500).json({ message: "Failed to fetch users with location data" });
     }
   });
 
