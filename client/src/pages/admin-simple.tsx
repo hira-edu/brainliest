@@ -53,7 +53,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SearchableSelect } from "@/components/ui/searchable-select-new";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";

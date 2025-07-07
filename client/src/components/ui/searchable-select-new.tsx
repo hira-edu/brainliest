@@ -75,6 +75,7 @@ export const SearchableSelect = React.forwardRef<
       const timeoutId = setTimeout(() => onSearch(searchQuery), 300);
       return () => clearTimeout(timeoutId);
     }
+    return undefined;
   }, [searchQuery, onSearch]);
 
   // Handle option selection
@@ -118,11 +119,10 @@ export const SearchableSelect = React.forwardRef<
   const handleInputBlur = useCallback(() => {
     // Small delay to allow for option selection
     setTimeout(() => {
-      if (!isTyping) {
-        setOpen(false);
-      }
+      setOpen(false);
+      setIsTyping(false);
     }, 150);
-  }, [isTyping]);
+  }, []);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

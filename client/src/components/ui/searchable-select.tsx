@@ -147,7 +147,15 @@ export const SearchableSelect = React.forwardRef<
         className="w-full p-0" 
         align="start"
       >
-        <Command shouldFilter={false}>
+        <Command 
+          shouldFilter={false}
+          onKeyDown={(e) => {
+            // Prevent Command from handling arrow keys and enter when input is focused
+            if (inputRef.current === document.activeElement) {
+              e.stopPropagation();
+            }
+          }}
+        >
           <CommandList>
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
