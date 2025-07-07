@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, Filter, BookOpen, Clock, Star, TrendingUp } from "lucide-react";
+import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +114,8 @@ export default function AllSubjects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("name");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const { data: subjects, isLoading } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
@@ -177,6 +179,19 @@ export default function AllSubjects() {
     
     return filtered;
   }, [subjects, searchQuery, selectedCategory, sortBy]);
+
+  // Pagination calculations
+  const totalItems = filteredAndSortedSubjects.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSubjects = filteredAndSortedSubjects.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  const handleFilterChange = (callback: () => void) => {
+    setCurrentPage(1);
+    callback();
+  };
 
   if (isLoading) {
     return (
@@ -248,7 +263,7 @@ export default function AllSubjects() {
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -287,6 +302,22 @@ export default function AllSubjects() {
                 <SelectItem value="exams">Most Exams</SelectItem>
                 <SelectItem value="questions">Most Questions</SelectItem>
                 <SelectItem value="popular">Most Popular</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Items Per Page */}
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+              setItemsPerPage(Number(value));
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger>
+                <Clock className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Per page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 per page</SelectItem>
+                <SelectItem value="20">20 per page</SelectItem>
+                <SelectItem value="30">30 per page</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -335,14 +366,14 @@ export default function AllSubjects() {
         {/* Results Summary */}
         <div className="mb-6">
           <p className="text-gray-600">
-            Showing {filteredAndSortedSubjects.length} of {subjects?.length || 0} subjects
+            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} subjects
             {searchQuery && ` matching "${searchQuery}"`}
             {selectedCategory !== "all" && ` in ${categoryConfig[selectedCategory as keyof typeof categoryConfig]?.label}`}
           </p>
         </div>
 
         {/* Subjects Table */}
-        {filteredAndSortedSubjects.length > 0 ? (
+        {paginatedSubjects.length > 0 ? (
           <div className="bg-white rounded-lg border shadow-sm">
             <Table>
               <TableHeader>
@@ -356,7 +387,7 @@ export default function AllSubjects() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedSubjects.map((subject) => {
+                {paginatedSubjects.map((subject) => {
                   const category = getCategoryForSubject(subject);
                   const categoryData = categoryConfig[category as keyof typeof categoryConfig];
                   const IconComponent = categoryData?.icon || BookOpen;
@@ -400,6 +431,66 @@ export default function AllSubjects() {
                 })}
               </TableBody>
             </Table>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    {/* Page numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(pageNum)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-16">
