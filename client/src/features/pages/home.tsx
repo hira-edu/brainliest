@@ -209,25 +209,25 @@ export default function Home() {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">
-                {stats ? stats.subjects : (subjects?.length || 0)}
+              <div className="text-4xl font-bold text-blue-600">
+                {stats ? `${stats.subjects}+` : `${subjects?.length || 0}+`}
               </div>
               <div className="text-sm text-gray-600">Subjects</div>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="text-2xl font-bold text-green-600">
-                {stats ? stats.exams : '500+'}
+              <div className="text-4xl font-bold text-green-600">
+                {stats ? `${stats.exams}+` : '500+'}
               </div>
               <div className="text-sm text-gray-600">Exams</div>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="text-2xl font-bold text-purple-600">
-                {stats ? `${stats.questions.toLocaleString()}` : '10K+'}
+              <div className="text-4xl font-bold text-purple-600">
+                {stats ? `${stats.questions.toLocaleString()}+` : '10K+'}
               </div>
               <div className="text-sm text-gray-600">Questions</div>
             </div>
             <div className="bg-white rounded-lg p-4 shadow-sm">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-4xl font-bold text-orange-600">
                 {stats ? `${stats.successRate}%` : '95%'}
               </div>
               <div className="text-sm text-gray-600">Success Rate</div>
