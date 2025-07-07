@@ -124,8 +124,10 @@ export default function AllSubjects() {
     refetchInterval: 60000, // Refetch every minute
   });
 
-  const handleSelectSubject = (subjectId: number) => {
-    setLocation(`/subject/${subjectId}`);
+  const handleSelectSubject = (subject: Subject) => {
+    // Use slug-based navigation if available, otherwise fallback to ID
+    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.id}`;
+    setLocation(path);
   };
 
   const categorizedSubjects = useMemo(() => {
@@ -435,7 +437,7 @@ export default function AllSubjects() {
                       <TableCell className="text-center">
                         <Button 
                           size="sm" 
-                          onClick={() => handleSelectSubject(subject.id)}
+                          onClick={() => handleSelectSubject(subject)}
                           className="bg-primary hover:bg-primary/90"
                         >
                           Start Practice
