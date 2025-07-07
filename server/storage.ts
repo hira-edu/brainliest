@@ -30,6 +30,7 @@ export interface IStorage {
   getSubjects(): Promise<Subject[]>;
   getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }>;
   getSubject(id: number): Promise<Subject | undefined>;
+  getSubjectBySlug(slug: string): Promise<Subject | undefined>;
   createSubject(subject: InsertSubject): Promise<Subject>;
   updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
   deleteSubject(id: number): Promise<boolean>;
@@ -40,6 +41,7 @@ export interface IStorage {
   getExamsPaginated(offset: number, limit: number, subjectId?: number): Promise<{ exams: Exam[], total: number }>;
   getExamsBySubject(subjectId: number): Promise<Exam[]>;
   getExam(id: number): Promise<Exam | undefined>;
+  getExamBySlug(slug: string): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
   updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined>;
   deleteExam(id: number): Promise<boolean>;
@@ -106,7 +108,8 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
     }).from(subjects);
   }
 
@@ -120,8 +123,25 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
     }).from(subjects).where(eq(subjects.id, id));
+    return subject;
+  }
+
+  async getSubjectBySlug(slug: string): Promise<Subject | undefined> {
+    const [subject] = await db.select({
+      id: subjects.id,
+      name: subjects.name,
+      description: subjects.description,
+      icon: subjects.icon,
+      color: subjects.color,
+      categoryId: subjects.categoryId,
+      subcategoryId: subjects.subcategoryId,
+      examCount: subjects.examCount,
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
+    }).from(subjects).where(eq(subjects.slug, slug));
     return subject;
   }
 
@@ -162,7 +182,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams);
   }
 
@@ -175,7 +196,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams).where(eq(exams.subjectId, subjectId));
   }
 
@@ -188,8 +210,24 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams).where(eq(exams.id, id));
+    return exam;
+  }
+
+  async getExamBySlug(slug: string): Promise<Exam | undefined> {
+    const [exam] = await db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive,
+      slug: exams.slug
+    }).from(exams).where(eq(exams.slug, slug));
     return exam;
   }
 
@@ -721,7 +759,8 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
     }).from(subjects);
 
     const conditions = [];
@@ -757,7 +796,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams);
 
     if (subjectId) {

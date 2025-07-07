@@ -28,6 +28,7 @@ export const subcategories = pgTable("subcategories", {
 export const subjects = pgTable("subjects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
@@ -41,6 +42,7 @@ export const exams = pgTable("exams", {
   id: serial("id").primaryKey(),
   subjectId: integer("subject_id").notNull(),
   title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
   description: text("description"),
   questionCount: integer("question_count").notNull(),
   duration: integer("duration"), // in minutes
