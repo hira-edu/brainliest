@@ -240,19 +240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Keep legacy route for admin panel compatibility - but frontend uses slugs only
-  app.get("/api/exams/:id", async (req, res) => {
-    try {
-      const id = parseId(req.params.id, 'exam ID');
-      const exam = await storage.getExam(id);
-      if (!exam) {
-        return res.status(404).json({ message: "Exam not found" });
-      }
-      res.json(exam);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch exam" });
-    }
-  });
+  // REMOVED: Legacy ID-based exam route completely eliminated
+  // All exam access now uses slug-based routing: /api/exams/by-slug/:slug
 
   app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
     try {

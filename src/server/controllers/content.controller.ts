@@ -102,27 +102,8 @@ export class ContentController {
     }
   }
 
-  async getExam(req: ApiRequest, res: ApiResponse) {
-    try {
-      const examId = parseInt(req.params.id);
-      const exam = await storage.getExam(examId);
-      
-      if (!exam) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Exam not found' 
-        });
-      }
-      
-      res.json(exam);
-    } catch (error) {
-      console.error('Error fetching exam:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Failed to fetch exam' 
-      });
-    }
-  }
+  // REMOVED: ID-based exam retrieval - Use slug-based methods for public operations
+  // All exam access should use getExamBySlug() for modern routing
 
   async createExam(req: ApiRequest, res: ApiResponse) {
     try {

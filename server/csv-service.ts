@@ -430,7 +430,8 @@ export class CSVService {
         await this.storage.updateSubject(id, data);
         break;
       case 'exams':
-        await this.storage.updateExam(id, data);
+        // REMOVED: ID-based exam updates - CSV operations should use createExam() for new records only
+        throw new Error("Exam updates via CSV not supported - use createExam() for new records");
         break;
       case 'questions':
         await this.storage.updateQuestion(id, data);
@@ -450,7 +451,8 @@ export class CSVService {
         await this.storage.deleteSubject(id);
         break;
       case 'exams':
-        await this.storage.deleteExam(id);
+        // REMOVED: ID-based exam deletion - CSV operations should only create new records
+        throw new Error("Exam deletion via CSV not supported - use database admin tools for deletions");
         break;
       case 'questions':
         await this.storage.deleteQuestion(id);

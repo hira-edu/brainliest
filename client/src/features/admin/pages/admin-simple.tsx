@@ -1843,8 +1843,7 @@ export default function AdminSimple() {
   // Exam Management Component
   function ExamManager() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingExam, setEditingExam] = useState<Exam | null>(null);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    // REMOVED: Edit exam state - No longer using ID-based edit operations
 
     const examForm = useForm<InsertExam>({
       resolver: zodResolver(insertExamSchema),
@@ -1870,78 +1869,24 @@ export default function AdminSimple() {
       },
     });
 
-    const deleteExamMutation = useMutation({
-      mutationFn: async (id: number) => {
-        await apiRequest("DELETE", `/api/exams/${id}`);
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-        toast({ title: "Exam deleted successfully!" });
-      },
-    });
+    // REMOVED: ID-based exam deletion - Admin panel now uses slug-based operations only
+    // Note: Admin should use backend admin tools for bulk operations via CSV
 
-    const editExamForm = useForm<InsertExam>({
-      resolver: zodResolver(insertExamSchema),
-      defaultValues: {
-        subjectId: 0,
-        title: "",
-        description: "",
-        difficulty: "",
-      }
-    });
+    // REMOVED: Edit exam form - Use CSV export/import for exam modifications
 
-    const updateExamMutation = useMutation({
-      mutationFn: async ({ id, data }: { id: number; data: InsertExam }) => {
-        await apiRequest("PUT", `/api/exams/${id}`, data);
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
-        toast({ title: "Exam updated successfully!" });
-        setIsEditDialogOpen(false);
-        setEditingExam(null);
-        editExamForm.reset();
-      },
-    });
+    // REMOVED: ID-based exam updates - Use CSV export/import for bulk operations
+    // Modern admin workflow uses slug-based operations only
 
-    const cloneExamMutation = useMutation({
-      mutationFn: async (exam: Exam) => {
-        const clonedExam = {
-          ...exam,
-          title: `${exam.title} (Copy)`,
-        };
-        delete (clonedExam as any).id;
-        await apiRequest("POST", "/api/exams", clonedExam);
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
-        toast({ title: "Exam cloned successfully!" });
-      },
-    });
+    // REMOVED: ID-based exam cloning - Use CSV export/import for bulk operations
+    // Admin should export exam data to CSV, modify, and re-import
 
     const onSubmit = (data: InsertExam) => {
       createExamMutation.mutate(data);
     };
 
-    const onEditSubmit = (data: InsertExam) => {
-      if (editingExam) {
-        updateExamMutation.mutate({ id: editingExam.id, data });
-      }
-    };
+    // REMOVED: Edit submit handler - No longer supporting ID-based exam editing
 
-    const handleEditExam = (exam: Exam) => {
-      setEditingExam(exam);
-      editExamForm.reset({
-        subjectId: exam.subjectId,
-        title: exam.title,
-        description: exam.description || "",
-        difficulty: exam.difficulty,
-      });
-      setIsEditDialogOpen(true);
-    };
+    // REMOVED: Edit exam handler - Use CSV export/import for exam modifications
 
     return (
       <div className="space-y-6">
@@ -2227,23 +2172,8 @@ export default function AdminSimple() {
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => cloneExamMutation.mutate(exam)}
-                        title="Clone exam"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteExamMutation.mutate(exam.id)}
-                        className="text-red-600 hover:text-red-700"
-                        title="Delete exam"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {/* REMOVED: ID-based clone button - Use CSV export/import for bulk operations */}
+                      {/* REMOVED: ID-based delete button - Use CSV import/export for bulk operations */}
                     </div>
                   </div>
                 </CardHeader>

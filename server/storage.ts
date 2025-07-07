@@ -36,15 +36,22 @@ export interface IStorage {
   deleteSubject(id: number): Promise<boolean>;
   getSubjectCount(): Promise<number>;
 
-  // Exams
+  // Exams - ID-based methods removed, slug-based operations only
   getExams(): Promise<Exam[]>;
   getExamsPaginated(offset: number, limit: number, subjectId?: number): Promise<{ exams: Exam[], total: number }>;
   getExamsBySubject(subjectId: number): Promise<Exam[]>;
-  getExam(id: number): Promise<Exam | undefined>;
+  // REMOVED: getExam(id) - Use getExamBySlug() for public operations
   getExamBySlug(slug: string): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
-  updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined>;
-  deleteExam(id: number): Promise<boolean>;
+  // REMOVED: updateExam(id) - Use CSV import/export for bulk operations
+  updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
+    throw new Error("Use CSV import/export for bulk operations");
+  }
+
+  // REMOVED: deleteExam(id) - Use CSV import/export for bulk operations  
+  deleteExam(id: number): Promise<boolean> {
+    throw new Error("Use CSV import/export for bulk operations");
+  }
   getExamCount(): Promise<number>;
 
   // Questions
@@ -201,22 +208,11 @@ export class DatabaseStorage implements IStorage {
     }).from(exams).where(eq(exams.subjectId, subjectId));
   }
 
-  async getExam(id: number): Promise<Exam | undefined> {
-    const [exam] = await db.select({
-      id: exams.id,
-      subjectId: exams.subjectId,
-      title: exams.title,
-      description: exams.description,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive,
-      slug: exams.slug
-    }).from(exams).where(eq(exams.id, id));
-    return exam;
+  // REMOVED: getExam(id) - Use getExamBySlug() for public operations
+  getExam(id: number): Promise<Exam | undefined> {
+    throw new Error("Use getExamBySlug() for public operations");
   }
 
-  // War-tested slug system: Get exam by slug for dynamic routing
   async getExamBySlug(slug: string): Promise<Exam | undefined> {
     const [exam] = await db.select({
       id: exams.id,
@@ -246,34 +242,11 @@ export class DatabaseStorage implements IStorage {
     return newExam;
   }
 
-  async updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
-    const [updatedExam] = await db
-      .update(exams)
-      .set(exam)
-      .where(eq(exams.id, id))
-      .returning();
-    return updatedExam;
-  }
+  // REMOVED: ID-based exam updates - Use CSV import/export for bulk admin operations  
+  // Public operations should use slug-based methods only
 
-  async deleteExam(id: number): Promise<boolean> {
-    // Get the exam before deleting to know which subject to update
-    const [exam] = await db.select().from(exams).where(eq(exams.id, id));
-    if (!exam) return false;
-    
-    const result = await db.delete(exams).where(eq(exams.id, id));
-    
-    if ((result.rowCount || 0) > 0) {
-      // Update subject exam count
-      await db
-        .update(subjects)
-        .set({
-          examCount: sql`GREATEST(${subjects.examCount} - 1, 0)`
-        })
-        .where(eq(subjects.id, exam.subjectId));
-      return true;
-    }
-    return false;
-  }
+  // REMOVED: ID-based exam deletion - Use CSV import/export for bulk admin operations
+  // Public operations should use slug-based methods only
 
   async getExamCount(): Promise<number> {
     const result = await db.select().from(exams);
