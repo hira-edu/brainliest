@@ -66,6 +66,8 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
+  FileText,
+  Info,
   Edit,
   Database,
   AlertCircle,
@@ -2848,6 +2850,371 @@ export default function AdminSimple() {
           <TabsContent value="users">
             <AdminUsers />
           </TabsContent>
+
+          {/* CSV Import/Export Tab */}
+          <TabsContent value="csv">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Subjects CSV */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Subjects CSV
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Bulk manage certification subjects</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = '/api/csv/template/subjects';
+                          link.download = 'subjects_template.csv';
+                          link.click();
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Template
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = '/api/csv/export/subjects?includeNames=true';
+                          link.download = 'subjects_export.csv';
+                          link.click();
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Export
+                      </Button>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Import CSV</label>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = async (event) => {
+                              const csvContent = event.target?.result as string;
+                              try {
+                                const response = await fetch('/api/csv/import/subjects', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ csvContent })
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                  toast({ title: "Subjects imported successfully!", description: result.message });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+                                } else {
+                                  toast({ title: "Import failed", description: result.message, variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Import failed", description: "An error occurred during import", variant: "destructive" });
+                              }
+                            };
+                            reader.readAsText(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Exams CSV */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Exams CSV
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Bulk manage practice exams</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = '/api/csv/template/exams';
+                          link.download = 'exams_template.csv';
+                          link.click();
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Template
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = '/api/csv/export/exams?includeNames=true';
+                          link.download = 'exams_export.csv';
+                          link.click();
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Export
+                      </Button>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Import CSV</label>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = async (event) => {
+                              const csvContent = event.target?.result as string;
+                              try {
+                                const response = await fetch('/api/csv/import/exams', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ csvContent })
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                  toast({ title: "Exams imported successfully!", description: result.message });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+                                } else {
+                                  toast({ title: "Import failed", description: result.message, variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Import failed", description: "An error occurred during import", variant: "destructive" });
+                              }
+                            };
+                            reader.readAsText(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Questions CSV */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Questions CSV
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">Bulk manage exam questions</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = '/api/csv/template/questions';
+                          link.download = 'questions_template.csv';
+                          link.click();
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Template
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = '/api/csv/export/questions?includeNames=true';
+                          link.download = 'questions_export.csv';
+                          link.click();
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Export
+                      </Button>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Import CSV</label>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = async (event) => {
+                              const csvContent = event.target?.result as string;
+                              try {
+                                const response = await fetch('/api/csv/import/questions', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ csvContent })
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                  toast({ title: "Questions imported successfully!", description: result.message });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+                                } else {
+                                  toast({ title: "Import failed", description: result.message, variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Import failed", description: "An error occurred during import", variant: "destructive" });
+                              }
+                            };
+                            reader.readAsText(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* CSV Instructions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    CSV Import/Export Instructions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold mb-3">Template Download</h4>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Download CSV templates with sample data and field descriptions</li>
+                        <li>• Templates include all required and optional fields</li>
+                        <li>• Field validation rules are provided as comments</li>
+                        <li>• Remove comment lines before uploading</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-3">Data Export</h4>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Export current data in CSV format</li>
+                        <li>• Includes relationship names for clarity</li>
+                        <li>• Compatible with spreadsheet applications</li>
+                        <li>• Can be modified and re-imported</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-3">Bulk Import</h4>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• Upload CSV files for bulk create/update/delete</li>
+                        <li>• Leave ID blank for new records</li>
+                        <li>• Include ID for updates</li>
+                        <li>• Use "delete" in Action column to remove records</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-3">Data Validation</h4>
+                      <ul className="space-y-2 text-sm text-gray-600">
+                        <li>• All fields are validated before import</li>
+                        <li>• Detailed error messages for invalid data</li>
+                        <li>• Atomic operations - rollback on errors</li>
+                        <li>• Progress tracking with success/failure counts</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Field Mapping Reference */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>CSV Field Mapping Reference</CardTitle>
+                  <p className="text-sm text-gray-600">Field descriptions and validation rules for each entity type</p>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="subjects" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="subjects">Subjects Fields</TabsTrigger>
+                      <TabsTrigger value="exams">Exams Fields</TabsTrigger>
+                      <TabsTrigger value="questions">Questions Fields</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="subjects" className="mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <strong>Required Fields:</strong>
+                          <ul className="mt-2 space-y-1 text-gray-600">
+                            <li>• Subject Name (1-255 characters)</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <strong>Optional Fields:</strong>
+                          <ul className="mt-2 space-y-1 text-gray-600">
+                            <li>• Description (max 1000 characters)</li>
+                            <li>• Icon (FontAwesome class or emoji)</li>
+                            <li>• Category ID (numeric)</li>
+                            <li>• Subcategory ID (numeric)</li>
+                            <li>• Is Active (true/false)</li>
+                            <li>• Sort Order (numeric)</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="exams" className="mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <strong>Required Fields:</strong>
+                          <ul className="mt-2 space-y-1 text-gray-600">
+                            <li>• Subject ID (numeric)</li>
+                            <li>• Exam Title (1-255 characters)</li>
+                            <li>• Difficulty (Beginner/Intermediate/Advanced/Expert)</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <strong>Optional Fields:</strong>
+                          <ul className="mt-2 space-y-1 text-gray-600">
+                            <li>• Description (max 1000 characters)</li>
+                            <li>• Is Active (true/false)</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="questions" className="mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <strong>Required Fields:</strong>
+                          <ul className="mt-2 space-y-1 text-gray-600">
+                            <li>• Exam ID (numeric)</li>
+                            <li>• Subject ID (numeric)</li>
+                            <li>• Question Text (min 10 characters)</li>
+                            <li>• Options (separated by |)</li>
+                            <li>• Correct Answer (0-based index)</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <strong>Optional Fields:</strong>
+                          <ul className="mt-2 space-y-1 text-gray-600">
+                            <li>• Allow Multiple Answers (true/false)</li>
+                            <li>• Correct Answers (comma-separated indices)</li>
+                            <li>• Explanation (answer explanation)</li>
+                            <li>• Domain (knowledge area)</li>
+                            <li>• Difficulty (Beginner/Intermediate/Advanced/Expert)</li>
+                            <li>• Order (question sequence)</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="analytics">
             <Card>
               <CardHeader>
