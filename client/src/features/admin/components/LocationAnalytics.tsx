@@ -55,7 +55,13 @@ export function LocationAnalytics() {
   // Fetch geolocation statistics
   const { data: stats, refetch: refetchStats, isLoading: statsLoading } = useQuery<GeolocationStats>({
     queryKey: ['/api/geolocation/stats'],
-    queryFn: () => apiRequest('/api/geolocation/stats'),
+    queryFn: async () => {
+      const response = await fetch('/api/geolocation/stats');
+      if (!response.ok) {
+        throw new Error('Failed to fetch geolocation stats');
+      }
+      return response.json();
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
@@ -64,8 +70,12 @@ export function LocationAnalytics() {
     
     setIsSearching(true);
     try {
-      const result = await apiRequest(`/api/geolocation/ip/${encodeURIComponent(searchIp.trim())}`);
-      setLocationResult(result);
+      const response = await fetch(`/api/geolocation/ip/${encodeURIComponent(searchIp.trim())}`);
+      if (!response.ok) {
+        throw new Error('Failed to lookup IP address');
+      }
+      const data = await response.json();
+      setLocationResult(data.location || data);
     } catch (error) {
       console.error('Error looking up IP:', error);
       setLocationResult({
