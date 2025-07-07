@@ -65,7 +65,7 @@ export function SearchableSelect({
   // Handle option selection
   const handleSelect = (selectedValue: string) => {
     if (onValueChange) {
-      onValueChange(selectedValue === value ? "" : selectedValue);
+      onValueChange(selectedValue);
     }
     setOpen(false);
     setSearchQuery("");
