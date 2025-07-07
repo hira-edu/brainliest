@@ -104,7 +104,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/admin/token/login', {
+      const response = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       sessionValidationInProgress.current = true;
       setIsLoading(true);
 
-      const response = await fetch('/api/admin/token/verify', {
+      const response = await fetch('/api/admin/auth/verify', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
