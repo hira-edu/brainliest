@@ -168,6 +168,8 @@ export default function QuestionInterface() {
     
     if (currentQuestionIndex < (questions?.length || 0) - 1) {
       const nextQuestionIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(nextQuestionIndex);
+      
       const nextQuestion = questions?.[nextQuestionIndex];
       
       // Check if the next question can be viewed
@@ -176,7 +178,9 @@ export default function QuestionInterface() {
         return;
       }
       
-      setCurrentQuestionIndex(nextQuestionIndex);
+      // Clear any previous answers for the new question to ensure fresh state
+      const prevAnswer = session?.answers?.[nextQuestionIndex];
+      setSelectedAnswer(prevAnswer ? parseInt(prevAnswer) : undefined);
     } else {
       handleFinishExam();
     }

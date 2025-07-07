@@ -1,5 +1,5 @@
 import { Question } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,13 @@ export default function QuestionCard({
   const [showAiHelp, setShowAiHelp] = useState(false);
   const [aiHelp, setAiHelp] = useState<string>("");
   const { toast } = useToast();
+
+  // Reset local state when question changes or selectedAnswer prop changes
+  useEffect(() => {
+    setLocalSelectedAnswer(selectedAnswer);
+    setShowAiHelp(false);
+    setAiHelp("");
+  }, [question.id, selectedAnswer]);
 
   const getAiHelpMutation = useMutation({
     mutationFn: async (questionId: number) => {
