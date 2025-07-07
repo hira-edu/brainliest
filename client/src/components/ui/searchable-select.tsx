@@ -221,6 +221,7 @@ export const SearchableSelect = React.forwardRef<
                     value={option.value}
                     data-command-selectable="true"
                     onSelect={() => handleSelect(option.value)}
+                    onClick={() => handleSelect(option.value)}
                     disabled={option.disabled}
                     tabIndex={-1}
                     onMouseEnter={() => handleMouseEnter(i)}
