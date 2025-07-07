@@ -223,14 +223,22 @@ export default function Home() {
             </div>
           )}
           
-          {/* Browse Categories Button */}
-          <div className="mt-4 text-center">
-            <Link href="/categories">
-              <Button variant="outline" className="bg-primary/5 hover:bg-primary/10 border-primary/20">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Browse All Categories
-              </Button>
-            </Link>
+          {/* Browse Categories and Subjects Buttons */}
+          <div className="mt-4 text-center space-y-3">
+            <div className="flex justify-center gap-4 flex-wrap">
+              <Link href="/subjects">
+                <Button className="bg-primary hover:bg-primary/90">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Browse All Subjects
+                </Button>
+              </Link>
+              <Link href="/categories">
+                <Button variant="outline" className="bg-primary/5 hover:bg-primary/10 border-primary/20">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Browse by Categories
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

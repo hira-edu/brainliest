@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QuestionLimitProvider } from "@/contexts/QuestionLimitContext";
 import Home from "@/pages/home";
+import AllSubjects from "@/pages/all-subjects";
 import ExamSelection from "@/pages/exam-selection";
 import QuestionInterface from "@/pages/question-interface";
 import Results from "@/pages/results";
@@ -27,6 +28,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/subjects" component={AllSubjects} />
       <Route path="/categories" component={CategoriesPage} />
       <Route path="/categories/:categoryId">
         {(params) => <CategoryDetailPage categoryId={params.categoryId} />}

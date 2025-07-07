@@ -102,7 +102,7 @@ export default function Header() {
                     })}
                     <DropdownMenuItem 
                       className="font-medium text-primary"
-                      onClick={() => window.location.href = "/"}
+                      onClick={() => window.location.href = "/subjects"}
                     >
                       View All Subjects →
                     </DropdownMenuItem>
