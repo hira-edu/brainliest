@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../auth/AuthContext";
 import { Header } from "../../shared";
@@ -98,57 +98,67 @@ export default function Analytics() {
     );
   }
 
-  // Process data for visualizations
-  const difficultyAccuracy = Object.entries(analyticsData.metrics.difficultyAnalysis).map(([difficulty, data]) => ({
-    difficulty,
-    accuracy: data.total > 0 ? parseFloat((data.correct / data.total * 100).toFixed(1)) : 0,
-    total: data.total,
-    correct: data.correct
-  }));
+  // Process data for visualizations - PERFORMANCE OPTIMIZED with useMemo
+  const difficultyAccuracy = useMemo(() => 
+    Object.entries(analyticsData.metrics.difficultyAnalysis).map(([difficulty, data]) => ({
+      difficulty,
+      accuracy: data.total > 0 ? parseFloat((data.correct / data.total * 100).toFixed(1)) : 0,
+      total: data.total,
+      correct: data.correct
+    })), [analyticsData.metrics.difficultyAnalysis]
+  );
 
-  const domainPerformance = analyticsData.answerHistory.reduce((acc: any, answer: any) => {
-    const domain = answer.domain || 'Unknown';
-    if (!acc[domain]) {
-      acc[domain] = { correct: 0, total: 0 };
-    }
-    acc[domain].total++;
-    if (answer.isCorrect) acc[domain].correct++;
-    return acc;
-  }, {});
+  const domainData = useMemo(() => {
+    const domainPerformance = analyticsData.answerHistory.reduce((acc: any, answer: any) => {
+      const domain = answer.domain || 'Unknown';
+      if (!acc[domain]) {
+        acc[domain] = { correct: 0, total: 0 };
+      }
+      acc[domain].total++;
+      if (answer.isCorrect) acc[domain].correct++;
+      return acc;
+    }, {});
 
-  const domainData = Object.entries(domainPerformance).map(([domain, data]: [string, any]) => ({
-    domain,
-    accuracy: data.total > 0 ? parseFloat((data.correct / data.total * 100).toFixed(1)) : 0,
-    total: data.total
-  }));
-
-  const timeDistribution = analyticsData.answerHistory
-    .filter((answer: any) => answer.timeSpent > 0)
-    .map((answer: any) => ({
-      questionId: answer.questionId,
-      timeSpent: answer.timeSpent,
-      isCorrect: answer.isCorrect,
-      difficulty: answer.difficulty || 'Unknown'
+    return Object.entries(domainPerformance).map(([domain, data]: [string, any]) => ({
+      domain,
+      accuracy: data.total > 0 ? parseFloat((data.correct / data.total * 100).toFixed(1)) : 0,
+      total: data.total
     }));
+  }, [analyticsData.answerHistory]);
 
-  const examScoreHistory = analyticsData.examAnalytics
-    .map((exam: any) => ({
-      date: new Date(exam.completedAt).toLocaleDateString(),
-      score: parseFloat(exam.score),
-      timeSpent: exam.timeSpent ? Math.floor(exam.timeSpent / 60) : 0,
-      examId: exam.examId
-    }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-10); // Last 10 exams
+  const timeDistribution = useMemo(() => 
+    analyticsData.answerHistory
+      .filter((answer: any) => answer.timeSpent > 0)
+      .map((answer: any) => ({
+        questionId: answer.questionId,
+        timeSpent: answer.timeSpent,
+        isCorrect: answer.isCorrect,
+        difficulty: answer.difficulty || 'Unknown'
+      })), [analyticsData.answerHistory]
+  );
 
-  const weeklyTrends = analyticsData.performanceTrends
-    .map((trend: any) => ({
-      week: new Date(trend.createdAt).toLocaleDateString(),
-      score: parseFloat(trend.averageScore || '0'),
-      questionsAttempted: trend.questionsAttempted || 0,
-      timeSpent: trend.timeSpentMinutes || 0
-    }))
-    .slice(-8); // Last 8 weeks
+  const examScoreHistory = useMemo(() => 
+    analyticsData.examAnalytics
+      .map((exam: any) => ({
+        date: new Date(exam.completedAt).toLocaleDateString(),
+        score: parseFloat(exam.score),
+        timeSpent: exam.timeSpent ? Math.floor(exam.timeSpent / 60) : 0,
+        examId: exam.examId
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-10), // Last 10 exams
+    [analyticsData.examAnalytics]
+  );
+
+  const weeklyTrends = useMemo(() => 
+    analyticsData.performanceTrends
+      .map((trend: any) => ({
+        week: new Date(trend.createdAt).toLocaleDateString(),
+        score: parseFloat(trend.averageScore || '0'),
+        questionsAttempted: trend.questionsAttempted || 0,
+        timeSpent: trend.timeSpentMinutes || 0
+      })), [analyticsData.performanceTrends]
+  );
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 

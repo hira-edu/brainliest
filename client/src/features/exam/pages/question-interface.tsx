@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
 import { Question, ExamSession, Exam } from "@shared/schema";
@@ -36,6 +36,10 @@ export default function QuestionInterface() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>();
   const [showFeedback, setShowFeedback] = useState(false);
   const [timer, setTimer] = useState<TimerState>({ minutes: 60, seconds: 0, totalSeconds: 3600 });
+  
+  // PERFORMANCE FIX: Use refs to prevent stale closure issues in timer
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isActiveRef = useRef(true);
 
   const { data: exam } = useQuery<Exam>({
     queryKey: [`/api/exams/${examId}`],
@@ -91,18 +95,41 @@ export default function QuestionInterface() {
     }
   }, [examId, sessionId]);
 
-  // Timer countdown
+  // PERFORMANCE OPTIMIZED: Timer countdown with proper cleanup
+  const handleFinishExamCallback = useCallback(() => {
+    if (sessionId && questions && questions.length > 0) {
+      const currentQuestion = questions[currentQuestionIndex];
+      updateSessionMutation.mutate({
+        sessionId,
+        updates: {
+          completed: true,
+          endTime: new Date().toISOString(),
+          score: `${Math.round((session?.score || 0) * 100)}%`,
+        },
+      });
+      setLocation("/results");
+    }
+  }, [sessionId, questions, currentQuestionIndex, session?.score, updateSessionMutation, setLocation]);
+
   useEffect(() => {
-    if (timer.totalSeconds > 0 && sessionId && !showFeedback) {
-      const interval = setInterval(() => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (timer.totalSeconds > 0 && sessionId && !showFeedback && isActiveRef.current) {
+      timerRef.current = setInterval(() => {
         setTimer(prev => {
+          if (!isActiveRef.current) return prev;
+          
           const newTotalSeconds = prev.totalSeconds - 1;
           const minutes = Math.floor(newTotalSeconds / 60);
           const seconds = newTotalSeconds % 60;
           
           if (newTotalSeconds <= 0) {
             // Time's up - finish exam
-            handleFinishExam();
+            handleFinishExamCallback();
             return prev;
           }
           
@@ -113,10 +140,28 @@ export default function QuestionInterface() {
           };
         });
       }, 1000);
-
-      return () => clearInterval(interval);
     }
-  }, [timer.totalSeconds, sessionId, showFeedback]);
+
+    // Cleanup function
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [timer.totalSeconds, sessionId, showFeedback, handleFinishExamCallback]);
+
+  // PERFORMANCE FIX: Cleanup on component unmount
+  useEffect(() => {
+    isActiveRef.current = true;
+    return () => {
+      isActiveRef.current = false;
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const currentQuestion = questions?.[currentQuestionIndex];
   

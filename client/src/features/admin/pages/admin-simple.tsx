@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 
 // Common certification and academic icons
 const COMMON_ICONS = [
@@ -205,25 +205,38 @@ export default function AdminSimple() {
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("all");
   const [selectedExamFilter, setSelectedExamFilter] = useState<string>("all");
 
-  const { data: subjects } = useQuery<Subject[]>({
+  // PERFORMANCE OPTIMIZATION: Memoized query options
+  const subjectsQuery = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: exams } = useQuery<Exam[]>({
+  const examsQuery = useQuery<Exam[]>({
     queryKey: ["/api/exams"],
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: questions } = useQuery<Question[]>({
+  const questionsQuery = useQuery<Question[]>({
     queryKey: ["/api/questions"],
+    staleTime: 2 * 60 * 1000, // 2 minutes for more dynamic data
   });
 
-  const { data: categories } = useQuery<Category[]>({
+  const categoriesQuery = useQuery<Category[]>({
     queryKey: ["/api/categories"],
+    staleTime: 10 * 60 * 1000, // 10 minutes for static data
   });
 
-  const { data: subcategories } = useQuery<Subcategory[]>({
+  const subcategoriesQuery = useQuery<Subcategory[]>({
     queryKey: ["/api/subcategories"],
+    staleTime: 10 * 60 * 1000,
   });
+
+  // Extract data for backward compatibility
+  const { data: subjects } = subjectsQuery;
+  const { data: exams } = examsQuery;
+  const { data: questions } = questionsQuery;
+  const { data: categories } = categoriesQuery;
+  const { data: subcategories } = subcategoriesQuery;
 
   // Shared mutations for creating categories and subcategories
   const createCategoryMutation = useMutation({
