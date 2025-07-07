@@ -84,12 +84,20 @@ export const authAPI = {
     firstName?: string;
     lastName?: string;
   }, recaptchaToken?: string): Promise<AuthResponse> {
-    const response = await apiRequest("POST", "/api/auth/register", {
+    const payload = {
       email,
       password,
       recaptchaToken,
       ...userData
+    };
+    
+    // Debug: Log the exact payload being sent to backend
+    console.log('AuthAPI register payload:', {
+      ...payload,
+      password: '***hidden***'
     });
+    
+    const response = await apiRequest("POST", "/api/auth/register", payload);
     return response.json();
   },
 

@@ -150,6 +150,16 @@ function UnifiedAuthModalContent({
           });
         }
       } else {
+        // Debug: Log the signup payload
+        console.log('Signup payload:', {
+          email: formData.email,
+          password: '***hidden***',
+          username: formData.username,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          recaptchaToken: recaptchaToken ? 'present' : 'missing'
+        });
+        
         const result = await signUp(formData.email, formData.password, {
           username: formData.username,
           firstName: formData.firstName,
