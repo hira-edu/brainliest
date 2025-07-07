@@ -42,6 +42,10 @@ export function AdminProvider({ children }: AdminProviderProps) {
   // Token-only authentication state
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const sessionValidationInProgress = useRef<boolean>(false);
+  
+  // Session monitoring references
+  const sessionHealthMonitor = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Token-only activity tracking
   const trackActivity = useCallback(() => {
@@ -88,6 +92,9 @@ export function AdminProvider({ children }: AdminProviderProps) {
       setAdminToken(token);
       // Check authentication status if token exists
       checkAuthStatus();
+    } else {
+      // No token found, stop loading
+      setIsLoading(false);
     }
   }, [getStoredToken]);
 

@@ -1899,15 +1899,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
       try {
-        const session = req.adminSession;
+        console.log('🔍 Route handler: adminUser =', (req as any).adminUser);
+        const adminUser = (req as any).adminUser;
+        
+        if (!adminUser) {
+          return res.status(401).json({
+            success: false,
+            message: "Admin user not found in request"
+          });
+        }
+        
         res.json({
           success: true,
-          session: {
-            user: session.user,
-            expiresAt: session.expiresAt,
-            isValid: session.isValid,
-            lastActivity: session.metadata.lastActivity
-          }
+          user: adminUser,
+          message: "Admin authenticated successfully"
         });
       } catch (error) {
         console.error("Session status error:", error);

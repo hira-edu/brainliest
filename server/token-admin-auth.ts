@@ -59,29 +59,47 @@ export class TokenAdminAuthService {
         };
       }
 
-      // Development authentication (replace with real auth in production)
-      if (email === "admin@brainliest.com" && password === "admin123") {
-        const adminUser: AdminUser = {
-          id: 999,
-          email: "admin@brainliest.com",
-          username: "admin",
-          firstName: "Test",
-          lastName: "Admin",
-          role: "admin",
-          emailVerified: true
-        };
+      // Use database authentication
+      const authService = await import('./auth-service');
+      const loginResult = await authService.authService.login(email, password, undefined);
 
-        // Generate JWT token
-        const token = this.generateToken(adminUser);
-
-        console.log('✅ Admin login successful:', email);
+      if (!loginResult.success || !loginResult.user) {
+        console.log(`❌ Invalid admin credentials: ${email}`);
         return {
-          success: true,
-          user: adminUser,
-          token,
-          message: "Admin authentication successful"
+          success: false,
+          message: "Invalid admin credentials"
         };
       }
+
+      // Verify user has admin role
+      if (loginResult.user.role !== 'admin' && loginResult.user.role !== 'super_admin') {
+        console.log(`❌ Non-admin user attempted admin login: ${email}`);
+        return {
+          success: false,
+          message: "Access denied. Admin privileges required."
+        };
+      }
+
+      const adminUser: AdminUser = {
+        id: loginResult.user.id,
+        email: loginResult.user.email,
+        username: loginResult.user.username || 'admin',
+        firstName: loginResult.user.firstName || 'Admin',
+        lastName: loginResult.user.lastName || 'User',
+        role: loginResult.user.role,
+        emailVerified: loginResult.user.emailVerified
+      };
+
+      // Generate JWT token
+      const token = this.generateToken(adminUser);
+
+      console.log('✅ Admin login successful:', email);
+      return {
+        success: true,
+        user: adminUser,
+        token,
+        message: "Admin authentication successful"
+      };
 
       console.log(`❌ Invalid admin credentials: ${email}`);
       return {
@@ -181,6 +199,7 @@ export class TokenAdminAuthService {
         }
 
         const verification = await this.verifyToken(token);
+        console.log('🔐 Token verification result:', JSON.stringify(verification, null, 2));
         
         if (!verification.valid) {
           const message = verification.expired ? "Admin session expired" : "Invalid admin token";
@@ -191,6 +210,7 @@ export class TokenAdminAuthService {
           });
         }
 
+        console.log('✅ Admin user attached:', verification.user);
         // Attach admin user to request
         (req as any).adminUser = verification.user;
         

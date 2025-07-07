@@ -362,7 +362,7 @@ export class AuthService {
       const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       await db.insert(authSessions).values({
         userId: user.id,
-        sessionToken: accessToken,
+        token: accessToken,
         refreshToken,
         isActive: true,
         ipAddress: ipAddress || null,
@@ -469,7 +469,7 @@ export class AuthService {
       const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       await db.insert(authSessions).values({
         userId: user.id,
-        sessionToken: accessToken,
+        token: accessToken,
         refreshToken,
         isActive: true,
         ipAddress: ipAddress || null,
@@ -683,7 +683,7 @@ export class AuthService {
 
       // Update session
       await db.update(authSessions).set({
-        sessionToken: newAccessToken,
+        token: newAccessToken,
         refreshToken: newRefreshToken,
         lastUsedAt: new Date(),
       }).where(eq(authSessions.id, session.id));
@@ -704,7 +704,7 @@ export class AuthService {
   async logout(token: string): Promise<{ success: boolean; message: string }> {
     try {
       // Invalidate session
-      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.sessionToken, token));
+      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.token, token));
       
       return { success: true, message: 'Logged out successfully' };
 
