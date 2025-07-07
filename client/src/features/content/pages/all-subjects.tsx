@@ -125,12 +125,8 @@ export default function AllSubjects() {
   });
 
   const handleSelectSubject = (subject: Subject) => {
-    if (subject.slug) {
-      setLocation(`/subject/${subject.slug}`);
-    } else {
-      // Fallback to ID-based routing if no slug
-      setLocation(`/subject/${subject.id}`);
-    }
+    // Navigate to subject selection page - let it handle exam navigation logic
+    setLocation(`/subject/${subject.slug || subject.id}`);
   };
 
   const categorizedSubjects = useMemo(() => {
