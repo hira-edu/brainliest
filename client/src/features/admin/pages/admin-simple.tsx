@@ -191,6 +191,48 @@ export default function AdminSimple() {
   const csvFileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importStats, setImportStats] = useState<{created: number, total: number} | null>(null);
+
+  // Handle unified CSV import function
+  const handleUnifiedCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvContent = event.target?.result as string;
+      try {
+        const token = localStorage.getItem('brainliest_access_token');
+        const response = await fetch('/api/csv/unified-import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ csvContent })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setImportStats({ created: result.total, total: result.total });
+          toast({ 
+            title: "Import successful", 
+            description: `Platform data imported: ${result.subjects || 0} subjects, ${result.exams || 0} exams, ${result.questions || 0} questions` 
+          });
+          // Invalidate all related queries
+          queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        } else {
+          toast({ title: "Import failed", description: result.message, variant: "destructive" });
+        }
+      } catch (error) {
+        toast({ title: "Import failed", description: "An error occurred", variant: "destructive" });
+      } finally {
+        setIsImporting(false);
+      }
+    };
+    reader.readAsText(file);
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedExam, setSelectedExam] = useState<string>("all");
@@ -2875,75 +2917,121 @@ export default function AdminSimple() {
           </div>
         </div>
 
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="subcategories">Subcategories</TabsTrigger>
-            <TabsTrigger value="subjects">Subjects</TabsTrigger>
-            <TabsTrigger value="exams">Exams</TabsTrigger>
-            <TabsTrigger value="questions">Questions</TabsTrigger>
-            <TabsTrigger value="csv">CSV Import/Export</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <Tabs defaultValue="dashboard" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-4 h-12 p-1">
+            <TabsTrigger value="dashboard" className="text-sm font-medium py-3 px-6">Dashboard</TabsTrigger>
+            <TabsTrigger value="users" className="text-sm font-medium py-3 px-6">Users</TabsTrigger>
+            <TabsTrigger value="analytics" className="text-sm font-medium py-3 px-6">Analytics</TabsTrigger>
+            <TabsTrigger value="csv" className="text-sm font-medium py-3 px-6">Import/Export</TabsTrigger>
           </TabsList>
-          <TabsContent value="dashboard">
+          <TabsContent value="dashboard" className="space-y-6">
+            {/* Dashboard Overview */}
             <DashboardOverview />
+            
+            {/* Dashboard Sub-tabs for Content Management */}
+            <div className="mt-8">
+              <Tabs defaultValue="categories" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-6 h-11 p-1 bg-gray-100">
+                  <TabsTrigger value="categories" className="text-xs font-medium py-2 px-4">Categories</TabsTrigger>
+                  <TabsTrigger value="subcategories" className="text-xs font-medium py-2 px-4">Subcategories</TabsTrigger>
+                  <TabsTrigger value="subjects" className="text-xs font-medium py-2 px-4">Subjects</TabsTrigger>
+                  <TabsTrigger value="exams" className="text-xs font-medium py-2 px-4">Exams</TabsTrigger>
+                  <TabsTrigger value="questions" className="text-xs font-medium py-2 px-4">Questions</TabsTrigger>
+                  <TabsTrigger value="overview" className="text-xs font-medium py-2 px-4">Overview</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <BarChart3 className="h-5 w-5" />
+                        <span>Content Management Overview</span>
+                      </CardTitle>
+                      <p className="text-gray-600">Quick overview of all content management features</p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <h3 className="font-semibold text-blue-900 mb-2">Categories & Structure</h3>
+                          <p className="text-blue-700 text-sm">Manage the organizational structure of your content with categories and subcategories.</p>
+                          <div className="mt-3 text-xs text-blue-600">
+                            • Professional Certifications<br/>
+                            • University & College<br/>
+                            • Custom Categories
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <h3 className="font-semibold text-green-900 mb-2">Content Management</h3>
+                          <p className="text-green-700 text-sm">Create and manage subjects, exams, and questions for comprehensive learning.</p>
+                          <div className="mt-3 text-xs text-green-600">
+                            • {subjects?.length || 0} Subjects<br/>
+                            • {exams?.length || 0} Exams<br/>
+                            • {questions?.length || 0} Questions
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-lg">
+                          <h3 className="font-semibold text-purple-900 mb-2">Quality Assurance</h3>
+                          <p className="text-purple-700 text-sm">Ensure content quality with validation, search, and comprehensive management tools.</p>
+                          <div className="mt-3 text-xs text-purple-600">
+                            • Content Validation<br/>
+                            • Search & Filter<br/>
+                            • Bulk Operations
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="categories">
+                  <CategoryManager />
+                </TabsContent>
+                
+                <TabsContent value="subcategories">
+                  <SubcategoryManager />
+                </TabsContent>
+                
+                <TabsContent value="subjects">
+                  <SubjectManager />
+                </TabsContent>
+                
+                <TabsContent value="exams">
+                  <ExamManager />
+                </TabsContent>
+                
+                <TabsContent value="questions">
+                  <QuestionManager />
+                </TabsContent>
+              </Tabs>
+            </div>
           </TabsContent>
-          <TabsContent value="categories">
-            <CategoryManager />
-          </TabsContent>
-          <TabsContent value="subcategories">
-            <SubcategoryManager />
-          </TabsContent>
-          <TabsContent value="subjects">
-            <SubjectManager />
-          </TabsContent>
-          <TabsContent value="exams">
-            <ExamManager />
-          </TabsContent>
-          <TabsContent value="questions">
-            <QuestionManager />
-          </TabsContent>
+
           <TabsContent value="users">
             <AdminUsers />
           </TabsContent>
 
-          {/* CSV Import/Export Tab */}
-          {/* CSV Import/Export Tab */}
-          <TabsContent value="csv">
-            <div className="space-y-6">
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Unified CSV Management System - Download templates, export current data, or import bulk updates for all platform entities.
-                </AlertDescription>
-              </Alert>
-
-              {/* Unified CSV Management */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Database className="h-5 w-5" />
-                    Complete Platform Data Management
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">Single comprehensive CSV template including all subjects, exams, and questions with relationships</p>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      This unified template includes all platform data in one CSV file with automatic relationship management. 
-                      Perfect for complete data migration, backup, or bulk editing across all entities.
-                    </AlertDescription>
-                  </Alert>
-
-                  {/* Action Buttons Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <TabsContent value="csv" className="space-y-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>CSV Import/Export</span>
+                </CardTitle>
+                <p className="text-gray-600">Manage data with comprehensive CSV import and export functionality</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  {/* Unified CSV Operations */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-6 text-gray-800">Unified CSV Operations</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Card className="p-6 border-2 border-dashed border-blue-200 hover:border-blue-400 transition-colors">
+                        <h4 className="font-medium mb-3 flex items-center text-blue-900">
+                          <Download className="h-5 w-5 mr-2" />
+                          Download Template
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">Get the unified CSV template for adding all types of content with proper formatting.</p>
                         <Button
-                          variant="outline"
-                          className="h-12"
                           onClick={async () => {
                             try {
                               const token = localStorage.getItem('brainliest_access_token');
@@ -2966,14 +3054,21 @@ export default function AdminSimple() {
                               toast({ title: "Download failed", description: "An error occurred", variant: "destructive" });
                             }
                           }}
+                          size="sm"
+                          className="w-full"
                         >
-                          <FileSpreadsheet className="h-4 w-4 mr-2" />
-                          Download Complete Template
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Template
                         </Button>
-                        
+                      </Card>
+                      
+                      <Card className="p-6 border-2 border-dashed border-green-200 hover:border-green-400 transition-colors">
+                        <h4 className="font-medium mb-3 flex items-center text-green-900">
+                          <Upload className="h-5 w-5 mr-2" />
+                          Export Data
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">Export all current data with proper formatting and database IDs for reference.</p>
                         <Button
-                          variant="outline"
-                          className="h-12"
                           onClick={async () => {
                             try {
                               const token = localStorage.getItem('brainliest_access_token');
@@ -2996,64 +3091,46 @@ export default function AdminSimple() {
                               toast({ title: "Export failed", description: "An error occurred", variant: "destructive" });
                             }
                           }}
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-green-300 text-green-700 hover:bg-green-50"
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Export All Platform Data
+                          <Upload className="h-4 w-4 mr-2" />
+                          Export All Data
                         </Button>
+                      </Card>
 
-                        <div className="relative">
-                          <input
-                            ref={csvFileInputRef}
-                            type="file"
-                            accept=".csv"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = async (event) => {
-                                  const csvContent = event.target?.result as string;
-                                  try {
-                                    const token = localStorage.getItem('brainliest_access_token');
-                                    const response = await fetch('/api/csv/unified-import', {
-                                      method: 'POST',
-                                      headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${token}`
-                                      },
-                                      body: JSON.stringify({ csvContent })
-                                    });
-                                    const result = await response.json();
-                                    if (result.success) {
-                                      toast({ 
-                                        title: "Import successful", 
-                                        description: `Complete platform data imported: ${result.subjects} subjects, ${result.exams} exams, ${result.questions} questions` 
-                                      });
-                                      // Invalidate all related queries
-                                      queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
-                                      queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
-                                      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-                                    } else {
-                                      toast({ title: "Import failed", description: result.message, variant: "destructive" });
-                                    }
-                                  } catch (error) {
-                                    toast({ title: "Import failed", description: "An error occurred", variant: "destructive" });
-                                  }
-                                };
-                                reader.readAsText(file);
-                              }
-                            }}
-                          />
-                          <Button
-                            variant="default"
-                            className="h-12 w-full"
-                            onClick={() => csvFileInputRef.current?.click()}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Import Complete Platform CSV
-                          </Button>
-                        </div>
-                      </div>
+                      <Card className="p-6 border-2 border-dashed border-purple-200 hover:border-purple-400 transition-colors">
+                        <h4 className="font-medium mb-3 flex items-center text-purple-900">
+                          <FileText className="h-5 w-5 mr-2" />
+                          Import Data
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">Upload your completed CSV file to add content with automatic validation.</p>
+                        <Button
+                          onClick={() => csvFileInputRef.current?.click()}
+                          size="sm"
+                          className="w-full bg-purple-600 hover:bg-purple-700"
+                          disabled={isImporting}
+                        >
+                          {isImporting ? (
+                            "Importing..."
+                          ) : (
+                            <>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Import CSV
+                            </>
+                          )}
+                        </Button>
+                        <input
+                          ref={csvFileInputRef}
+                          type="file"
+                          accept=".csv"
+                          onChange={handleUnifiedCsvImport}
+                          className="hidden"
+                        />
+                      </Card>
+                    </div>
+                  </div>
 
                       {/* Unified Format Information */}
                       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -3074,9 +3151,9 @@ export default function AdminSimple() {
                           </div>
                         </div>
                       </div>
+                    </div>
                 </CardContent>
               </Card>
-            </div>
           </TabsContent>
           
           <TabsContent value="analytics">
