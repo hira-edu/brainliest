@@ -248,9 +248,12 @@ export class DatabaseStorage implements IStorage {
       text: questions.text,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
+      correctAnswers: questions.correctAnswers,
+      allowMultipleAnswers: questions.allowMultipleAnswers,
       explanation: questions.explanation,
       difficulty: questions.difficulty,
       domain: questions.domain,
+      order: questions.order,
       subjectId: questions.subjectId,
       examId: questions.examId
     }).from(questions);
@@ -262,9 +265,12 @@ export class DatabaseStorage implements IStorage {
       text: questions.text,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
+      correctAnswers: questions.correctAnswers,
+      allowMultipleAnswers: questions.allowMultipleAnswers,
       explanation: questions.explanation,
       difficulty: questions.difficulty,
       domain: questions.domain,
+      order: questions.order,
       subjectId: questions.subjectId,
       examId: questions.examId
     }).from(questions).where(eq(questions.examId, examId));
@@ -276,9 +282,12 @@ export class DatabaseStorage implements IStorage {
       text: questions.text,
       options: questions.options,
       correctAnswer: questions.correctAnswer,
+      correctAnswers: questions.correctAnswers,
+      allowMultipleAnswers: questions.allowMultipleAnswers,
       explanation: questions.explanation,
       difficulty: questions.difficulty,
       domain: questions.domain,
+      order: questions.order,
       subjectId: questions.subjectId,
       examId: questions.examId
     }).from(questions).where(eq(questions.id, id));
@@ -347,14 +356,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select({
       id: examSessions.id,
       userName: examSessions.userName,
-      subjectId: examSessions.subjectId,
       examId: examSessions.examId,
-      currentQuestion: examSessions.currentQuestion,
+      currentQuestionIndex: examSessions.currentQuestionIndex,
       score: examSessions.score,
-      totalQuestions: examSessions.totalQuestions,
       startedAt: examSessions.startedAt,
       completedAt: examSessions.completedAt,
-      answers: examSessions.answers
+      answers: examSessions.answers,
+      timeSpent: examSessions.timeSpent,
+      isCompleted: examSessions.isCompleted
     }).from(examSessions).orderBy(desc(examSessions.startedAt));
   }
 
@@ -362,14 +371,14 @@ export class DatabaseStorage implements IStorage {
     const [session] = await db.select({
       id: examSessions.id,
       userName: examSessions.userName,
-      subjectId: examSessions.subjectId,
       examId: examSessions.examId,
-      currentQuestion: examSessions.currentQuestion,
+      currentQuestionIndex: examSessions.currentQuestionIndex,
       score: examSessions.score,
-      totalQuestions: examSessions.totalQuestions,
       startedAt: examSessions.startedAt,
       completedAt: examSessions.completedAt,
-      answers: examSessions.answers
+      answers: examSessions.answers,
+      timeSpent: examSessions.timeSpent,
+      isCompleted: examSessions.isCompleted
     }).from(examSessions).where(eq(examSessions.id, id));
     return session;
   }
