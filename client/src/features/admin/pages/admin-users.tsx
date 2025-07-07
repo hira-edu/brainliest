@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Users, Search, Download, Ban, UserX, Eye, Calendar, MapPin, Plus, Edit, Trash2, Shield, User as UserIcon, Settings } from "lucide-react";
 import { LocationAnalytics } from "../components/LocationAnalytics";
+import { AutoLocationDisplay } from "../components/AutoLocationDisplay";
 import type { User } from "@shared/schema";
 
 interface UserFilters {
@@ -685,13 +686,11 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                        <MapPin className="h-3 w-3" />
-                        {user.lastLoginIp || 'Unknown'}
-                      </div>
+                      <AutoLocationDisplay ipAddress={user.lastLoginIp} />
                       {user.registrationIp && user.registrationIp !== user.lastLoginIp && (
-                        <div className="text-xs text-gray-500 dark:text-gray-500">
-                          Reg: {user.registrationIp}
+                        <div className="mt-2">
+                          <div className="text-xs text-gray-500 dark:text-gray-500 mb-1">Registration IP:</div>
+                          <AutoLocationDisplay ipAddress={user.registrationIp} className="text-xs" />
                         </div>
                       )}
                     </td>

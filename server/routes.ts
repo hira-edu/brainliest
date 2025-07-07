@@ -1170,13 +1170,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/geolocation/stats", async (req, res) => {
     try {
-      const stats = geolocationService.getCacheStats();
-      
-      res.json({
-        success: true,
-        cache: stats,
-        timestamp: new Date().toISOString()
-      });
+      const stats = geolocationService.getStatistics();
+      res.json(stats);
     } catch (error) {
       console.error('Geolocation stats error:', error);
       res.status(500).json({ 

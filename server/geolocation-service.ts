@@ -283,7 +283,8 @@ class GeolocationService {
           // Cache successful result
           this.cache.set(cacheKey, {
             data: location,
-            expires: Date.now() + this.CACHE_DURATION
+            expires: Date.now() + this.CACHE_DURATION,
+            timestamp: Date.now()
           });
           
           return location;
@@ -384,6 +385,49 @@ class GeolocationService {
     return {
       size: this.cache.size,
       providers: this.providers.map(p => ({ name: p.name, configured: p.isConfigured() }))
+    };
+  }
+
+  /**
+   * Get comprehensive statistics for admin panel
+   */
+  getStatistics() {
+    this.clearExpiredCache();
+    
+    // Get recent lookups from cache (only entries with timestamps)
+    const recentLookups = Array.from(this.cache.entries())
+      .filter(([key, value]) => value.timestamp) // Only include entries with timestamps
+      .map(([key, value]) => ({
+        ip: value.data.ip,
+        location: this.formatLocation(value.data),
+        country: value.data.country || 'Unknown',
+        countryCode: value.data.countryCode,
+        timestamp: new Date(value.timestamp).toISOString(),
+        flag: this.getCountryFlag(value.data.countryCode)
+      }))
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 10); // Get last 10 lookups
+
+    // Count by country for top countries
+    const countryCounts = new Map<string, number>();
+    Array.from(this.cache.values()).forEach(entry => {
+      const country = entry.data.country;
+      if (country && country !== 'Unknown') {
+        countryCounts.set(country, (countryCounts.get(country) || 0) + 1);
+      }
+    });
+
+    const topCountries = Array.from(countryCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([country, count]) => ({ country, count }));
+
+    return {
+      success: true,
+      cache: this.getCacheStats(),
+      recentLookups,
+      topCountries,
+      timestamp: new Date().toISOString()
     };
   }
 
