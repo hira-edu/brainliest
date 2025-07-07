@@ -252,7 +252,7 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/send-verification', {
+      const response = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })
@@ -343,12 +343,14 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/complete-signup', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email: formData.email, 
-          password: formData.password 
+          password: formData.password,
+          firstName: formData.firstName || "User",
+          lastName: formData.lastName || ""
         })
       });
 
