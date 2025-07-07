@@ -22,7 +22,7 @@ import {
   type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, or, desc } from "drizzle-orm";
+import { eq, like, and, or, desc, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -141,6 +141,15 @@ export class DatabaseStorage implements IStorage {
 
   async createExam(exam: InsertExam): Promise<Exam> {
     const [newExam] = await db.insert(exams).values(exam).returning();
+    
+    // Update subject exam count
+    await db
+      .update(subjects)
+      .set({
+        examCount: sql`${subjects.examCount} + 1`
+      })
+      .where(eq(subjects.id, exam.subjectId));
+    
     return newExam;
   }
 
@@ -154,8 +163,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteExam(id: number): Promise<boolean> {
+    // Get the exam before deleting to know which subject to update
+    const [exam] = await db.select().from(exams).where(eq(exams.id, id));
+    if (!exam) return false;
+    
     const result = await db.delete(exams).where(eq(exams.id, id));
-    return (result.rowCount || 0) > 0;
+    
+    if ((result.rowCount || 0) > 0) {
+      // Update subject exam count
+      await db
+        .update(subjects)
+        .set({
+          examCount: sql`GREATEST(${subjects.examCount} - 1, 0)`
+        })
+        .where(eq(subjects.id, exam.subjectId));
+      return true;
+    }
+    return false;
   }
 
   async getExamCount(): Promise<number> {
@@ -179,6 +203,15 @@ export class DatabaseStorage implements IStorage {
 
   async createQuestion(question: InsertQuestion): Promise<Question> {
     const [newQuestion] = await db.insert(questions).values(question).returning();
+    
+    // Update subject question count
+    await db
+      .update(subjects)
+      .set({
+        questionCount: sql`${subjects.questionCount} + 1`
+      })
+      .where(eq(subjects.id, question.subjectId));
+    
     return newQuestion;
   }
 
@@ -192,8 +225,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteQuestion(id: number): Promise<boolean> {
+    // Get the question before deleting to know which subject to update
+    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    if (!question) return false;
+    
     const result = await db.delete(questions).where(eq(questions.id, id));
-    return (result.rowCount || 0) > 0;
+    
+    if ((result.rowCount || 0) > 0) {
+      // Update subject question count
+      await db
+        .update(subjects)
+        .set({
+          questionCount: sql`GREATEST(${subjects.questionCount} - 1, 0)`
+        })
+        .where(eq(subjects.id, question.subjectId));
+      return true;
+    }
+    return false;
   }
 
   async getQuestionCount(): Promise<number> {
