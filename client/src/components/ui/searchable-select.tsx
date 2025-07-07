@@ -215,45 +215,44 @@ export const SearchableSelect = React.forwardRef<
             ) : (
               <CommandGroup>
                 {filteredOptions.map((option, i) => (
-                  <div
+                  <button
                     key={option.value}
+                    type="button"
                     id={`option-${option.value}`}
                     role="option"
-                    tabIndex={0}
+                    tabIndex={-1}
+                    disabled={option.disabled}
                     aria-selected={String(option.value) === String(value)}
                     onMouseEnter={() => handleMouseEnter(i)}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log("Direct click on:", option.value);
                       handleSelect(option.value);
                     }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      console.log("Mouse down on:", option.value);
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelect(option.value);
+                      }
                     }}
-                    style={{
-                      cursor: "pointer",
-                      background: highlightedIdx === i ? "#f1f5f9" : "white",
-                      padding: "8px 12px",
-                      zIndex: 10000,
-                      position: "relative",
-                      border: "1px solid transparent",
-                      borderRadius: "4px",
-                      margin: "1px"
-                    }}
-                    className="hover:bg-slate-100 active:bg-slate-200 pointer-events-auto"
+                    className={cn(
+                      "w-full text-left flex items-center px-3 py-2 text-sm",
+                      "cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                      "focus:bg-accent focus:text-accent-foreground focus:outline-none",
+                      "active:bg-accent disabled:opacity-50 disabled:cursor-not-allowed",
+                      "transition-colors duration-150",
+                      highlightedIdx === i && "bg-accent text-accent-foreground",
+                      String(value) === String(option.value) && "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
                   >
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          String(value) === String(option.value) ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <span className="truncate">{option.label}</span>
-                    </div>
-                  </div>
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 shrink-0",
+                        String(value) === String(option.value) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{option.label}</span>
+                  </button>
                 ))}
               </CommandGroup>
             )}
