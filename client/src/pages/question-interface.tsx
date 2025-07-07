@@ -13,6 +13,8 @@ import FeedbackCard from "@/components/feedback-card";
 import UnifiedAuthModal from "@/components/unified-auth-modal";
 import SEOHead from "@/components/seo-head";
 import DynamicFAQ from "@/components/dynamic-faq";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
@@ -267,6 +269,36 @@ export default function QuestionInterface() {
       )}
       
       <Header />
+      
+      {/* Exam Header with Back Button */}
+      {exam && (
+        <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Exams
+                </Button>
+                <div className="h-6 w-px bg-gray-300"></div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
+                  <p className="text-sm text-gray-600">{exam.description}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600">Question {currentQuestionIndex + 1} of {questions?.length || 0}</div>
+                <div className="text-xs text-gray-500">{exam.duration} minutes • {exam.difficulty}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <ProgressBar 
         currentQuestion={currentQuestionIndex + 1}
