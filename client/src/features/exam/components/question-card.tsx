@@ -5,7 +5,7 @@ import { apiRequest } from "@/services/queryClient";
 import { useToast } from "@/features/shared/hooks/use-toast";
 
 interface QuestionCardProps {
-  question: Question;
+  question: Question | undefined;
   onAnswer: (answerIndex: number) => void;
   onPrevious?: () => void;
   onSubmit: () => void;
@@ -31,7 +31,7 @@ export default function QuestionCard({
     setLocalSelectedAnswer(selectedAnswer);
     setShowAiHelp(false);
     setAiHelp("");
-  }, [question.id, selectedAnswer]);
+  }, [question?.id, selectedAnswer]);
 
   const getAiHelpMutation = useMutation({
     mutationFn: async (questionId: number) => {
@@ -57,8 +57,21 @@ export default function QuestionCard({
   };
 
   const handleGetAiHelp = () => {
-    getAiHelpMutation.mutate(question.id);
+    if (question?.id) {
+      getAiHelpMutation.mutate(question.id);
+    }
   };
+
+  // If no question is provided, show loading state
+  if (!question) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
+        <div className="text-center text-gray-500">
+          Loading question...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-8 mb-6">

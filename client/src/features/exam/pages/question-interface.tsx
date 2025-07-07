@@ -348,16 +348,6 @@ export default function QuestionInterface() {
     );
   }
 
-  const currentQuestionData = currentQuestion ? {
-    id: currentQuestion.id,
-    text: currentQuestion.text,
-    options: currentQuestion.options,
-    correctAnswer: currentQuestion.correctAnswer,
-    explanation: currentQuestion.explanation,
-    subject: exam?.title || '',
-    url: window.location.href
-  } : null;
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* SEO Head for question pages */}
