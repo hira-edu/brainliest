@@ -24,6 +24,44 @@ import {
 import { db } from "./db";
 import { eq, like, and, or, desc, sql } from "drizzle-orm";
 
+// Robust slugify function for generating URL-safe slugs
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[\s\W-]+/g, '-')  // Replace spaces and non-word chars with hyphens
+    .replace(/^-+|-+$/g, '')   // Remove leading/trailing hyphens
+    .replace(/-+/g, '-');      // Replace multiple hyphens with single hyphen
+}
+
+// Generate unique slug by checking for conflicts and appending numbers
+async function generateUniqueSlug(baseSlug: string, table: 'subjects' | 'exams', excludeId?: number): Promise<string> {
+  let slug = baseSlug;
+  let counter = 1;
+  
+  while (true) {
+    // Check if slug exists
+    let query: any;
+    if (table === 'subjects') {
+      query = db.select({ id: subjects.id }).from(subjects).where(eq(subjects.slug, slug));
+    } else {
+      query = db.select({ id: exams.id }).from(exams).where(eq(exams.slug, slug));
+    }
+    
+    const existing = await query;
+    
+    // If no conflict or conflict is with the record being updated, slug is available
+    if (existing.length === 0 || (excludeId && existing[0].id === excludeId)) {
+      return slug;
+    }
+    
+    // Generate next variant
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
+
 // Interface for storage operations
 export interface IStorage {
   // Subjects
@@ -146,11 +184,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSubject(subject: InsertSubject): Promise<Subject> {
+    // Auto-generate slug if not provided
+    if (!subject.slug) {
+      const baseSlug = slugify(subject.name);
+      subject.slug = await generateUniqueSlug(baseSlug, 'subjects');
+    }
+    
     const [newSubject] = await db.insert(subjects).values(subject).returning();
     return newSubject;
   }
 
   async updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined> {
+    // Auto-generate slug if name is being updated but slug is not provided
+    if (subject.name && !subject.slug) {
+      const baseSlug = slugify(subject.name);
+      subject.slug = await generateUniqueSlug(baseSlug, 'subjects', id);
+    }
+    
     const [updatedSubject] = await db
       .update(subjects)
       .set(subject)
@@ -232,6 +282,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createExam(exam: InsertExam): Promise<Exam> {
+    // Auto-generate slug if not provided
+    if (!exam.slug) {
+      const baseSlug = slugify(exam.title);
+      exam.slug = await generateUniqueSlug(baseSlug, 'exams');
+    }
+    
     const [newExam] = await db.insert(exams).values(exam).returning();
     
     // Update subject exam count
@@ -246,6 +302,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
+    // Auto-generate slug if title is being updated but slug is not provided
+    if (exam.title && !exam.slug) {
+      const baseSlug = slugify(exam.title);
+      exam.slug = await generateUniqueSlug(baseSlug, 'exams', id);
+    }
+    
     const [updatedExam] = await db
       .update(exams)
       .set(exam)
@@ -901,6 +963,50 @@ export class DatabaseStorage implements IStorage {
     const result = await db.insert(auditLogs).values(auditLog).returning();
     return result[0];
   }
+
+  // Backfill slugs for existing records
+  async backfillSlugsForExistingRecords(): Promise<{ subjectsUpdated: number; examsUpdated: number }> {
+    let subjectsUpdated = 0;
+    let examsUpdated = 0;
+
+    // Backfill subject slugs
+    const subjectsWithoutSlugs = await db
+      .select({ id: subjects.id, name: subjects.name })
+      .from(subjects)
+      .where(sql`${subjects.slug} IS NULL OR ${subjects.slug} = ''`);
+
+    for (const subject of subjectsWithoutSlugs) {
+      const baseSlug = slugify(subject.name);
+      const uniqueSlug = await generateUniqueSlug(baseSlug, 'subjects', subject.id);
+      
+      await db
+        .update(subjects)
+        .set({ slug: uniqueSlug })
+        .where(eq(subjects.id, subject.id));
+      
+      subjectsUpdated++;
+    }
+
+    // Backfill exam slugs
+    const examsWithoutSlugs = await db
+      .select({ id: exams.id, title: exams.title })
+      .from(exams)
+      .where(sql`${exams.slug} IS NULL OR ${exams.slug} = ''`);
+
+    for (const exam of examsWithoutSlugs) {
+      const baseSlug = slugify(exam.title);
+      const uniqueSlug = await generateUniqueSlug(baseSlug, 'exams', exam.id);
+      
+      await db
+        .update(exams)
+        .set({ slug: uniqueSlug })
+        .where(eq(exams.id, exam.id));
+      
+      examsUpdated++;
+    }
+
+    return { subjectsUpdated, examsUpdated };
+  }
 }
 
 // Initialize with seed data
@@ -909,36 +1015,49 @@ async function seedDatabase() {
     // Check if data already exists
     const existingSubjects = await db.select().from(subjects);
     if (existingSubjects.length > 0) {
-      console.log("Database already seeded, skipping seed data insertion");
+      console.log("Database already seeded, checking for missing slugs...");
+      // Run backfill for existing records that might not have slugs
+      const storage = new DatabaseStorage();
+      const results = await storage.backfillSlugsForExistingRecords();
+      if (results.subjectsUpdated > 0 || results.examsUpdated > 0) {
+        console.log(`✓ Backfilled slugs: ${results.subjectsUpdated} subjects, ${results.examsUpdated} exams`);
+      } else {
+        console.log("✓ All records already have slugs");
+      }
       return;
     }
 
     console.log("Seeding database with initial data...");
 
-    // Seed basic subjects (clean data without extra fields)
+    // Seed basic subjects with auto-generated slugs
     const subjectData: InsertSubject[] = [
       {
         name: "PMP Certification",
+        slug: "pmp-certification",
         description: "Project Management Professional certification preparation",
         icon: "project-diagram"
       },
       {
         name: "AWS Certified Solutions Architect",
+        slug: "aws-certified-solutions-architect",
         description: "Amazon Web Services cloud architecture certification",
         icon: "cloud"
       },
       {
         name: "CompTIA Security+",
+        slug: "comptia-security",
         description: "Cybersecurity fundamentals and best practices",
         icon: "shield"
       },
       {
         name: "AP Statistics",
+        slug: "ap-statistics",
         description: "Advanced Placement Statistics course preparation",
         icon: "chart-bar"
       },
       {
         name: "Calculus",
+        slug: "calculus",
         description: "Differential and integral calculus",
         icon: "function"
       }
@@ -956,6 +1075,7 @@ async function seedDatabase() {
         {
           subjectId: subject.id,
           title: `${subject.name} Practice Exam 1`,
+          slug: `${slugify(subject.name)}-practice-exam-1`,
           description: `Comprehensive practice exam covering ${subject.name} concepts`,
           questionCount: 5,
           duration: 90,
