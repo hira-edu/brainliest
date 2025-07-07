@@ -68,6 +68,7 @@ export const SearchableSelect = React.forwardRef<
 
   // Handle option selection
   const handleSelect = (selectedValue: string) => {
+    console.log("SearchableSelect - Option selected:", selectedValue);
     if (onValueChange) {
       onValueChange(selectedValue);
     }
@@ -129,7 +130,7 @@ export const SearchableSelect = React.forwardRef<
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-full p-0 z-50 bg-popover text-popover-foreground shadow-md border" align="start">
         <Command>
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -167,8 +168,12 @@ export const SearchableSelect = React.forwardRef<
                     key={option.value}
                     value={option.value}
                     onSelect={(selectedValue) => handleSelect(selectedValue)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(option.value);
+                    }}
                     disabled={option.disabled}
-                    className="cursor-pointer"
+                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                   >
                     <Check
                       className={cn(
