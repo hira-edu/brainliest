@@ -50,29 +50,38 @@ export class UnifiedCSVService {
     this.storage = storage;
   }
 
-  generateUnifiedTemplate(): string {
+  async generateUnifiedTemplate(): Promise<string> {
+    // Get next available IDs from database
+    const subjects = await this.storage.getSubjects();
+    const exams = await this.storage.getExams();
+    const questions = await this.storage.getQuestions();
+
+    const nextSubjectId = subjects.length > 0 ? Math.max(...subjects.map(s => s.id)) + 1 : 1;
+    const nextExamId = exams.length > 0 ? Math.max(...exams.map(e => e.id)) + 1 : 1;
+    const nextQuestionId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1;
+
     const headers = [
       'entity_type',
       // Subject columns
-      'subject_name', 'subject_description', 'subject_icon', 'subject_sort_order', 'subject_category_id', 'subject_subcategory_id',
+      'subject_id', 'subject_name', 'subject_description', 'subject_icon', 'subject_sort_order', 'subject_category_id', 'subject_subcategory_id',
       // Exam columns
-      'exam_title', 'exam_description', 'exam_subject_name', 'exam_difficulty', 'exam_time_limit', 'exam_passing_score', 'exam_is_active',
+      'exam_id', 'exam_title', 'exam_description', 'exam_subject_name', 'exam_difficulty', 'exam_time_limit', 'exam_passing_score', 'exam_is_active',
       // Question columns
-      'question_text', 'question_options', 'question_correct_answer', 'question_explanation', 'question_exam_title', 'question_subject_name', 'question_domain', 'question_difficulty', 'question_is_active'
+      'question_id', 'question_text', 'question_options', 'question_correct_answer', 'question_explanation', 'question_exam_title', 'question_subject_name', 'question_domain', 'question_difficulty', 'question_is_active'
     ];
 
     const sampleRows = [
-      // Subject examples
-      ['subject', 'PMP Certification', 'Project Management Professional certification preparation', 'fas fa-project-diagram', '1', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['subject', 'AWS Solutions Architect', 'Amazon Web Services cloud architecture certification', 'fab fa-aws', '2', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      // Subject examples with proper IDs
+      ['subject', nextSubjectId.toString(), 'PMP Certification', 'Project Management Professional certification preparation', 'fas fa-project-diagram', '1', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['subject', (nextSubjectId + 1).toString(), 'AWS Solutions Architect', 'Amazon Web Services cloud architecture certification', 'fab fa-aws', '2', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
       
-      // Exam examples  
-      ['exam', '', '', '', '', '', '', 'PMP Practice Test 1', 'Comprehensive practice exam for PMP certification', 'PMP Certification', 'Intermediate', '240', '80', 'true', '', '', '', '', '', '', '', ''],
-      ['exam', '', '', '', '', '', '', 'AWS SAA Practice Test', 'Practice test for AWS Solutions Architect Associate', 'AWS Solutions Architect', 'Advanced', '130', '72', 'true', '', '', '', '', '', '', '', ''],
+      // Exam examples with proper IDs
+      ['exam', '', '', '', '', '', '', '', nextExamId.toString(), 'PMP Practice Test 1', 'Comprehensive practice exam for PMP certification', 'PMP Certification', 'Intermediate', '240', '80', 'true', '', '', '', '', '', '', '', '', ''],
+      ['exam', '', '', '', '', '', '', '', (nextExamId + 1).toString(), 'AWS SAA Practice Test', 'Practice test for AWS Solutions Architect Associate', 'AWS Solutions Architect', 'Advanced', '130', '72', 'true', '', '', '', '', '', '', '', '', ''],
       
-      // Question examples
-      ['question', '', '', '', '', '', '', '', '', '', '', '', '', '', 'Which process group includes activities to define a new project?', 'Initiating|Planning|Executing|Monitoring', 'Initiating', 'The Initiating process group includes activities to define a new project or phase.', 'PMP Practice Test 1', 'PMP Certification', 'Project Integration Management', 'Intermediate', 'true'],
-      ['question', '', '', '', '', '', '', '', '', '', '', '', '', '', 'What is the maximum size for an EC2 instance store?', '1 TB|3.75 TB|24 TB|48 TB', '48 TB', 'The largest instance store can provide up to 48 TB of storage.', 'AWS SAA Practice Test', 'AWS Solutions Architect', 'Compute', 'Advanced', 'true']
+      // Question examples with proper IDs
+      ['question', '', '', '', '', '', '', '', '', '', '', '', '', '', '', nextQuestionId.toString(), 'Which process group includes activities to define a new project?', 'Initiating|Planning|Executing|Monitoring', 'Initiating', 'The Initiating process group includes activities to define a new project or phase.', 'PMP Practice Test 1', 'PMP Certification', 'Project Integration Management', 'Intermediate', 'true'],
+      ['question', '', '', '', '', '', '', '', '', '', '', '', '', '', '', (nextQuestionId + 1).toString(), 'What is the maximum size for an EC2 instance store?', '1 TB|3.75 TB|24 TB|48 TB', '48 TB', 'The largest instance store can provide up to 48 TB of storage.', 'AWS SAA Practice Test', 'AWS Solutions Architect', 'Compute', 'Advanced', 'true']
     ];
 
     const csvContent = [headers.join(',')];
@@ -90,47 +99,53 @@ export class UnifiedCSVService {
 
     const headers = [
       'entity_type',
-      'subject_name', 'subject_description', 'subject_icon', 'subject_sort_order', 'subject_category_id', 'subject_subcategory_id',
-      'exam_title', 'exam_description', 'exam_subject_name', 'exam_difficulty', 'exam_time_limit', 'exam_passing_score', 'exam_is_active',
-      'question_text', 'question_options', 'question_correct_answer', 'question_explanation', 'question_exam_title', 'question_subject_name', 'question_domain', 'question_difficulty', 'question_is_active'
+      // Subject columns
+      'subject_id', 'subject_name', 'subject_description', 'subject_icon', 'subject_sort_order', 'subject_category_id', 'subject_subcategory_id',
+      // Exam columns
+      'exam_id', 'exam_title', 'exam_description', 'exam_subject_name', 'exam_difficulty', 'exam_time_limit', 'exam_passing_score', 'exam_is_active',
+      // Question columns
+      'question_id', 'question_text', 'question_options', 'question_correct_answer', 'question_explanation', 'question_exam_title', 'question_subject_name', 'question_domain', 'question_difficulty', 'question_is_active'
     ];
 
     const rows = [headers.join(',')];
 
-    // Export subjects
+    // Export subjects with database IDs
     for (const subject of subjects) {
       const row = [
         'subject',
-        subject.name || '', subject.description || '', subject.icon || '', '', subject.categoryId?.toString() || '', subject.subcategoryId?.toString() || '',
-        '', '', '', '', '', '', '',
-        '', '', '', '', '', '', '', '', ''
+        subject.id.toString(), subject.name || '', subject.description || '', subject.icon || '', '', subject.categoryId?.toString() || '', subject.subcategoryId?.toString() || '',
+        '', '', '', '', '', '', '', '',
+        '', '', '', '', '', '', '', '', '', ''
       ];
       rows.push(row.map(cell => `"${cell}"`).join(','));
     }
 
-    // Export exams
+    // Export exams with database IDs
     for (const exam of exams) {
       const subject = subjects.find(s => s.id === exam.subjectId);
       const row = [
         'exam',
-        '', '', '', '', '', '',
-        exam.title || '', exam.description || '', subject?.name || '', exam.difficulty || '', exam.duration?.toString() || '', '', exam.isActive?.toString() || 'true',
-        '', '', '', '', '', '', '', '', ''
+        '', '', '', '', '', '', '',
+        exam.id.toString(), exam.title || '', exam.description || '', subject?.name || '', exam.difficulty || '', exam.duration?.toString() || '', '', exam.isActive?.toString() || 'true',
+        '', '', '', '', '', '', '', '', '', ''
       ];
       rows.push(row.map(cell => `"${cell}"`).join(','));
     }
 
-    // Export questions
+    // Export questions with database IDs
     for (const question of questions) {
       const exam = exams.find(e => e.id === question.examId);
       const subject = subjects.find(s => s.id === question.subjectId);
       const options = question.options ? question.options.join('|') : '';
+      const correctAnswer = question.options && question.correctAnswer !== undefined 
+        ? question.options[question.correctAnswer] || '' 
+        : '';
       
       const row = [
         'question',
-        '', '', '', '', '', '',
         '', '', '', '', '', '', '',
-        question.text || '', options, question.correctAnswer?.toString() || '', question.explanation || '', exam?.title || '', subject?.name || '', question.domain || '', question.difficulty || '', 'true'
+        '', '', '', '', '', '', '', '',
+        question.id.toString(), question.text || '', options, correctAnswer, question.explanation || '', exam?.title || '', subject?.name || '', question.domain || '', question.difficulty || '', 'true'
       ];
       rows.push(row.map(cell => `"${cell}"`).join(','));
     }
@@ -163,12 +178,12 @@ export class UnifiedCSVService {
         if (values[0] === 'subject') {
           try {
             const subjectData = {
-              name: values[1] || '',
-              description: values[2] || '',
-              icon: values[3] || null,
-              sortOrder: values[4] ? parseInt(values[4]) : null,
-              categoryId: values[5] ? parseInt(values[5]) : null,
-              subcategoryId: values[6] ? parseInt(values[6]) : null
+              name: values[2] || '', // subject_name is now index 2
+              description: values[3] || '', // subject_description is now index 3
+              icon: values[4] || null, // subject_icon is now index 4
+              sortOrder: values[5] ? parseInt(values[5]) : null, // subject_sort_order is now index 5
+              categoryId: values[6] ? parseInt(values[6]) : null, // subject_category_id is now index 6
+              subcategoryId: values[7] ? parseInt(values[7]) : null // subject_subcategory_id is now index 7
             };
 
             if (subjectData.name) {
@@ -189,7 +204,7 @@ export class UnifiedCSVService {
         const values = this.parseCSVLine(line);
         if (values[0] === 'exam') {
           try {
-            const subjectName = values[9];
+            const subjectName = values[11]; // exam_subject_name is now index 11
             const subject = subjects.find(s => s.name === subjectName);
             
             if (!subject && subjectName) {
@@ -198,13 +213,13 @@ export class UnifiedCSVService {
             }
 
             const examData = {
-              title: values[7] || '',
-              description: values[8] || '',
+              title: values[9] || '', // exam_title is now index 9
+              description: values[10] || '', // exam_description is now index 10
               subjectId: subject?.id || 0,
               questionCount: 0, // Required field, will be updated when questions are added
-              difficulty: values[10] || 'Intermediate',
-              duration: values[11] ? parseInt(values[11]) : null,
-              isActive: values[13] ? values[13].toLowerCase() === 'true' : true
+              difficulty: values[12] || 'Intermediate', // exam_difficulty is now index 12
+              duration: values[13] ? parseInt(values[13]) : null, // exam_time_limit is now index 13
+              isActive: values[15] ? values[15].toLowerCase() === 'true' : true // exam_is_active is now index 15
             };
 
             if (examData.title && examData.subjectId) {
@@ -225,24 +240,24 @@ export class UnifiedCSVService {
         const values = this.parseCSVLine(line);
         if (values[0] === 'question') {
           try {
-            const examTitle = values[18];
-            const subjectName = values[19];
+            const examTitle = values[21]; // question_exam_title is now index 21
+            const subjectName = values[22]; // question_subject_name is now index 22
             const exam = exams.find(e => e.title === examTitle);
             const subject = subjects.find(s => s.name === subjectName);
 
-            const options = values[15] ? values[15].split('|') : [];
-            const correctAnswerText = values[16] || '';
+            const options = values[18] ? values[18].split('|') : []; // question_options is now index 18
+            const correctAnswerText = values[19] || ''; // question_correct_answer is now index 19
             const correctAnswerIndex = correctAnswerText ? options.indexOf(correctAnswerText) : 0;
 
             const questionData = {
-              text: values[14] || '',
+              text: values[17] || '', // question_text is now index 17
               options: options,
               correctAnswer: correctAnswerIndex >= 0 ? correctAnswerIndex : 0,
-              explanation: values[17] || '',
+              explanation: values[20] || '', // question_explanation is now index 20
               examId: exam?.id || 1, // Default to first exam if not found
               subjectId: subject?.id || 1, // Default to first subject if not found
-              domain: values[20] || null,
-              difficulty: values[21] || 'Intermediate'
+              domain: values[23] || null, // question_domain is now index 23
+              difficulty: values[24] || 'Intermediate' // question_difficulty is now index 24
             };
 
             if (questionData.text && questionData.options.length > 0 && questionData.examId && questionData.subjectId) {

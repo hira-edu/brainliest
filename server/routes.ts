@@ -1297,7 +1297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
       
-      const csvContent = csvService.generateUnifiedTemplate();
+      const csvContent = await csvService.generateUnifiedTemplate();
       
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="brainliest_complete_platform_template.csv"');
