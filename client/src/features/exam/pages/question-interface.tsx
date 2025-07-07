@@ -18,13 +18,14 @@ import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
   
-  // Simple direct routing: /exam/:examId
-  const [match, params] = useRoute("/exam/:examId");
+  // War-tested slug system: Only handle slug-based routes
+  const [slugMatch, slugParams] = useRoute("/exam/:subjectSlug/:examSlug");
   
-  const examId = params?.examId ? parseInt(params.examId) : null;
+  const subjectSlug = slugParams?.subjectSlug;
+  const examSlug = slugParams?.examSlug;
 
   // Return 404 if route parameters are missing
-  if (!match || !examId || isNaN(examId)) {
+  if (!slugMatch || !subjectSlug || !examSlug) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -55,15 +56,21 @@ export default function QuestionInterface() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
 
-  // Simple direct data fetching by exam ID
-  const { data: exam, isLoading: examLoading } = useQuery<Exam>({
-    queryKey: [`/api/exams/${examId}`],
-    enabled: !!examId,
+  // For slug-based routes, we need to get the exam by subject and exam slugs
+  const { data: subject } = useQuery({
+    queryKey: [`/api/subjects/by-slug/${subjectSlug}`],
+    enabled: !!subjectSlug,
   });
 
-  const { data: subject } = useQuery({
-    queryKey: [`/api/subjects/${exam?.subjectId}`],
-    enabled: !!exam?.subjectId,
+  // War-tested slug system: Get exam directly by slug
+  const { data: exam, isLoading: examLoading } = useQuery<Exam>({
+    queryKey: [`/api/exams/by-slug/${examSlug}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/exams/by-slug/${examSlug}`);
+      if (!response.ok) throw new Error('Exam not found');
+      return response.json();
+    },
+    enabled: !!examSlug,
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({

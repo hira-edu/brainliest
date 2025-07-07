@@ -35,6 +35,7 @@ export const subjects = pgTable("subjects", {
   subcategoryId: integer("subcategory_id"),
   examCount: integer("exam_count").default(0),
   questionCount: integer("question_count").default(0),
+  slug: text("slug").notNull(), // URL-friendly slug generated from name
 });
 
 export const exams = pgTable("exams", {
@@ -46,6 +47,7 @@ export const exams = pgTable("exams", {
   duration: integer("duration"), // in minutes
   difficulty: text("difficulty").notNull(), // 'Beginner', 'Intermediate', 'Advanced', 'Expert'
   isActive: boolean("is_active").default(true),
+  slug: text("slug").notNull(), // URL-friendly slug generated from title
 });
 
 export const questions = pgTable("questions", {

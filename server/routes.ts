@@ -184,7 +184,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Removed slug-based subject route - using direct ID routing only
+  app.get("/api/subjects/by-slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      if (!slug) {
+        return res.status(400).json({ message: "Slug is required" });
+      }
+      const subject = await storage.getSubjectBySlug(slug);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      res.json(subject);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch subject" });
+    }
+  });
 
   app.post("/api/subjects", requireNewAdminAuth, logNewAdminAction('CREATE_SUBJECT'), async (req, res) => {
     try {
@@ -212,11 +226,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simple direct exam by ID route
-  app.get("/api/exams/:id", async (req, res) => {
+  // War-tested slug system: Get exam by slug only (no numeric ID routes)
+  app.get("/api/exams/by-slug/:slug", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'exam ID');
-      const exam = await storage.getExam(id);
+      const slug = sanitizeInput(req.params.slug);
+      const exam = await storage.getExamBySlug(slug);
       if (!exam) {
         return res.status(404).json({ message: "Exam not found" });
       }
@@ -224,6 +238,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exam" });
     }
+  });
+
+  // ELIMINATED: Legacy numeric route replaced with 404 per war-tested specifications
+  app.get("/api/exams/:id", async (req, res) => {
+    // War-tested system: Return 404 for legacy numeric routes
+    return res.status(404).json({ 
+      message: "Exam not found - Use slug-based routes: /api/exams/by-slug/:slug" 
+    });
   });
 
   app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
