@@ -184,6 +184,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get subject by slug for SEO-friendly URLs
+  app.get("/api/subjects/slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      if (!slug || typeof slug !== 'string') {
+        return res.status(400).json({ message: "Invalid subject slug" });
+      }
+      
+      const subject = await storage.getSubjectBySlug(slug);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      res.json(subject);
+    } catch (error) {
+      console.error("Error fetching subject by slug:", error);
+      res.status(500).json({ message: "Failed to fetch subject" });
+    }
+  });
+
   app.post("/api/subjects", requireNewAdminAuth, logNewAdminAction('CREATE_SUBJECT'), async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
@@ -219,6 +238,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(exam);
     } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exam" });
+    }
+  });
+
+  // Get exam by slug for SEO-friendly URLs
+  app.get("/api/exams/slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      if (!slug || typeof slug !== 'string') {
+        return res.status(400).json({ message: "Invalid exam slug" });
+      }
+      
+      const exam = await storage.getExamBySlug(slug);
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.json(exam);
+    } catch (error) {
+      console.error("Error fetching exam by slug:", error);
       res.status(500).json({ message: "Failed to fetch exam" });
     }
   });
@@ -2678,6 +2716,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== END ADMIN SUBDOMAIN ENDPOINTS ====================
+
+  // ==================== SLUG MIGRATION ENDPOINTS ====================
+  
+  /**
+   * Run Phase 1 slug migration
+   */
+  app.post("/api/migration/phase1", requireNewAdminAuth, async (req, res) => {
+    try {
+      console.log("🚀 Starting Phase 1 slug migration...");
+      
+      // Import migration utilities dynamically to avoid circular dependencies
+      const { SlugMigrationRunner } = await import("./migrations/migration-runner");
+      
+      const result = await SlugMigrationRunner.runPhase1();
+      
+      // Log admin action
+      await logNewAdminAction(req, {
+        action: 'MIGRATION_PHASE1',
+        resourceType: 'system',
+        resourceId: null,
+        changes: JSON.stringify(result),
+        success: result.success
+      });
+      
+      res.status(result.success ? 200 : 500).json(result);
+    } catch (error) {
+      console.error("❌ Phase 1 migration failed:", error);
+      
+      await logNewAdminAction(req, {
+        action: 'MIGRATION_PHASE1',
+        resourceType: 'system',
+        resourceId: null,
+        changes: JSON.stringify({ error: error.message }),
+        success: false,
+        errorMessage: error.message
+      });
+      
+      res.status(500).json({
+        success: false,
+        phase: "Phase 1",
+        message: "Migration failed",
+        details: { error: error.message }
+      });
+    }
+  });
+
+  /**
+   * Check migration status
+   */
+  app.get("/api/migration/status", requireNewAdminAuth, async (req, res) => {
+    try {
+      const { SlugMigrationRunner } = await import("./migrations/migration-runner");
+      const status = await SlugMigrationRunner.checkStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("❌ Status check failed:", error);
+      res.status(500).json({
+        phase1Complete: false,
+        details: { error: error.message }
+      });
+    }
+  });
+
+  /**
+   * Rollback Phase 1 migration (emergency use only)
+   */
+  app.post("/api/migration/rollback", requireNewAdminAuth, async (req, res) => {
+    try {
+      console.log("🔄 Rolling back Phase 1 migration...");
+      
+      const { SlugMigrationRunner } = await import("./migrations/migration-runner");
+      const result = await SlugMigrationRunner.rollbackPhase1();
+      
+      // Log admin action
+      await logNewAdminAction(req, {
+        action: 'MIGRATION_ROLLBACK',
+        resourceType: 'system',
+        resourceId: null,
+        changes: JSON.stringify(result),
+        success: result.success
+      });
+      
+      res.status(result.success ? 200 : 500).json(result);
+    } catch (error) {
+      console.error("❌ Rollback failed:", error);
+      
+      await logNewAdminAction(req, {
+        action: 'MIGRATION_ROLLBACK',
+        resourceType: 'system',
+        resourceId: null,
+        changes: JSON.stringify({ error: error.message }),
+        success: false,
+        errorMessage: error.message
+      });
+      
+      res.status(500).json({
+        success: false,
+        phase: "Rollback",
+        message: "Rollback failed",
+        details: { error: error.message }
+      });
+    }
+  });
+
+  // ==================== END SLUG MIGRATION ENDPOINTS ====================
 
   const httpServer = createServer(app);
   return httpServer;

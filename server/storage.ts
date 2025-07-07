@@ -152,6 +152,12 @@ export class DatabaseStorage implements IStorage {
     return result.count;
   }
 
+  // Slug-based lookups for SEO-friendly URLs
+  async getSubjectBySlug(slug: string): Promise<Subject | undefined> {
+    const [subject] = await db.select().from(subjects).where(eq(subjects.slug, slug));
+    return subject || undefined;
+  }
+
   // Exams - OPTIMIZED: Specify required columns and add pagination support
   async getExams(): Promise<Exam[]> {
     return await db.select({
@@ -239,6 +245,22 @@ export class DatabaseStorage implements IStorage {
   async getExamCount(): Promise<number> {
     const result = await db.select().from(exams);
     return result.length;
+  }
+
+  // Slug-based exam lookup
+  async getExamBySlug(slug: string): Promise<Exam | undefined> {
+    const [exam] = await db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      slug: exams.slug,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive
+    }).from(exams).where(eq(exams.slug, slug));
+    return exam || undefined;
   }
 
   // Questions - OPTIMIZED: Specify required columns and add pagination support

@@ -11,6 +11,8 @@ import AllSubjects from "./features/content/pages/all-subjects";
 import ExamSelection from "./features/exam/pages/exam-selection";
 import QuestionInterface from "./features/exam/pages/question-interface";
 import Results from "./features/exam/pages/results";
+import { SubjectSlugPage } from "./features/exam/pages/subject-slug";
+import { ExamSlugPage } from "./features/exam/pages/exam-slug";
 import Analytics from "./features/analytics/pages/analytics";
 // Admin components removed - only accessible via subdomain
 import Settings from "./features/pages/settings";
@@ -38,9 +40,13 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
-      <Route path="/subject/:id" component={ExamSelection} />
-      <Route path="/exam/:id" component={QuestionInterface} />
-      <Route path="/results/:id" component={Results} />
+      {/* Legacy ID-based routes for backward compatibility */}
+      <Route path="/subject/:id(\d+)" component={ExamSelection} />
+      <Route path="/exam/:id(\d+)" component={QuestionInterface} />
+      <Route path="/results/:id(\d+)" component={Results} />
+      {/* New slug-based routes - catch non-numeric paths */}
+      <Route path="/subject/:slug" component={SubjectSlugPage} />
+      <Route path="/exam/:slug" component={ExamSlugPage} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
       <Route path="/cookie-settings" component={CookieSettings} />

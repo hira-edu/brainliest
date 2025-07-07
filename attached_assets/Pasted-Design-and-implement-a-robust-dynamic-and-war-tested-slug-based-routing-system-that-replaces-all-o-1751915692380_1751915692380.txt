@@ -1,0 +1,146 @@
+Design and implement a robust, dynamic, and war-tested slug-based routing system that replaces all old numeric ID-based logic for categories, subcategories, subjects, exams, and questions—across the backend, database, admin panel, and frontend.
+Do not remove existing functionality until the slug system is verified to work 100%.
+Proceed in phases for minimal disruption and easy rollback.
+
+PHASE 1: Foundation—Schema & Slug Logic
+Database Schema Updates
+
+For each resource (categories, subcategories, subjects, exams, questions), add a slug VARCHAR(255) column, unique and indexed.
+
+Example:
+
+sql
+Copy
+Edit
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
+Add similar columns and indexes for all relevant tables.
+
+Slug Generation Utility
+
+Write a single, reusable, robust slugify() function (library/module) for all resources.
+
+Lowercase, replace spaces/special chars with hyphens, ensure uniqueness.
+
+Handle slug collisions (add suffix or ID).
+
+Implement hooks/triggers or application logic to auto-generate/assign a slug when a resource is created or its name/title changes.
+
+Data Migration
+
+Migrate all existing records: Generate slugs for all current items and backfill the database.
+
+Ensure all slugs are unique and audit the migration results.
+
+PHASE 2: Backend API Layer
+Add Slug-Based Endpoints
+
+For every resource, create new API endpoints that fetch by slug, e.g.:
+
+/api/categories/:slug
+
+/api/exams/:slug
+
+/api/questions/:slug (or /api/exams/:examSlug/questions/:questionSlug)
+
+Keep old ID-based endpoints working until slug-based endpoints are verified.
+
+CRUD Operations
+
+All CREATE/UPDATE operations should assign/update slugs.
+
+Ensure all lookups, joins, and children use slug relationships where possible.
+
+(e.g., fetch exam by slug, then fetch questions using exam slug as foreign key).
+
+Unit & Integration Tests
+
+Write tests to ensure new slug endpoints work for all resources and slugs are always unique and valid.
+
+PHASE 3: Frontend Integration
+Routing
+
+Refactor routing (React Router, Next.js, etc.) to use slugs for all resource pages:
+
+/category/:slug, /exam/:slug, etc.
+
+Fetch data using new slug-based endpoints.
+
+Update all links, breadcrumbs, and navigation logic to use slugs.
+
+UI Display
+
+Ensure slugs are used in URLs throughout the UI—cards, links, navigation, admin, etc.
+
+Admin UI: Display the generated slug, allow manual edit for super-admins (with uniqueness checks).
+
+Backward Compatibility
+
+For a transition period, support ID-based URLs by:
+
+Internally mapping old /exam/:id routes to the new slug and rendering with the new logic.
+
+Log usage of old routes to monitor migration progress.
+
+Once confirmed stable, deprecate and remove ID-based routes.
+
+PHASE 4: Admin Panel, Relationships & Content Hierarchies
+Admin CRUD
+
+Refactor admin panel resource management (categories, exams, etc.) to display and manage slugs.
+
+Allow admin to see and, if policy allows, override the auto-generated slug (with uniqueness validation).
+
+Update admin resource selectors to use slugs, not IDs, when referencing relationships.
+
+Hierarchical Routing
+
+For nested resources (e.g., questions under exams, exams under categories), build hierarchical slugs:
+
+/category/:catSlug/exam/:examSlug/question/:questionSlug
+
+Update all backend and frontend logic to resolve relationships via slugs.
+
+PHASE 5: QA, Documentation, and Cutover
+Comprehensive QA
+
+Test all possible navigation paths using slugs.
+
+Validate all resource fetches, relationships, CRUD, and link sharing.
+
+Check all admin and public pages for correctness and SEO-friendliness.
+
+Documentation
+
+Update developer docs, API docs, and admin help to explain slug logic and usage.
+
+Document the migration process, including any edge-case handling.
+
+Cutover & Cleanup
+
+Once slug-based routing is 100% verified, safely remove all legacy ID-based code, routes, and navigation.
+
+Monitor for broken links or errors.
+
+Regenerate sitemap.xml and ensure all canonical URLs use slugs.
+
+Summary Table
+Resource	Schema	Backend/API	Frontend/UI	Admin Panel	Hierarchies
+Categories	Add slug	/api/categories/:slug	/category/:slug	Use slugs	Parent/child slugs
+Subcategories	Add slug	/api/subcategories/:slug	/subcategory/:slug	Use slugs	Link to parent slug
+Subjects	Add slug	/api/subjects/:slug	/subject/:slug	Use slugs	
+Exams	Add slug	/api/exams/:slug	/exam/:slug	Use slugs	Under category/subject
+Questions	Add slug	/api/questions/:slug	/question/:slug	Use slugs	Under exam slug
+
+Key Rules:
+Never break core functionality during migration.
+
+Replace ID-based codepaths with slug-based logic stepwise; deprecate IDs only after slugs are proven robust.
+
+All relationships and lookups (including admin management) must support slugs.
+
+Test, document, and monitor at every phase.
+
+Deliverable:
+A modern, robust, and SEO-friendly slug-based routing and resource system for all core entities—implemented safely, in phases, and with bulletproof validation and fallback logic during the transition.
+
