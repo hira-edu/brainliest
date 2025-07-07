@@ -173,7 +173,10 @@ export const authUtils = {
         }
       }
     } catch (error) {
-      console.error("Auth initialization error:", error);
+      // Silently handle auth initialization errors (normal when no valid token exists)
+      if (error instanceof Error && !error.message.includes('404') && !error.message.includes('401')) {
+        console.warn("Auth initialization warning:", error.message);
+      }
     }
 
     // Clear invalid tokens

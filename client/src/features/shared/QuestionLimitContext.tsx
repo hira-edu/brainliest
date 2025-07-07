@@ -51,15 +51,25 @@ export function QuestionLimitProvider({ children }: { children: ReactNode }) {
       if (hasConsented && preferences.analytics) {
         const stored = CookieManager.getCookie(STORAGE_KEY);
         if (stored) {
-          const questionIds = JSON.parse(stored);
-          setViewedQuestions(new Set(questionIds));
+          try {
+            const questionIds = JSON.parse(stored);
+            setViewedQuestions(new Set(questionIds));
+          } catch (error) {
+            console.warn("Failed to parse stored question IDs from cookies:", error);
+            CookieManager.deleteCookie(STORAGE_KEY);
+          }
         }
       } else {
         // Fallback to localStorage for essential functionality
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          const questionIds = JSON.parse(stored);
-          setViewedQuestions(new Set(questionIds));
+          try {
+            const questionIds = JSON.parse(stored);
+            setViewedQuestions(new Set(questionIds));
+          } catch (error) {
+            console.warn("Failed to parse stored question IDs from localStorage:", error);
+            localStorage.removeItem(STORAGE_KEY);
+          }
         }
       }
     } catch (error) {

@@ -356,8 +356,8 @@ export default function AdminSimple() {
       
       if (values.length >= 14) {
         const questionData = {
-          subjectId: parseInt(values[0]) || 1,
-          examId: parseInt(values[2]) || 1,
+          subjectId: isNaN(parseInt(values[0])) ? 1 : parseInt(values[0]),
+          examId: isNaN(parseInt(values[2])) ? 1 : parseInt(values[2]),
           text: values[4] || "",
           options: [
             values[5] || "",
@@ -365,11 +365,11 @@ export default function AdminSimple() {
             values[7] || "",
             values[8] || ""
           ],
-          correctAnswer: parseInt(values[9]) || 0,
+          correctAnswer: isNaN(parseInt(values[9])) ? 0 : parseInt(values[9]),
           explanation: values[10] || "",
           domain: values[11] || "",
           difficulty: values[12] || "Intermediate",
-          order: parseInt(values[13]) || 1
+          order: isNaN(parseInt(values[13])) ? 1 : parseInt(values[13])
         };
         
         if (questionData.text && questionData.options.every(opt => opt)) {
