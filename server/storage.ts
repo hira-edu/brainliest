@@ -474,10 +474,26 @@ export class DatabaseStorage implements IStorage {
       role: users.role,
       isActive: users.isActive,
       isBanned: users.isBanned,
+      banReason: users.banReason,
       emailVerified: users.emailVerified,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt
+      lastLoginAt: users.lastLoginAt,
+      lastLoginIp: users.lastLoginIp,
+      registrationIp: users.registrationIp,
+      loginCount: users.loginCount,
+      failedLoginAttempts: users.failedLoginAttempts,
+      lockedUntil: users.lockedUntil,
+      passwordHash: users.passwordHash,
+      emailVerificationToken: users.emailVerificationToken,
+      emailVerificationExpires: users.emailVerificationExpires,
+      passwordResetToken: users.passwordResetToken,
+      passwordResetExpires: users.passwordResetExpires,
+      googleId: users.googleId,
+      oauthProvider: users.oauthProvider,
+      twoFactorEnabled: users.twoFactorEnabled,
+      twoFactorSecret: users.twoFactorSecret,
+      metadata: users.metadata
     }).from(users);
   }
 
@@ -492,10 +508,26 @@ export class DatabaseStorage implements IStorage {
       role: users.role,
       isActive: users.isActive,
       isBanned: users.isBanned,
+      banReason: users.banReason,
       emailVerified: users.emailVerified,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt
+      lastLoginAt: users.lastLoginAt,
+      lastLoginIp: users.lastLoginIp,
+      registrationIp: users.registrationIp,
+      loginCount: users.loginCount,
+      failedLoginAttempts: users.failedLoginAttempts,
+      lockedUntil: users.lockedUntil,
+      passwordHash: users.passwordHash,
+      emailVerificationToken: users.emailVerificationToken,
+      emailVerificationExpires: users.emailVerificationExpires,
+      passwordResetToken: users.passwordResetToken,
+      passwordResetExpires: users.passwordResetExpires,
+      googleId: users.googleId,
+      oauthProvider: users.oauthProvider,
+      twoFactorEnabled: users.twoFactorEnabled,
+      twoFactorSecret: users.twoFactorSecret,
+      metadata: users.metadata
     }).from(users).where(eq(users.id, id));
     return user;
   }
@@ -592,10 +624,26 @@ export class DatabaseStorage implements IStorage {
         role: users.role,
         isActive: users.isActive,
         isBanned: users.isBanned,
+        banReason: users.banReason,
         emailVerified: users.emailVerified,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
-        lastLoginAt: users.lastLoginAt
+        lastLoginAt: users.lastLoginAt,
+        lastLoginIp: users.lastLoginIp,
+        registrationIp: users.registrationIp,
+        loginCount: users.loginCount,
+        failedLoginAttempts: users.failedLoginAttempts,
+        lockedUntil: users.lockedUntil,
+        passwordHash: users.passwordHash,
+        emailVerificationToken: users.emailVerificationToken,
+        emailVerificationExpires: users.emailVerificationExpires,
+        passwordResetToken: users.passwordResetToken,
+        passwordResetExpires: users.passwordResetExpires,
+        googleId: users.googleId,
+        oauthProvider: users.oauthProvider,
+        twoFactorEnabled: users.twoFactorEnabled,
+        twoFactorSecret: users.twoFactorSecret,
+        metadata: users.metadata
       }).from(users).where(and(...conditions));
     }
 
@@ -609,10 +657,26 @@ export class DatabaseStorage implements IStorage {
       role: users.role,
       isActive: users.isActive,
       isBanned: users.isBanned,
+      banReason: users.banReason,
       emailVerified: users.emailVerified,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt
+      lastLoginAt: users.lastLoginAt,
+      lastLoginIp: users.lastLoginIp,
+      registrationIp: users.registrationIp,
+      loginCount: users.loginCount,
+      failedLoginAttempts: users.failedLoginAttempts,
+      lockedUntil: users.lockedUntil,
+      passwordHash: users.passwordHash,
+      emailVerificationToken: users.emailVerificationToken,
+      emailVerificationExpires: users.emailVerificationExpires,
+      passwordResetToken: users.passwordResetToken,
+      passwordResetExpires: users.passwordResetExpires,
+      googleId: users.googleId,
+      oauthProvider: users.oauthProvider,
+      twoFactorEnabled: users.twoFactorEnabled,
+      twoFactorSecret: users.twoFactorSecret,
+      metadata: users.metadata
     }).from(users);
   }
 

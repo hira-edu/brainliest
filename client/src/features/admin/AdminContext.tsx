@@ -132,7 +132,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
