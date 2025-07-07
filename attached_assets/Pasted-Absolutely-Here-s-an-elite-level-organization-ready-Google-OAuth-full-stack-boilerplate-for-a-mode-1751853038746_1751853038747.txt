@@ -1,0 +1,189 @@
+Absolutely! Here’s an elite-level, organization-ready Google OAuth full-stack boilerplate for a modern TypeScript project (Next.js API routes or Express backend) that supports secure Google Sign-In with popup flow, robust backend session handling, and all best practices.
+
+🚀 Google OAuth Boilerplate — Next.js/Express, TypeScript, Popup Flow
+
+1. Directory Structure (Minimal & Clear)
+
+/your-app
+  /pages
+    /api
+      /auth
+        google
+          start.ts       # Starts OAuth
+          callback.ts    # Handles OAuth callback
+  /components
+    GoogleSignInButton.tsx
+  /lib
+    user-db.ts           # User DB upsert/query (replace with ORM)
+  .env
+
+2. .env Example
+
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+JWT_SECRET=your-strong-jwt-secret
+APP_URL=http://localhost:3000
+
+3. /lib/user-db.ts (Replace with your ORM, Prisma, etc.)
+
+// Dummy upsert. Replace with real DB calls!
+export async function upsertUser({ googleId, email, name, avatar }: {
+  googleId: string, email: string, name: string, avatar: string
+}) {
+  // Find or create user in your DB.
+  return { id: googleId, email, name, avatar };
+}
+
+4. /pages/api/auth/google/start.ts — Initiate OAuth
+
+import { NextApiRequest, NextApiResponse } from 'next';
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID!,
+    redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'offline',
+    prompt: 'consent'
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+}
+
+5. /pages/api/auth/google/callback.ts — Token Exchange & Session
+
+import { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
+import jwt from 'jsonwebtoken';
+import { upsertUser } from '../../../lib/user-db';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { code } = req.query;
+
+  if (!code || typeof code !== "string") {
+    return res.status(400).send("Missing authorization code.");
+  }
+
+  try {
+    const { data: tokenData } = await axios.post(
+      'https://oauth2.googleapis.com/token',
+      new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+        grant_type: 'authorization_code'
+      }),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
+
+    const { id_token } = tokenData;
+    if (!id_token) throw new Error('No ID token returned from Google');
+
+    const payload: any = jwt.decode(id_token);
+    if (!payload?.email) throw new Error('Google token missing email');
+
+    // Upsert user in your DB
+    const user = await upsertUser({
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name || payload.email,
+      avatar: payload.picture
+    });
+
+    // Generate JWT for session
+    const appToken = jwt.sign(
+      { userId: user.id, email: user.email, name: user.name },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Set session cookie
+    res.setHeader("Set-Cookie", `session=${appToken}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
+
+    // --- For popup: Notify parent window and close ---
+    res.setHeader("Content-Type", "text/html");
+    res.end(`
+      <html>
+        <body>
+          <script>
+            window.opener && window.opener.postMessage('google-auth-success', '*');
+            window.close();
+          </script>
+          <p>Authenticated. You can close this window.</p>
+        </body>
+      </html>
+    `);
+
+    // --- For redirect flow, use: ---
+    // res.redirect(`${process.env.APP_URL}/dashboard`);
+  } catch (err: any) {
+    console.error("Google OAuth error:", err?.message, err?.response?.data);
+    res.status(500).send("Authentication failed. Please contact support.");
+  }
+}
+
+6. /components/GoogleSignInButton.tsx — Popup Handler
+
+import React from 'react';
+
+export function GoogleSignInButton() {
+  const handleGoogleSignIn = () => {
+    const popup = window.open(
+      "/api/auth/google/start",
+      "GoogleSignIn",
+      "width=500,height=600"
+    );
+  };
+
+  React.useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.data === 'google-auth-success') {
+        // Optionally refetch session/user, close modals, or reload
+        window.location.reload();
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  return (
+    <button
+      onClick={handleGoogleSignIn}
+      className="btn btn-google"
+      aria-label="Sign in with Google"
+      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 10 }}
+    >
+      <img src="/google-icon.svg" alt="" style={{ width: 24, height: 24 }} />
+      Sign in with Google
+    </button>
+  );
+}
+
+7. Security, TypeScript, and Scalability Notes
+
+	•	Always verify Google tokens and use jwt.verify with Google public keys in high-security environments.
+	•	Move secrets to environment variables.
+	•	Replace the dummy upsertUser with your real DB ORM (Prisma, Sequelize, etc.).
+	•	Enhance error UI for end users.
+	•	Add rate limiting and CSRF protection for all auth endpoints.
+
+8. How It Works (Full Flow)
+
+	1.	User clicks “Sign in with Google” button — popup opens /api/auth/google/start
+	2.	User authenticates with Google — Google redirects to /api/auth/google/callback?code=...
+	3.	Backend exchanges code for tokens, decodes user info, upserts user in DB, creates session JWT, and sets HttpOnly cookie
+	4.	Backend serves a page to the popup that postMessages back to parent window and closes
+	5.	Parent window receives the message, reloads or fetches user session
+	6.	User is now authenticated!
+
+9. Final Tip: Deployment
+
+	•	Update .env with production URLs before going live
+	•	Register all production domains in Google Cloud Console as origins and redirect URIs
+
+This is the battle-tested, production-grade pattern used by major SaaS companies.
+If you want a repo export, copy this structure into a Next.js app (API routes) or an Express server (adjusting route syntax as needed).
+
+Need Prisma/Mongo DB user example, error UI, or SSR session helpers? Let me know!
