@@ -144,9 +144,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🚀 Starting Google sign-in popup...');
       
+      // Create Google OAuth URL for popup
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+      
+      const authUrl = `https://accounts.google.com/oauth/authorize?` +
+        `client_id=${clientId}&` +
+        `response_type=code&` +
+        `scope=openid email profile&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `state=popup&` +
+        `access_type=offline&` +
+        `prompt=select_account`;
+
       // Open Google OAuth in a popup window
       const popup = window.open(
-        '/api/auth/google/start',
+        authUrl,
         'GoogleSignIn',
         'width=500,height=600,scrollbars=yes,resizable=yes,status=yes'
       );
