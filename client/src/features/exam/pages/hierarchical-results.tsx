@@ -22,12 +22,22 @@ export default function HierarchicalResults({
   // Fetch subject by slug
   const { data: subject } = useQuery<Subject>({
     queryKey: [`/api/subjects/slug/${subjectSlug}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/subjects/slug/${subjectSlug}`);
+      if (!response.ok) throw new Error('Failed to fetch subject');
+      return response.json();
+    },
     enabled: !!subjectSlug,
   });
 
   // Fetch exam by slug  
   const { data: exam } = useQuery<Exam>({
     queryKey: [`/api/exams/slug/${examSlug}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/exams/slug/${examSlug}`);
+      if (!response.ok) throw new Error('Failed to fetch exam');
+      return response.json();
+    },
     enabled: !!examSlug,
   });
 

@@ -27,8 +27,11 @@ export default function ExamSelection() {
   });
 
   const handleStartExam = (exam: Exam) => {
-    // Pure slug-based routing - no ID fallback
-    if (exam.slug) {
+    // Use hierarchical routing if we have subject context
+    if (subject?.slug && exam.slug) {
+      setLocation(`/subject/${subject.slug}/exam/${exam.slug}`);
+    } else if (exam.slug) {
+      // Fallback to simple exam route
       setLocation(`/exam/${exam.slug}`);
     } else {
       console.error('Exam missing slug:', exam);

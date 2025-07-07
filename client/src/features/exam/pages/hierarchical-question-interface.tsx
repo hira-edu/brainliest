@@ -39,18 +39,33 @@ export default function HierarchicalQuestionInterface({
   // Fetch subject by slug
   const { data: subject, isLoading: subjectLoading } = useQuery<Subject>({
     queryKey: [`/api/subjects/slug/${subjectSlug}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/subjects/slug/${subjectSlug}`);
+      if (!response.ok) throw new Error('Failed to fetch subject');
+      return response.json();
+    },
     enabled: !!subjectSlug,
   });
 
   // Fetch exam by slug
   const { data: exam, isLoading: examLoading } = useQuery<Exam>({
     queryKey: [`/api/exams/slug/${examSlug}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/exams/slug/${examSlug}`);
+      if (!response.ok) throw new Error('Failed to fetch exam');
+      return response.json();
+    },
     enabled: !!examSlug,
   });
 
   // Fetch questions using hierarchical API
   const { data: questionsData, isLoading: questionsLoading } = useQuery<{questions: Question[]}>({
     queryKey: [`/api/subject/${subjectSlug}/exam/${examSlug}/questions`],
+    queryFn: async () => {
+      const response = await fetch(`/api/subject/${subjectSlug}/exam/${examSlug}/questions`);
+      if (!response.ok) throw new Error('Failed to fetch questions');
+      return response.json();
+    },
     enabled: !!subjectSlug && !!examSlug,
   });
 
