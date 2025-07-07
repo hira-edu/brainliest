@@ -299,6 +299,70 @@ export default function QuestionInterface() {
     );
   }
 
+  // Show loading state while questions are being fetched
+  if (isLoading || !questionsData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        
+        {/* Exam Header with Back Button - Same as when questions exist */}
+        {exam && (
+          <div className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const subjectPath = subject?.slug ? `/subject/${subject.slug}` : `/subject/id/${exam.subjectId}`;
+                      setLocation(subjectPath);
+                    }}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Exams
+                  </Button>
+                  <div className="h-6 w-px bg-gray-300"></div>
+                  <div>
+                    <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
+                    <p className="text-sm text-gray-600">{exam.description}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">Loading questions...</div>
+                  <div className="text-xs text-gray-500">{exam.duration} minutes • {exam.difficulty}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <ProgressBar 
+          currentQuestion={0}
+          totalQuestions={questions?.length || 0}
+          timer={timer}
+        />
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Loading card with same structure */}
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <div className="text-center py-12">
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Questions...</h3>
+              <p className="text-gray-600">
+                Please wait while we prepare your exam questions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show "no questions" if loading is complete and there are actually no questions
   if (!questions || questions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
