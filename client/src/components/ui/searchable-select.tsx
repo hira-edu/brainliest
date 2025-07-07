@@ -191,9 +191,9 @@ export const SearchableSelect = React.forwardRef<
           </div>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start" side="bottom">
-        <Command shouldFilter={false} id="searchable-select-listbox" role="listbox">
-          <CommandList ref={listRef}>
+      <PopoverContent className="z-[9999] w-full p-0" align="start" side="bottom">
+        <Command shouldFilter={false} id="searchable-select-listbox" role="listbox" className="pointer-events-auto">
+          <CommandList ref={listRef} className="pointer-events-auto">
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 Loading...
@@ -222,13 +222,14 @@ export const SearchableSelect = React.forwardRef<
                     data-command-selectable="true"
                     onSelect={() => handleSelect(option.value)}
                     onClick={() => handleSelect(option.value)}
-                    disabled={option.disabled}
+                    disabled={option.disabled || false}
                     tabIndex={-1}
                     onMouseEnter={() => handleMouseEnter(i)}
                     aria-selected={String(option.value) === String(value)}
                     role="option"
                     className={cn(
-                      "cursor-pointer hover:bg-accent",
+                      "cursor-pointer hover:bg-accent pointer-events-auto",
+                      "focus:bg-accent active:bg-accent",
                       highlightedIdx === i ? "bg-accent" : ""
                     )}
                   >
