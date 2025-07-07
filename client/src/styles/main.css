@@ -1,7 +1,7 @@
 /* All @import statements must come first */
-@import '/css/base/reset.css';
-@import '/css/base/variables.css';
-@import '/css/components/animations.css';
+@import './base/reset.css';
+@import './base/variables.css';
+@import './components/animations.css';
 
 /* Tailwind CSS */
 @tailwind base;
