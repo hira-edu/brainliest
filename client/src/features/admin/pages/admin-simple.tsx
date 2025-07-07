@@ -478,12 +478,12 @@ export default function AdminSimple() {
     // Calculate question distribution
     const questionsBySubject = subjects?.map(subject => ({
       name: subject.name,
-      count: questions?.filter(q => q.subjectId === subject.id).length || 0
+      count: (questions || []).filter(q => q.subjectId === subject.id).length
     })) || [];
 
     const questionsByExam = exams?.map(exam => ({
       title: exam.title,
-      count: questions?.filter(q => q.examId === exam.id).length || 0
+      count: (questions || []).filter(q => q.examId === exam.id).length
     })) || [];
 
     // Most popular exam (most questions)

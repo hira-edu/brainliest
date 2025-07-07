@@ -25,12 +25,16 @@ export default function CookieConsentBanner({ onConsentChange }: CookieConsentBa
 
   useEffect(() => {
     // Check if user has already consented
-    const { hasConsented } = CookieManager.getConsentStatus();
+    const { hasConsented, preferences: existingPrefs } = CookieManager.getConsentStatus();
+    
+    // Debug logging to track cookie status
+    console.log('Cookie consent status:', { hasConsented, existingPrefs });
+    console.log('All cookies:', CookieManager.getAllCookies());
+    
     setShowBanner(!hasConsented);
 
     // Load existing preferences if they exist
     if (hasConsented) {
-      const { preferences: existingPrefs } = CookieManager.getConsentStatus();
       setPreferences(existingPrefs);
     }
   }, []);
@@ -43,7 +47,14 @@ export default function CookieConsentBanner({ onConsentChange }: CookieConsentBa
       marketing: true
     };
     
+    console.log('Setting consent preferences:', allAccepted);
     CookieManager.setConsentPreferences(allAccepted);
+    
+    // Debug: Check if cookie was actually set
+    const { hasConsented } = CookieManager.getConsentStatus();
+    console.log('After setting consent, hasConsented:', hasConsented);
+    console.log('Updated cookies:', CookieManager.getAllCookies());
+    
     setPreferences(allAccepted);
     setShowBanner(false);
     onConsentChange?.(allAccepted);
