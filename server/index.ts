@@ -5,8 +5,12 @@ import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { validateSecurityConfig } from './config/security';
 
 const app = express();
+
+// Validate security configuration on startup
+validateSecurityConfig();
 
 // Trust proxy for accurate IP addresses behind reverse proxies
 app.set('trust proxy', 1);
@@ -21,7 +25,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Security middleware
+// Enhanced Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -30,9 +34,22 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.openai.com", "https://api.resend.com"],
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com", "https://api.resend.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+
     },
   },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
 }));
 
 // Rate limiting

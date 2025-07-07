@@ -11,13 +11,19 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('JWT_SECRET environment variable is required in production');
   }
-  return 'dev-jwt-secret-key-not-for-production';
+  // Generate cryptographically secure secret for development
+  const devSecret = crypto.randomBytes(64).toString('hex');
+  console.warn('⚠️  Using auto-generated JWT secret for development. Set JWT_SECRET for production.');
+  return devSecret;
 })();
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || (() => {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('JWT_REFRESH_SECRET environment variable is required in production');
   }
-  return 'dev-jwt-refresh-secret-key-not-for-production';
+  // Generate cryptographically secure refresh secret for development
+  const devSecret = crypto.randomBytes(64).toString('hex');
+  console.warn('⚠️  Using auto-generated JWT refresh secret for development. Set JWT_REFRESH_SECRET for production.');
+  return devSecret;
 })();
 const JWT_EXPIRY = '15m'; // Short-lived access tokens
 const JWT_REFRESH_EXPIRY = '7d'; // Longer-lived refresh tokens

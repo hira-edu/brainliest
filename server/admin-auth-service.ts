@@ -1,15 +1,19 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { db } from './db';
 import { users, authLogs } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 
-// Separate JWT secret for admin authentication
+// Secure JWT secret generation for admin authentication
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || (() => {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('ADMIN_JWT_SECRET environment variable is required in production');
   }
-  return 'dev-admin-jwt-secret-key-not-for-production';
+  // Generate cryptographically secure secret for development
+  const devSecret = crypto.randomBytes(64).toString('hex');
+  console.warn('⚠️  Using auto-generated JWT secret for development. Set ADMIN_JWT_SECRET for production.');
+  return devSecret;
 })();
 
 const ADMIN_JWT_EXPIRY = '8h'; // Longer sessions for admin users
@@ -35,13 +39,25 @@ export interface AdminLoginResult {
   lockoutExpires?: Date;
 }
 
-// Predefined list of authorized admin emails
-// In production, this should come from environment variables or a secure config
-const AUTHORIZED_ADMIN_EMAILS = [
-  'admin@brainliest.com',
-  'super.admin@brainliest.com',
-  'platform.admin@brainliest.com'
-];
+// Secure admin email configuration from environment
+const AUTHORIZED_ADMIN_EMAILS = (() => {
+  const envEmails = process.env.AUTHORIZED_ADMIN_EMAILS;
+  if (envEmails) {
+    return envEmails.split(',').map(email => email.trim()).filter(Boolean);
+  }
+  
+  // Development fallback with warning
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️  Using default admin emails for development. Set AUTHORIZED_ADMIN_EMAILS for production.');
+    return [
+      'admin@brainliest.com',
+      'super.admin@brainliest.com',
+      'platform.admin@brainliest.com'
+    ];
+  }
+  
+  throw new Error('AUTHORIZED_ADMIN_EMAILS environment variable is required in production');
+})();
 
 // Generate admin JWT token
 function generateAdminToken(user: AdminUser): string {

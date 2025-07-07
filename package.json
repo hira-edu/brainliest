@@ -71,6 +71,7 @@
     "helmet": "^8.1.0",
     "input-otp": "^1.4.2",
     "ipaddr.js": "^2.2.0",
+    "isomorphic-dompurify": "^2.26.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
     "memoizee": "^0.4.17",

@@ -12,6 +12,8 @@ import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
 import { parseId, parseOptionalId, validateEmail, validatePassword } from "./utils/validation";
+import { sanitizeInput, sanitizeRequestBody, checkRateLimit } from './security/input-sanitizer';
+import { logAdminAction, createAuditMiddleware } from './security/admin-audit';
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -325,8 +327,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Bulk question operations for CSV import
-  app.post("/api/questions/bulk", async (req, res) => {
+  // Bulk question operations for CSV import - ADMIN PROTECTED
+  app.post("/api/questions/bulk", requireNewAdminAuth, logNewAdminAction('BULK_CREATE_QUESTIONS'), async (req, res) => {
     try {
       const { questions } = req.body;
       if (!Array.isArray(questions) || questions.length === 0) {
