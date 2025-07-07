@@ -208,6 +208,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New backend slug-based route: /api/subjects/by-slug/:slug
+  app.get("/api/subjects/by-slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      if (!slug || typeof slug !== 'string') {
+        return res.status(400).json({ message: "Invalid subject slug" });
+      }
+      const subject = await storage.getSubjectBySlug(slug);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      res.json(subject);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch subject" });
+    }
+  });
+
   app.post("/api/subjects", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
@@ -249,6 +266,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Exam slug-based route
   app.get("/api/exams/slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      if (!slug || typeof slug !== 'string') {
+        return res.status(400).json({ message: "Invalid exam slug" });
+      }
+      const exam = await storage.getExamBySlug(slug);
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.json(exam);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exam" });
+    }
+  });
+
+  // New backend slug-based route: /api/exams/by-slug/:slug
+  app.get("/api/exams/by-slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
       if (!slug || typeof slug !== 'string') {
