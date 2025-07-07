@@ -10,7 +10,7 @@ import Home from "./features/pages/home";
 import AllSubjects from "./features/content/pages/all-subjects";
 import ExamSelection from "./features/exam/pages/exam-selection";
 import QuestionInterface from "./features/exam/pages/question-interface";
-import SlugExamInterface from "./features/exam/pages/slug-exam-interface";
+
 import Results from "./features/exam/pages/results";
 import Analytics from "./features/analytics/pages/analytics";
 // Admin components removed - only accessible via subdomain
@@ -26,7 +26,7 @@ import AuthCallback from "./features/auth/pages/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
-import LegacyExamRedirect from "./features/exam/components/legacy-exam-redirect";
+
 
 function Router() {
   return (
@@ -42,11 +42,7 @@ function Router() {
       </Route>
       <Route path="/subject/:id" component={ExamSelection} />
       <Route path="/subject/:slug" component={ExamSelection} />
-      {/* Legacy numeric exam routes - redirect to slug-based */}
-      <Route path="/exam/:id">
-        {(params) => <LegacyExamRedirect examId={params.id} />}
-      </Route>
-      {/* New slug-based exam routes */}
+      {/* War-tested slug system: ONLY slug-based routes, no redirects */}
       <Route path="/exam/:subjectSlug/:examSlug" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
@@ -57,8 +53,7 @@ function Router() {
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
       <Route path="/auth/callback" component={AuthCallback} />
-      {/* Slug-based exam routes - must be after specific routes */}
-      <Route path="/:subjectSlug/:examSlug" component={SlugExamInterface} />
+      {/* Legacy numeric routes return 404 - no redirects */}
       <Route component={NotFound} />
     </Switch>
   );
