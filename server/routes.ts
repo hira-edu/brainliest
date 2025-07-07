@@ -301,9 +301,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/questions", checkFreemiumStatus(), async (req, res) => {
     try {
       const examId = parseOptionalId(req.query.examId as string);
-      const questions = examId 
-        ? await storage.getQuestionsByExam(examId)
-        : await storage.getQuestions();
+      const examSlug = req.query.examSlug as string;
+      
+      let questions;
+      if (examId) {
+        questions = await storage.getQuestionsByExam(examId);
+      } else if (examSlug) {
+        // Slug-based question fetching
+        const exam = await storage.getExamBySlug(examSlug);
+        if (!exam) {
+          return res.status(404).json({ message: "Exam not found" });
+        }
+        questions = await storage.getQuestionsByExam(exam.id);
+      } else {
+        questions = await storage.getQuestions();
+      }
       
       // Add freemium session info to response for frontend
       const responseData = {

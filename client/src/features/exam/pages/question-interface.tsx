@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/exam/:id");
-  const examId = params?.id ? parseInt(params.id) : null;
+  const [match, params] = useRoute("/exam/:slug");
+  const examSlug = params?.slug;
 
   const { isSignedIn } = useAuth();
   const { 
@@ -42,18 +42,24 @@ export default function QuestionInterface() {
   const isActiveRef = useRef(true);
 
   const { data: exam } = useQuery<Exam>({
-    queryKey: [`/api/exams/${examId}`],
-    enabled: !!examId,
+    queryKey: [`/api/exams/slug/${examSlug}`],
+    enabled: !!examSlug,
+  });
+
+  // Fetch subject information for back navigation
+  const { data: subject } = useQuery({
+    queryKey: [`/api/subjects/${exam?.subjectId}`],
+    enabled: !!exam?.subjectId,
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
-    queryKey: ["/api/questions", examId],
+    queryKey: ["/api/questions", examSlug],
     queryFn: async () => {
-      const response = await fetch(`/api/questions?examId=${examId}`);
+      const response = await fetch(`/api/questions?examSlug=${examSlug}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: !!examId,
+    enabled: !!examSlug,
   });
 
   const questions = questionsData?.questions || [];
@@ -64,9 +70,18 @@ export default function QuestionInterface() {
   });
 
   const createSessionMutation = useMutation({
-    mutationFn: async (examId: number) => {
-      const response = await apiRequest("POST", "/api/sessions", { examId });
-      return response.json();
+    mutationFn: async () => {
+      if (!exam?.id) throw new Error('No exam available');
+      return apiRequest("/api/sessions", {
+        method: 'POST',
+        body: {
+          examId: exam.id,
+          startTime: new Date().toISOString(),
+          userName: isSignedIn ? 'authenticated-user' : 'anonymous-user',
+          completed: false,
+          score: "0%"
+        }
+      });
     },
     onSuccess: (session: ExamSession) => {
       setSessionId(session.id);
@@ -77,13 +92,16 @@ export default function QuestionInterface() {
           totalSeconds: exam.duration * 60,
         });
       }
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
     },
   });
 
   const updateSessionMutation = useMutation({
     mutationFn: async (data: { sessionId: number; updates: Partial<ExamSession> }) => {
-      const response = await apiRequest("PUT", `/api/sessions/${data.sessionId}`, data.updates);
-      return response.json();
+      return apiRequest(`/api/sessions/${data.sessionId}`, {
+        method: 'PUT',
+        body: data.updates
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}`] });
@@ -92,10 +110,10 @@ export default function QuestionInterface() {
 
   // Initialize session when exam loads
   useEffect(() => {
-    if (examId && !sessionId) {
-      createSessionMutation.mutate(examId);
+    if (exam?.id && !sessionId) {
+      createSessionMutation.mutate();
     }
-  }, [examId, sessionId]);
+  }, [exam?.id, sessionId]);
 
   // PERFORMANCE OPTIMIZED: Timer countdown with proper cleanup
   const handleFinishExamCallback = useCallback(() => {
@@ -374,8 +392,11 @@ export default function QuestionInterface() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    // TODO: Use subject slug when available
-                    setLocation(`/subject/${exam.subjectId}`);
+                    if (subject?.slug) {
+                      setLocation(`/subject/${subject.slug}`);
+                    } else {
+                      setLocation(`/subject/${exam.subjectId}`);
+                    }
                   }}
                   className="text-gray-600 hover:text-gray-900"
                 >
