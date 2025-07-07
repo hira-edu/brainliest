@@ -266,6 +266,7 @@ export default function Settings() {
                       id="firstName"
                       value={profile.firstName}
                       onChange={(e) => setProfile({...profile, firstName: e.target.value})}
+                      autoComplete="given-name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -274,6 +275,7 @@ export default function Settings() {
                       id="lastName"
                       value={profile.lastName}
                       onChange={(e) => setProfile({...profile, lastName: e.target.value})}
+                      autoComplete="family-name"
                     />
                   </div>
                 </div>
@@ -288,6 +290,7 @@ export default function Settings() {
                     type="email"
                     value={profile.email}
                     onChange={(e) => setProfile({...profile, email: e.target.value})}
+                    autoComplete="email"
                   />
                 </div>
 
@@ -300,6 +303,7 @@ export default function Settings() {
                     id="phone"
                     value={profile.phone}
                     onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                    autoComplete="tel"
                   />
                 </div>
 
@@ -376,6 +380,7 @@ export default function Settings() {
                       type={showPasswords.current ? "text" : "password"}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
+                      autoComplete="current-password"
                     />
                     <Button
                       type="button"
@@ -397,6 +402,7 @@ export default function Settings() {
                       type={showPasswords.new ? "text" : "password"}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
                     />
                     <Button
                       type="button"
@@ -418,6 +424,7 @@ export default function Settings() {
                       type={showPasswords.confirm ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      autoComplete="new-password"
                     />
                     <Button
                       type="button"

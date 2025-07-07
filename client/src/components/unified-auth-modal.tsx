@@ -368,6 +368,7 @@ function UnifiedAuthModalContent({
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     disabled={isLoading}
+                    autoComplete="email"
                   />
                 </div>
                 {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
@@ -384,6 +385,7 @@ function UnifiedAuthModalContent({
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
                         disabled={isLoading}
+                        autoComplete="given-name"
                       />
                     </div>
                     <div className="space-y-2">
@@ -394,6 +396,7 @@ function UnifiedAuthModalContent({
                         value={formData.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
                         disabled={isLoading}
+                        autoComplete="family-name"
                       />
                     </div>
                   </div>
@@ -409,6 +412,7 @@ function UnifiedAuthModalContent({
                         value={formData.username}
                         onChange={(e) => handleInputChange('username', e.target.value)}
                         disabled={isLoading}
+                        autoComplete="username"
                       />
                     </div>
                   </div>
@@ -427,6 +431,7 @@ function UnifiedAuthModalContent({
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     disabled={isLoading}
+                    autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
                   />
                   <Button
                     type="button"
@@ -459,6 +464,7 @@ function UnifiedAuthModalContent({
                       value={formData.confirmPassword}
                       onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                       disabled={isLoading}
+                      autoComplete="new-password"
                     />
                     <Button
                       type="button"

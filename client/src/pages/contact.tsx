@@ -200,6 +200,7 @@ export default function Contact() {
                           value={formData.name}
                           onChange={(e) => handleInputChange("name", e.target.value)}
                           required
+                          autoComplete="name"
                         />
                       </div>
                       <div className="space-y-2">
@@ -211,6 +212,7 @@ export default function Contact() {
                           value={formData.email}
                           onChange={(e) => handleInputChange("email", e.target.value)}
                           required
+                          autoComplete="email"
                         />
                       </div>
                     </div>
