@@ -1,0 +1,50 @@
+Immediately restore the UI and functionalities of the admin panel, user authentication, admin authentication, and homepage to their exact state from 2 hours ago—before recent unintended changes—while keeping only the newly implemented slug and navigation logic.
+
+Step-by-Step Instructions:
+Restore UI/Functionality to Previous State
+
+Revert all recent commits, code changes, and configuration modifications related to:
+
+Admin panel UI and logic
+
+User authentication logic and UI
+
+Admin authentication logic and UI
+
+Homepage UI, components, layout, and behavior
+
+Use your version control system (e.g., Git) to checkout or cherry-pick the codebase as it existed 2 hours ago for the affected files/directories.
+
+Preserve and Reintegrate Slug & Navigation Improvements
+
+After restoring previous UI/functionality, re-apply ONLY the changes related to the new slug-based system and navigation/routing fixes.
+
+Ensure the codebase uses the restored UI and features but now routes, fetches, and displays all resources using the new slug system (no reintroduction of ID-based routes or legacy code).
+
+Testing & Verification
+
+Thoroughly test:
+
+Admin panel: All UI, CRUD, navigation, and management features function and appear as they did previously.
+
+User and admin authentication: Flows, error handling, and protected route access work and look as before.
+
+Homepage: Layout, content, interactions, and widgets are as expected.
+
+Slug-based navigation: All routing and links work by slug as designed.
+
+Confirm that no other UI or business logic has changed except for the intended slug/navigation improvements.
+
+Lock Down Non-Slug Changes
+
+Instruct all contributors (including AIs) that no UI, design, or unrelated functionality should be altered until all outstanding slug and navigation issues are 100% resolved and signed off.
+
+Document the State
+
+Document which files/commits were reverted and which were re-applied.
+
+Keep a record of the working, reverted UI as a reference snapshot.
+
+Final Verification
+
+Have QA or a trusted reviewer perform a final pass on all core pages to ensure both the previous UI and the new slug/navigation system work together, without regressions.
