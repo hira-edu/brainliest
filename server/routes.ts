@@ -1291,6 +1291,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CSV Import/Export endpoints
+  app.get("/api/csv/template/:entityType", requireAdminAuth, async (req, res) => {
+    try {
+      const { CSVService } = await import('./csv-service');
+      const csvService = new CSVService(storage);
+      
+      const entityType = req.params.entityType as any;
+      const csvContent = await csvService.generateTemplate(entityType);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${entityType}_template.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error('CSV template generation error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Template generation failed' 
+      });
+    }
+  });
+
+  app.get("/api/csv/export/:entityType", requireAdminAuth, async (req, res) => {
+    try {
+      const { CSVService } = await import('./csv-service');
+      const csvService = new CSVService(storage);
+      
+      const entityType = req.params.entityType as any;
+      const includeRelationshipNames = req.query.includeNames === 'true';
+      const includeMetadata = req.query.includeMetadata === 'true';
+      
+      const csvContent = await csvService.exportData(entityType, {
+        includeRelationshipNames,
+        includeMetadata
+      });
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${entityType}_export.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      console.error('CSV export error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Export failed' 
+      });
+    }
+  });
+
+  app.post("/api/csv/import/:entityType", requireAdminAuth, async (req, res) => {
+    try {
+      const { CSVService } = await import('./csv-service');
+      const csvService = new CSVService(storage);
+      
+      const entityType = req.params.entityType as any;
+      const csvContent = req.body.csvContent;
+      
+      if (!csvContent) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'CSV content is required' 
+        });
+      }
+
+      const result = await csvService.importData(entityType, csvContent);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error('CSV import error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Import failed',
+        totalRows: 0,
+        processedRows: 0,
+        createdCount: 0,
+        updatedCount: 0,
+        deletedCount: 0,
+        errors: []
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
