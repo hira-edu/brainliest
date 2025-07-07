@@ -120,16 +120,42 @@ export default function ExamSelection() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {exams?.map((exam) => (
-            <ExamCard 
-              key={exam.id} 
-              exam={exam} 
-              onStart={() => handleStartExam(exam.id)}
-              // Completion tracking implemented via user sessions and analytics
-            />
-          ))}
-        </div>
+        {exams && exams.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {exams.map((exam) => (
+              <ExamCard 
+                key={exam.id} 
+                exam={exam} 
+                onStart={() => handleStartExam(exam.id)}
+                // Completion tracking implemented via user sessions and analytics
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <i className="fas fa-clipboard-list text-gray-400 text-2xl"></i>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Exams Available</h3>
+              <p className="text-gray-600 mb-4">
+                There are currently no exams in this section. Please check back later.
+              </p>
+              <p className="text-sm text-gray-500">
+                We're constantly adding new content and practice exams to help you succeed.
+              </p>
+              <div className="mt-6">
+                <Button
+                  onClick={handleGoBack}
+                  className="bg-primary text-white hover:bg-blue-700"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Subjects
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
