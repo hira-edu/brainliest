@@ -463,7 +463,7 @@ export default function Home() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                           {paginatedSubjects.map((subject) => (
-                            <Link key={subject.id} href={`/subject/${subject.slug || subject.id}`}>
+                            <Link key={subject.id} href={`/subject/${subject.slug}`}>
                               <SubjectCard 
                                 subject={subject} 
                               />
@@ -488,7 +488,7 @@ export default function Home() {
             {filteredSubjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredSubjects.map((subject) => (
-                  <Link key={subject.id} href={`/subject/${subject.slug || subject.id}`}>
+                  <Link key={subject.id} href={`/subject/${subject.slug}`}>
                     <SubjectCard 
                       subject={subject} 
                     />

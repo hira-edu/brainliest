@@ -240,12 +240,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ELIMINATED: Legacy numeric route replaced with 404 per war-tested specifications
+  // Keep legacy route for admin panel compatibility - but frontend uses slugs only
   app.get("/api/exams/:id", async (req, res) => {
-    // War-tested system: Return 404 for legacy numeric routes
-    return res.status(404).json({ 
-      message: "Exam not found - Use slug-based routes: /api/exams/by-slug/:slug" 
-    });
+    try {
+      const id = parseId(req.params.id, 'exam ID');
+      const exam = await storage.getExam(id);
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.json(exam);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exam" });
+    }
   });
 
   app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
@@ -1495,8 +1501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
       console.log('🔗 Redirecting to Google OAuth:', authUrl);
       
-      // ELIMINATED: OAuth redirect replaced with JSON response per war-tested specifications
-      res.json({ authUrl, message: "Use this auth URL for OAuth login" });
+      res.redirect(authUrl);
     } catch (error) {
       console.error('❌ OAuth start error:', error);
       res.status(500).json({ success: false, message: 'Failed to start OAuth flow' });
@@ -1512,14 +1517,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (error) {
         console.error('❌ Google OAuth error:', error);
-        // ELIMINATED: OAuth error redirect replaced with JSON error response per war-tested specifications
-        return res.status(400).json({ error: "oauth_error", message: error as string });
+        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=${encodeURIComponent(error as string)}`);
       }
       
       if (!code) {
         console.error('❌ No authorization code received');
-        // ELIMINATED: OAuth error redirect replaced with JSON error response per war-tested specifications  
-        return res.status(400).json({ error: "oauth_error", message: "No authorization code received" });
+        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=No+authorization+code+received`);
       }
       
       // Exchange authorization code for tokens

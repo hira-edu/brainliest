@@ -8,17 +8,14 @@ import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
   
-  // Check both ID and slug routes
-  const [matchId, paramsId] = useRoute("/subject/:id");
-  const [matchSlug, paramsSlug] = useRoute("/subject/:slug");
-  
-  const subjectParam = paramsId?.id || paramsSlug?.slug;
-  const isNumericId = subjectParam && !isNaN(Number(subjectParam));
+  // Modern slug-based routing only  
+  const [match, params] = useRoute("/subject/:slug");
+  const subjectSlug = params?.slug;
 
-  // Get subject by ID or slug based on parameter type
+  // Get subject by slug
   const { data: subject } = useQuery<Subject>({
-    queryKey: isNumericId ? [`/api/subjects/${subjectParam}`] : [`/api/subjects/by-slug/${subjectParam}`],
-    enabled: !!subjectParam,
+    queryKey: [`/api/subjects/by-slug/${subjectSlug}`],
+    enabled: !!subjectSlug,
   });
 
   const { data: exams, isLoading } = useQuery<Exam[]>({

@@ -40,7 +40,6 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
-      <Route path="/subject/:id" component={ExamSelection} />
       <Route path="/subject/:slug" component={ExamSelection} />
       {/* War-tested slug system: ONLY slug-based routes, no redirects */}
       <Route path="/exam/:subjectSlug/:examSlug" component={QuestionInterface} />

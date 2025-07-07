@@ -431,7 +431,7 @@ export default function AllSubjects() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Link href={`/subject/${subject.slug || subject.id}`}>
+                        <Link href={`/subject/${subject.slug}`}>
                           <Button 
                             size="sm" 
                             className="bg-primary hover:bg-primary/90"

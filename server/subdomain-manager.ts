@@ -59,12 +59,7 @@ export function enforceSubdomainRestrictions(req: Request, res: Response, next: 
       ? `http://admin.localhost:5000${req.path}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`
       : `https://admin.brainliest.com${req.path}${req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : ''}`;
     
-    // ELIMINATED: Subdomain redirect replaced with JSON response per war-tested specifications
-    return res.status(400).json({ 
-      error: "subdomain_required", 
-      message: "Access admin panel via proper subdomain",
-      adminUrl 
-    });
+    return res.redirect(adminUrl);
   }
   
   // Admin API routes restricted to admin subdomain
