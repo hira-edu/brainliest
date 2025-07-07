@@ -83,19 +83,21 @@ export const authAPI = {
     username?: string;
     firstName?: string;
     lastName?: string;
-  }): Promise<AuthResponse> {
+  }, recaptchaToken?: string): Promise<AuthResponse> {
     const response = await apiRequest("POST", "/api/auth/register", {
       email,
       password,
+      recaptchaToken,
       ...userData
     });
     return response.json();
   },
 
-  async login(email: string, password: string): Promise<AuthResponse> {
+  async login(email: string, password: string, recaptchaToken?: string): Promise<AuthResponse> {
     const response = await apiRequest("POST", "/api/auth/login", {
       email,
-      password
+      password,
+      recaptchaToken
     });
     return response.json();
   },

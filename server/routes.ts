@@ -1125,7 +1125,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register with email/password
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, username, firstName, lastName } = req.body;
+      const { email, password, username, firstName, lastName, recaptchaToken } = req.body;
+      
+      // Log reCAPTCHA token presence (without logging the actual token for security)
+      console.log('Registration with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
       const result = await authService.register(
         email, 
@@ -1146,7 +1149,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login with email/password
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, recaptchaToken } = req.body;
+      
+      // Log reCAPTCHA token presence (without logging the actual token for security)
+      console.log('Login with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
       const result = await authService.login(
         email, 
@@ -1354,7 +1360,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth Google login (legacy endpoint for direct user data)
   app.post("/api/auth/oauth/google", async (req, res) => {
     try {
-      const { email, googleId, firstName, lastName, profileImage } = req.body;
+      const { email, googleId, firstName, lastName, profileImage, recaptchaToken } = req.body;
+      
+      // Log reCAPTCHA token presence (without logging the actual token for security)
+      console.log('Google OAuth with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
       const result = await authService.oauthLogin(
         'google',

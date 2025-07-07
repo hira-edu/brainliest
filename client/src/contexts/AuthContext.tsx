@@ -7,9 +7,9 @@ interface AuthContextType {
   userName: string;
   user: AuthUser | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
-  signUp: (email: string, password: string, userData?: { username?: string; firstName?: string; lastName?: string }) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
-  signInWithGoogle: () => Promise<void>;
+  signIn: (email: string, password: string, recaptchaToken?: string) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
+  signUp: (email: string, password: string, userData?: { username?: string; firstName?: string; lastName?: string }, recaptchaToken?: string) => Promise<{ success: boolean; message?: string; requiresEmailVerification?: boolean }>;
+  signInWithGoogle: (recaptchaToken?: string) => Promise<void>;
   signOut: () => Promise<void>;
   verifyEmail: (token: string) => Promise<{ success: boolean; message: string }>;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; message: string }>;
@@ -74,9 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, recaptchaToken?: string) => {
     try {
-      const response = await authAPI.login(email, password);
+      const response = await authAPI.login(email, password, recaptchaToken);
       
       if (response.success && response.user) {
         const authenticatedUser = authUtils.handleAuthSuccess(response);
@@ -102,9 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, userData?: { username?: string; firstName?: string; lastName?: string }) => {
+  const signUp = async (email: string, password: string, userData?: { username?: string; firstName?: string; lastName?: string }, recaptchaToken?: string) => {
     try {
-      const response = await authAPI.register(email, password, userData);
+      const response = await authAPI.register(email, password, userData, recaptchaToken);
       
       if (response.success && response.user) {
         // Check if email verification is required
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (recaptchaToken?: string) => {
     try {
       console.log('🚀 Starting Google sign-in popup...');
       

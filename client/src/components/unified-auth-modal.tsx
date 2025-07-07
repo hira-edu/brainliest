@@ -9,7 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle } from "lucide-react";
+import { Loader2, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle, Shield } from "lucide-react";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 interface UnifiedAuthModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ export default function UnifiedAuthModal({
 
   const { signIn, signUp, signInWithGoogle, verifyEmail } = useAuth();
   const { toast } = useToast();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const defaultTitle = mode === 'freemium' 
     ? 'Unlock Unlimited Access' 
@@ -99,8 +101,19 @@ export default function UnifiedAuthModal({
 
     setIsLoading(true);
     try {
+      // Generate reCAPTCHA token
+      let recaptchaToken = '';
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha(authMode === 'signin' ? 'login' : 'signup');
+        } catch (error) {
+          console.warn('reCAPTCHA execution failed:', error);
+          // Continue without reCAPTCHA if it fails
+        }
+      }
+
       if (authMode === 'signin') {
-        const result = await signIn(formData.email, formData.password);
+        const result = await signIn(formData.email, formData.password, recaptchaToken);
         if (result.success) {
           if (result.requiresEmailVerification) {
             setIsEmailSent(true);
@@ -128,7 +141,7 @@ export default function UnifiedAuthModal({
           username: formData.username,
           firstName: formData.firstName,
           lastName: formData.lastName
-        });
+        }, recaptchaToken);
         
         if (result.success) {
           if (result.requiresEmailVerification) {
@@ -205,7 +218,19 @@ export default function UnifiedAuthModal({
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
-      await signInWithGoogle();
+      
+      // Generate reCAPTCHA token for Google sign-in
+      let recaptchaToken = '';
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('google_signin');
+        } catch (error) {
+          console.warn('reCAPTCHA execution failed:', error);
+          // Continue without reCAPTCHA if it fails
+        }
+      }
+      
+      await signInWithGoogle(recaptchaToken);
       
       onClose();
       resetForm();
@@ -461,6 +486,12 @@ export default function UnifiedAuthModal({
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {authMode === 'signin' ? 'Sign In' : 'Create Account'}
               </Button>
+
+              {/* reCAPTCHA Protection Indicator */}
+              <div className="flex items-center justify-center space-x-2 py-2 text-xs text-gray-500">
+                <Shield className="w-3 h-3" />
+                <span>Protected by reCAPTCHA v3</span>
+              </div>
 
               <div className="text-center text-sm">
                 <button

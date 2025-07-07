@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { QuestionLimitProvider } from "@/contexts/QuestionLimitContext";
+import RecaptchaProvider from "@/components/recaptcha-provider";
 import Home from "@/pages/home";
 import ExamSelection from "@/pages/exam-selection";
 import QuestionInterface from "@/pages/question-interface";
@@ -54,14 +55,16 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <QuestionLimitProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </QuestionLimitProvider>
-      </AuthProvider>
+      <RecaptchaProvider>
+        <AuthProvider>
+          <QuestionLimitProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </QuestionLimitProvider>
+        </AuthProvider>
+      </RecaptchaProvider>
     </QueryClientProvider>
   );
 }
