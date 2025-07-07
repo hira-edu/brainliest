@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import RecaptchaProvider from './recaptcha-provider';
 
 interface UnifiedAuthModalProps {
   isOpen: boolean;
@@ -20,7 +21,7 @@ interface UnifiedAuthModalProps {
   description?: string;
 }
 
-export default function UnifiedAuthModal({ 
+function UnifiedAuthModalContent({ 
   isOpen, 
   onClose, 
   mode = 'general',
@@ -510,5 +511,13 @@ export default function UnifiedAuthModal({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+export default function UnifiedAuthModal(props: UnifiedAuthModalProps) {
+  return (
+    <RecaptchaProvider>
+      <UnifiedAuthModalContent {...props} />
+    </RecaptchaProvider>
   );
 }
