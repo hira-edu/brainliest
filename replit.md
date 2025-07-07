@@ -265,6 +265,16 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 07, 2025 - Unified CSV System Implementation with Database ID Preservation (COMPLETED)
+- **Complete unified CSV solution**: Replaced entity-specific dropdowns with single comprehensive CSV template
+- **UnifiedCSVService implementation**: Created comprehensive service handling all platform entities in one CSV file
+- **Hierarchical data workflow**: Supports adding subject → exam → questions in proper order with automatic relationship linking
+- **Database ID preservation**: Export includes actual database IDs for correct ordering and formatting
+- **Smart relationship management**: Automatic linking via name matching (subject_name → exam_subject_name → question_exam_title)
+- **Production-ready API endpoints**: Three unified endpoints for template download, data export, and bulk import
+- **Admin panel integration**: Removed entity-specific CSV dropdowns, replaced with unified approach per user requirements
+- **Complete workflow support**: Users can now add one subject, then exam to it, then questions to it in single CSV file
+
 ### July 07, 2025 - Critical SearchableSelect Dropdown Fix with Type Coercion Resolution (COMPLETED)
 - **Identified root cause**: SearchableSelect component had type mismatch in selectedOption calculation causing dropdowns to not display selected values
 - **Fixed type coercion issue**: Enhanced selectedOption find logic to handle both strict equality and string-converted equality for robust type matching
