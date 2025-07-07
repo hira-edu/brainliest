@@ -92,7 +92,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [itemsPerPage, setItemsPerPage] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
 
   // Helper function to get current page for a category
@@ -101,6 +101,14 @@ export default function Home() {
   // Helper function to set current page for a category
   const setCurrentPageForCategory = (categoryKey: string, page: number) => {
     setCurrentPage(prev => ({ ...prev, [categoryKey]: page }));
+  };
+
+  // Helper function to get items per page for a category
+  const getItemsPerPage = (categoryKey: string) => itemsPerPage[categoryKey] || 12;
+  
+  // Helper function to set items per page for a category
+  const setItemsPerPageForCategory = (categoryKey: string, items: number) => {
+    setItemsPerPage(prev => ({ ...prev, [categoryKey]: items }));
   };
   
   const { data: subjects, isLoading } = useQuery<Subject[]>({
@@ -363,9 +371,10 @@ export default function Home() {
                   {/* Category Pagination and Filter Controls */}
                   {(() => {
                     const currentPageNum = getCurrentPage(categoryKey);
-                    const totalPages = Math.ceil(categorySubjects.length / itemsPerPage);
-                    const startIndex = (currentPageNum - 1) * itemsPerPage;
-                    const endIndex = startIndex + itemsPerPage;
+                    const categoryItemsPerPage = getItemsPerPage(categoryKey);
+                    const totalPages = Math.ceil(categorySubjects.length / categoryItemsPerPage);
+                    const startIndex = (currentPageNum - 1) * categoryItemsPerPage;
+                    const endIndex = startIndex + categoryItemsPerPage;
                     const paginatedSubjects = categorySubjects.slice(startIndex, endIndex);
                     
                     return (
@@ -375,9 +384,9 @@ export default function Home() {
                             <div className="flex items-center space-x-4">
                               <span className="text-sm text-gray-600">Show:</span>
                               <Select 
-                                value={itemsPerPage.toString()} 
+                                value={categoryItemsPerPage.toString()} 
                                 onValueChange={(value) => {
-                                  setItemsPerPage(parseInt(value));
+                                  setItemsPerPageForCategory(categoryKey, parseInt(value));
                                   setCurrentPageForCategory(categoryKey, 1); // Reset to first page
                                 }}
                               >
