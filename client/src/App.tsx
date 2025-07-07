@@ -26,6 +26,7 @@ import AuthCallback from "./features/auth/pages/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
+import LegacyExamRedirect from "./features/exam/components/legacy-exam-redirect";
 
 function Router() {
   return (
@@ -41,7 +42,12 @@ function Router() {
       </Route>
       <Route path="/subject/:id" component={ExamSelection} />
       <Route path="/subject/:slug" component={ExamSelection} />
-      <Route path="/exam/:id" component={QuestionInterface} />
+      {/* Legacy numeric exam routes - redirect to slug-based */}
+      <Route path="/exam/:id">
+        {(params) => <LegacyExamRedirect examId={params.id} />}
+      </Route>
+      {/* New slug-based exam routes */}
+      <Route path="/exam/:subjectSlug/:examSlug" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />

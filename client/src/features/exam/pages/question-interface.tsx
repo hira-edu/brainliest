@@ -18,8 +18,41 @@ import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/exam/:id");
-  const examId = params?.id ? parseInt(params.id) : null;
+  
+  // Check for both legacy numeric routes and new slug-based routes
+  const [legacyMatch, legacyParams] = useRoute("/exam/:id");
+  const [slugMatch, slugParams] = useRoute("/exam/:subjectSlug/:examSlug");
+  
+  // Determine which route type we're handling
+  const isLegacyRoute = legacyMatch && legacyParams?.id && !isNaN(Number(legacyParams.id));
+  const isSlugRoute = slugMatch && slugParams?.subjectSlug && slugParams?.examSlug;
+  
+  const examId = isLegacyRoute ? (legacyParams?.id ? parseInt(legacyParams.id) : null) : null;
+  const subjectSlug = isSlugRoute ? slugParams?.subjectSlug : null;
+  const examSlug = isSlugRoute ? slugParams?.examSlug : null;
+
+  // For legacy routes, show error message (LegacyExamRedirect handles actual redirects)
+  if (isLegacyRoute) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Moved</h1>
+          <p className="text-gray-600">This exam URL has been updated. You will be redirected automatically.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSlugRoute || !subjectSlug || !examSlug) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid URL</h1>
+          <p className="text-gray-600">Please use a valid exam URL.</p>
+        </div>
+      </div>
+    );
+  }
 
   const { isSignedIn } = useAuth();
   const { 
@@ -41,19 +74,34 @@ export default function QuestionInterface() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
 
+  // For slug-based routes, we need to get the exam by subject and exam slugs
+  const { data: subject } = useQuery({
+    queryKey: [`/api/subjects/by-slug/${subjectSlug}`],
+    enabled: !!subjectSlug,
+  });
+
   const { data: exam } = useQuery<Exam>({
-    queryKey: [`/api/exams/${examId}`],
-    enabled: !!examId,
+    queryKey: [`/api/exams/by-slug/${examSlug}`, subject?.id],
+    queryFn: async () => {
+      if (!subject?.id) throw new Error('Subject not found');
+      const response = await fetch(`/api/exams?subjectId=${subject.id}`);
+      if (!response.ok) throw new Error('Failed to fetch exams');
+      const exams = await response.json();
+      const exam = exams.find((e: Exam) => e.slug === examSlug);
+      if (!exam) throw new Error('Exam not found');
+      return exam;
+    },
+    enabled: !!subject?.id && !!examSlug,
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
-    queryKey: ["/api/questions", examId],
+    queryKey: ["/api/questions", exam?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/questions?examId=${examId}`);
+      const response = await fetch(`/api/questions?examId=${exam?.id}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: !!examId,
+    enabled: !!exam?.id,
   });
 
   const questions = questionsData?.questions || [];

@@ -1,0 +1,86 @@
+There are still multiple errors in the exam system:
+
+Some exams use legacy numeric slugs (e.g., /exam/2) instead of SEO-friendly slugs.
+
+Cards/lists display incorrect question counts—more than actually exist in the exam.
+
+Inconsistent or buggy behavior remains in how URLs, exam data, and content are managed.
+
+Your task is to perform a full, rigorous, end-to-end audit and refactor so the following is 100% correct:
+
+SEO slugs are generated and enforced everywhere.
+
+All counts and data shown to users exactly match the source/truth.
+
+No more partial, legacy, or out-of-sync implementations.
+
+Step-by-Step Instructions
+1. Audit and Replace Legacy Exam URLs
+
+Identify all exams using old-style numeric slugs (e.g., /exam/2).
+
+Generate and assign proper SEO-friendly slugs for every exam based on the exam’s title, using a robust slugification system (see earlier).
+
+Automatically 301-redirect all legacy numeric URLs to the new canonical slug-based URLs.
+
+Update all links, sitemaps, and navigation to use the new URLs.
+
+2. Slug Uniqueness and Collision Handling
+
+Ensure slug generation logic produces unique slugs (e.g., pmp-exam-help, pmp-exam-help-2 if needed).
+
+Store slug in the database for every exam; use this as the only source of truth for routing.
+
+3. Consistent, Accurate Question Counts
+
+Fix all logic that displays the number of questions on cards, lists, and pages:
+
+The displayed count must be directly calculated from the actual questions stored/linked to the exam in the database.
+
+Never show a higher number than what actually exists.
+
+If an exam is empty, display "0 questions" or hide the badge, per UX standards.
+
+Write robust backend and frontend unit tests to validate count accuracy.
+
+4. End-to-End Data Consistency
+
+Audit backend, API, and frontend to ensure all data related to each exam (title, slug, questions, stats) are in sync and reflect the latest state.
+
+Ensure any changes in title auto-update the slug (with redirect) and all related links.
+
+5. QA and Error Reporting
+
+Run automated tests and manual checks for:
+
+Every exam page loads with the correct slug, title, and question count.
+
+Legacy URLs (numeric slugs) correctly redirect.
+
+No duplicated, missing, or broken links/cards.
+
+No mismatch between displayed count and actual questions.
+
+Implement error logging for any slug collisions, mismatches, or missing content.
+
+6. SEO, UX, and Best Practices
+
+Ensure all exam pages use canonical URLs matching their slug.
+
+Sitemaps are updated with the new URL scheme.
+
+All redirects use 301 status for SEO value preservation.
+
+All links and meta tags update dynamically if an exam title (and thus slug) changes.
+
+7. Do Not Break Core Functionality
+
+The new system must be fully backward-compatible and must not break registration, login, commenting, or other non-exam features.
+
+Deliverable:
+A fully consistent, SEO-friendly, and error-free exam URL/slug system.
+No numeric slugs remain.
+All question counts are accurate everywhere.
+Redirects are set up.
+No old/legacy links or cards remain.
+All code and database changes are well-documented.

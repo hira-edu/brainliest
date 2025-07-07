@@ -32,9 +32,13 @@ export default function ExamSelection() {
     enabled: !!subject?.id,
   });
 
-  const handleStartExam = (examId: number) => {
-    // Navigate directly to the exam interface using exam ID
-    setLocation(`/exam/${examId}`);
+  const handleStartExam = (exam: Exam) => {
+    // Navigate to the new slug-based exam URL
+    if (subject && exam.slug && subject.slug) {
+      setLocation(`/exam/${subject.slug}/${exam.slug}`);
+    } else {
+      console.error('Missing slugs for navigation:', { subject: subject?.slug, exam: exam.slug });
+    }
   };
 
   const handleGoBack = () => {
@@ -127,7 +131,7 @@ export default function ExamSelection() {
             <ExamCard 
               key={exam.id} 
               exam={exam} 
-              onStart={() => handleStartExam(exam.id)}
+              onStart={() => handleStartExam(exam)}
               // Completion tracking implemented via user sessions and analytics
             />
           ))}
