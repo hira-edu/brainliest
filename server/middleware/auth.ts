@@ -36,6 +36,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     const result = await authService.verifyToken(token);
     
     if (!result.valid || !result.user) {
+      console.log('Token verification failed:', { valid: result.valid, hasUser: !!result.user, expired: result.expired });
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid or expired token' 
