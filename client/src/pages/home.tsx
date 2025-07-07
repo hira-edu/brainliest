@@ -268,46 +268,7 @@ export default function Home() {
             ))}
           </div>
           
-          {/* Quick Category Links */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Browse by Category</h4>
-            <div className="flex flex-wrap gap-3">
-              {Object.entries(categoryConfig).map(([categoryKey, config]) => {
-                const IconComponent = config.icon;
-                const categorySubjects = categorizedSubjects[categoryKey] || [];
-                
-                return (
-                  <Button
-                    key={categoryKey}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-2"
-                    onClick={() => {
-                      setSelectedCategory(categoryKey);
-                      setSearchQuery("");
-                    }}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    <span>{config.title}</span>
-                    <Badge variant="secondary" className="ml-1 text-xs">
-                      {categorySubjects.length}
-                    </Badge>
-                  </Button>
-                );
-              })}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center space-x-2"
-                onClick={() => {
-                  setSelectedCategory("all");
-                  setSearchQuery("");
-                }}
-              >
-                <span>View All Subjects</span>
-              </Button>
-            </div>
-          </div>
+
         </div>
 
         {/* Category Sections */}
@@ -375,6 +336,46 @@ export default function Home() {
           </div>
         )}
 
+        {/* Browse by Category Section */}
+        <div className="bg-white rounded-xl shadow-sm p-8 mt-8">
+          <h4 className="text-lg font-semibold text-gray-900 mb-4">Browse by Category</h4>
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(categoryConfig).map(([categoryKey, config]) => {
+              const IconComponent = config.icon;
+              const categorySubjects = categorizedSubjects[categoryKey] || [];
+              
+              return (
+                <Button
+                  key={categoryKey}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                  onClick={() => {
+                    setSelectedCategory(categoryKey);
+                    setSearchQuery("");
+                  }}
+                >
+                  <IconComponent className="w-4 h-4" />
+                  <span>{config.title}</span>
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {categorySubjects.length}
+                  </Badge>
+                </Button>
+              );
+            })}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2"
+              onClick={() => {
+                setSelectedCategory("all");
+                setSearchQuery("");
+              }}
+            >
+              <span>View All Subjects</span>
+            </Button>
+          </div>
+        </div>
 
       </main>
       <Footer />
