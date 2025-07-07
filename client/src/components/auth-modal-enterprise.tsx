@@ -14,12 +14,13 @@ import { Loader2, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle } from
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultTab?: "signin" | "signup" | "reset";
+  defaultTab?: "signin" | "signup";
 }
 
 export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "signin" }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [isLoading, setIsLoading] = useState(false);
+  const [signupStep, setSignupStep] = useState<"email" | "verification" | "password">("email");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -30,7 +31,8 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
     confirmPassword: "",
     firstName: "",
     lastName: "",
-    username: ""
+    username: "",
+    verificationCode: ""
   });
   
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -54,13 +56,15 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
       confirmPassword: "",
       firstName: "",
       lastName: "",
-      username: ""
+      username: "",
+      verificationCode: ""
     });
     setErrors({});
     setResetEmailSent(false);
     setEmailVerificationSent(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
+    setSignupStep("email");
   };
 
   const validateForm = (tab: string): boolean => {
@@ -239,6 +243,143 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
     }
   };
 
+  // New signup flow handlers
+  const handleSendVerificationCode = async () => {
+    if (!formData.email) {
+      setErrors({ email: "Email is required" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSignupStep("verification");
+        toast({
+          title: "Verification Code Sent",
+          description: "Please check your email for the 6-digit verification code.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to send verification code",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send verification code. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!formData.verificationCode) {
+      setErrors({ verificationCode: "Verification code is required" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          code: formData.verificationCode 
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSignupStep("password");
+        toast({
+          title: "Email Verified",
+          description: "Please set your password to complete registration.",
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: result.message || "Invalid verification code",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to verify code. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteSignup = async () => {
+    if (!formData.password || !formData.confirmPassword) {
+      setErrors({ 
+        password: !formData.password ? "Password is required" : "",
+        confirmPassword: !formData.confirmPassword ? "Please confirm your password" : ""
+      });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrors({ confirmPassword: "Passwords do not match" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/complete-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          password: formData.password 
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.user) {
+        // Account created successfully - the response includes the user data
+        toast({
+          title: "Welcome to Brainliest!",
+          description: "Your account has been created successfully.",
+        });
+        onClose();
+        resetForm();
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: result.message || "Failed to create account",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -273,11 +414,10 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "signin" | "signup" | "reset")} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "signin" | "signup")} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            <TabsTrigger value="reset">Reset Password</TabsTrigger>
           </TabsList>
 
           {/* Google Sign In - Available on Sign In and Sign Up tabs */}
@@ -395,7 +535,12 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
                 type="button"
                 variant="link"
                 className="text-sm"
-                onClick={() => setActiveTab("reset")}
+                onClick={() => {
+                  toast({
+                    title: "Password Reset",
+                    description: "Please contact support for password reset assistance.",
+                  });
+                }}
               >
                 Forgot your password?
               </Button>
@@ -404,178 +549,21 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
 
           {/* Sign Up Tab */}
           <TabsContent value="signup" className="space-y-4">
-            {emailVerificationSent && (
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  Registration successful! Please check your email to verify your account.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            {signupStep === "email" && (
+              <div className="space-y-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">Create Your Account</h3>
+                  <p className="text-sm text-gray-600">Enter your email to get started</p>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="signup-firstname">First Name</Label>
-                  <Input
-                    id="signup-firstname"
-                    type="text"
-                    placeholder="First name"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    disabled={isLoading}
-                  />
-                  {errors.firstName && <p className="text-sm text-red-600">{errors.firstName}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-lastname">Last Name</Label>
-                  <Input
-                    id="signup-lastname"
-                    type="text"
-                    placeholder="Last name"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="signup-username">Username (Optional)</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    placeholder="Choose a username"
-                    className="pl-10"
-                    value={formData.username}
-                    onChange={(e) => handleInputChange("username", e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                {errors.username && <p className="text-sm text-red-600">{errors.username}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    className="pl-10"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-                {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="signup-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a password"
-                    className="pl-10 pr-10"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange("password", e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-                {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
-                <p className="text-xs text-gray-500">
-                  Password must contain uppercase, lowercase, number, and special character
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="signup-confirm-password"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    className="pl-10 pr-10"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    disabled={isLoading}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-                {errors.confirmPassword && <p className="text-sm text-red-600">{errors.confirmPassword}</p>}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading || authLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
-              </Button>
-            </form>
-          </TabsContent>
-
-          {/* Password Reset Tab */}
-          <TabsContent value="reset" className="space-y-4">
-            {resetEmailSent ? (
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  Password reset instructions have been sent to your email address.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <form onSubmit={handlePasswordReset} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
+                  <Label htmlFor="signup-email">Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      id="reset-email"
+                      id="signup-email"
                       type="email"
-                      placeholder="Enter your email address"
+                      placeholder="Enter your email"
                       className="pl-10"
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
@@ -583,39 +571,198 @@ export default function AuthModalEnterprise({ isOpen, onClose, defaultTab = "sig
                     />
                   </div>
                   {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
-                  <p className="text-sm text-gray-500">
-                    We'll send you a link to reset your password.
-                  </p>
                 </div>
 
                 <Button
-                  type="submit"
+                  onClick={handleSendVerificationCode}
                   className="w-full"
-                  disabled={isLoading || authLoading}
+                  disabled={isLoading || !formData.email}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending reset email...
+                      Sending code...
                     </>
                   ) : (
-                    "Send Reset Email"
+                    "Send Verification Code"
                   )}
                 </Button>
-              </form>
+              </div>
             )}
 
-            <div className="text-center">
-              <Button
-                type="button"
-                variant="link"
-                className="text-sm"
-                onClick={() => setActiveTab("signin")}
-              >
-                Back to Sign In
-              </Button>
-            </div>
+            {signupStep === "verification" && (
+              <div className="space-y-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">Verify Your Email</h3>
+                  <p className="text-sm text-gray-600">
+                    We've sent a 6-digit code to <strong>{formData.email}</strong>
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="verification-code">Verification Code</Label>
+                  <Input
+                    id="verification-code"
+                    placeholder="Enter 6-digit code"
+                    value={formData.verificationCode}
+                    onChange={(e) => handleInputChange("verificationCode", e.target.value)}
+                    disabled={isLoading}
+                    maxLength={6}
+                    className="text-center text-lg tracking-wider"
+                  />
+                  {errors.verificationCode && <p className="text-sm text-red-600">{errors.verificationCode}</p>}
+                </div>
+
+                <Button
+                  onClick={handleVerifyCode}
+                  className="w-full"
+                  disabled={isLoading || !formData.verificationCode}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify Code"
+                  )}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => setSignupStep("email")}
+                  className="w-full text-sm"
+                >
+                  Change email address
+                </Button>
+              </div>
+            )}
+
+            {signupStep === "password" && (
+              <div className="space-y-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">Set Your Password</h3>
+                  <p className="text-sm text-gray-600">
+                    Create a secure password for your account
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="signup-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password"
+                      className="pl-10 pr-10"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange("password", e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.password && <p className="text-sm text-red-600">{errors.password}</p>}
+                  <p className="text-xs text-gray-500">
+                    Password must contain uppercase, lowercase, number, and special character
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="signup-confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      className="pl-10 pr-10"
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                      disabled={isLoading}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.confirmPassword && <p className="text-sm text-red-600">{errors.confirmPassword}</p>}
+                </div>
+
+                <Button
+                  onClick={handleCompleteSignup}
+                  className="w-full"
+                  disabled={isLoading || !formData.password || !formData.confirmPassword}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
+                </Button>
+              </div>
+            )}
           </TabsContent>
+
+          {/* Google OAuth Section */}
+          <div className="space-y-4">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading || authLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+              )}
+              Continue with Google
+            </Button>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
