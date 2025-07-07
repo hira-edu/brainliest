@@ -238,6 +238,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/subjects/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'subject ID');
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid subject ID" });
+      }
+      const validation = insertSubjectSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid subject data", errors: validation.error.errors });
+      }
+      const subject = await storage.updateSubject(id, validation.data);
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+      res.json(subject);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update subject" });
+    }
+  });
+
   // Exam routes
   app.get("/api/exams", async (req, res) => {
     try {

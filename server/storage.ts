@@ -195,7 +195,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined> {
-    // Auto-generate slug if name is being updated but slug is not provided
+    // Auto-regenerate slug whenever name is being updated (unless custom slug is explicitly provided)
     if (subject.name && !subject.slug) {
       const baseSlug = slugify(subject.name);
       subject.slug = await generateUniqueSlug(baseSlug, 'subjects', id);
@@ -302,7 +302,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
-    // Auto-generate slug if title is being updated but slug is not provided
+    // Auto-regenerate slug whenever title is being updated (unless custom slug is explicitly provided)
     if (exam.title && !exam.slug) {
       const baseSlug = slugify(exam.title);
       exam.slug = await generateUniqueSlug(baseSlug, 'exams', id);
