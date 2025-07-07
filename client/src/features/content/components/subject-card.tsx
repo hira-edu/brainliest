@@ -1,5 +1,5 @@
 import { Subject } from "@shared/schema";
-import { getIconComponent } from "@/assets/icons/certifications";
+import { getIconComponent } from "@/utils/certification-icons";
 
 interface SubjectCardProps {
   subject: Subject;

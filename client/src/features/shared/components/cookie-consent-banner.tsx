@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Cookie, Settings, Shield, BarChart, Target, X } from 'lucide-react';
-import { CookieManager, COOKIE_REGISTRY } from '@/lib/cookie-utils';
+import { CookieManager, COOKIE_REGISTRY } from '@/utils/cookie-utils';
 
 interface CookieConsentBannerProps {
   onConsentChange?: (preferences: Record<string, boolean>) => void;

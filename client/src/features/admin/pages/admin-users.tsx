@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/features/shared/hooks/use-toast";
+import { apiRequest } from "@/services/queryClient";
 import { Users, Search, Download, Ban, UserX, Eye, Calendar, MapPin } from "lucide-react";
 import type { User } from "@shared/schema";
 

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { googleAuthService } from "@/lib/google-auth";
-import { authAPI, authUtils, TokenStorage, type AuthUser } from "@/lib/auth-api";
+import { googleAuthService } from "./services/google-auth";
+import { authAPI, authUtils, TokenStorage, type AuthUser } from "./services/auth-api";
 
 interface AuthContextType {
   isSignedIn: boolean;

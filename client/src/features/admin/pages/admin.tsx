@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject, AuditLog } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/header";
+import { apiRequest, queryClient } from "@/services/queryClient";
+import { useToast } from "@/features/shared/hooks/use-toast";
+import Header from "@/features/shared/components/header";
 import AdminUsers from "@/pages/admin-users";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";

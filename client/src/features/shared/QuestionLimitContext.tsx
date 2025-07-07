@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { CookieManager } from "@/lib/cookie-utils";
+import { CookieManager } from "@/utils/cookie-utils";
 
 interface QuestionLimitContextType {
   viewedQuestions: Set<number>;

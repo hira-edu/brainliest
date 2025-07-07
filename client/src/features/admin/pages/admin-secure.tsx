@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/header";
+import { useToast } from "@/features/shared/hooks/use-toast";
+import Header from "@/features/shared/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

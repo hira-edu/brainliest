@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { CertificationIcons } from "@/assets/icons/certifications";
+import { CertificationIcons } from "@/utils/certification-icons";
 import { ChevronDown } from "lucide-react";
 
 interface IconSelectorProps {

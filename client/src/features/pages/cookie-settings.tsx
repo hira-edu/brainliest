@@ -11,8 +11,8 @@ import {
   AlertTriangle, CheckCircle, Trash2, Download, 
   RefreshCw, Info 
 } from 'lucide-react';
-import { CookieManager, COOKIE_REGISTRY } from '@/lib/cookie-utils';
-import { useToast } from '@/hooks/use-toast';
+import { CookieManager, COOKIE_REGISTRY } from '@/utils/cookie-utils';
+import { useToast } from '@/features/shared/hooks/use-toast';
 
 export default function CookieSettings() {
   const [preferences, setPreferences] = useState({
