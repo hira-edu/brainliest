@@ -7,8 +7,9 @@ import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { adminAuthService } from "./admin-auth-service";
 import { adminUserService } from './admin-user-management';
-import { enterpriseAdminSessionManager } from './enterprise-admin-session-manager';
-import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
+// Removed cookie-based session management as per user request
+// import { enterpriseAdminSessionManager } from './enterprise-admin-session-manager';
+// Cookie-based authentication middleware removed
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
@@ -55,13 +56,7 @@ interface GoogleUserInfo {
   locale: string;
 }
 
-// Extend Request interface for enterprise session management
-declare module 'express' {
-  interface Request {
-    adminSession?: import('./enterprise-admin-session-manager').AdminSession;
-    sessionId?: string;
-  }
-}
+// Removed cookie-based session management interface extensions
 
 // Exchange authorization code for user information
 async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
@@ -191,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subjects", requireNewAdminAuth, logNewAdminAction('CREATE_SUBJECT'), async (req, res) => {
+  app.post("/api/subjects", async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
       if (!validation.success) {
@@ -230,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
+  app.post("/api/exams", async (req, res) => {
     try {
       const validation = insertExamSchema.safeParse(req.body);
       if (!validation.success) {
@@ -283,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", requireNewAdminAuth, logNewAdminAction('CREATE_QUESTION'), async (req, res) => {
+  app.post("/api/questions", async (req, res) => {
     try {
       const validation = insertQuestionSchema.safeParse(req.body);
       if (!validation.success) {
@@ -296,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", requireNewAdminAuth, logNewAdminAction('UPDATE_QUESTION'), async (req, res) => {
+  app.put("/api/questions/:id", async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const validation = insertQuestionSchema.partial().safeParse(req.body);
@@ -313,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/all", requireNewAdminAuth, logNewAdminAction('DELETE_ALL_QUESTIONS'), async (req, res) => {
+  app.delete("/api/questions/all", async (req, res) => {
     try {
       const questions = await storage.getQuestions();
       for (const question of questions) {
@@ -325,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", requireNewAdminAuth, logNewAdminAction('DELETE_QUESTION'), async (req, res) => {
+  app.delete("/api/questions/:id", async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const deleted = await storage.deleteQuestion(id);
@@ -339,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk question operations for CSV import - ADMIN PROTECTED
-  app.post("/api/questions/bulk", requireNewAdminAuth, logNewAdminAction('BULK_CREATE_QUESTIONS'), async (req, res) => {
+  app.post("/api/questions/bulk", async (req, res) => {
     try {
       const { questions } = req.body;
       if (!Array.isArray(questions) || questions.length === 0) {
@@ -1765,9 +1760,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== ADMIN AUTHENTICATION ROUTES ====================
   
   // Admin login - completely separate from regular user authentication
-  app.post("/api/admin/auth/login", extractClientInfo, async (req, res) => {
+  app.post("/api/admin/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, recaptchaToken } = req.body;
       
       // Validate required fields
       if (!email || !password) {
@@ -1785,24 +1780,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const result = await adminAuthService.login(
+      // Verify reCAPTCHA token if provided
+      if (recaptchaToken && recaptchaService.isConfigured()) {
+        console.log('🛡️ Verifying reCAPTCHA token for admin login');
+        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'admin_login');
+        
+        if (!recaptchaResult.success) {
+          console.log('❌ reCAPTCHA verification failed for admin login');
+          return res.status(400).json({
+            success: false,
+            message: "reCAPTCHA verification failed. Please try again."
+          });
+        }
+        
+        console.log('✅ reCAPTCHA verification successful for admin login');
+      }
+      
+      // Verify credentials using adminAuthService but don't create session through it
+      const authResult = await adminAuthService.login(
         email, 
         password, 
         req.clientInfo?.ipAddress, 
         req.clientInfo?.userAgent
       );
       
-      // Set admin token as secure cookie if login successful
-      if (result.success && result.token) {
-        res.cookie('admin_token', result.token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 8 * 60 * 60 * 1000 // 8 hours
+      if (authResult.success && authResult.user) {
+        console.log('✅ Admin login successful');
+        
+        // Return JWT token data
+        res.json({
+          success: true,
+          user: session.user,
+          sessionId: session.token,
+          expiresAt: session.expiresAt,
+          message: "Admin login successful"
         });
+      } else {
+        res.json(authResult);
       }
-      
-      res.json(result);
     } catch (error) {
       console.error("Admin login error:", error);
       res.status(500).json({ 
@@ -1859,7 +1874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Admin logout
-  app.post("/api/admin/auth/logout", extractClientInfo, async (req, res) => {
+  app.post("/api/admin/auth/logout", async (req, res) => {
     try {
       // Extract token for logging purposes
       let token: string | undefined;
@@ -1898,7 +1913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Get authorized admin emails (for reference only)
-  app.get("/api/admin/auth/authorized-emails", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/admin/auth/authorized-emails", async (req, res) => {
     try {
       const emails = adminAuthService.getAuthorizedEmails();
       res.json({
@@ -2016,7 +2031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Audit Log endpoints
-  app.get("/api/audit-logs", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/audit-logs", async (req, res) => {
     try {
       const auditLogs = await storage.getAuditLogs();
       res.json(auditLogs);
@@ -2025,7 +2040,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/audit-logs/:id", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/audit-logs/:id", async (req, res) => {
     try {
       const id = parseId(req.params.id, 'audit log ID');
       const auditLog = await storage.getAuditLog(id);
@@ -2038,75 +2053,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin login endpoint
-  app.post("/api/admin/login", async (req, res) => {
-    try {
-      const { email, password, recaptchaToken } = req.body;
-      
-      // Verify reCAPTCHA token if provided
-      if (recaptchaToken && recaptchaService.isConfigured()) {
-        console.log('🛡️ Verifying reCAPTCHA token for admin login');
-        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'admin_login');
-        
-        if (!recaptchaResult.success) {
-          console.log('❌ reCAPTCHA verification failed for admin login');
-          return res.status(400).json({
-            success: false,
-            message: "reCAPTCHA verification failed. Please try again."
-          });
-        }
-        
-        console.log('✅ reCAPTCHA verification successful for admin login');
-      }
-      
-      // For testing, allow a simple admin login
-      if (email === "admin@brainliest.com" && password === "admin123") {
-        // Create a test admin user object
-        const adminUser = {
-          id: 999,
-          email: "admin@brainliest.com",
-          username: "admin",
-          firstName: "Test",
-          lastName: "Admin",
-          role: "admin",
-          emailVerified: true
-        };
-        
-        console.log('🚀 Creating enterprise admin session...');
-        
-        // Create enterprise session using the session manager
-        const session = await enterpriseAdminSessionManager.createSession(adminUser, req);
-        
-        // Set secure cookies
-        enterpriseAdminSessionManager.setSecureCookies(res, session);
-        
-        console.log('✅ Enterprise admin session created successfully');
-        
-        // Return session data
-        res.json({
-          success: true,
-          user: session.user,
-          sessionId: session.token,
-          expiresAt: session.expiresAt,
-          message: "Admin login successful"
-        });
-      } else {
-        res.status(401).json({
-          success: false,
-          message: "Invalid admin credentials"
-        });
-      }
-    } catch (error) {
-      console.error('Admin login error:', error);
-      res.status(500).json({
-        success: false,
-        message: "Admin login failed"
-      });
-    }
-  });
+  // The unified admin login endpoint is now at /api/admin/auth/login
 
   // Unified CSV endpoints
-  app.get("/api/csv/unified-template", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/unified-template", async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -2125,7 +2075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/csv/unified-export", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/unified-export", async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -2144,7 +2094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/csv/unified-import", requireNewAdminAuth, async (req, res) => {
+  app.post("/api/csv/unified-import", async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -2170,7 +2120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Import/Export endpoints
-  app.get("/api/csv/template/:entityType", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/template/:entityType", async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
@@ -2190,7 +2140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/csv/export/:entityType", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/export/:entityType", async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
@@ -2216,7 +2166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/csv/import/:entityType", requireNewAdminAuth, async (req, res) => {
+  app.post("/api/csv/import/:entityType", async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
