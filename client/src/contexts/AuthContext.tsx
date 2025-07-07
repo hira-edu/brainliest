@@ -146,7 +146,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Create Google OAuth URL for popup
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      console.log('🔧 Debug - Client ID:', clientId ? `${clientId.substring(0, 20)}...` : 'MISSING');
+      
+      if (!clientId) {
+        throw new Error('Google Client ID not configured. Please check VITE_GOOGLE_CLIENT_ID environment variable.');
+      }
+      
       const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+      console.log('🔧 Debug - Redirect URI:', redirectUri);
       
       const authUrl = `https://accounts.google.com/oauth/authorize?` +
         `client_id=${clientId}&` +
@@ -157,12 +164,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         `access_type=offline&` +
         `prompt=select_account`;
 
+      console.log('🔧 Debug - Auth URL:', authUrl.substring(0, 100) + '...');
+
       // Open Google OAuth in a popup window
       const popup = window.open(
         authUrl,
         'GoogleSignIn',
         'width=500,height=600,scrollbars=yes,resizable=yes,status=yes'
       );
+
+      console.log('🔧 Debug - Popup opened:', !!popup);
 
       if (!popup) {
         throw new Error('Popup blocked. Please allow popups for this site and try again.');
@@ -211,7 +222,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, 300000); // 5 minutes
       });
     } catch (error) {
-      console.error('Google sign-in failed:', error);
+      console.error('❌ Google sign-in failed:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'present' : 'missing'
+      });
       throw error;
     }
   };
