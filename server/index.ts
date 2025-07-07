@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
+import cors from "cors";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { registerRoutes } from "./routes";
@@ -10,6 +11,16 @@ const app = express();
 // Trust proxy for accurate IP addresses behind reverse proxies
 app.set('trust proxy', 1);
 
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://brainliest.com', 'https://www.brainliest.com'] 
+    : ['http://localhost:5000', 'http://127.0.0.1:5000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -17,7 +28,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://api.openai.com", "https://api.resend.com"],
     },

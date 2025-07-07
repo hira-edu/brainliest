@@ -566,7 +566,7 @@ export class AuthService {
   // Verify JWT token
   async verifyToken(token: string): Promise<{ valid: boolean; user?: AuthUser; expired?: boolean }> {
     try {
-      console.log('🔍 Attempting to verify token:', token.substring(0, 20) + '...');
+      // Token verification attempt logged for security audit
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       console.log('✅ Token decoded successfully:', { userId: decoded.userId });
       

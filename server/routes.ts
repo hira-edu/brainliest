@@ -9,6 +9,7 @@ import { requireAdminAuth, logAdminAction } from "./middleware/auth";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
+import { parseId, parseOptionalId } from "./utils/validation";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -24,7 +25,7 @@ import {
 const verificationCodes = new Map<string, { code: string; expires: number }>();
 
 // Google OAuth configuration
-const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 interface GoogleTokenResponse {
