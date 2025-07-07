@@ -205,12 +205,17 @@ export default function AdminSimple() {
     reader.onload = async (event) => {
       const csvContent = event.target?.result as string;
       try {
-        const token = localStorage.getItem('brainliest_access_token');
+        const adminToken = localStorage.getItem('admin_token');
+        if (!adminToken) {
+          toast({ title: "Admin authentication required", variant: "destructive" });
+          setIsImporting(false);
+          return;
+        }
         const response = await fetch('/api/csv/unified-import', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${adminToken}`
           },
           body: JSON.stringify({ csvContent })
         });
@@ -247,12 +252,17 @@ export default function AdminSimple() {
     reader.onload = async (event) => {
       const jsonContent = event.target?.result as string;
       try {
-        const token = localStorage.getItem('brainliest_access_token');
+        const adminToken = localStorage.getItem('admin_token');
+        if (!adminToken) {
+          toast({ title: "Admin authentication required", variant: "destructive" });
+          setIsImporting(false);
+          return;
+        }
         const response = await fetch('/api/json/import', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${adminToken}`
           },
           body: JSON.stringify({ jsonData: JSON.parse(jsonContent) })
         });
@@ -3039,9 +3049,13 @@ export default function AdminSimple() {
                         <Button
                           onClick={async () => {
                             try {
-                              const token = localStorage.getItem('brainliest_access_token');
+                              const adminToken = localStorage.getItem('admin_token');
+                              if (!adminToken) {
+                                toast({ title: "Admin authentication required", variant: "destructive" });
+                                return;
+                              }
                               const response = await fetch('/api/csv/unified-template', {
-                                headers: { 'Authorization': `Bearer ${token}` }
+                                headers: { 'Authorization': `Bearer ${adminToken}` }
                               });
                               if (response.ok) {
                                 const blob = await response.blob();
@@ -3076,9 +3090,13 @@ export default function AdminSimple() {
                         <Button
                           onClick={async () => {
                             try {
-                              const token = localStorage.getItem('brainliest_access_token');
+                              const adminToken = localStorage.getItem('admin_token');
+                              if (!adminToken) {
+                                toast({ title: "Admin authentication required", variant: "destructive" });
+                                return;
+                              }
                               const response = await fetch('/api/csv/unified-export', {
-                                headers: { 'Authorization': `Bearer ${token}` }
+                                headers: { 'Authorization': `Bearer ${adminToken}` }
                               });
                               if (response.ok) {
                                 const blob = await response.blob();
@@ -3171,11 +3189,15 @@ export default function AdminSimple() {
                         <Button
                           onClick={async () => {
                             try {
-                              const token = localStorage.getItem('brainliest_access_token');
+                              const adminToken = localStorage.getItem('admin_token');
+                              if (!adminToken) {
+                                toast({ title: "Admin authentication required", variant: "destructive" });
+                                return;
+                              }
                               const response = await fetch('/api/json/template', {
                                 method: 'GET',
                                 headers: {
-                                  'Authorization': `Bearer ${token}`
+                                  'Authorization': `Bearer ${adminToken}`
                                 }
                               });
                               if (response.ok) {
@@ -3213,11 +3235,15 @@ export default function AdminSimple() {
                         <Button
                           onClick={async () => {
                             try {
-                              const token = localStorage.getItem('brainliest_access_token');
+                              const adminToken = localStorage.getItem('admin_token');
+                              if (!adminToken) {
+                                toast({ title: "Admin authentication required", variant: "destructive" });
+                                return;
+                              }
                               const response = await fetch('/api/json/export', {
                                 method: 'GET',
                                 headers: {
-                                  'Authorization': `Bearer ${token}`
+                                  'Authorization': `Bearer ${adminToken}`
                                 }
                               });
                               if (response.ok) {
