@@ -2871,7 +2871,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('admin_token');
+                            const token = localStorage.getItem('brainliest_access_token');
                             const response = await fetch('/api/csv/template/subjects', {
                               headers: {
                                 'Authorization': `Bearer ${token}`
@@ -2901,7 +2901,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('admin_token');
+                            const token = localStorage.getItem('brainliest_access_token');
                             const response = await fetch('/api/csv/export/subjects?includeNames=true', {
                               headers: {
                                 'Authorization': `Bearer ${token}`
@@ -2940,7 +2940,7 @@ export default function AdminSimple() {
                             reader.onload = async (event) => {
                               const csvContent = event.target?.result as string;
                               try {
-                                const token = localStorage.getItem('admin_token');
+                                const token = localStorage.getItem('brainliest_access_token');
                                 const response = await fetch('/api/csv/import/subjects', {
                                   method: 'POST',
                                   headers: { 
@@ -2984,7 +2984,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('admin_token');
+                            const token = localStorage.getItem('brainliest_access_token');
                             const response = await fetch('/api/csv/template/exams', {
                               headers: {
                                 'Authorization': `Bearer ${token}`
@@ -3014,7 +3014,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('admin_token');
+                            const token = localStorage.getItem('brainliest_access_token');
                             const response = await fetch('/api/csv/export/exams?includeNames=true', {
                               headers: {
                                 'Authorization': `Bearer ${token}`
@@ -3053,7 +3053,7 @@ export default function AdminSimple() {
                             reader.onload = async (event) => {
                               const csvContent = event.target?.result as string;
                               try {
-                                const token = localStorage.getItem('admin_token');
+                                const token = localStorage.getItem('brainliest_access_token');
                                 const response = await fetch('/api/csv/import/exams', {
                                   method: 'POST',
                                   headers: { 
@@ -3097,7 +3097,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('admin_token');
+                            const token = localStorage.getItem('brainliest_access_token');
                             const response = await fetch('/api/csv/template/questions', {
                               headers: {
                                 'Authorization': `Bearer ${token}`
@@ -3127,7 +3127,7 @@ export default function AdminSimple() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const token = localStorage.getItem('admin_token');
+                            const token = localStorage.getItem('brainliest_access_token');
                             const response = await fetch('/api/csv/export/questions?includeNames=true', {
                               headers: {
                                 'Authorization': `Bearer ${token}`
@@ -3166,7 +3166,7 @@ export default function AdminSimple() {
                             reader.onload = async (event) => {
                               const csvContent = event.target?.result as string;
                               try {
-                                const token = localStorage.getItem('admin_token');
+                                const token = localStorage.getItem('brainliest_access_token');
                                 const response = await fetch('/api/csv/import/questions', {
                                   method: 'POST',
                                   headers: { 
