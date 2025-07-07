@@ -60,26 +60,14 @@ class GoogleAuthService {
 
   async signIn(): Promise<GoogleUser> {
     try {
-      console.log('🔧 Debug: Checking initialization...');
-      
-      if (!this.isInitialized) {
-        console.log('🔧 Debug: Initializing Google auth...');
-        await this.initialize();
-      }
-
-      console.log('🔧 Debug: Client ID check:', this.clientId ? 'Present' : 'Missing');
-      
       if (!this.clientId) {
-        const error = new Error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID environment variable.');
-        console.error('❌ Configuration error:', error.message);
-        throw error;
+        throw new Error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID environment variable.');
       }
 
-      console.log('🔧 Debug: Starting OAuth popup callback flow...');
-      // Use proper OAuth 2.0 Authorization Code flow with server callback
-      return await this.openOAuthPopupWithCallback();
+      // Use simple popup-based OAuth flow
+      return await this.openGoogleOAuthPopup();
     } catch (error) {
-      console.error('❌ signIn method error:', error);
+      console.error('Google sign-in error:', error);
       throw error;
     }
   }
@@ -153,20 +141,21 @@ class GoogleAuthService {
 
   private async openGoogleOAuthPopup(): Promise<GoogleUser> {
     return new Promise((resolve, reject) => {
-      // Use Google's OAuth 2.0 implicit flow for direct authentication
+      // Create OAuth URL that redirects to our backend
       const authUrl = `https://accounts.google.com/oauth/authorize?` +
         `client_id=${this.clientId}&` +
-        `response_type=id_token&` +
+        `response_type=code&` +
         `scope=openid email profile&` +
-        `redirect_uri=${encodeURIComponent('https://developers.google.com/oauthplayground')}&` +
-        `nonce=${Date.now()}&` +
-        `state=popup_auth`;
+        `redirect_uri=${encodeURIComponent(window.location.origin + '/api/auth/google/callback')}&` +
+        `state=popup&` +
+        `access_type=offline&` +
+        `prompt=select_account`;
 
       // Open popup window
       const popup = window.open(
         authUrl,
         'google-oauth',
-        'width=500,height=600,scrollbars=yes,resizable=yes'
+        'width=500,height=600,scrollbars=yes,resizable=yes,location=yes'
       );
 
       if (!popup) {
@@ -174,45 +163,43 @@ class GoogleAuthService {
         return;
       }
 
-      // Monitor popup for completion
-      const checkInterval = setInterval(() => {
-        try {
-          if (popup.closed) {
-            clearInterval(checkInterval);
-            reject(new Error('Authentication cancelled by user'));
-            return;
-          }
+      // Listen for messages from the popup
+      const messageHandler = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+          clearInterval(checkInterval);
+          window.removeEventListener('message', messageHandler);
+          popup.close();
+          resolve(event.data.user);
+        } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+          clearInterval(checkInterval);
+          window.removeEventListener('message', messageHandler);
+          popup.close();
+          reject(new Error(event.data.error || 'Authentication failed'));
+        }
+      };
 
-          // Check if popup URL contains an ID token (limited by CORS)
-          const url = popup.location.href;
-          if (url.includes('id_token=')) {
-            clearInterval(checkInterval);
-            popup.close();
-            
-            // Parse the ID token from URL
-            const urlParams = new URLSearchParams(url.split('#')[1]);
-            const idToken = urlParams.get('id_token');
-            
-            if (idToken) {
-              const userInfo = this.parseJWT(idToken);
-              resolve(userInfo);
-            } else {
-              reject(new Error('Failed to get authentication token'));
-            }
-          }
-        } catch (e) {
-          // Expected - cross-origin restrictions
+      window.addEventListener('message', messageHandler);
+
+      // Check if popup was closed
+      const checkInterval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkInterval);
+          window.removeEventListener('message', messageHandler);
+          reject(new Error('Authentication cancelled by user'));
         }
       }, 1000);
 
-      // Timeout after 2 minutes
+      // Timeout after 5 minutes
       setTimeout(() => {
         clearInterval(checkInterval);
+        window.removeEventListener('message', messageHandler);
         if (!popup.closed) {
           popup.close();
         }
         reject(new Error('Authentication timeout - please try again'));
-      }, 120000);
+      }, 300000);
     });
   }
 
