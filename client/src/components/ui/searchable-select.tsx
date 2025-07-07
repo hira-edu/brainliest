@@ -45,7 +45,11 @@ export const SearchableSelect = React.forwardRef<
   allowCustomValue = false,
 }, ref) => {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(() => {
+    // Initialize with the selected option's label if there's a value
+    const selectedOption = options.find(opt => String(opt.value) === String(value));
+    return selectedOption?.label || "";
+  });
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Find the selected option - use String coercion for robust matching
@@ -69,11 +73,14 @@ export const SearchableSelect = React.forwardRef<
   // Handle option selection
   const handleSelect = (selectedValue: string) => {
     console.log("SearchableSelect - Option selected:", selectedValue);
+    const selectedOption = filteredOptions.find(opt => opt.value === selectedValue);
+    
     if (onValueChange) {
       onValueChange(selectedValue);
     }
     setOpen(false);
-    setSearchQuery("");
+    // Set the input to show the selected label
+    setSearchQuery(selectedOption?.label || "");
   };
 
   // Handle clear selection
@@ -83,6 +90,7 @@ export const SearchableSelect = React.forwardRef<
     if (onValueChange) {
       onValueChange("");
     }
+    setSearchQuery("");
   };
 
   // Handle custom value creation
@@ -104,47 +112,42 @@ export const SearchableSelect = React.forwardRef<
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          ref={ref}
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            "w-full justify-between",
-            !value && "text-muted-foreground",
-            className
-          )}
-          disabled={disabled}
-        >
-          <span className="truncate">
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          <div className="flex items-center gap-1">
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            placeholder={selectedOption ? selectedOption.label : placeholder}
+            value={searchQuery}
+            onChange={(e) => {
+              handleSearchChange(e.target.value);
+              if (!open) setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            className={cn(
+              "w-full pr-16",
+              className
+            )}
+            disabled={disabled}
+          />
+          <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
             {clearable && value && (
-              <X
-                className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                 onClick={handleClear}
-              />
+              >
+                <X className="h-3 w-3" />
+              </Button>
             )}
             <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
           </div>
-        </Button>
+        </div>
       </PopoverTrigger>
       <PopoverContent 
         className="w-full p-0" 
         align="start"
       >
         <Command shouldFilter={false}>
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-              ref={inputRef}
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="border-0 p-2 focus:ring-0 focus:ring-offset-0"
-            />
-          </div>
           <CommandList>
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
