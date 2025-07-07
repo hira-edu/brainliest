@@ -16,7 +16,6 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Search, ArrowLeft, Filter } from "lucide-react";
-import { navigateToSubject } from "@/utils/slug-navigation";
 
 interface CategoryDetailPageProps {
   categoryId?: string;
@@ -85,9 +84,8 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     return filtered;
   }, [subjects, categoryData, searchQuery, sortBy]);
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Use centralized slug navigation
-    navigateToSubject(setLocation, subject);
+  const handleSelectSubject = (subjectId: number) => {
+    setLocation(`/subject/${subjectId}`);
   };
 
   const handleBackClick = () => {
@@ -240,7 +238,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
               <SubjectCard 
                 key={subject.id} 
                 subject={subject} 
-                onClick={() => handleSelectSubject(subject)}
+                onClick={() => handleSelectSubject(subject.id)}
               />
             ))}
           </div>

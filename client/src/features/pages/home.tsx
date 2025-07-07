@@ -35,7 +35,6 @@ import {
   BusinessIcon,
   MedicalIcon
 } from "@/utils/certification-icons";
-import { navigateToSubject } from "@/utils/slug-navigation";
 
 // Category configuration for better organization
 const categoryConfig = {
@@ -132,9 +131,8 @@ export default function Home() {
   });
 
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Use centralized slug navigation
-    navigateToSubject(setLocation, subject);
+  const handleSelectSubject = (subjectId: number) => {
+    setLocation(`/subject/${subjectId}`);
   };
 
   // Categorize and filter subjects
@@ -470,7 +468,7 @@ export default function Home() {
                             <SubjectCard 
                               key={subject.id} 
                               subject={subject} 
-                              onClick={() => handleSelectSubject(subject)}
+                              onClick={() => handleSelectSubject(subject.id)}
                             />
                           ))}
                         </div>
@@ -495,7 +493,7 @@ export default function Home() {
                   <SubjectCard 
                     key={subject.id} 
                     subject={subject} 
-                    onClick={() => handleSelectSubject(subject)}
+                    onClick={() => handleSelectSubject(subject.id)}
                   />
                 ))}
               </div>

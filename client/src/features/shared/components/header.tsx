@@ -1,4 +1,4 @@
-import { useAuthContext } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 export default function Header() {
-  const { isSignedIn, userName, signOut } = useAuthContext();
+  const { isSignedIn, userName, signOut } = useAuth();
   const [location] = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -35,6 +35,7 @@ export default function Header() {
     { href: "/", label: "Home", icon: Home },
     { href: "/categories", label: "Categories", icon: BookOpen },
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/admin", label: "Admin", icon: Settings },
   ];
 
   const subjectCategories = [

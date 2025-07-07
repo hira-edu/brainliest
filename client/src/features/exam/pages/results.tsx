@@ -88,16 +88,13 @@ export default function Results() {
   };
 
   const handleRetakeExam = () => {
-    if (exam?.slug) {
-      setLocation(`/exam/${exam.slug}`);
-    } else {
-      console.error('Exam slug missing for retake, redirecting to subjects page');
-      setLocation('/subjects');
+    if (session?.examId) {
+      setLocation(`/exam/${session.examId}`);
     }
   };
 
   const handleGoToExams = () => {
-    setLocation("/subjects");
+    setLocation("/");
   };
 
   if (!session || !results) {

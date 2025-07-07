@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
-import { navigateToSubject } from "@/utils/slug-navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -125,9 +124,8 @@ export default function AllSubjects() {
     refetchInterval: 60000, // Refetch every minute
   });
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Use centralized slug navigation
-    navigateToSubject(setLocation, subject);
+  const handleSelectSubject = (subjectId: number) => {
+    setLocation(`/subject/${subjectId}`);
   };
 
   const categorizedSubjects = useMemo(() => {
@@ -407,20 +405,13 @@ export default function AllSubjects() {
                 {paginatedSubjects.map((subject) => {
                   const category = getCategoryForSubject(subject);
                   const categoryData = categoryConfig[category as keyof typeof categoryConfig];
-                  const categoryIcon = categoryData?.icon;
-                  
-                  // Check if the icon is an emoji or a React component
-                  const isEmojiIcon = typeof categoryIcon === 'string' && /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(categoryIcon);
+                  const IconComponent = categoryData?.icon || BookOpen;
                   
                   return (
                     <TableRow key={subject.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-3">
-                          {isEmojiIcon ? (
-                            <span className="text-lg">{categoryIcon}</span>
-                          ) : (
-                            <BookOpen className="w-5 h-5 text-primary" />
-                          )}
+                          <IconComponent className="w-5 h-5 text-primary" />
                           <span>{subject.name}</span>
                         </div>
                       </TableCell>
@@ -444,7 +435,7 @@ export default function AllSubjects() {
                       <TableCell className="text-center">
                         <Button 
                           size="sm" 
-                          onClick={() => handleSelectSubject(subject)}
+                          onClick={() => handleSelectSubject(subject.id)}
                           className="bg-primary hover:bg-primary/90"
                         >
                           Start Practice

@@ -103,7 +103,6 @@ export class DatabaseStorage implements IStorage {
       description: subjects.description,
       icon: subjects.icon,
       color: subjects.color,
-      slug: subjects.slug,
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
@@ -127,40 +126,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSubject(subject: InsertSubject): Promise<Subject> {
-    // Auto-generate slug if not provided
-    if (!subject.slug && subject.name) {
-      const { generateSlug } = await import("@shared/slug-utils");
-      subject.slug = await generateSlug(subject.name, async (slug) => {
-        const existing = await db.select().from(subjects).where(eq(subjects.slug, slug)).limit(1);
-        return existing.length === 0;
-      });
-    }
-    
     const [newSubject] = await db.insert(subjects).values(subject).returning();
     return newSubject;
   }
 
   async updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined> {
-    // Auto-generate slug if name is being updated but slug is not provided
-    if (subject.name && !subject.slug) {
-      const { generateSlug } = await import("@shared/slug-utils");
-      subject.slug = await generateSlug(subject.name, async (slug) => {
-        const existing = await db.select().from(subjects).where(eq(subjects.slug, slug)).where(ne(subjects.id, id)).limit(1);
-        return existing.length === 0;
-      });
-    }
-    
-    // Validate slug uniqueness if provided
-    if (subject.slug) {
-      const existing = await db.select().from(subjects)
-        .where(eq(subjects.slug, subject.slug))
-        .where(ne(subjects.id, id))
-        .limit(1);
-      if (existing.length > 0) {
-        throw new Error(`Slug "${subject.slug}" is already in use by another subject`);
-      }
-    }
-    
     const [updatedSubject] = await db
       .update(subjects)
       .set(subject)
@@ -182,12 +152,6 @@ export class DatabaseStorage implements IStorage {
     return result.count;
   }
 
-  // Slug-based lookups for SEO-friendly URLs
-  async getSubjectBySlug(slug: string): Promise<Subject | undefined> {
-    const [subject] = await db.select().from(subjects).where(eq(subjects.slug, slug));
-    return subject || undefined;
-  }
-
   // Exams - OPTIMIZED: Specify required columns and add pagination support
   async getExams(): Promise<Exam[]> {
     return await db.select({
@@ -195,7 +159,6 @@ export class DatabaseStorage implements IStorage {
       subjectId: exams.subjectId,
       title: exams.title,
       description: exams.description,
-      slug: exams.slug,
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
@@ -209,7 +172,6 @@ export class DatabaseStorage implements IStorage {
       subjectId: exams.subjectId,
       title: exams.title,
       description: exams.description,
-      slug: exams.slug,
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
@@ -232,15 +194,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createExam(exam: InsertExam): Promise<Exam> {
-    // Auto-generate slug if not provided
-    if (!exam.slug && exam.title) {
-      const { generateSlug } = await import("@shared/slug-utils");
-      exam.slug = await generateSlug(exam.title, async (slug) => {
-        const existing = await db.select().from(exams).where(eq(exams.slug, slug)).limit(1);
-        return existing.length === 0;
-      });
-    }
-    
     const [newExam] = await db.insert(exams).values(exam).returning();
     
     // Update subject exam count
@@ -255,26 +208,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
-    // Auto-generate slug if title is being updated but slug is not provided
-    if (exam.title && !exam.slug) {
-      const { generateSlug } = await import("@shared/slug-utils");
-      exam.slug = await generateSlug(exam.title, async (slug) => {
-        const existing = await db.select().from(exams).where(eq(exams.slug, slug)).where(ne(exams.id, id)).limit(1);
-        return existing.length === 0;
-      });
-    }
-    
-    // Validate slug uniqueness if provided
-    if (exam.slug) {
-      const existing = await db.select().from(exams)
-        .where(eq(exams.slug, exam.slug))
-        .where(ne(exams.id, id))
-        .limit(1);
-      if (existing.length > 0) {
-        throw new Error(`Slug "${exam.slug}" is already in use by another exam`);
-      }
-    }
-    
     const [updatedExam] = await db
       .update(exams)
       .set(exam)
@@ -306,22 +239,6 @@ export class DatabaseStorage implements IStorage {
   async getExamCount(): Promise<number> {
     const result = await db.select().from(exams);
     return result.length;
-  }
-
-  // Slug-based exam lookup
-  async getExamBySlug(slug: string): Promise<Exam | undefined> {
-    const [exam] = await db.select({
-      id: exams.id,
-      subjectId: exams.subjectId,
-      title: exams.title,
-      description: exams.description,
-      slug: exams.slug,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams).where(eq(exams.slug, slug));
-    return exam || undefined;
   }
 
   // Questions - OPTIMIZED: Specify required columns and add pagination support

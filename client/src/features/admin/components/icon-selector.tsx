@@ -16,9 +16,6 @@ export default function IconSelector({ selectedIcon, onSelect, className }: Icon
 
   const iconEntries = Object.entries(CertificationIcons);
   const selectedIconComponent = CertificationIcons[selectedIcon.toLowerCase()];
-  
-  // Check if selectedIcon is an emoji character
-  const isEmojiIcon = selectedIcon && selectedIcon.length <= 4 && /[\u{1F000}-\u{1FAFF}]|[\\u{2600}-\u{27BF}]/u.test(selectedIcon);
 
   return (
     <div className={className}>
@@ -34,16 +31,6 @@ export default function IconSelector({ selectedIcon, onSelect, className }: Icon
               {selectedIconComponent ? (
                 <>
                   {React.createElement(selectedIconComponent, { className: "w-6 h-6" })}
-                  <span className="capitalize">{selectedIcon}</span>
-                </>
-              ) : isEmojiIcon ? (
-                <>
-                  <span className="text-2xl">{selectedIcon}</span>
-                  <span className="capitalize">Emoji Icon</span>
-                </>
-              ) : selectedIcon.startsWith('fas ') || selectedIcon.startsWith('far ') || selectedIcon.startsWith('fab ') ? (
-                <>
-                  <i className={`${selectedIcon} text-lg`}></i>
                   <span className="capitalize">{selectedIcon}</span>
                 </>
               ) : (

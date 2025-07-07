@@ -45,6 +45,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/admin" className="text-slate-300 hover:text-white transition-colors">
+                  Admin Panel
+                </Link>
+              </li>
+              <li>
                 <Link href="/our-story" className="text-slate-300 hover:text-white transition-colors">
                   Our Story
                 </Link>

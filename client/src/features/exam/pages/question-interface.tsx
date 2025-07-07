@@ -4,7 +4,7 @@ import { useLocation, useRoute } from "wouter";
 import { Question, ExamSession, Exam } from "@shared/schema";
 import { TimerState } from "../../../shared/types";
 import { apiRequest, queryClient } from "../../../services/queryClient";
-import { useAuthContext } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 import { useQuestionLimit } from "../../shared/QuestionLimitContext";
 import { Header } from "../../shared";
 import ProgressBar from "../components/progress-bar";
@@ -18,10 +18,10 @@ import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/exam/:slug");
-  const examSlug = params?.slug;
+  const [match, params] = useRoute("/exam/:id");
+  const examId = params?.id ? parseInt(params.id) : null;
 
-  const { isSignedIn } = useAuthContext();
+  const { isSignedIn } = useAuth();
   const { 
     canViewMoreQuestions, 
     addViewedQuestion, 
@@ -42,24 +42,18 @@ export default function QuestionInterface() {
   const isActiveRef = useRef(true);
 
   const { data: exam } = useQuery<Exam>({
-    queryKey: [`/api/exams/slug/${examSlug}`],
-    enabled: !!examSlug,
-  });
-
-  // Fetch subject information for back navigation
-  const { data: subject } = useQuery({
-    queryKey: [`/api/subjects/${exam?.subjectId}`],
-    enabled: !!exam?.subjectId,
+    queryKey: [`/api/exams/${examId}`],
+    enabled: !!examId,
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
-    queryKey: ["/api/questions", examSlug],
+    queryKey: ["/api/questions", examId],
     queryFn: async () => {
-      const response = await fetch(`/api/questions?examSlug=${examSlug}`);
+      const response = await fetch(`/api/questions?examId=${examId}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: !!examSlug,
+    enabled: !!examId,
   });
 
   const questions = questionsData?.questions || [];
@@ -70,15 +64,9 @@ export default function QuestionInterface() {
   });
 
   const createSessionMutation = useMutation({
-    mutationFn: async () => {
-      if (!exam?.id) throw new Error('No exam available');
-      return apiRequest("/api/sessions", "POST", {
-        examId: exam.id,
-        startTime: new Date().toISOString(),
-        userName: isSignedIn ? 'authenticated-user' : 'anonymous-user',
-        completed: false,
-        score: "0%"
-      });
+    mutationFn: async (examId: number) => {
+      const response = await apiRequest("POST", "/api/sessions", { examId });
+      return response.json();
     },
     onSuccess: (session: ExamSession) => {
       setSessionId(session.id);
@@ -89,13 +77,13 @@ export default function QuestionInterface() {
           totalSeconds: exam.duration * 60,
         });
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
     },
   });
 
   const updateSessionMutation = useMutation({
     mutationFn: async (data: { sessionId: number; updates: Partial<ExamSession> }) => {
-      return apiRequest(`/api/sessions/${data.sessionId}`, "PUT", data.updates);
+      const response = await apiRequest("PUT", `/api/sessions/${data.sessionId}`, data.updates);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}`] });
@@ -104,10 +92,10 @@ export default function QuestionInterface() {
 
   // Initialize session when exam loads
   useEffect(() => {
-    if (exam?.id && !sessionId) {
-      createSessionMutation.mutate();
+    if (examId && !sessionId) {
+      createSessionMutation.mutate(examId);
     }
-  }, [exam?.id, sessionId]);
+  }, [examId, sessionId]);
 
   // PERFORMANCE OPTIMIZED: Timer countdown with proper cleanup
   const handleFinishExamCallback = useCallback(() => {
@@ -310,16 +298,7 @@ export default function QuestionInterface() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      // Use subject slug if available, otherwise fallback to ID route
-                      if (subject?.slug) {
-                        setLocation(`/subject/${subject.slug}`);
-                      } else if (exam.subjectId) {
-                        setLocation(`/subject/${exam.subjectId}`);
-                      } else {
-                        setLocation('/subjects');
-                      }
-                    }}
+                    onClick={() => setLocation(`/subject/${exam.subjectId}`)}
                     className="text-gray-600 hover:text-gray-900"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -358,16 +337,7 @@ export default function QuestionInterface() {
                 This exam doesn't have any questions yet. Please check back later or contact support.
               </p>
               <Button 
-                onClick={() => {
-                  // Use subject slug if available, otherwise fallback to ID route
-                  if (subject?.slug) {
-                    setLocation(`/subject/${subject.slug}`);
-                  } else if (exam?.subjectId) {
-                    setLocation(`/subject/${exam.subjectId}`);
-                  } else {
-                    setLocation('/subjects');
-                  }
-                }}
+                onClick={() => setLocation(`/subject/${exam?.subjectId}`)}
                 variant="default"
                 className="px-6 py-2"
               >
@@ -403,18 +373,7 @@ export default function QuestionInterface() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    // Check if we have subject slug from loaded data
-                    if (subject?.slug) {
-                      setLocation(`/subject/${subject.slug}`);
-                    } else if (exam?.subjectId) {
-                      // Fallback to subject ID route temporarily
-                      setLocation(`/subject/${exam.subjectId}`);
-                    } else {
-                      // Last resort - go to subjects page
-                      setLocation('/subjects');
-                    }
-                  }}
+                  onClick={() => setLocation(`/subject/${exam.subjectId}`)}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />

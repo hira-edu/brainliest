@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuthContext } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 import { Header } from "../../shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,7 +46,7 @@ interface AnalyticsOverview {
 }
 
 export default function Analytics() {
-  const { userName, isSignedIn } = useAuthContext();
+  const { userName, isSignedIn } = useAuth();
   const [selectedUser, setSelectedUser] = useState("john_doe");
 
   // Fetch real analytics data from our API

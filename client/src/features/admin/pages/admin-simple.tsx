@@ -287,7 +287,7 @@ export default function AdminSimple() {
   // Shared mutations for creating categories and subcategories
   const createCategoryMutation = useMutation({
     mutationFn: (data: z.infer<typeof insertCategorySchema>) => 
-      apiRequest(`/api/categories`, "POST", data),
+      apiRequest("POST", `/api/categories`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
       toast({ title: "Category created successfully!" });
@@ -300,7 +300,7 @@ export default function AdminSimple() {
 
   const createSubcategoryMutation = useMutation({
     mutationFn: (data: z.infer<typeof insertSubcategorySchema>) => 
-      apiRequest(`/api/subcategories`, "POST", data),
+      apiRequest("POST", `/api/subcategories`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
       toast({ title: "Subcategory created successfully!" });
@@ -472,7 +472,7 @@ export default function AdminSimple() {
         return;
       }
 
-      const response = await apiRequest("/api/questions/bulk", "POST", { questions }) as any;
+      const response = await apiRequest("POST", "/api/questions/bulk", { questions }) as any;
       
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
       
@@ -503,7 +503,7 @@ export default function AdminSimple() {
 
   const deleteAllQuestions = useMutation({
     mutationFn: async () => {
-      await apiRequest("/api/questions/all", "DELETE");
+      await apiRequest("DELETE", "/api/questions/all");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
@@ -661,7 +661,7 @@ export default function AdminSimple() {
 
     const updateCategoryMutation = useMutation({
       mutationFn: ({ id, data }: { id: number; data: z.infer<typeof insertCategorySchema> }) => 
-        apiRequest(`/api/categories/${id}`, "PUT", data),
+        apiRequest("PUT", `/api/categories/${id}`, data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
         editCategoryForm.reset();
@@ -676,7 +676,7 @@ export default function AdminSimple() {
     });
 
     const deleteCategoryMutation = useMutation({
-      mutationFn: (id: number) => apiRequest(`/api/categories/${id}`, "DELETE"),
+      mutationFn: (id: number) => apiRequest("DELETE", `/api/categories/${id}`),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
         toast({ title: "Category deleted successfully!" });
@@ -938,7 +938,7 @@ export default function AdminSimple() {
 
     const updateSubcategoryMutation = useMutation({
       mutationFn: ({ id, data }: { id: number; data: z.infer<typeof insertSubcategorySchema> }) => 
-        apiRequest(`/api/subcategories/${id}`, "PUT", data),
+        apiRequest("PUT", `/api/subcategories/${id}`, data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
         editSubcategoryForm.reset();
@@ -953,7 +953,7 @@ export default function AdminSimple() {
     });
 
     const deleteSubcategoryMutation = useMutation({
-      mutationFn: (id: number) => apiRequest(`/api/subcategories/${id}`, "DELETE"),
+      mutationFn: (id: number) => apiRequest("DELETE", `/api/subcategories/${id}`),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
         toast({ title: "Subcategory deleted successfully!" });
@@ -1255,7 +1255,7 @@ export default function AdminSimple() {
 
     const createSubjectMutation = useMutation({
       mutationFn: async (data: InsertSubject) => {
-        await apiRequest("/api/subjects", "POST", data);
+        await apiRequest("POST", "/api/subjects", data);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
@@ -1279,7 +1279,7 @@ export default function AdminSimple() {
 
     const updateSubjectMutation = useMutation({
       mutationFn: async ({ id, data }: { id: number; data: InsertSubject }) => {
-        await apiRequest(`/api/subjects/${id}`, "PUT", data);
+        await apiRequest("PUT", `/api/subjects/${id}`, data);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
@@ -1292,7 +1292,7 @@ export default function AdminSimple() {
 
     const deleteSubjectMutation = useMutation({
       mutationFn: async (id: number) => {
-        await apiRequest(`/api/subjects/${id}`, "DELETE");
+        await apiRequest("DELETE", `/api/subjects/${id}`);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
@@ -1858,7 +1858,7 @@ export default function AdminSimple() {
 
     const createExamMutation = useMutation({
       mutationFn: async (data: InsertExam) => {
-        await apiRequest("/api/exams", "POST", data);
+        await apiRequest("POST", "/api/exams", data);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
@@ -1872,7 +1872,7 @@ export default function AdminSimple() {
 
     const deleteExamMutation = useMutation({
       mutationFn: async (id: number) => {
-        await apiRequest(`/api/exams/${id}`, "DELETE");
+        await apiRequest("DELETE", `/api/exams/${id}`);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
@@ -1894,7 +1894,7 @@ export default function AdminSimple() {
 
     const updateExamMutation = useMutation({
       mutationFn: async ({ id, data }: { id: number; data: InsertExam }) => {
-        await apiRequest(`/api/exams/${id}`, "PUT", data);
+        await apiRequest("PUT", `/api/exams/${id}`, data);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
@@ -1913,7 +1913,7 @@ export default function AdminSimple() {
           title: `${exam.title} (Copy)`,
         };
         delete (clonedExam as any).id;
-        await apiRequest("/api/exams", "POST", clonedExam);
+        await apiRequest("POST", "/api/exams", clonedExam);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
@@ -2315,7 +2315,7 @@ export default function AdminSimple() {
           options: cleanOptions,
           correctAnswers: data.allowMultipleAnswers ? data.correctAnswers : null,
         };
-        await apiRequest("/api/questions", "POST", questionData);
+        await apiRequest("POST", "/api/questions", questionData);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
@@ -2336,7 +2336,7 @@ export default function AdminSimple() {
           options: cleanOptions,
           correctAnswers: data.allowMultipleAnswers ? data.correctAnswers : null,
         };
-        await apiRequest(`/api/questions/${editingQuestion.id}`, "PUT", questionData);
+        await apiRequest("PUT", `/api/questions/${editingQuestion.id}`, questionData);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
@@ -2349,7 +2349,7 @@ export default function AdminSimple() {
 
     const deleteQuestionMutation = useMutation({
       mutationFn: async (id: number) => {
-        await apiRequest(`/api/questions/${id}`, "DELETE");
+        await apiRequest("DELETE", `/api/questions/${id}`);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });

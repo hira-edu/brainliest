@@ -8,7 +8,6 @@ export const categories = pgTable("categories", {
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
-  slug: text("slug").unique(), // SEO-friendly URL slug
   isActive: boolean("is_active").default(true),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -21,7 +20,6 @@ export const subcategories = pgTable("subcategories", {
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
-  slug: text("slug").unique(), // SEO-friendly URL slug
   isActive: boolean("is_active").default(true),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
@@ -33,7 +31,6 @@ export const subjects = pgTable("subjects", {
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
-  slug: text("slug").unique(), // SEO-friendly URL slug
   categoryId: integer("category_id"),
   subcategoryId: integer("subcategory_id"),
   examCount: integer("exam_count").default(0),
@@ -45,7 +42,6 @@ export const exams = pgTable("exams", {
   subjectId: integer("subject_id").notNull(),
   title: text("title").notNull(),
   description: text("description"),
-  slug: text("slug").unique(), // SEO-friendly URL slug
   questionCount: integer("question_count").notNull(),
   duration: integer("duration"), // in minutes
   difficulty: text("difficulty").notNull(), // 'Beginner', 'Intermediate', 'Advanced', 'Expert'
@@ -64,7 +60,6 @@ export const questions = pgTable("questions", {
   explanation: text("explanation"),
   domain: text("domain"), // For PMP: 'Initiating', 'Planning', etc.
   difficulty: text("difficulty").notNull(),
-  slug: text("slug").unique(), // SEO-friendly URL slug
   order: integer("order").default(0),
 });
 

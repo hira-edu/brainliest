@@ -11,10 +11,9 @@ import AllSubjects from "./features/content/pages/all-subjects";
 import ExamSelection from "./features/exam/pages/exam-selection";
 import QuestionInterface from "./features/exam/pages/question-interface";
 import Results from "./features/exam/pages/results";
-import { SubjectSlugPage } from "./features/exam/pages/subject-slug";
-import { ExamSlugPage } from "./features/exam/pages/exam-slug";
 import Analytics from "./features/analytics/pages/analytics";
 import AdminSimple from "./features/admin/pages/admin-simple";
+import { ProtectedAdminRoute } from "./features/admin/components/ProtectedAdminRoute";
 import Settings from "./features/pages/settings";
 import CookieSettings from "./features/pages/cookie-settings";
 import OurStory from "./features/pages/static/our-story";
@@ -27,8 +26,6 @@ import AuthCallback from "./features/auth/pages/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
-import HierarchicalQuestionInterface from "./features/exam/pages/hierarchical-question-interface";
-import HierarchicalResults from "./features/exam/pages/hierarchical-results";
 
 function Router() {
   return (
@@ -42,27 +39,17 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
-      {/* Hierarchical slug-based routes for deep linking */}
-      <Route path="/subject/:subjectSlug/exam/:examSlug/question/:questionId">
-        {(params) => <HierarchicalQuestionInterface subjectSlug={params.subjectSlug} examSlug={params.examSlug} questionId={params.questionId} />}
-      </Route>
-      <Route path="/subject/:subjectSlug/exam/:examSlug/results/:sessionId">
-        {(params) => <HierarchicalResults subjectSlug={params.subjectSlug} examSlug={params.examSlug} sessionId={params.sessionId} />}
-      </Route>
-      <Route path="/subject/:subjectSlug/exam/:examSlug">
-        {(params) => <HierarchicalQuestionInterface subjectSlug={params.subjectSlug} examSlug={params.examSlug} />}
-      </Route>
-      
-      {/* Primary slug-based routes - must come first for proper matching */}
-      <Route path="/subject/:slug" component={SubjectSlugPage} />
-      <Route path="/exam/:slug" component={ExamSlugPage} />
-      
-      {/* Legacy ID-based routes - DEPRECATED - will be removed in future version */}
-      <Route path="/subject/:id(\d+)" component={ExamSelection} />
-      <Route path="/exam/:id(\d+)" component={QuestionInterface} />
-      <Route path="/results/:id(\d+)" component={Results} />
-      <Route path="/admin" component={AdminSimple} />
+      <Route path="/subject/:id" component={ExamSelection} />
+      <Route path="/exam/:id" component={QuestionInterface} />
+      <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/admin">
+        {() => (
+          <ProtectedAdminRoute>
+            <AdminSimple />
+          </ProtectedAdminRoute>
+        )}
+      </Route>
       <Route path="/settings" component={Settings} />
       <Route path="/cookie-settings" component={CookieSettings} />
       <Route path="/our-story" component={OurStory} />
