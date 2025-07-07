@@ -395,7 +395,8 @@ export default function QuestionInterface() {
                     if (subject?.slug) {
                       setLocation(`/subject/${subject.slug}`);
                     } else {
-                      setLocation(`/subject/${exam.subjectId}`);
+                      console.error('Subject slug missing for back navigation, redirecting to subjects page');
+                      setLocation('/subjects');
                     }
                   }}
                   className="text-gray-600 hover:text-gray-900"

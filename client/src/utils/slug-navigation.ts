@@ -1,6 +1,6 @@
 /**
  * Centralized slug-based navigation utilities
- * Provides consistent slug-based routing with ID fallback for backward compatibility
+ * Provides consistent slug-based routing - pure slug navigation only
  */
 
 import { Subject, Exam } from "@shared/schema";
@@ -10,23 +10,27 @@ export interface NavigationOptions {
 }
 
 /**
- * Generate subject URL with slug-first approach
+ * Generate subject URL - pure slug-based routing only
  */
 export function getSubjectUrl(subject: Subject | { id: number; slug?: string }, options: NavigationOptions = { preferSlug: true }): string {
-  if (options.preferSlug && subject.slug) {
+  if (subject.slug) {
     return `/subject/${subject.slug}`;
   }
-  return `/subject/${subject.id}`;
+  // Pure slug-based routing - no ID fallback
+  console.error('Subject missing slug, redirecting to subjects page:', subject);
+  return '/subjects';
 }
 
 /**
- * Generate exam URL with slug-first approach
+ * Generate exam URL - pure slug-based routing only
  */
 export function getExamUrl(exam: Exam | { id: number; slug?: string }, options: NavigationOptions = { preferSlug: true }): string {
-  if (options.preferSlug && exam.slug) {
+  if (exam.slug) {
     return `/exam/${exam.slug}`;
   }
-  return `/exam/${exam.id}`;
+  // Pure slug-based routing - no ID fallback
+  console.error('Exam missing slug, redirecting to subjects page:', exam);
+  return '/subjects';
 }
 
 /**
@@ -53,13 +57,15 @@ export function getBackToSubjectsUrl(): string {
 }
 
 /**
- * Get back navigation URL for exam to subject
+ * Get back navigation URL for exam to subject - pure slug-based routing only
  */
 export function getBackToSubjectUrl(subjectId: number, subjectSlug?: string): string {
   if (subjectSlug) {
     return `/subject/${subjectSlug}`;
   }
-  return `/subject/${subjectId}`;
+  // Pure slug-based routing - no ID fallback
+  console.error('Subject slug missing for back navigation, redirecting to subjects page');
+  return '/subjects';
 }
 
 /**

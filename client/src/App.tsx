@@ -44,7 +44,7 @@ function Router() {
       <Route path="/subject/:slug" component={SubjectSlugPage} />
       <Route path="/exam/:slug" component={ExamSlugPage} />
       
-      {/* Legacy ID-based routes for backward compatibility - numeric only */}
+      {/* Legacy ID-based routes - DEPRECATED - will be removed in future version */}
       <Route path="/subject/:id(\d+)" component={ExamSelection} />
       <Route path="/exam/:id(\d+)" component={QuestionInterface} />
       <Route path="/results/:id(\d+)" component={Results} />

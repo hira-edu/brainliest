@@ -27,13 +27,18 @@ export default function ExamSelection() {
   });
 
   const handleStartExam = (exam: Exam) => {
-    // Primary slug-based routing with ID fallback for backward compatibility
-    const examUrl = exam.slug ? `/exam/${exam.slug}` : `/exam/${exam.id}`;
-    setLocation(examUrl);
+    // Pure slug-based routing - no ID fallback
+    if (exam.slug) {
+      setLocation(`/exam/${exam.slug}`);
+    } else {
+      console.error('Exam missing slug:', exam);
+      // Fallback to subjects page if no slug available
+      setLocation('/subjects');
+    }
   };
 
   const handleGoBack = () => {
-    setLocation("/");
+    setLocation("/subjects");
   };
 
   if (isLoading) {
