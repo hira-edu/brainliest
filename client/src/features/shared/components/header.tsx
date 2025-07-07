@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "../../auth/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import UnifiedAuthModal from "@/components/unified-auth-modal";
+import UnifiedAuthModal from "../../auth/components/unified-auth-modal";
 import { useState } from "react";
 import { 
   ChevronDown, 

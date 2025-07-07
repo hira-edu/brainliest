@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
 import { Subject, Exam } from "@shared/schema";
-import ExamCard from "@/components/exam-card";
-import Header from "@/components/header";
+import ExamCard from "../components/exam-card";
+import { Header } from "../../shared";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();

@@ -40,10 +40,10 @@ const COMMON_ICONS = [
 ];
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "../../../services/queryClient";
+import { useToast } from "../../shared/hooks/use-toast";
 
-import AdminUsers from "@/pages/admin-users";
+import AdminUsers from "../../pages/admin-users";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

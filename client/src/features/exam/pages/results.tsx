@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
 import { UserSession, Question, Exam } from "@shared/schema";
-import { ExamResult, DomainResult } from "@/lib/types";
-import Header from "@/components/header";
+import { ExamResult, DomainResult } from "../../../shared/types";
+import { Header } from "../../shared";
 
 export default function Results() {
   const [, setLocation] = useLocation();

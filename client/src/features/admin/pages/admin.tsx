@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Question, Subject, Exam, InsertQuestion, InsertExam, InsertSubject, AuditLog } from "@shared/schema";
-import { apiRequest, queryClient } from "@/services/queryClient";
-import { useToast } from "@/features/shared/hooks/use-toast";
-import Header from "@/features/shared/components/header";
-import AdminUsers from "@/pages/admin-users";
-import { useAuth } from "@/contexts/AuthContext";
+import { apiRequest, queryClient } from "../../../services/queryClient";
+import { useToast } from "../../shared/hooks/use-toast";
+import { Header } from "../../shared";
+import AdminUsers from "../../pages/admin-users";
+import { useAuth } from "../../auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

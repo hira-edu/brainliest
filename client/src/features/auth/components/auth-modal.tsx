@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/features/shared/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "../AuthContext";
 import { apiRequest } from "@/services/queryClient";
 
 interface AuthModalProps {

@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
-import { useToast } from "@/features/shared/hooks/use-toast";
-import Header from "@/features/shared/components/header";
+import { useToast } from "../../shared/hooks/use-toast";
+import { Header } from "../../shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Users, Eye, EyeOff, RefreshCw, Shield } from "lucide-react";
-import RecaptchaProvider from "@/components/recaptcha-provider";
+import RecaptchaProvider from "../../auth/components/recaptcha-provider";
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 // Import the main admin content
-import AdminSimple from "@/pages/admin-simple";
+import AdminSimple from "./admin-simple";
 
 function AdminSecureContent() {
   // Authentication state - ALWAYS starts as false

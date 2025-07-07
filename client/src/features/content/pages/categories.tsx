@@ -1,7 +1,6 @@
 import { Link } from "wouter";
-import { categoryStructure, type Category } from "@/lib/categories";
-import Header from "@/components/header";
-import Footer from "@/components/footer";
+import { categoryStructure, type Category } from "@shared/constants";
+import { Header, Footer } from "../../shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BookOpen } from "lucide-react";

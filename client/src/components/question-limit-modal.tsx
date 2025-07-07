@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQuestionLimit } from "@/contexts/QuestionLimitContext";
-import { useToast } from "@/features/shared/hooks/use-toast";
-import { apiRequest } from "@/services/queryClient";
+import { useAuth } from "./features/auth/AuthContext";
+import { useQuestionLimit } from "./features/shared/QuestionLimitContext";
+import { useToast } from "./features/shared/hooks/use-toast";
+import { apiRequest } from "./services/queryClient";
 import { Lock, CheckCircle } from "lucide-react";
 
 interface QuestionLimitModalProps {
