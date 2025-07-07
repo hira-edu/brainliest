@@ -28,6 +28,7 @@ import { eq, like, and, or, desc, sql } from "drizzle-orm";
 export interface IStorage {
   // Subjects
   getSubjects(): Promise<Subject[]>;
+  getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }>;
   getSubject(id: number): Promise<Subject | undefined>;
   createSubject(subject: InsertSubject): Promise<Subject>;
   updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
@@ -36,6 +37,7 @@ export interface IStorage {
 
   // Exams
   getExams(): Promise<Exam[]>;
+  getExamsPaginated(offset: number, limit: number, subjectId?: number): Promise<{ exams: Exam[], total: number }>;
   getExamsBySubject(subjectId: number): Promise<Exam[]>;
   getExam(id: number): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
@@ -45,12 +47,14 @@ export interface IStorage {
 
   // Questions
   getQuestions(): Promise<Question[]>;
+  getQuestionsPaginated(offset: number, limit: number, filters?: { subjectId?: number, examId?: number, difficulty?: string, search?: string }): Promise<{ questions: Question[], total: number }>;
   getQuestionsByExam(examId: number): Promise<Question[]>;
   getQuestion(id: number): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
   updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: number): Promise<boolean>;
   getQuestionCount(): Promise<number>;
+  batchCreateQuestions(questions: InsertQuestion[]): Promise<{ created: number, failed: number, errors: string[] }>;
 
   // Exam Sessions
   getExamSessions(): Promise<ExamSession[]>;
@@ -91,13 +95,33 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Subjects
+  // Subjects - OPTIMIZED: Specify required columns instead of SELECT *
   async getSubjects(): Promise<Subject[]> {
-    return await db.select().from(subjects);
+    return await db.select({
+      id: subjects.id,
+      name: subjects.name,
+      description: subjects.description,
+      icon: subjects.icon,
+      color: subjects.color,
+      categoryId: subjects.categoryId,
+      subcategoryId: subjects.subcategoryId,
+      examCount: subjects.examCount,
+      questionCount: subjects.questionCount
+    }).from(subjects);
   }
 
   async getSubject(id: number): Promise<Subject | undefined> {
-    const [subject] = await db.select().from(subjects).where(eq(subjects.id, id));
+    const [subject] = await db.select({
+      id: subjects.id,
+      name: subjects.name,
+      description: subjects.description,
+      icon: subjects.icon,
+      color: subjects.color,
+      categoryId: subjects.categoryId,
+      subcategoryId: subjects.subcategoryId,
+      examCount: subjects.examCount,
+      questionCount: subjects.questionCount
+    }).from(subjects).where(eq(subjects.id, id));
     return subject;
   }
 
@@ -128,17 +152,44 @@ export class DatabaseStorage implements IStorage {
     return result.count;
   }
 
-  // Exams
+  // Exams - OPTIMIZED: Specify required columns and add pagination support
   async getExams(): Promise<Exam[]> {
-    return await db.select().from(exams);
+    return await db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive
+    }).from(exams);
   }
 
   async getExamsBySubject(subjectId: number): Promise<Exam[]> {
-    return await db.select().from(exams).where(eq(exams.subjectId, subjectId));
+    return await db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive
+    }).from(exams).where(eq(exams.subjectId, subjectId));
   }
 
   async getExam(id: number): Promise<Exam | undefined> {
-    const [exam] = await db.select().from(exams).where(eq(exams.id, id));
+    const [exam] = await db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive
+    }).from(exams).where(eq(exams.id, id));
     return exam;
   }
 
@@ -190,17 +241,47 @@ export class DatabaseStorage implements IStorage {
     return result.length;
   }
 
-  // Questions
+  // Questions - OPTIMIZED: Specify required columns and add pagination support
   async getQuestions(): Promise<Question[]> {
-    return await db.select().from(questions);
+    return await db.select({
+      id: questions.id,
+      text: questions.text,
+      options: questions.options,
+      correctAnswer: questions.correctAnswer,
+      explanation: questions.explanation,
+      difficulty: questions.difficulty,
+      domain: questions.domain,
+      subjectId: questions.subjectId,
+      examId: questions.examId
+    }).from(questions);
   }
 
   async getQuestionsByExam(examId: number): Promise<Question[]> {
-    return await db.select().from(questions).where(eq(questions.examId, examId));
+    return await db.select({
+      id: questions.id,
+      text: questions.text,
+      options: questions.options,
+      correctAnswer: questions.correctAnswer,
+      explanation: questions.explanation,
+      difficulty: questions.difficulty,
+      domain: questions.domain,
+      subjectId: questions.subjectId,
+      examId: questions.examId
+    }).from(questions).where(eq(questions.examId, examId));
   }
 
   async getQuestion(id: number): Promise<Question | undefined> {
-    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    const [question] = await db.select({
+      id: questions.id,
+      text: questions.text,
+      options: questions.options,
+      correctAnswer: questions.correctAnswer,
+      explanation: questions.explanation,
+      difficulty: questions.difficulty,
+      domain: questions.domain,
+      subjectId: questions.subjectId,
+      examId: questions.examId
+    }).from(questions).where(eq(questions.id, id));
     return question;
   }
 
@@ -261,13 +342,35 @@ export class DatabaseStorage implements IStorage {
     return result.count;
   }
 
-  // Exam Sessions
+  // Exam Sessions - OPTIMIZED: Specify required columns and add ordering
   async getExamSessions(): Promise<ExamSession[]> {
-    return await db.select().from(examSessions);
+    return await db.select({
+      id: examSessions.id,
+      userName: examSessions.userName,
+      subjectId: examSessions.subjectId,
+      examId: examSessions.examId,
+      currentQuestion: examSessions.currentQuestion,
+      score: examSessions.score,
+      totalQuestions: examSessions.totalQuestions,
+      startedAt: examSessions.startedAt,
+      completedAt: examSessions.completedAt,
+      answers: examSessions.answers
+    }).from(examSessions).orderBy(desc(examSessions.startedAt));
   }
 
   async getExamSession(id: number): Promise<ExamSession | undefined> {
-    const [session] = await db.select().from(examSessions).where(eq(examSessions.id, id));
+    const [session] = await db.select({
+      id: examSessions.id,
+      userName: examSessions.userName,
+      subjectId: examSessions.subjectId,
+      examId: examSessions.examId,
+      currentQuestion: examSessions.currentQuestion,
+      score: examSessions.score,
+      totalQuestions: examSessions.totalQuestions,
+      startedAt: examSessions.startedAt,
+      completedAt: examSessions.completedAt,
+      answers: examSessions.answers
+    }).from(examSessions).where(eq(examSessions.id, id));
     return session;
   }
 
@@ -290,17 +393,44 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // Comments
+  // Comments - OPTIMIZED: Specify required columns and add ordering
   async getComments(): Promise<Comment[]> {
-    return await db.select().from(comments);
+    return await db.select({
+      id: comments.id,
+      questionId: comments.questionId,
+      authorName: comments.authorName,
+      content: comments.content,
+      createdAt: comments.createdAt,
+      parentId: comments.parentId,
+      isEdited: comments.isEdited,
+      editedAt: comments.editedAt
+    }).from(comments).orderBy(desc(comments.createdAt));
   }
 
   async getCommentsByQuestion(questionId: number): Promise<Comment[]> {
-    return await db.select().from(comments).where(eq(comments.questionId, questionId));
+    return await db.select({
+      id: comments.id,
+      questionId: comments.questionId,
+      authorName: comments.authorName,
+      content: comments.content,
+      createdAt: comments.createdAt,
+      parentId: comments.parentId,
+      isEdited: comments.isEdited,
+      editedAt: comments.editedAt
+    }).from(comments).where(eq(comments.questionId, questionId)).orderBy(desc(comments.createdAt));
   }
 
   async getComment(id: number): Promise<Comment | undefined> {
-    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
+    const [comment] = await db.select({
+      id: comments.id,
+      questionId: comments.questionId,
+      authorName: comments.authorName,
+      content: comments.content,
+      createdAt: comments.createdAt,
+      parentId: comments.parentId,
+      isEdited: comments.isEdited,
+      editedAt: comments.editedAt
+    }).from(comments).where(eq(comments.id, id));
     return comment;
   }
 
@@ -323,13 +453,41 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // Users
+  // Users - OPTIMIZED: Specify required columns for security (exclude sensitive fields by default)
   async getUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    return await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImage: users.profileImage,
+      role: users.role,
+      isActive: users.isActive,
+      isBanned: users.isBanned,
+      emailVerified: users.emailVerified,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastLoginAt: users.lastLoginAt
+    }).from(users);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImage: users.profileImage,
+      role: users.role,
+      isActive: users.isActive,
+      isBanned: users.isBanned,
+      emailVerified: users.emailVerified,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastLoginAt: users.lastLoginAt
+    }).from(users).where(eq(users.id, id));
     return user;
   }
 
@@ -415,20 +573,215 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      return await db.select().from(users).where(and(...conditions));
+      return await db.select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImage: users.profileImage,
+        role: users.role,
+        isActive: users.isActive,
+        isBanned: users.isBanned,
+        emailVerified: users.emailVerified,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        lastLoginAt: users.lastLoginAt
+      }).from(users).where(and(...conditions));
     }
 
-    return await db.select().from(users);
+    return await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      profileImage: users.profileImage,
+      role: users.role,
+      isActive: users.isActive,
+      isBanned: users.isBanned,
+      emailVerified: users.emailVerified,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastLoginAt: users.lastLoginAt
+    }).from(users);
   }
 
-  // Audit Logs
+  // Audit Logs - OPTIMIZED: Specify required columns and add pagination
   async getAuditLogs(): Promise<AuditLog[]> {
-    return await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp));
+    return await db.select({
+      id: auditLogs.id,
+      userId: auditLogs.userId,
+      action: auditLogs.action,
+      resourceType: auditLogs.resourceType,
+      resourceId: auditLogs.resourceId,
+      details: auditLogs.details,
+      timestamp: auditLogs.timestamp,
+      ipAddress: auditLogs.ipAddress,
+      userAgent: auditLogs.userAgent
+    }).from(auditLogs).orderBy(desc(auditLogs.timestamp)).limit(100); // Limit for performance
   }
 
   async getAuditLog(id: number): Promise<AuditLog | undefined> {
-    const results = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
-    return results.length > 0 ? results[0] : undefined;
+    const [result] = await db.select({
+      id: auditLogs.id,
+      userId: auditLogs.userId,
+      action: auditLogs.action,
+      resourceType: auditLogs.resourceType,
+      resourceId: auditLogs.resourceId,
+      details: auditLogs.details,
+      timestamp: auditLogs.timestamp,
+      ipAddress: auditLogs.ipAddress,
+      userAgent: auditLogs.userAgent
+    }).from(auditLogs).where(eq(auditLogs.id, id));
+    return result;
+  }
+
+  // PERFORMANCE OPTIMIZED: Paginated methods with efficient queries
+  async getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }> {
+    let query = db.select({
+      id: subjects.id,
+      name: subjects.name,
+      description: subjects.description,
+      icon: subjects.icon,
+      color: subjects.color,
+      categoryId: subjects.categoryId,
+      subcategoryId: subjects.subcategoryId,
+      examCount: subjects.examCount,
+      questionCount: subjects.questionCount
+    }).from(subjects);
+
+    const conditions = [];
+    if (search) {
+      conditions.push(sql`${subjects.searchVector} @@ plainto_tsquery('english', ${search})`);
+    }
+    if (categoryId) {
+      conditions.push(eq(subjects.categoryId, categoryId));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const [subjectsResult, totalResult] = await Promise.all([
+      query.limit(limit).offset(offset),
+      db.select({ count: sql<number>`COUNT(*)` }).from(subjects)
+        .where(conditions.length > 0 ? and(...conditions) : sql`TRUE`)
+    ]);
+
+    return {
+      subjects: subjectsResult,
+      total: totalResult[0].count
+    };
+  }
+
+  async getExamsPaginated(offset: number, limit: number, subjectId?: number): Promise<{ exams: Exam[], total: number }> {
+    let query = db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive
+    }).from(exams);
+
+    if (subjectId) {
+      query = query.where(eq(exams.subjectId, subjectId));
+    }
+
+    const [examsResult, totalResult] = await Promise.all([
+      query.limit(limit).offset(offset),
+      db.select({ count: sql<number>`COUNT(*)` }).from(exams)
+        .where(subjectId ? eq(exams.subjectId, subjectId) : sql`TRUE`)
+    ]);
+
+    return {
+      exams: examsResult,
+      total: totalResult[0].count
+    };
+  }
+
+  async getQuestionsPaginated(offset: number, limit: number, filters?: { subjectId?: number, examId?: number, difficulty?: string, search?: string }): Promise<{ questions: Question[], total: number }> {
+    let query = db.select({
+      id: questions.id,
+      text: questions.text,
+      options: questions.options,
+      correctAnswer: questions.correctAnswer,
+      explanation: questions.explanation,
+      difficulty: questions.difficulty,
+      domain: questions.domain,
+      subjectId: questions.subjectId,
+      examId: questions.examId
+    }).from(questions);
+
+    const conditions = [];
+    if (filters?.subjectId) {
+      conditions.push(eq(questions.subjectId, filters.subjectId));
+    }
+    if (filters?.examId) {
+      conditions.push(eq(questions.examId, filters.examId));
+    }
+    if (filters?.difficulty) {
+      conditions.push(eq(questions.difficulty, filters.difficulty));
+    }
+    if (filters?.search) {
+      conditions.push(sql`${questions.searchVector} @@ plainto_tsquery('english', ${filters.search})`);
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const [questionsResult, totalResult] = await Promise.all([
+      query.limit(limit).offset(offset),
+      db.select({ count: sql<number>`COUNT(*)` }).from(questions)
+        .where(conditions.length > 0 ? and(...conditions) : sql`TRUE`)
+    ]);
+
+    return {
+      questions: questionsResult,
+      total: totalResult[0].count
+    };
+  }
+
+  // PERFORMANCE OPTIMIZED: Batch operations for bulk data handling
+  async batchCreateQuestions(questionsData: InsertQuestion[]): Promise<{ created: number, failed: number, errors: string[] }> {
+    return await db.transaction(async (tx) => {
+      let created = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      // Process in chunks of 50 for optimal performance
+      const chunkSize = 50;
+      for (let i = 0; i < questionsData.length; i += chunkSize) {
+        const chunk = questionsData.slice(i, i + chunkSize);
+        
+        try {
+          const insertedQuestions = await tx.insert(questions).values(chunk).returning({ id: questions.id, subjectId: questions.subjectId });
+          created += insertedQuestions.length;
+
+          // Update subject question counts in batch
+          const subjectCounts = new Map<number, number>();
+          insertedQuestions.forEach(q => {
+            subjectCounts.set(q.subjectId, (subjectCounts.get(q.subjectId) || 0) + 1);
+          });
+
+          for (const [subjectId, count] of subjectCounts) {
+            await tx
+              .update(subjects)
+              .set({ questionCount: sql`${subjects.questionCount} + ${count}` })
+              .where(eq(subjects.id, subjectId));
+          }
+        } catch (error) {
+          failed += chunk.length;
+          errors.push(`Batch ${i / chunkSize + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      return { created, failed, errors };
+    });
   }
 
   async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
