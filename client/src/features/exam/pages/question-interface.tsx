@@ -55,6 +55,12 @@ export default function QuestionInterface() {
     enabled: !!(examSlug || examId),
   });
 
+  // Fetch subject data for navigation
+  const { data: subject } = useQuery({
+    queryKey: [`/api/subjects/${exam?.subjectId}`],
+    enabled: !!exam?.subjectId,
+  });
+
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
     queryKey: ["/api/questions", exam?.id],
     queryFn: async () => {
@@ -307,7 +313,10 @@ export default function QuestionInterface() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                    onClick={() => {
+                      const subjectPath = subject?.slug ? `/subject/${subject.slug}` : `/subject/id/${exam.subjectId}`;
+                      setLocation(subjectPath);
+                    }}
                     className="text-gray-600 hover:text-gray-900"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -346,7 +355,10 @@ export default function QuestionInterface() {
                 This exam doesn't have any questions yet. Please check back later or contact support.
               </p>
               <Button 
-                onClick={() => setLocation(`/subject/${exam?.subjectId}`)}
+                onClick={() => {
+                  const subjectPath = subject?.slug ? `/subject/${subject.slug}` : `/subject/id/${exam?.subjectId}`;
+                  setLocation(subjectPath);
+                }}
                 variant="default"
                 className="px-6 py-2"
               >
@@ -382,7 +394,10 @@ export default function QuestionInterface() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                  onClick={() => {
+                    const subjectPath = subject?.slug ? `/subject/${subject.slug}` : `/subject/id/${exam.subjectId}`;
+                    setLocation(subjectPath);
+                  }}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />

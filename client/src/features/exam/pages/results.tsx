@@ -29,6 +29,12 @@ export default function Results() {
     enabled: !!session?.examId,
   });
 
+  // Fetch subject data for navigation
+  const { data: subject } = useQuery({
+    queryKey: [`/api/subjects/${exam?.subjectId}`],
+    enabled: !!exam?.subjectId,
+  });
+
   const calculateResults = (): ExamResult | null => {
     if (!session || !questions || !session.answers) return null;
 
@@ -94,7 +100,13 @@ export default function Results() {
   };
 
   const handleGoToExams = () => {
-    setLocation("/");
+    if (subject?.slug) {
+      setLocation(`/subject/${subject.slug}`);
+    } else if (exam?.subjectId) {
+      setLocation(`/subject/id/${exam.subjectId}`);
+    } else {
+      setLocation("/");
+    }
   };
 
   if (!session || !results) {
