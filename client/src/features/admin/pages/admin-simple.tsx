@@ -216,7 +216,7 @@ export default function AdminSimple() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const questionsQuery = useQuery<Question[]>({
+  const questionsQuery = useQuery<{questions: Question[]}>({
     queryKey: ["/api/questions"],
     staleTime: 2 * 60 * 1000, // 2 minutes for more dynamic data
   });
@@ -234,7 +234,8 @@ export default function AdminSimple() {
   // Extract data for backward compatibility
   const { data: subjects } = subjectsQuery;
   const { data: exams } = examsQuery;
-  const { data: questions } = questionsQuery;
+  const { data: questionsData } = questionsQuery;
+  const questions = questionsData?.questions || [];
   const { data: categories } = categoriesQuery;
   const { data: subcategories } = subcategoriesQuery;
 
@@ -475,15 +476,16 @@ export default function AdminSimple() {
     const totalExams = exams?.length || 0;
     const totalQuestions = questions?.length || 0;
     
-    // Calculate question distribution
+    // Calculate question distribution - ensure questions is an array
+    const questionsList = Array.isArray(questions) ? questions : [];
     const questionsBySubject = subjects?.map(subject => ({
       name: subject.name,
-      count: (questions || []).filter(q => q.subjectId === subject.id).length
+      count: questionsList.filter(q => q.subjectId === subject.id).length
     })) || [];
 
     const questionsByExam = exams?.map(exam => ({
       title: exam.title,
-      count: (questions || []).filter(q => q.examId === exam.id).length
+      count: questionsList.filter(q => q.examId === exam.id).length
     })) || [];
 
     // Most popular exam (most questions)
@@ -2226,21 +2228,8 @@ export default function AdminSimple() {
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    // Filter questions based on search and selections - use filter states for hierarchical linking
-    const filteredQuestions = questions?.filter(question => {
-      const matchesSearch = !searchTerm || 
-        question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        question.explanation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        question.domain?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesSubject = selectedSubjectFilter === "all" || 
-        question.subjectId.toString() === selectedSubjectFilter;
-      
-      const matchesExam = selectedExamFilter === "all" || 
-        question.examId.toString() === selectedExamFilter;
-
-      return matchesSearch && matchesSubject && matchesExam;
-    }) || [];
+    // Display all questions without filtering for simpler dashboard
+    const displayQuestions = questions || [];
 
     const questionForm = useForm<QuestionFormData>({
       resolver: zodResolver(questionFormSchema),
