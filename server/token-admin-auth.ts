@@ -101,12 +101,6 @@ export class TokenAdminAuthService {
         message: "Admin authentication successful"
       };
 
-      console.log(`❌ Invalid admin credentials: ${email}`);
-      return {
-        success: false,
-        message: "Invalid admin credentials"
-      };
-
     } catch (error) {
       console.error('Admin login error:', error);
       return {

@@ -8,7 +8,7 @@ import { authService } from "./auth-service";
 import { adminAuthService } from "./admin-auth-service";
 import { adminUserService } from './admin-user-management';
 import { tokenAdminAuth } from './token-admin-auth';
-import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
+import { extractClientInfo } from "./middleware/admin-auth";
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subjects", requireNewAdminAuth, logNewAdminAction('CREATE_SUBJECT'), async (req, res) => {
+  app.post("/api/subjects", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
       if (!validation.success) {
@@ -230,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
+  app.post("/api/exams", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const validation = insertExamSchema.safeParse(req.body);
       if (!validation.success) {
@@ -283,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", requireNewAdminAuth, logNewAdminAction('CREATE_QUESTION'), async (req, res) => {
+  app.post("/api/questions", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const validation = insertQuestionSchema.safeParse(req.body);
       if (!validation.success) {
@@ -296,7 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", requireNewAdminAuth, logNewAdminAction('UPDATE_QUESTION'), async (req, res) => {
+  app.put("/api/questions/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const validation = insertQuestionSchema.partial().safeParse(req.body);
@@ -313,7 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/all", requireNewAdminAuth, logNewAdminAction('DELETE_ALL_QUESTIONS'), async (req, res) => {
+  app.delete("/api/questions/all", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const questions = await storage.getQuestions();
       for (const question of questions) {
@@ -325,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", requireNewAdminAuth, logNewAdminAction('DELETE_QUESTION'), async (req, res) => {
+  app.delete("/api/questions/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const deleted = await storage.deleteQuestion(id);
@@ -339,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk question operations for CSV import - ADMIN PROTECTED
-  app.post("/api/questions/bulk", requireNewAdminAuth, logNewAdminAction('BULK_CREATE_QUESTIONS'), async (req, res) => {
+  app.post("/api/questions/bulk", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { questions } = req.body;
       if (!Array.isArray(questions) || questions.length === 0) {
@@ -1762,9 +1762,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== END ENHANCED AUTHENTICATION ====================
 
-  // ==================== ADMIN AUTHENTICATION ROUTES (TOKEN-ONLY) ====================
+  // ==================== ADMIN AUTHENTICATION ROUTES (TOKEN-ONLY SYSTEM) ====================
   
-  // Admin login - completely cookie-free authentication
+  // Token-only admin login - NO COOKIES
   app.post("/api/admin/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -1786,7 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Use new token-only admin auth service
+      // Use token-only admin auth service (NO COOKIES)
       const result = await tokenAdminAuth.login(email, password);
       
       // Return token in response body only (no cookies)
@@ -1853,46 +1853,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get authorized admin emails (for reference only)
-  app.get("/api/admin/auth/authorized-emails", requireNewAdminAuth, async (req, res) => {
-    try {
-      const emails = adminAuthService.getAuthorizedEmails();
-      res.json({
-        success: true,
-        authorizedEmails: emails,
-        message: "Authorized admin emails retrieved"
-      });
-    } catch (error) {
-      console.error("Get authorized emails error:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to retrieve authorized emails" 
-      });
-    }
-  });
+
   
-  // ==================== TOKEN-ONLY ADMIN AUTHENTICATION ====================
-  
-  // Token-only admin login
-  app.post("/api/admin/token/login", async (req, res) => {
-    try {
-      const { email, password, recaptchaToken } = req.body;
-      
-      const result = await tokenAdminAuth.login(email, password);
-      
-      if (result.success) {
-        res.json(result);
-      } else {
-        res.status(401).json(result);
-      }
-    } catch (error) {
-      console.error("Admin login error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Login failed"
-      });
-    }
-  });
+  // ==================== CLEAN TOKEN-ONLY ADMIN SYSTEM ====================
 
   // Token verification endpoint
   app.get("/api/admin/token/verify", 
@@ -1964,7 +1927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Audit Log endpoints
-  app.get("/api/audit-logs", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/audit-logs", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const auditLogs = await storage.getAuditLogs();
       res.json(auditLogs);
@@ -1973,7 +1936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/audit-logs/:id", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/audit-logs/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const id = parseId(req.params.id, 'audit log ID');
       const auditLog = await storage.getAuditLog(id);
@@ -1989,7 +1952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // This route is deprecated - use /api/admin/auth/login instead
 
   // Unified CSV endpoints
-  app.get("/api/csv/unified-template", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/unified-template", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -2008,7 +1971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/csv/unified-export", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/unified-export", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -2027,7 +1990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/csv/unified-import", requireNewAdminAuth, async (req, res) => {
+  app.post("/api/csv/unified-import", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -2053,7 +2016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Import/Export endpoints
-  app.get("/api/csv/template/:entityType", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/template/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
@@ -2073,7 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/csv/export/:entityType", requireNewAdminAuth, async (req, res) => {
+  app.get("/api/csv/export/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
@@ -2099,7 +2062,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/csv/import/:entityType", requireNewAdminAuth, async (req, res) => {
+  app.post("/api/csv/import/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);

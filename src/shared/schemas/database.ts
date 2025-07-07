@@ -243,7 +243,7 @@ export const authLogs = pgTable("auth_logs", {
 export const authSessions = pgTable("auth_sessions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  sessionToken: text("session_token").unique().notNull(),
+  token: text("token").unique().notNull(),
   refreshToken: text("refresh_token").unique(),
   isActive: boolean("is_active").default(true),
   ipAddress: text("ip_address"),

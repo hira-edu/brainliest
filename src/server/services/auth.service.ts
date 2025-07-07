@@ -1,142 +1,75 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import { db } from './db';
-import { users, authLogs, authSessions } from '@shared/schema';
-import { eq, and, or, lt, gt } from 'drizzle-orm';
-import { emailService } from './email-service';
+import { db } from "../db";
+import { users, authSessions, authLogs } from "@shared/schema";
+import { eq, and, desc, gt } from "drizzle-orm";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import type { AuthUser, AuthLoginResult, AuthToken } from "../types/auth";
+import { generateSecureRandomString } from "../utils/crypto";
 
-// Environment configuration
-const JWT_SECRET = process.env.JWT_SECRET || (() => {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET environment variable is required in production');
-  }
-  return 'dev-jwt-secret-key-not-for-production';
-})();
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || (() => {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_REFRESH_SECRET environment variable is required in production');
-  }
-  return 'dev-jwt-refresh-secret-key-not-for-production';
-})();
-const JWT_EXPIRY = '15m'; // Short-lived access tokens
-const JWT_REFRESH_EXPIRY = '7d'; // Longer-lived refresh tokens
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
-const PASSWORD_RESET_EXPIRY = 60 * 60 * 1000; // 1 hour
+const JWT_SECRET = process.env.JWT_SECRET || "fallback-dev-secret-change-in-production";
+const JWT_EXPIRES_IN = "7d";
+const REFRESH_TOKEN_EXPIRES_IN = "30d";
+const MAX_FAILED_ATTEMPTS = 5;
+const ACCOUNT_LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  username?: string;
-  firstName?: string;
-  lastName?: string;
-  profileImage?: string;
-  role: string;
-  emailVerified: boolean;
-  oauthProvider?: string;
-}
-
-export interface LoginResult {
-  success: boolean;
-  user?: AuthUser;
-  accessToken?: string;
-  refreshToken?: string;
-  message?: string;
-  requiresEmailVerification?: boolean;
-  accountLocked?: boolean;
-  lockoutExpires?: Date;
-}
-
-export interface RegisterResult {
-  success: boolean;
-  user?: AuthUser;
-  message?: string;
-  requiresEmailVerification?: boolean;
-}
-
-// Password strength validation
-export function validatePassword(password: string): { valid: boolean; errors: string[] } {
-  const errors: string[] = [];
-  
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long');
-  }
-  if (!/[A-Z]/.test(password)) {
-    errors.push('Password must contain at least one uppercase letter');
-  }
-  if (!/[a-z]/.test(password)) {
-    errors.push('Password must contain at least one lowercase letter');
-  }
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
-  }
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('Password must contain at least one special character');
-  }
-  
-  return {
-    valid: errors.length === 0,
-    errors
-  };
-}
-
-// Email validation
-export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-// Generate secure tokens
-function generateSecureToken(): string {
-  return crypto.randomBytes(32).toString('hex');
-}
-
-// JWT token generation
+// Helper functions
 function generateAccessToken(user: AuthUser): string {
   return jwt.sign(
     { 
       userId: user.id, 
       email: user.email, 
-      role: user.role,
-      emailVerified: user.emailVerified 
+      username: user.username 
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
+    { expiresIn: JWT_EXPIRES_IN }
   );
 }
 
 function generateRefreshToken(user: AuthUser): string {
   return jwt.sign(
-    { userId: user.id },
-    JWT_REFRESH_SECRET,
-    { expiresIn: JWT_REFRESH_EXPIRY }
+    { 
+      userId: user.id, 
+      type: 'refresh' 
+    },
+    JWT_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRES_IN }
   );
 }
 
-// Audit logging
+function verifyToken(token: string): { valid: boolean; payload?: any; expired?: boolean } {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    return { valid: true, payload };
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      return { valid: false, expired: true };
+    }
+    return { valid: false };
+  }
+}
+
+// Auth logging function
 async function logAuthEvent(
-  userId: number | null,
+  userId: string | null,
   email: string,
   action: string,
   method: string,
   success: boolean,
   ipAddress?: string,
   userAgent?: string,
-  failureReason?: string,
-  metadata?: any
-) {
+  errorMessage?: string
+): Promise<void> {
   try {
     await db.insert(authLogs).values({
-      userId,
+      userId: userId || null,
       email,
       action,
       method,
       success,
       ipAddress: ipAddress || null,
       userAgent: userAgent || null,
-      failureReason: failureReason || null,
-      metadata: metadata ? JSON.stringify(metadata) : null,
+      errorMessage: errorMessage || null,
+      timestamp: new Date(),
     });
   } catch (error) {
     console.error('Failed to log auth event:', error);
@@ -144,172 +77,76 @@ async function logAuthEvent(
 }
 
 export class AuthService {
-  // Register with email/password
+  /**
+   * Register a new user with email verification
+   */
   async register(
     email: string,
     password: string,
+    username?: string,
     firstName?: string,
     lastName?: string,
     ipAddress?: string,
     userAgent?: string
-  ): Promise<RegisterResult> {
+  ): Promise<AuthLoginResult> {
     try {
-      // Validate email
-      if (!validateEmail(email)) {
-        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Invalid email format');
-        return { success: false, message: 'Invalid email address' };
+      // Check if user already exists with verified email
+      const existingVerifiedUser = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.email, email), eq(users.emailVerified, true)))
+        .limit(1);
+
+      if (existingVerifiedUser.length > 0) {
+        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Email already registered');
+        return {
+          success: false,
+          message: 'An account with this email already exists'
+        };
       }
 
-      // Validate password
-      const passwordValidation = validatePassword(password);
-      if (!passwordValidation.valid) {
-        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Weak password');
-        return { success: false, message: passwordValidation.errors.join('. ') };
+      // Check if there's an unverified user with same email
+      const existingUnverifiedUser = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.email, email), eq(users.emailVerified, false)))
+        .limit(1);
+
+      if (existingUnverifiedUser.length > 0) {
+        // Delete the unverified user and their sessions
+        await db.delete(users).where(eq(users.id, existingUnverifiedUser[0].id));
+        console.log(`Deleted unverified user ${existingUnverifiedUser[0].id} for re-registration`);
       }
 
-      // Check if user already exists
-      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      if (existingUser.length > 0) {
-        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Email already exists');
-        return { success: false, message: 'Email address is already registered' };
-      }
+      // Generate auto username if not provided
+      const finalUsername = username || email.split('@')[0] + Math.random().toString(36).substr(2, 4);
 
       // Hash password
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(password, saltRounds);
+      const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Generate email verification token
-      const emailVerificationToken = generateSecureToken();
-      const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // Generate verification token
+      const verificationToken = generateSecureRandomString(32);
 
       // Create user
-      const [newUser] = await db.insert(users).values({
+      const [user] = await db.insert(users).values({
         email,
+        username: finalUsername,
         firstName: firstName || null,
         lastName: lastName || null,
-        passwordHash,
-        emailVerificationToken,
-        emailVerificationExpires,
+        passwordHash: hashedPassword,
         emailVerified: false,
-        registrationIp: ipAddress || null,
+        emailVerificationToken: verificationToken,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }).returning();
 
-      // Send verification email
-      try {
-        await emailService.sendEmailVerification(email, emailVerificationToken);
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        // Continue registration even if email fails
-      }
-
-      const authUser: AuthUser = {
-        id: newUser.id,
-        email: newUser.email,
-        username: newUser.username || undefined,
-        firstName: newUser.firstName || undefined,
-        lastName: newUser.lastName || undefined,
-        profileImage: newUser.profileImage || undefined,
-        role: newUser.role || 'user',
-        emailVerified: newUser.emailVerified || false,
-      };
-
-      await logAuthEvent(newUser.id, email, 'register_success', 'email', true, ipAddress, userAgent);
-
-      return {
-        success: true,
-        user: authUser,
-        requiresEmailVerification: true,
-        message: 'Registration successful. Please check your email to verify your account.'
-      };
-
-    } catch (error) {
-      console.error('Registration error:', error);
-      await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Internal error');
-      return { success: false, message: 'Registration failed. Please try again.' };
-    }
-  }
-
-  // Login with email/password
-  async login(
-    email: string,
-    password: string,
-    ipAddress?: string,
-    userAgent?: string
-  ): Promise<LoginResult> {
-    try {
-      // Validate email
-      if (!validateEmail(email)) {
-        await logAuthEvent(null, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Invalid email format');
-        return { success: false, message: 'Invalid email or password' };
-      }
-
-      // Get user
-      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      if (!user || !user.passwordHash) {
-        await logAuthEvent(null, email, 'login_failed', 'email', false, ipAddress, userAgent, 'User not found or no password set');
-        return { success: false, message: 'Invalid email or password' };
-      }
-
-      // Check if account is locked
-      if (user.lockedUntil && user.lockedUntil > new Date()) {
-        await logAuthEvent(user.id, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Account locked');
-        return {
-          success: false,
-          message: 'Account is temporarily locked due to too many failed login attempts',
-          accountLocked: true,
-          lockoutExpires: user.lockedUntil
-        };
-      }
-
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-      if (!isValidPassword) {
-        // Increment failed attempts
-        const failedAttempts = (user.failedLoginAttempts || 0) + 1;
-        const updateData: any = { failedLoginAttempts: failedAttempts };
-        
-        if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
-          updateData.lockedUntil = new Date(Date.now() + LOCKOUT_TIME);
-        }
-
-        await db.update(users).set(updateData).where(eq(users.id, user.id));
-        await logAuthEvent(user.id, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Invalid password');
-        
-        return { 
-          success: false, 
-          message: failedAttempts >= MAX_LOGIN_ATTEMPTS 
-            ? 'Account locked due to too many failed attempts. Try again in 15 minutes.'
-            : 'Invalid email or password'
-        };
-      }
-
-      // Check if email is verified
-      if (!user.emailVerified) {
-        await logAuthEvent(user.id, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Email not verified');
-        return {
-          success: false,
-          message: 'Please verify your email address before logging in',
-          requiresEmailVerification: true
-        };
-      }
-
-      // Reset failed attempts on successful login
-      await db.update(users).set({
-        failedLoginAttempts: 0,
-        lockedUntil: null,
-        lastLoginAt: new Date(),
-        lastLoginIp: ipAddress || null,
-        loginCount: (user.loginCount || 0) + 1
-      }).where(eq(users.id, user.id));
-
+      // Create auth user object
       const authUser: AuthUser = {
         id: user.id,
-        email: user.email,
-        username: user.username || undefined,
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
-        profileImage: user.profileImage || undefined,
-        role: user.role || 'user',
+        email: user.email!,
+        username: user.username!,
+        firstName: user.firstName,
+        lastName: user.lastName,
         emailVerified: user.emailVerified || false,
       };
 
@@ -321,7 +158,130 @@ export class AuthService {
       const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       await db.insert(authSessions).values({
         userId: user.id,
-        sessionToken: accessToken,
+        token: accessToken,
+        refreshToken,
+        isActive: true,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        expiresAt: sessionExpiry,
+      });
+
+      await logAuthEvent(user.id, email, 'register_success', 'email', true, ipAddress, userAgent);
+
+      return {
+        success: true,
+        user: authUser,
+        accessToken,
+        refreshToken,
+        verificationToken,
+        message: 'Registration successful. Please verify your email.'
+      };
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, error.message);
+      return {
+        success: false,
+        message: 'Registration failed. Please try again.'
+      };
+    }
+  }
+
+  /**
+   * Login with email and password
+   */
+  async login(
+    email: string,
+    password: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<AuthLoginResult> {
+    try {
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (!user) {
+        await logAuthEvent(null, email, 'login_failed', 'email', false, ipAddress, userAgent, 'User not found');
+        return {
+          success: false,
+          message: 'Invalid email or password'
+        };
+      }
+
+      // Check if account is locked
+      if (user.accountLockedUntil && user.accountLockedUntil > new Date()) {
+        await logAuthEvent(user.id, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Account locked');
+        return {
+          success: false,
+          message: 'Account is temporarily locked. Please try again later.',
+          accountLocked: true,
+          lockoutExpires: user.accountLockedUntil
+        };
+      }
+
+      // Verify password
+      if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+        // Increment failed attempts
+        const failedAttempts = (user.failedLoginAttempts || 0) + 1;
+        const updateData: any = {
+          failedLoginAttempts: failedAttempts,
+          lastFailedLogin: new Date(),
+        };
+
+        // Lock account if too many failed attempts
+        if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+          updateData.accountLockedUntil = new Date(Date.now() + ACCOUNT_LOCKOUT_TIME);
+        }
+
+        await db.update(users).set(updateData).where(eq(users.id, user.id));
+
+        await logAuthEvent(user.id, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Invalid password');
+        return {
+          success: false,
+          message: 'Invalid email or password'
+        };
+      }
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        await logAuthEvent(user.id, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Email not verified');
+        return {
+          success: false,
+          message: 'Please verify your email before logging in',
+          requiresEmailVerification: true
+        };
+      }
+
+      // Reset failed attempts on successful login
+      await db.update(users).set({
+        failedLoginAttempts: 0,
+        accountLockedUntil: null,
+        lastLogin: new Date(),
+      }).where(eq(users.id, user.id));
+
+      // Create auth user object
+      const authUser: AuthUser = {
+        id: user.id,
+        email: user.email!,
+        username: user.username!,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailVerified: user.emailVerified || false,
+      };
+
+      // Generate tokens
+      const accessToken = generateAccessToken(authUser);
+      const refreshToken = generateRefreshToken(authUser);
+
+      // Store session
+      const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      await db.insert(authSessions).values({
+        userId: user.id,
+        token: accessToken,
         refreshToken,
         isActive: true,
         ipAddress: ipAddress || null,
@@ -339,85 +299,384 @@ export class AuthService {
         message: 'Login successful'
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      await logAuthEvent(null, email, 'login_failed', 'email', false, ipAddress, userAgent, 'Internal error');
-      return { success: false, message: 'Login failed. Please try again.' };
+      await logAuthEvent(null, email, 'login_failed', 'email', false, ipAddress, userAgent, error.message);
+      return {
+        success: false,
+        message: 'Login failed. Please try again.'
+      };
     }
   }
 
-  // OAuth login/register
-  async oauthLogin(
-    provider: string,
-    oauthId: string,
+  /**
+   * Verify email with verification token
+   */
+  async verifyEmail(token: string, ipAddress?: string, userAgent?: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find user by verification token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.emailVerificationToken, token))
+        .limit(1);
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'Invalid verification token'
+        };
+      }
+
+      if (user.emailVerified) {
+        return {
+          success: false,
+          message: 'Email already verified'
+        };
+      }
+
+      // Update user as verified
+      await db.update(users).set({
+        emailVerified: true,
+        emailVerificationToken: null,
+        updatedAt: new Date(),
+      }).where(eq(users.id, user.id));
+
+      await logAuthEvent(user.id, user.email!, 'email_verified', 'email', true, ipAddress, userAgent);
+
+      return {
+        success: true,
+        message: 'Email verified successfully'
+      };
+
+    } catch (error: any) {
+      console.error('Email verification error:', error);
+      return {
+        success: false,
+        message: 'Email verification failed'
+      };
+    }
+  }
+
+  /**
+   * Initiate password reset
+   */
+  async initiatePasswordReset(email: string, ipAddress?: string, userAgent?: string): Promise<{ success: boolean; message: string; resetToken?: string }> {
+    try {
+      // Find user by email
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (!user) {
+        // Return success even if user doesn't exist (security best practice)
+        await logAuthEvent(null, email, 'password_reset_requested', 'email', false, ipAddress, userAgent, 'User not found');
+        return {
+          success: true,
+          message: 'If an account with this email exists, a password reset link has been sent'
+        };
+      }
+
+      // Generate reset token
+      const resetToken = generateSecureRandomString(32);
+      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Update user with reset token
+      await db.update(users).set({
+        passwordResetToken: resetToken,
+        passwordResetExpiry: resetTokenExpiry,
+        updatedAt: new Date(),
+      }).where(eq(users.id, user.id));
+
+      await logAuthEvent(user.id, email, 'password_reset_requested', 'email', true, ipAddress, userAgent);
+
+      return {
+        success: true,
+        message: 'Password reset link has been sent to your email',
+        resetToken
+      };
+
+    } catch (error: any) {
+      console.error('Password reset initiation error:', error);
+      await logAuthEvent(null, email, 'password_reset_requested', 'email', false, ipAddress, userAgent, error.message);
+      return {
+        success: false,
+        message: 'Failed to initiate password reset'
+      };
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    ipAddress?: string,
+    userAgent?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find user by reset token
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.passwordResetToken, token),
+          gt(users.passwordResetExpiry, new Date())
+        ))
+        .limit(1);
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'Invalid or expired reset token'
+        };
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update user with new password
+      await db.update(users).set({
+        passwordHash: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiry: null,
+        failedLoginAttempts: 0,
+        accountLockedUntil: null,
+        updatedAt: new Date(),
+      }).where(eq(users.id, user.id));
+
+      // Invalidate all existing sessions
+      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.userId, user.id));
+
+      await logAuthEvent(user.id, user.email!, 'password_reset', 'email', true, ipAddress, userAgent);
+
+      return {
+        success: true,
+        message: 'Password reset successful'
+      };
+
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      await logAuthEvent(null, 'unknown', 'password_reset', 'email', false, ipAddress, userAgent, error.message);
+      return {
+        success: false,
+        message: 'Password reset failed'
+      };
+    }
+  }
+
+  /**
+   * Refresh access token
+   */
+  async refreshToken(refreshToken: string, ipAddress?: string, userAgent?: string): Promise<AuthToken | null> {
+    try {
+      // Verify refresh token
+      const { valid, payload } = verifyToken(refreshToken);
+      if (!valid || payload.type !== 'refresh') {
+        return null;
+      }
+
+      // Find active session
+      const [session] = await db
+        .select()
+        .from(authSessions)
+        .where(and(
+          eq(authSessions.userId, payload.userId),
+          eq(authSessions.refreshToken, refreshToken),
+          eq(authSessions.isActive, true),
+          gt(authSessions.expiresAt, new Date())
+        ))
+        .limit(1);
+
+      if (!session) {
+        return null;
+      }
+
+      // Find user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
+
+      if (!user || !user.emailVerified) {
+        return null;
+      }
+
+      // Create auth user object
+      const authUser: AuthUser = {
+        id: user.id,
+        email: user.email!,
+        username: user.username!,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailVerified: user.emailVerified || false,
+      };
+
+      // Generate new access token
+      const newAccessToken = generateAccessToken(authUser);
+
+      // Update session with new access token
+      await db.update(authSessions).set({
+        token: newAccessToken,
+        updatedAt: new Date(),
+      }).where(eq(authSessions.id, session.id));
+
+      await logAuthEvent(user.id, user.email!, 'token_refreshed', 'jwt', true, ipAddress, userAgent);
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: session.refreshToken,
+        expiresIn: JWT_EXPIRES_IN
+      };
+
+    } catch (error: any) {
+      console.error('Token refresh error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Logout user (invalidate session)
+   */
+  async logout(token: string, ipAddress?: string, userAgent?: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Invalidate session
+      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.token, token));
+
+      // We can't easily get user info from token at this point, so log with minimal info
+      await logAuthEvent(null, 'unknown', 'logout', 'jwt', true, ipAddress, userAgent);
+
+      return {
+        success: true,
+        message: 'Logged out successfully'
+      };
+
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      return {
+        success: false,
+        message: 'Logout failed'
+      };
+    }
+  }
+
+  /**
+   * Verify session token
+   */
+  async verifySession(token: string): Promise<AuthUser | null> {
+    try {
+      // Verify JWT token
+      const { valid, payload, expired } = verifyToken(token);
+      if (!valid) {
+        return null;
+      }
+
+      // Find active session
+      const [session] = await db
+        .select()
+        .from(authSessions)
+        .where(and(
+          eq(authSessions.token, token),
+          eq(authSessions.isActive, true),
+          gt(authSessions.expiresAt, new Date())
+        ))
+        .limit(1);
+
+      if (!session) {
+        return null;
+      }
+
+      // Find user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
+
+      if (!user || !user.emailVerified) {
+        return null;
+      }
+
+      return {
+        id: user.id,
+        email: user.email!,
+        username: user.username!,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailVerified: user.emailVerified || false,
+      };
+
+    } catch (error: any) {
+      console.error('Session verification error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Google OAuth login/register
+   */
+  async googleAuth(
+    googleId: string,
     email: string,
     firstName?: string,
     lastName?: string,
-    profileImage?: string,
     ipAddress?: string,
     userAgent?: string
-  ): Promise<LoginResult> {
+  ): Promise<AuthLoginResult> {
     try {
-      // Check if user exists with OAuth ID
-      let [user] = await db.select().from(users).where(eq(users.googleId, oauthId)).limit(1);
-      
+      // Check if user exists with this Google ID
+      let [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.googleId, googleId))
+        .limit(1);
+
       if (!user) {
-        // Check if user exists with same email
-        const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-        
-        if (existingUser) {
-          // Link OAuth account to existing user
+        // Check if user exists with this email
+        [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        if (user) {
+          // Link Google account to existing user
           await db.update(users).set({
-            googleId: provider === 'google' ? oauthId : null,
-            oauthProvider: provider,
-            emailVerified: true, // OAuth emails are pre-verified
-            lastLoginAt: new Date(),
-            lastLoginIp: ipAddress || null,
-            loginCount: (existingUser.loginCount || 0) + 1
-          }).where(eq(users.id, existingUser.id));
-          
-          user = { ...existingUser, googleId: oauthId, emailVerified: true };
+            googleId,
+            oauthProvider: 'google',
+            emailVerified: true, // Google emails are pre-verified
+            updatedAt: new Date(),
+          }).where(eq(users.id, user.id));
         } else {
-          // Create new user with OAuth
-          const [newUser] = await db.insert(users).values({
+          // Create new user
+          const username = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
+          
+          [user] = await db.insert(users).values({
             email,
+            username,
             firstName: firstName || null,
             lastName: lastName || null,
-            profileImage: profileImage || null,
-            googleId: provider === 'google' ? oauthId : null,
-            oauthProvider: provider,
-            emailVerified: true, // OAuth emails are pre-verified
-            registrationIp: ipAddress || null,
-            lastLoginAt: new Date(),
-            lastLoginIp: ipAddress || null,
-            loginCount: 1
+            googleId,
+            oauthProvider: 'google',
+            emailVerified: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           }).returning();
-          
-          user = newUser;
-          await logAuthEvent(user.id, email, 'register_success', provider, true, ipAddress, userAgent);
         }
-      } else {
-        // Update existing OAuth user
-        await db.update(users).set({
-          lastLoginAt: new Date(),
-          lastLoginIp: ipAddress || null,
-          loginCount: (user.loginCount || 0) + 1,
-          firstName: firstName || user.firstName,
-          lastName: lastName || user.lastName,
-          profileImage: profileImage || user.profileImage,
-        }).where(eq(users.id, user.id));
       }
 
+      // Create auth user object
       const authUser: AuthUser = {
         id: user.id,
-        email: user.email,
-        username: user.username || undefined,
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
-        profileImage: user.profileImage || undefined,
-        role: user.role || 'user',
-        emailVerified: user.emailVerified || false,
-        oauthProvider: user.oauthProvider || undefined,
+        email: user.email!,
+        username: user.username!,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailVerified: true,
       };
 
       // Generate tokens
@@ -428,7 +687,7 @@ export class AuthService {
       const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
       await db.insert(authSessions).values({
         userId: user.id,
-        sessionToken: accessToken,
+        token: accessToken,
         refreshToken,
         isActive: true,
         ipAddress: ipAddress || null,
@@ -436,258 +695,72 @@ export class AuthService {
         expiresAt: sessionExpiry,
       });
 
-      await logAuthEvent(user.id, email, 'login_success', provider, true, ipAddress, userAgent);
+      await logAuthEvent(user.id, email, 'login_success', 'google', true, ipAddress, userAgent);
 
       return {
         success: true,
         user: authUser,
         accessToken,
         refreshToken,
-        message: 'Login successful'
+        message: 'Google authentication successful'
       };
-
-    } catch (error) {
-      console.error('OAuth login error:', error);
-      await logAuthEvent(null, email, 'login_failed', provider, false, ipAddress, userAgent, 'Internal error');
-      return { success: false, message: 'OAuth login failed. Please try again.' };
-    }
-  }
-
-  // Verify email
-  async verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
-    try {
-      const [user] = await db.select().from(users).where(
-        and(
-          eq(users.emailVerificationToken, token),
-          gt(users.emailVerificationExpires, new Date())
-        )
-      ).limit(1);
-
-      if (!user) {
-        return { success: false, message: 'Invalid or expired verification token' };
-      }
-
-      await db.update(users).set({
-        emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationExpires: null,
-      }).where(eq(users.id, user.id));
-
-      await logAuthEvent(user.id, user.email, 'email_verified', 'email', true);
-
-      return { success: true, message: 'Email verified successfully' };
-
-    } catch (error) {
-      console.error('Email verification error:', error);
-      return { success: false, message: 'Email verification failed' };
-    }
-  }
-
-  // Request password reset
-  async requestPasswordReset(email: string, ipAddress?: string, userAgent?: string): Promise<{ success: boolean; message: string }> {
-    try {
-      const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      
-      if (!user) {
-        // Don't reveal that user doesn't exist
-        await logAuthEvent(null, email, 'password_reset_requested', 'email', false, ipAddress, userAgent, 'User not found');
-        return { success: true, message: 'If an account with that email exists, you will receive a password reset link.' };
-      }
-
-      const resetToken = generateSecureToken();
-      const resetExpires = new Date(Date.now() + PASSWORD_RESET_EXPIRY);
-
-      await db.update(users).set({
-        passwordResetToken: resetToken,
-        passwordResetExpires: resetExpires,
-      }).where(eq(users.id, user.id));
-
-      try {
-        await emailService.sendPasswordReset(email, resetToken);
-      } catch (emailError) {
-        console.error('Failed to send password reset email:', emailError);
-        return { success: false, message: 'Failed to send password reset email. Please try again.' };
-      }
-
-      await logAuthEvent(user.id, email, 'password_reset_requested', 'email', true, ipAddress, userAgent);
-
-      return { success: true, message: 'If an account with that email exists, you will receive a password reset link.' };
-
-    } catch (error) {
-      console.error('Password reset request error:', error);
-      return { success: false, message: 'Password reset request failed. Please try again.' };
-    }
-  }
-
-  // Reset password
-  async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    try {
-      // Validate password
-      const passwordValidation = validatePassword(newPassword);
-      if (!passwordValidation.valid) {
-        return { success: false, message: passwordValidation.errors.join('. ') };
-      }
-
-      const [user] = await db.select().from(users).where(
-        and(
-          eq(users.passwordResetToken, token),
-          gt(users.passwordResetExpires, new Date())
-        )
-      ).limit(1);
-
-      if (!user) {
-        return { success: false, message: 'Invalid or expired reset token' };
-      }
-
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(newPassword, saltRounds);
-
-      await db.update(users).set({
-        passwordHash,
-        passwordResetToken: null,
-        passwordResetExpires: null,
-        failedLoginAttempts: 0, // Reset failed attempts
-        lockedUntil: null, // Unlock account
-      }).where(eq(users.id, user.id));
-
-      // Invalidate all existing sessions
-      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.userId, user.id));
-
-      await logAuthEvent(user.id, user.email, 'password_reset_success', 'email', true);
-
-      return { success: true, message: 'Password reset successfully. Please log in with your new password.' };
-
-    } catch (error) {
-      console.error('Password reset error:', error);
-      return { success: false, message: 'Password reset failed. Please try again.' };
-    }
-  }
-
-  // Verify JWT token
-  async verifyToken(token: string): Promise<{ valid: boolean; user?: AuthUser; expired?: boolean }> {
-    try {
-      console.log('🔍 Attempting to verify token:', token.substring(0, 20) + '...');
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      console.log('✅ Token decoded successfully:', { userId: decoded.userId });
-      
-      const [user] = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
-      console.log('🔍 Database user lookup result:', user ? `Found user ${user.id}` : 'No user found');
-      
-      if (!user) {
-        console.log('❌ User not found in database for userId:', decoded.userId);
-        return { valid: false };
-      }
-
-      const authUser: AuthUser = {
-        id: user.id,
-        email: user.email,
-        username: user.username || undefined,
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
-        profileImage: user.profileImage || undefined,
-        role: user.role || 'user',
-        emailVerified: user.emailVerified || false,
-        oauthProvider: user.oauthProvider || undefined,
-      };
-
-      return { valid: true, user: authUser };
 
     } catch (error: any) {
-      console.log('❌ Token verification error:', error.message, error.name);
-      if (error.name === 'TokenExpiredError') {
-        return { valid: false, expired: true };
-      }
-      return { valid: false };
+      console.error('Google auth error:', error);
+      await logAuthEvent(null, email, 'login_failed', 'google', false, ipAddress, userAgent, error.message);
+      return {
+        success: false,
+        message: 'Google authentication failed'
+      };
     }
   }
 
-  // Refresh token
-  async refreshToken(refreshToken: string): Promise<{ success: boolean; accessToken?: string; refreshToken?: string; message?: string }> {
+  /**
+   * Get user by ID
+   */
+  async getUserById(userId: string): Promise<AuthUser | null> {
     try {
-      const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as any;
-      
-      // Check if session exists and is active
-      const [session] = await db.select().from(authSessions).where(
-        and(
-          eq(authSessions.refreshToken, refreshToken),
-          eq(authSessions.isActive, true),
-          gt(authSessions.expiresAt, new Date())
-        )
-      ).limit(1);
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
-      if (!session) {
-        return { success: false, message: 'Invalid refresh token' };
-      }
-
-      const [user] = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
       if (!user) {
-        return { success: false, message: 'User not found' };
+        return null;
       }
-
-      const authUser: AuthUser = {
-        id: user.id,
-        email: user.email,
-        username: user.username || undefined,
-        firstName: user.firstName || undefined,
-        lastName: user.lastName || undefined,
-        profileImage: user.profileImage || undefined,
-        role: user.role || 'user',
-        emailVerified: user.emailVerified || false,
-        oauthProvider: user.oauthProvider || undefined,
-      };
-
-      // Generate new tokens
-      const newAccessToken = generateAccessToken(authUser);
-      const newRefreshToken = generateRefreshToken(authUser);
-
-      // Update session
-      await db.update(authSessions).set({
-        sessionToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        lastUsedAt: new Date(),
-      }).where(eq(authSessions.id, session.id));
 
       return {
-        success: true,
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken
+        id: user.id,
+        email: user.email!,
+        username: user.username!,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        emailVerified: user.emailVerified || false,
       };
 
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      return { success: false, message: 'Token refresh failed' };
+    } catch (error: any) {
+      console.error('Get user error:', error);
+      return null;
     }
   }
 
-  // Logout
-  async logout(token: string): Promise<{ success: boolean; message: string }> {
+  /**
+   * Get auth logs for a user
+   */
+  async getAuthLogs(userId: string, limit: number = 50): Promise<any[]> {
     try {
-      // Invalidate session
-      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.sessionToken, token));
-      
-      return { success: true, message: 'Logged out successfully' };
+      const logs = await db
+        .select()
+        .from(authLogs)
+        .where(eq(authLogs.userId, userId))
+        .orderBy(desc(authLogs.timestamp))
+        .limit(limit);
 
-    } catch (error) {
-      console.error('Logout error:', error);
-      return { success: false, message: 'Logout failed' };
-    }
-  }
-
-  // Logout from all devices
-  async logoutAll(userId: number): Promise<{ success: boolean; message: string }> {
-    try {
-      await db.update(authSessions).set({ isActive: false }).where(eq(authSessions.userId, userId));
-      
-      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-      if (user) {
-        await logAuthEvent(user.id, user.email, 'logout_all', 'manual', true);
-      }
-      
-      return { success: true, message: 'Logged out from all devices successfully' };
-
-    } catch (error) {
-      console.error('Logout all error:', error);
-      return { success: false, message: 'Logout failed' };
+      return logs;
+    } catch (error: any) {
+      console.error('Get auth logs error:', error);
+      return [];
     }
   }
 }
