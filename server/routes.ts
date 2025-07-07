@@ -16,7 +16,7 @@ import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
 import { geolocationService } from "./geolocation-service";
 import { parseId, parseOptionalId, validateEmail, validatePassword } from "./utils/validation";
-import { sanitizeInput, sanitizeRequestBody, checkRateLimit } from './security/input-sanitizer';
+import { sanitizeString as sanitizeInput, sanitizeRequestBody, checkRateLimit } from './security/input-sanitizer';
 import { logAdminAction, createAuditMiddleware } from './security/admin-audit';
 import { 
   insertSubjectSchema, 
@@ -226,6 +226,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // War-tested slug system: Get exam by slug only (no numeric ID routes)
+  app.get("/api/exams/by-slug/:slug", async (req, res) => {
+    try {
+      const slug = sanitizeInput(req.params.slug);
+      const exam = await storage.getExamBySlug(slug);
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.json(exam);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch exam" });
+    }
+  });
+
+  // Legacy route for admin panel only - DO NOT USE IN FRONTEND
   app.get("/api/exams/:id", async (req, res) => {
     try {
       const id = parseId(req.params.id, 'exam ID');

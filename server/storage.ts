@@ -41,6 +41,7 @@ export interface IStorage {
   getExamsPaginated(offset: number, limit: number, subjectId?: number): Promise<{ exams: Exam[], total: number }>;
   getExamsBySubject(subjectId: number): Promise<Exam[]>;
   getExam(id: number): Promise<Exam | undefined>;
+  getExamBySlug(slug: string): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
   updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined>;
   deleteExam(id: number): Promise<boolean>;
@@ -212,6 +213,22 @@ export class DatabaseStorage implements IStorage {
       isActive: exams.isActive,
       slug: exams.slug
     }).from(exams).where(eq(exams.id, id));
+    return exam;
+  }
+
+  // War-tested slug system: Get exam by slug for dynamic routing
+  async getExamBySlug(slug: string): Promise<Exam | undefined> {
+    const [exam] = await db.select({
+      id: exams.id,
+      subjectId: exams.subjectId,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive,
+      slug: exams.slug
+    }).from(exams).where(eq(exams.slug, slug));
     return exam;
   }
 

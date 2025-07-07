@@ -19,35 +19,18 @@ import { Button } from "@/components/ui/button";
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
   
-  // Check for both legacy numeric routes and new slug-based routes
-  const [legacyMatch, legacyParams] = useRoute("/exam/:id");
+  // War-tested slug system: Only handle slug-based routes
   const [slugMatch, slugParams] = useRoute("/exam/:subjectSlug/:examSlug");
   
-  // Determine which route type we're handling
-  const isLegacyRoute = legacyMatch && legacyParams?.id && !isNaN(Number(legacyParams.id));
-  const isSlugRoute = slugMatch && slugParams?.subjectSlug && slugParams?.examSlug;
-  
-  const examId = isLegacyRoute ? (legacyParams?.id ? parseInt(legacyParams.id) : null) : null;
-  const subjectSlug = isSlugRoute ? slugParams?.subjectSlug : null;
-  const examSlug = isSlugRoute ? slugParams?.examSlug : null;
+  const subjectSlug = slugParams?.subjectSlug;
+  const examSlug = slugParams?.examSlug;
 
-  // For legacy routes, show error message (LegacyExamRedirect handles actual redirects)
-  if (isLegacyRoute) {
+  // Return 404 if route parameters are missing
+  if (!slugMatch || !subjectSlug || !examSlug) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Moved</h1>
-          <p className="text-gray-600">This exam URL has been updated. You will be redirected automatically.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isSlugRoute || !subjectSlug || !examSlug) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid URL</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Exam Not Found</h1>
           <p className="text-gray-600">Please use a valid exam URL.</p>
         </div>
       </div>
@@ -80,18 +63,15 @@ export default function QuestionInterface() {
     enabled: !!subjectSlug,
   });
 
-  const { data: exam } = useQuery<Exam>({
-    queryKey: [`/api/exams/by-slug/${examSlug}`, subject?.id],
+  // War-tested slug system: Get exam directly by slug
+  const { data: exam, isLoading: examLoading } = useQuery<Exam>({
+    queryKey: [`/api/exams/by-slug/${examSlug}`],
     queryFn: async () => {
-      if (!subject?.id) throw new Error('Subject not found');
-      const response = await fetch(`/api/exams?subjectId=${subject.id}`);
-      if (!response.ok) throw new Error('Failed to fetch exams');
-      const exams = await response.json();
-      const exam = exams.find((e: Exam) => e.slug === examSlug);
-      if (!exam) throw new Error('Exam not found');
-      return exam;
+      const response = await fetch(`/api/exams/by-slug/${examSlug}`);
+      if (!response.ok) throw new Error('Exam not found');
+      return response.json();
     },
-    enabled: !!subject?.id && !!examSlug,
+    enabled: !!examSlug,
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
@@ -140,10 +120,10 @@ export default function QuestionInterface() {
 
   // Initialize session when exam loads
   useEffect(() => {
-    if (examId && !sessionId) {
-      createSessionMutation.mutate(examId);
+    if (exam?.id && !sessionId) {
+      createSessionMutation.mutate(exam.id);
     }
-  }, [examId, sessionId]);
+  }, [exam?.id, sessionId]);
 
   // PERFORMANCE OPTIMIZED: Timer countdown with proper cleanup
   const handleFinishExamCallback = useCallback(() => {
@@ -346,7 +326,7 @@ export default function QuestionInterface() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                    onClick={() => subject?.slug ? setLocation(`/subject/${subject.slug}`) : setLocation(`/subject/${exam.subjectId}`)}
                     className="text-gray-600 hover:text-gray-900"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -385,7 +365,7 @@ export default function QuestionInterface() {
                 This exam doesn't have any questions yet. Please check back later or contact support.
               </p>
               <Button 
-                onClick={() => setLocation(`/subject/${exam?.subjectId}`)}
+                onClick={() => subject?.slug ? setLocation(`/subject/${subject.slug}`) : setLocation(`/subject/${exam?.subjectId}`)}
                 variant="default"
                 className="px-6 py-2"
               >

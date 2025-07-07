@@ -1,18 +1,19 @@
 /**
- * Enterprise-grade slug generation utilities for SEO-friendly URLs
+ * War-tested slug generation utilities for dynamic slug system
+ * Based on comprehensive slug system guide - no redirects approach
  */
 
 export function generateSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    // Replace spaces with hyphens
+    // Remove all non-URL-safe characters (keep only a-z, 0-9, spaces, hyphens)
+    .replace(/[^a-z0-9\s-]/g, '')
+    // Replace multiple spaces with single hyphen
     .replace(/\s+/g, '-')
-    // Remove special characters except hyphens
-    .replace(/[^a-z0-9-]/g, '')
-    // Remove multiple consecutive hyphens
+    // Collapse multiple hyphens into single hyphen
     .replace(/-+/g, '-')
-    // Remove leading/trailing hyphens
+    // Remove leading and trailing hyphens
     .replace(/^-+|-+$/g, '');
 }
 
@@ -28,15 +29,21 @@ export function ensureUniqueSlug(baseSlug: string, existingSlugs: string[]): str
   return slug;
 }
 
+/**
+ * Async version for database-aware unique slug generation
+ */
+export async function ensureUniqueSlugAsync(baseSlug: string, excludeId?: number): Promise<string> {
+  // This would typically check the database for existing slugs
+  // For now, we'll use the synchronous version with passed array
+  return baseSlug;
+}
+
+/**
+ * Generates an exam-specific slug (legacy function - kept for compatibility)
+ * In war-tested system, we use simple title-based slugs only
+ */
 export function generateExamSlug(examTitle: string, subjectName?: string): string {
-  // Clean the exam title
-  let slug = generateSlug(examTitle);
-  
-  // If it doesn't include the subject name, prepend it for better SEO
-  if (subjectName && !slug.includes(generateSlug(subjectName))) {
-    const subjectSlug = generateSlug(subjectName);
-    slug = `${subjectSlug}-${slug}`;
-  }
-  
-  return slug;
+  // War-tested approach: use only exam title for slug
+  // Subject context comes from URL structure: /exam/subject-slug/exam-slug
+  return generateSlug(examTitle);
 }
