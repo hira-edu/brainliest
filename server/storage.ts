@@ -129,21 +129,7 @@ export class DatabaseStorage implements IStorage {
     return subject;
   }
 
-  async getSubjectBySlug(slug: string): Promise<Subject | undefined> {
-    const [subject] = await db.select({
-      id: subjects.id,
-      name: subjects.name,
-      description: subjects.description,
-      icon: subjects.icon,
-      color: subjects.color,
-      categoryId: subjects.categoryId,
-      subcategoryId: subjects.subcategoryId,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      slug: subjects.slug
-    }).from(subjects).where(eq(subjects.slug, slug));
-    return subject;
-  }
+  // Removed slug-based subject lookup
 
   async createSubject(subject: InsertSubject): Promise<Subject> {
     const [newSubject] = await db.insert(subjects).values(subject).returning();
