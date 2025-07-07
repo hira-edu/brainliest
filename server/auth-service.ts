@@ -179,8 +179,16 @@ export class AuthService {
         await db.transaction(async (trx) => {
           // Delete user (all related records will be auto-deleted via CASCADE)
           await trx.delete(users).where(eq(users.email, email));
-          // Log the replacement event
-          await logAuthEvent(null, email, 'unverified_account_replaced', 'email', true, ipAddress, userAgent);
+          // Log the replacement event within transaction
+          await trx.insert(authLogs).values({
+            userId: null,
+            email,
+            action: 'unverified_account_replaced',
+            method: 'email',
+            success: true,
+            ipAddress: ipAddress || null,
+            userAgent: userAgent || null,
+          });
         });
       }
 
@@ -209,8 +217,16 @@ export class AuthService {
           registrationIp: ipAddress || null,
         }).returning();
         
-        // Log successful registration
-        await logAuthEvent(user.id, email, 'register_success', 'email', true, ipAddress, userAgent);
+        // Log successful registration within the transaction
+        await trx.insert(authLogs).values({
+          userId: user.id,
+          email,
+          action: 'register_success',
+          method: 'email',
+          ipAddress: ipAddress || null,
+          userAgent: userAgent || null,
+          success: true,
+        });
         
         return [user];
       });

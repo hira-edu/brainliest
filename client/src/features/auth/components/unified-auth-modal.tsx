@@ -376,7 +376,7 @@ function UnifiedAuthModalContent({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title || defaultTitle}</DialogTitle>
           <DialogDescription>
