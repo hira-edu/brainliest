@@ -270,7 +270,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exam = await storage.createExam(validation.data);
       res.status(201).json(exam);
     } catch (error) {
+      if (error instanceof Error && error.message.includes('already in use')) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to create exam" });
+    }
+  });
+
+  app.put("/api/exams/:id", requireNewAdminAuth, logNewAdminAction('UPDATE_EXAM'), async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'exam ID');
+      const validation = insertExamSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid exam data", errors: validation.error.errors });
+      }
+      const exam = await storage.updateExam(id, validation.data);
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.json(exam);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('already in use')) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Failed to update exam" });
     }
   });
 
