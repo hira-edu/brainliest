@@ -106,7 +106,8 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
     }).from(subjects);
   }
 
@@ -120,7 +121,8 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
     }).from(subjects).where(eq(subjects.id, id));
     return subject;
   }
@@ -162,7 +164,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams);
   }
 
@@ -175,7 +178,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams).where(eq(exams.subjectId, subjectId));
   }
 
@@ -188,7 +192,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams).where(eq(exams.id, id));
     return exam;
   }
@@ -721,7 +726,8 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
     }).from(subjects);
 
     const conditions = [];
@@ -757,7 +763,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive
+      isActive: exams.isActive,
+      slug: exams.slug
     }).from(exams);
 
     if (subjectId) {
@@ -876,29 +883,36 @@ async function seedDatabase() {
     console.log("Seeding database with initial data...");
 
     // Seed basic subjects (clean data without extra fields)
+    const { generateSlug } = await import('../shared/utils/slug.js');
+    
     const subjectData: InsertSubject[] = [
       {
         name: "PMP Certification",
+        slug: generateSlug("PMP Certification"),
         description: "Project Management Professional certification preparation",
         icon: "project-diagram"
       },
       {
         name: "AWS Certified Solutions Architect",
+        slug: generateSlug("AWS Certified Solutions Architect"),
         description: "Amazon Web Services cloud architecture certification",
         icon: "cloud"
       },
       {
         name: "CompTIA Security+",
+        slug: generateSlug("CompTIA Security+"),
         description: "Cybersecurity fundamentals and best practices",
         icon: "shield"
       },
       {
         name: "AP Statistics",
+        slug: generateSlug("AP Statistics"),
         description: "Advanced Placement Statistics course preparation",
         icon: "chart-bar"
       },
       {
         name: "Calculus",
+        slug: generateSlug("Calculus"),
         description: "Differential and integral calculus",
         icon: "function"
       }
@@ -916,6 +930,7 @@ async function seedDatabase() {
         {
           subjectId: subject.id,
           title: `${subject.name} Practice Exam 1`,
+          slug: generateSlug(`${subject.name} Practice Exam 1`),
           description: `Comprehensive practice exam covering ${subject.name} concepts`,
           questionCount: 5,
           duration: 90,

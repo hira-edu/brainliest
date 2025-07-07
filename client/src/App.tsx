@@ -10,6 +10,7 @@ import Home from "./features/pages/home";
 import AllSubjects from "./features/content/pages/all-subjects";
 import ExamSelection from "./features/exam/pages/exam-selection";
 import QuestionInterface from "./features/exam/pages/question-interface";
+import SlugExamInterface from "./features/exam/pages/slug-exam-interface";
 import Results from "./features/exam/pages/results";
 import Analytics from "./features/analytics/pages/analytics";
 // Admin components removed - only accessible via subdomain
@@ -49,6 +50,8 @@ function Router() {
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
       <Route path="/auth/callback" component={AuthCallback} />
+      {/* Slug-based exam routes - must be after specific routes */}
+      <Route path="/:subjectSlug/:examSlug" component={SlugExamInterface} />
       <Route component={NotFound} />
     </Switch>
   );
