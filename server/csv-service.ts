@@ -104,10 +104,12 @@ export class CSVService {
             relationshipData[relation.table] = await this.storage.getExams();
             break;
           case 'categories':
-            relationshipData[relation.table] = await this.storage.getCategories();
+            // Categories are hardcoded in the frontend, not stored in database
+            relationshipData[relation.table] = [];
             break;
           case 'subcategories':
-            relationshipData[relation.table] = await this.storage.getSubcategories();
+            // Subcategories are hardcoded in the frontend, not stored in database
+            relationshipData[relation.table] = [];
             break;
         }
       }

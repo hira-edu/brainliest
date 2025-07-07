@@ -1,15 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage-clean";
+import { storage } from "./storage";
 import { analyticsService } from "./analytics";
 import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { requireAdminAuth, logAdminAction } from "./middleware/auth";
 import { seoService } from "./seo-service";
+import { recaptchaService } from "./recaptcha-service";
 import { 
-  insertCategorySchema,
-  insertSubcategorySchema,
   insertSubjectSchema, 
   insertExamSchema, 
   insertQuestionSchema,
@@ -132,147 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Category routes
-  app.get("/api/categories", async (req, res) => {
-    try {
-      const categories = await storage.getCategories();
-      res.json(categories);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      res.status(500).json({ error: "Failed to fetch categories" });
-    }
-  });
+  // Note: Categories are hardcoded in frontend, no backend routes needed
 
-  app.get("/api/categories/:id", async (req, res) => {
-    try {
-      const category = await storage.getCategory(Number(req.params.id));
-      if (!category) {
-        return res.status(404).json({ error: "Category not found" });
-      }
-      res.json(category);
-    } catch (error) {
-      console.error("Error fetching category:", error);
-      res.status(500).json({ error: "Failed to fetch category" });
-    }
-  });
-
-  app.post("/api/categories", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const validatedData = insertCategorySchema.parse(req.body);
-      const newCategory = await storage.createCategory(validatedData);
-      
-      res.status(201).json(newCategory);
-    } catch (error) {
-      console.error("Error creating category:", error);
-      res.status(400).json({ error: "Failed to create category" });
-    }
-  });
-
-  app.put("/api/categories/:id", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const validatedData = insertCategorySchema.parse(req.body);
-      const updatedCategory = await storage.updateCategory(Number(req.params.id), validatedData);
-      
-      if (!updatedCategory) {
-        return res.status(404).json({ error: "Category not found" });
-      }
-      
-      res.json(updatedCategory);
-    } catch (error) {
-      console.error("Error updating category:", error);
-      res.status(400).json({ error: "Failed to update category" });
-    }
-  });
-
-  app.delete("/api/categories/:id", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const success = await storage.deleteCategory(Number(req.params.id));
-      if (!success) {
-        return res.status(404).json({ error: "Category not found" });
-      }
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      res.status(500).json({ error: "Failed to delete category" });
-    }
-  });
-
-  // Subcategory routes
-  app.get("/api/subcategories", async (req, res) => {
-    try {
-      const subcategories = await storage.getSubcategories();
-      res.json(subcategories);
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
-      res.status(500).json({ error: "Failed to fetch subcategories" });
-    }
-  });
-
-  app.get("/api/subcategories/category/:categoryId", async (req, res) => {
-    try {
-      const subcategories = await storage.getSubcategoriesByCategory(Number(req.params.categoryId));
-      res.json(subcategories);
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
-      res.status(500).json({ error: "Failed to fetch subcategories" });
-    }
-  });
-
-  app.get("/api/subcategories/:id", async (req, res) => {
-    try {
-      const subcategory = await storage.getSubcategory(Number(req.params.id));
-      if (!subcategory) {
-        return res.status(404).json({ error: "Subcategory not found" });
-      }
-      res.json(subcategory);
-    } catch (error) {
-      console.error("Error fetching subcategory:", error);
-      res.status(500).json({ error: "Failed to fetch subcategory" });
-    }
-  });
-
-  app.post("/api/subcategories", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const validatedData = insertSubcategorySchema.parse(req.body);
-      const newSubcategory = await storage.createSubcategory(validatedData);
-      
-      res.status(201).json(newSubcategory);
-    } catch (error) {
-      console.error("Error creating subcategory:", error);
-      res.status(400).json({ error: "Failed to create subcategory" });
-    }
-  });
-
-  app.put("/api/subcategories/:id", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const validatedData = insertSubcategorySchema.parse(req.body);
-      const updatedSubcategory = await storage.updateSubcategory(Number(req.params.id), validatedData);
-      
-      if (!updatedSubcategory) {
-        return res.status(404).json({ error: "Subcategory not found" });
-      }
-      
-      res.json(updatedSubcategory);
-    } catch (error) {
-      console.error("Error updating subcategory:", error);
-      res.status(400).json({ error: "Failed to update subcategory" });
-    }
-  });
-
-  app.delete("/api/subcategories/:id", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const success = await storage.deleteSubcategory(Number(req.params.id));
-      if (!success) {
-        return res.status(404).json({ error: "Subcategory not found" });
-      }
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting subcategory:", error);
-      res.status(500).json({ error: "Failed to delete subcategory" });
-    }
-  });
+  // Note: Subcategories are hardcoded in frontend, no backend routes needed
 
   // Subject routes
   app.get("/api/subjects", async (req, res) => {
