@@ -131,7 +131,8 @@ export default function ExamSelection() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {exams && exams.length > 0 ? (
+        {/* Only show "no exams" if loading is complete and there are actually no exams */}
+        {!isLoading && exams && exams.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {exams.map((exam) => (
               <ExamCard 
@@ -142,7 +143,7 @@ export default function ExamSelection() {
               />
             ))}
           </div>
-        ) : (
+        ) : !isLoading && (!exams || exams.length === 0) ? (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm p-8 text-center">
               <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -166,7 +167,7 @@ export default function ExamSelection() {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
