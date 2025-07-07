@@ -10,7 +10,7 @@ import Header from "@/components/header";
 import ProgressBar from "@/components/progress-bar";
 import QuestionCard from "@/components/question-card";
 import FeedbackCard from "@/components/feedback-card";
-import QuestionLimitModal from "@/components/question-limit-modal";
+import UnifiedAuthModal from "@/components/unified-auth-modal";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
@@ -314,9 +314,12 @@ export default function QuestionInterface() {
       </div>
 
       {/* Authentication Modal */}
-      <QuestionLimitModal 
-        open={showAuthModal}
-        onOpenChange={setShowAuthModal}
+      <UnifiedAuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode="freemium"
+        title="Unlock Unlimited Questions"
+        description={`You've viewed ${20 - getRemainingQuestions()} of 20 free questions. Sign in to continue practicing with unlimited access.`}
       />
     </div>
   );
