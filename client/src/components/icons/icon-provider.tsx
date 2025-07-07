@@ -3,7 +3,7 @@
  * Manages icon state, configuration, and provides icon access throughout app
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { IconContextValue, IconConfig, IconCategory, IconRegistryEntry } from './types';
 import { iconRegistry } from './registry';
 
