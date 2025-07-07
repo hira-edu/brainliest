@@ -7,6 +7,7 @@ import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { adminAuthService } from "./admin-auth-service";
 import { adminUserService } from './admin-user-management';
+import { enterpriseAdminSessionManager } from './enterprise-admin-session-manager';
 import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
@@ -52,6 +53,14 @@ interface GoogleUserInfo {
   family_name: string;
   picture: string;
   locale: string;
+}
+
+// Extend Request interface for enterprise session management
+declare module 'express' {
+  interface Request {
+    adminSession?: import('./enterprise-admin-session-manager').AdminSession;
+    sessionId?: string;
+  }
 }
 
 // Exchange authorization code for user information
@@ -1906,6 +1915,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ==================== ENTERPRISE ADMIN SESSION MANAGEMENT ====================
+  
+  // Admin session heartbeat endpoint
+  app.post("/api/admin/session/heartbeat", 
+    enterpriseAdminSessionManager.createAuthenticationMiddleware(),
+    async (req, res) => {
+      try {
+        // Session is already validated by middleware, just return success
+        res.json({
+          success: true,
+          message: "Session heartbeat successful",
+          timestamp: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error("Session heartbeat error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Session heartbeat failed"
+        });
+      }
+    }
+  );
+
+  // Admin session status endpoint
+  app.get("/api/admin/session/status", 
+    enterpriseAdminSessionManager.createAuthenticationMiddleware(),
+    async (req, res) => {
+      try {
+        const session = req.adminSession;
+        res.json({
+          success: true,
+          session: {
+            user: session.user,
+            expiresAt: session.expiresAt,
+            isValid: session.isValid,
+            lastActivity: session.metadata.lastActivity
+          }
+        });
+      } catch (error) {
+        console.error("Session status error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to retrieve session status"
+        });
+      }
+    }
+  );
+
+  // Admin session invalidation endpoint
+  app.post("/api/admin/session/invalidate", 
+    enterpriseAdminSessionManager.createAuthenticationMiddleware(),
+    async (req, res) => {
+      try {
+        const session = req.adminSession;
+        const sessionId = req.sessionId;
+        
+        await enterpriseAdminSessionManager.invalidateSession(sessionId);
+        
+        // Clear all cookies
+        enterpriseAdminSessionManager.clearSecureCookies(res);
+        
+        res.json({
+          success: true,
+          message: "Session invalidated successfully"
+        });
+      } catch (error) {
+        console.error("Session invalidation error:", error);
+        res.status(500).json({
+          success: false,
+          message: "Failed to invalidate session"
+        });
+      }
+    }
+  );
+
+  // ==================== END ENTERPRISE ADMIN SESSION MANAGEMENT ====================
+  
   // ==================== END ADMIN AUTHENTICATION ====================
 
   // Email service test endpoint
@@ -1975,7 +2061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // For testing, allow a simple admin login
       if (email === "admin@brainliest.com" && password === "admin123") {
-        // Create a test admin user token
+        // Create a test admin user object
         const adminUser = {
           id: 999,
           email: "admin@brainliest.com",
@@ -1986,24 +2072,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailVerified: true
         };
         
-        // Generate token compatible with auth service
-        const jwt = await import('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || (() => {
-          if (process.env.NODE_ENV === 'production') {
-            throw new Error('JWT_SECRET environment variable is required in production');
-          }
-          return 'dev-jwt-secret-key-not-for-production';
-        })();
-        const token = jwt.default.sign(
-          { userId: adminUser.id }, // Auth service expects userId in token
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
+        console.log('🚀 Creating enterprise admin session...');
         
+        // Create enterprise session using the session manager
+        const session = await enterpriseAdminSessionManager.createSession(adminUser, req);
+        
+        // Set secure cookies
+        enterpriseAdminSessionManager.setSecureCookies(res, session);
+        
+        console.log('✅ Enterprise admin session created successfully');
+        
+        // Return session data
         res.json({
           success: true,
-          user: adminUser,
-          accessToken: token,
+          user: session.user,
+          sessionId: session.token,
+          expiresAt: session.expiresAt,
           message: "Admin login successful"
         });
       } else {
