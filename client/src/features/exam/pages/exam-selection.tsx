@@ -8,22 +8,28 @@ import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/subject/:id");
-  const subjectId = params?.id ? parseInt(params.id) : null;
+  
+  // Check both ID and slug routes
+  const [matchId, paramsId] = useRoute("/subject/:id");
+  const [matchSlug, paramsSlug] = useRoute("/subject/:slug");
+  
+  const subjectParam = paramsId?.id || paramsSlug?.slug;
+  const isNumericId = subjectParam && !isNaN(Number(subjectParam));
 
+  // Get subject by ID or slug based on parameter type
   const { data: subject } = useQuery<Subject>({
-    queryKey: [`/api/subjects/${subjectId}`],
-    enabled: !!subjectId,
+    queryKey: isNumericId ? [`/api/subjects/${subjectParam}`] : [`/api/subjects/by-slug/${subjectParam}`],
+    enabled: !!subjectParam,
   });
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
-    queryKey: ["/api/exams", subjectId],
+    queryKey: ["/api/exams", subject?.id],
     queryFn: async () => {
-      const response = await fetch(`/api/exams?subjectId=${subjectId}`);
+      const response = await fetch(`/api/exams?subjectId=${subject?.id}`);
       if (!response.ok) throw new Error('Failed to fetch exams');
       return response.json();
     },
-    enabled: !!subjectId,
+    enabled: !!subject?.id,
   });
 
   const handleStartExam = (examId: number) => {

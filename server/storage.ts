@@ -30,6 +30,7 @@ export interface IStorage {
   getSubjects(): Promise<Subject[]>;
   getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }>;
   getSubject(id: number): Promise<Subject | undefined>;
+  getSubjectBySlug(slug: string): Promise<Subject | undefined>;
   createSubject(subject: InsertSubject): Promise<Subject>;
   updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
   deleteSubject(id: number): Promise<boolean>;
@@ -124,6 +125,22 @@ export class DatabaseStorage implements IStorage {
       questionCount: subjects.questionCount,
       slug: subjects.slug
     }).from(subjects).where(eq(subjects.id, id));
+    return subject;
+  }
+
+  async getSubjectBySlug(slug: string): Promise<Subject | undefined> {
+    const [subject] = await db.select({
+      id: subjects.id,
+      name: subjects.name,
+      description: subjects.description,
+      icon: subjects.icon,
+      color: subjects.color,
+      categoryId: subjects.categoryId,
+      subcategoryId: subjects.subcategoryId,
+      examCount: subjects.examCount,
+      questionCount: subjects.questionCount,
+      slug: subjects.slug
+    }).from(subjects).where(eq(subjects.slug, slug));
     return subject;
   }
 

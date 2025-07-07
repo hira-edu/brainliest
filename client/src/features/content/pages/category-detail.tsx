@@ -84,8 +84,13 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     return filtered;
   }, [subjects, categoryData, searchQuery, sortBy]);
 
-  const handleSelectSubject = (subjectId: number) => {
-    setLocation(`/subject/${subjectId}`);
+  const handleSelectSubject = (subject: Subject) => {
+    if (subject.slug) {
+      setLocation(`/exams/${subject.slug}`);
+    } else {
+      // Fallback to ID-based routing if no slug
+      setLocation(`/subject/${subject.id}`);
+    }
   };
 
   const handleBackClick = () => {
@@ -238,7 +243,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
               <SubjectCard 
                 key={subject.id} 
                 subject={subject} 
-                onClick={() => handleSelectSubject(subject.id)}
+                onClick={() => handleSelectSubject(subject)}
               />
             ))}
           </div>

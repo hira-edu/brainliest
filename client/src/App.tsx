@@ -40,6 +40,7 @@ function Router() {
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
       <Route path="/subject/:id" component={ExamSelection} />
+      <Route path="/subject/:slug" component={ExamSelection} />
       <Route path="/exam/:id" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
