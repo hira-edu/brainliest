@@ -142,11 +142,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      console.log('🚀 Starting Google sign-in redirect...');
+      console.log('🚀 Starting Google sign-in popup...');
       
-      // Use simple redirect-based OAuth flow (enterprise-grade approach)
-      // This redirects the user to Google, then back to our callback
-      window.location.href = '/api/auth/google/start';
+      // Open Google OAuth in a popup window
+      const popup = window.open(
+        '/api/auth/google/start',
+        'GoogleSignIn',
+        'width=500,height=600,scrollbars=yes,resizable=yes,status=yes'
+      );
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site and try again.');
+      }
+
+      // Listen for popup completion
+      return new Promise<void>((resolve, reject) => {
+        const messageHandler = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) {
+            return;
+          }
+
+          if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+            window.removeEventListener('message', messageHandler);
+            popup.close();
+            
+            // Reload to pick up the session cookie
+            window.location.reload();
+            resolve();
+          } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+            window.removeEventListener('message', messageHandler);
+            popup.close();
+            reject(new Error(event.data.error || 'Google authentication failed'));
+          }
+        };
+
+        window.addEventListener('message', messageHandler);
+
+        // Check if popup was closed manually
+        const popupChecker = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(popupChecker);
+            window.removeEventListener('message', messageHandler);
+            reject(new Error('Authentication cancelled by user'));
+          }
+        }, 1000);
+
+        // Set timeout
+        setTimeout(() => {
+          clearInterval(popupChecker);
+          window.removeEventListener('message', messageHandler);
+          if (!popup.closed) {
+            popup.close();
+          }
+          reject(new Error('Authentication timeout. Please try again.'));
+        }, 300000); // 5 minutes
+      });
     } catch (error) {
       console.error('Google sign-in failed:', error);
       throw error;

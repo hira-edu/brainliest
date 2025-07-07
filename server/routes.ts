@@ -1233,18 +1233,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
         
-        // Redirect to dashboard with success message
-        const redirectUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?auth=success&user=${encodeURIComponent(googleUser.email)}`;
-        res.redirect(redirectUrl);
+        // Send HTML page that notifies parent window and closes popup
+        res.setHeader("Content-Type", "text/html");
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Authentication Successful</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  text-align: center; 
+                  padding: 50px; 
+                  background: #f5f5f5; 
+                }
+                .success { color: #4CAF50; }
+              </style>
+            </head>
+            <body>
+              <div class="success">
+                <h2>✅ Authentication Successful!</h2>
+                <p>You can close this window.</p>
+              </div>
+              <script>
+                // Notify parent window and close popup
+                if (window.opener) {
+                  window.opener.postMessage({
+                    type: 'GOOGLE_AUTH_SUCCESS',
+                    user: ${JSON.stringify(googleUser)}
+                  }, window.location.origin);
+                }
+                setTimeout(() => window.close(), 1000);
+              </script>
+            </body>
+          </html>
+        `);
       } else {
         console.error('❌ OAuth login failed:', result.message);
-        const redirectUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=login_failed&message=${encodeURIComponent(result.message || 'Login failed')}`;
-        res.redirect(redirectUrl);
+        
+        // Send HTML page that notifies parent window of error
+        res.setHeader("Content-Type", "text/html");
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Authentication Failed</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  text-align: center; 
+                  padding: 50px; 
+                  background: #f5f5f5; 
+                }
+                .error { color: #f44336; }
+              </style>
+            </head>
+            <body>
+              <div class="error">
+                <h2>❌ Authentication Failed</h2>
+                <p>${result.message || 'Login failed'}</p>
+                <p>You can close this window and try again.</p>
+              </div>
+              <script>
+                // Notify parent window of error
+                if (window.opener) {
+                  window.opener.postMessage({
+                    type: 'GOOGLE_AUTH_ERROR',
+                    error: '${result.message || 'Login failed'}'
+                  }, window.location.origin);
+                }
+                setTimeout(() => window.close(), 3000);
+              </script>
+            </body>
+          </html>
+        `);
       }
     } catch (error) {
       console.error("OAuth callback error:", error);
-      const redirectUrl = `${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=auth_failed&message=Authentication+failed`;
-      res.redirect(redirectUrl);
+      
+      // Send HTML page that notifies parent window of error
+      res.setHeader("Content-Type", "text/html");
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Authentication Error</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                text-align: center; 
+                padding: 50px; 
+                background: #f5f5f5; 
+              }
+              .error { color: #f44336; }
+            </style>
+          </head>
+          <body>
+            <div class="error">
+              <h2>❌ Authentication Error</h2>
+              <p>An unexpected error occurred during authentication.</p>
+              <p>You can close this window and try again.</p>
+            </div>
+            <script>
+              // Notify parent window of error
+              if (window.opener) {
+                window.opener.postMessage({
+                  type: 'GOOGLE_AUTH_ERROR',
+                  error: 'Authentication failed. Please try again.'
+                }, window.location.origin);
+              }
+              setTimeout(() => window.close(), 3000);
+            </script>
+          </body>
+        </html>
+      `);
     }
   });
 
