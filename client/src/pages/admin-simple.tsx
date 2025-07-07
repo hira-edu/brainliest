@@ -2871,38 +2871,29 @@ export default function AdminSimple() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Database className="h-5 w-5" />
-                    Unified CSV Data Management
+                    Complete Platform Data Management
                   </CardTitle>
-                  <p className="text-sm text-gray-600">Complete bulk data operations for all platform entities</p>
+                  <p className="text-sm text-gray-600">Single comprehensive CSV template including all subjects, exams, and questions with relationships</p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   
-                  {/* Entity Type Selector */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Select Data Type</label>
-                    <SearchableSelect
-                      value={selectedCsvEntity}
-                      onValueChange={setSelectedCsvEntity}
-                      placeholder="Choose entity type for CSV operations"
-                      options={[
-                        { value: "subjects", label: "Subjects - Certification categories and academic topics" },
-                        { value: "exams", label: "Exams - Practice tests and assessment sets" },
-                        { value: "questions", label: "Questions - Individual test questions with answers" }
-                      ]}
-                    />
-                  </div>
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      This unified template includes all platform data in one CSV file with automatic relationship management. 
+                      Perfect for complete data migration, backup, or bulk editing across all entities.
+                    </AlertDescription>
+                  </Alert>
 
-                  {selectedCsvEntity && (
-                    <>
-                      {/* Action Buttons Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Action Buttons Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <Button
                           variant="outline"
                           className="h-12"
                           onClick={async () => {
                             try {
                               const token = localStorage.getItem('brainliest_access_token');
-                              const response = await fetch(`/api/csv/template/${selectedCsvEntity}`, {
+                              const response = await fetch('/api/csv/unified-template', {
                                 headers: { 'Authorization': `Bearer ${token}` }
                               });
                               if (response.ok) {
@@ -2910,10 +2901,10 @@ export default function AdminSimple() {
                                 const url = window.URL.createObjectURL(blob);
                                 const link = document.createElement('a');
                                 link.href = url;
-                                link.download = `${selectedCsvEntity}_template.csv`;
+                                link.download = 'brainliest_complete_platform_template.csv';
                                 link.click();
                                 window.URL.revokeObjectURL(url);
-                                toast({ title: "Template downloaded", description: `${selectedCsvEntity} template ready for editing` });
+                                toast({ title: "Complete template downloaded", description: "Unified platform template with all entities ready for editing" });
                               } else {
                                 toast({ title: "Download failed", description: "Could not download template", variant: "destructive" });
                               }
@@ -2923,7 +2914,7 @@ export default function AdminSimple() {
                           }}
                         >
                           <FileSpreadsheet className="h-4 w-4 mr-2" />
-                          Download Template
+                          Download Complete Template
                         </Button>
                         
                         <Button
@@ -2932,7 +2923,7 @@ export default function AdminSimple() {
                           onClick={async () => {
                             try {
                               const token = localStorage.getItem('brainliest_access_token');
-                              const response = await fetch(`/api/csv/export/${selectedCsvEntity}?includeNames=true&includeMetadata=true`, {
+                              const response = await fetch('/api/csv/unified-export', {
                                 headers: { 'Authorization': `Bearer ${token}` }
                               });
                               if (response.ok) {
@@ -2940,10 +2931,10 @@ export default function AdminSimple() {
                                 const url = window.URL.createObjectURL(blob);
                                 const link = document.createElement('a');
                                 link.href = url;
-                                link.download = `${selectedCsvEntity}_export_${new Date().toISOString().split('T')[0]}.csv`;
+                                link.download = `brainliest_complete_platform_export_${new Date().toISOString().split('T')[0]}.csv`;
                                 link.click();
                                 window.URL.revokeObjectURL(url);
-                                toast({ title: "Export complete", description: `Current ${selectedCsvEntity} data exported successfully` });
+                                toast({ title: "Export complete", description: "Complete platform data exported successfully" });
                               } else {
                                 toast({ title: "Export failed", description: "Could not export data", variant: "destructive" });
                               }
@@ -2953,7 +2944,7 @@ export default function AdminSimple() {
                           }}
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Export Current Data
+                          Export All Platform Data
                         </Button>
 
                         <div className="relative">
@@ -2970,7 +2961,7 @@ export default function AdminSimple() {
                                   const csvContent = event.target?.result as string;
                                   try {
                                     const token = localStorage.getItem('brainliest_access_token');
-                                    const response = await fetch(`/api/csv/import/${selectedCsvEntity}`, {
+                                    const response = await fetch('/api/csv/unified-import', {
                                       method: 'POST',
                                       headers: {
                                         'Content-Type': 'application/json',
@@ -2982,7 +2973,7 @@ export default function AdminSimple() {
                                     if (result.success) {
                                       toast({ 
                                         title: "Import successful", 
-                                        description: `${result.processedRows} rows processed. ${result.createdCount} created, ${result.updatedCount} updated.` 
+                                        description: `Complete platform data imported: ${result.subjects} subjects, ${result.exams} exams, ${result.questions} questions` 
                                       });
                                       // Invalidate all related queries
                                       queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
@@ -3005,44 +2996,36 @@ export default function AdminSimple() {
                             onClick={() => csvFileInputRef.current?.click()}
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            Import CSV File
+                            Import Complete Platform CSV
                           </Button>
                         </div>
                       </div>
 
-                      {/* Entity Information */}
+                      {/* Unified Format Information */}
                       <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <h4 className="font-medium mb-2 capitalize">{selectedCsvEntity} CSV Format Information</h4>
-                        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                          {selectedCsvEntity === 'subjects' && (
-                            <>
-                              <p>• <strong>Required:</strong> name, description</p>
-                              <p>• <strong>Optional:</strong> icon, sortOrder, categoryId, subcategoryId</p>
-                              <p>• <strong>Categories:</strong> Professional Certifications, University & College</p>
-                            </>
-                          )}
-                          {selectedCsvEntity === 'exams' && (
-                            <>
-                              <p>• <strong>Required:</strong> title, description, subjectId</p>
-                              <p>• <strong>Optional:</strong> difficulty, timeLimit, passingScore, isActive</p>
-                              <p>• <strong>Difficulty:</strong> Beginner, Intermediate, Advanced</p>
-                            </>
-                          )}
-                          {selectedCsvEntity === 'questions' && (
-                            <>
-                              <p>• <strong>Required:</strong> text, options (4 choices), correctAnswer, explanation</p>
-                              <p>• <strong>Optional:</strong> examId, subjectId, domain, difficulty, isActive</p>
-                              <p>• <strong>Options Format:</strong> Separate with | (pipe) character</p>
-                            </>
-                          )}
+                        <h4 className="font-medium mb-2">Complete Platform CSV Format</h4>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                          <div>
+                            <p className="font-semibold">Row Structure (All entities in one file):</p>
+                            <p>• <strong>Entity Type</strong> (subject|exam|question) - First column determines row type</p>
+                            <p>• <strong>Subject columns:</strong> name, description, icon, sortOrder, categoryId, subcategoryId</p>
+                            <p>• <strong>Exam columns:</strong> title, description, subjectId, difficulty, timeLimit, passingScore</p>
+                            <p>• <strong>Question columns:</strong> text, options (pipe-separated), correctAnswer, explanation, examId, subjectId, domain</p>
+                          </div>
+                          <div>
+                            <p className="font-semibold">Automatic relationships:</p>
+                            <p>• Questions link to exams and subjects by name or ID</p>
+                            <p>• Exams link to subjects by name or ID</p>
+                            <p>• Empty cells are ignored for each entity type</p>
+                          </div>
                         </div>
                       </div>
-                    </>
-                  )}
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>          <TabsContent value="analytics">
+          </TabsContent>
+          
+          <TabsContent value="analytics">
             <Card>
               <CardHeader>
                 <CardTitle>Analytics & Reports</CardTitle>

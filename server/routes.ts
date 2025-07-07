@@ -1291,6 +1291,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified CSV endpoints
+  app.get("/api/csv/unified-template", requireAdminAuth, async (req, res) => {
+    try {
+      const { UnifiedCSVService } = await import('./unified-csv-service.js');
+      const csvService = new UnifiedCSVService(storage);
+      
+      const csvContent = csvService.generateUnifiedTemplate();
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="brainliest_complete_platform_template.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Unified CSV template generation error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Template generation failed' 
+      });
+    }
+  });
+
+  app.get("/api/csv/unified-export", requireAdminAuth, async (req, res) => {
+    try {
+      const { UnifiedCSVService } = await import('./unified-csv-service.js');
+      const csvService = new UnifiedCSVService(storage);
+      
+      const csvContent = await csvService.exportUnifiedData();
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="brainliest_complete_platform_export.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error('Unified CSV export error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Export failed' 
+      });
+    }
+  });
+
+  app.post("/api/csv/unified-import", requireAdminAuth, async (req, res) => {
+    try {
+      const { UnifiedCSVService } = await import('./unified-csv-service.js');
+      const csvService = new UnifiedCSVService(storage);
+      
+      const csvContent = req.body.csvContent;
+      
+      if (!csvContent) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'CSV content is required' 
+        });
+      }
+
+      const result = await csvService.importUnifiedData(csvContent);
+      res.json(result);
+    } catch (error) {
+      console.error('Unified CSV import error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Import failed' 
+      });
+    }
+  });
+
   // CSV Import/Export endpoints
   app.get("/api/csv/template/:entityType", requireAdminAuth, async (req, res) => {
     try {
