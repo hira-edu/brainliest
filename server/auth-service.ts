@@ -566,11 +566,15 @@ export class AuthService {
   // Verify JWT token
   async verifyToken(token: string): Promise<{ valid: boolean; user?: AuthUser; expired?: boolean }> {
     try {
+      console.log('🔍 Attempting to verify token:', token.substring(0, 20) + '...');
       const decoded = jwt.verify(token, JWT_SECRET) as any;
+      console.log('✅ Token decoded successfully:', { userId: decoded.userId });
       
       const [user] = await db.select().from(users).where(eq(users.id, decoded.userId)).limit(1);
+      console.log('🔍 Database user lookup result:', user ? `Found user ${user.id}` : 'No user found');
       
       if (!user) {
+        console.log('❌ User not found in database for userId:', decoded.userId);
         return { valid: false };
       }
 
@@ -589,6 +593,7 @@ export class AuthService {
       return { valid: true, user: authUser };
 
     } catch (error: any) {
+      console.log('❌ Token verification error:', error.message, error.name);
       if (error.name === 'TokenExpiredError') {
         return { valid: false, expired: true };
       }
