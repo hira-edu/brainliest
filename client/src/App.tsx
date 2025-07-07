@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./features/auth/AuthContext";
-// AdminProvider removed - admin functionality only available on subdomain
+import { AdminProvider } from "./features/admin/AdminContext";
 import { QuestionLimitProvider } from "./features/shared/QuestionLimitContext";
 import Home from "./features/pages/home";
 import AllSubjects from "./features/content/pages/all-subjects";
@@ -14,7 +14,7 @@ import Results from "./features/exam/pages/results";
 import { SubjectSlugPage } from "./features/exam/pages/subject-slug";
 import { ExamSlugPage } from "./features/exam/pages/exam-slug";
 import Analytics from "./features/analytics/pages/analytics";
-// Admin components removed - only accessible via subdomain
+import AdminSimple from "./features/admin/pages/admin-simple";
 import Settings from "./features/pages/settings";
 import CookieSettings from "./features/pages/cookie-settings";
 import OurStory from "./features/pages/static/our-story";
@@ -61,6 +61,7 @@ function Router() {
       <Route path="/subject/:id(\d+)" component={ExamSelection} />
       <Route path="/exam/:id(\d+)" component={QuestionInterface} />
       <Route path="/results/:id(\d+)" component={Results} />
+      <Route path="/admin" component={AdminSimple} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
       <Route path="/cookie-settings" component={CookieSettings} />
@@ -79,13 +80,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <IconProvider>
         <AuthProvider>
-          <QuestionLimitProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-              <CookieConsentBanner />
-            </TooltipProvider>
-          </QuestionLimitProvider>
+          <AdminProvider>
+            <QuestionLimitProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+                <CookieConsentBanner />
+              </TooltipProvider>
+            </QuestionLimitProvider>
+          </AdminProvider>
         </AuthProvider>
       </IconProvider>
     </QueryClientProvider>
