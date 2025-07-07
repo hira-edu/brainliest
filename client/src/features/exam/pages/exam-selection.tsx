@@ -3,6 +3,8 @@ import { useLocation, useRoute } from "wouter";
 import { Subject, Exam } from "@shared/schema";
 import ExamCard from "../components/exam-card";
 import { Header } from "../../shared";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();
@@ -36,7 +38,37 @@ export default function ExamSelection() {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Subject Header with Back Button - Loading State */}
+        {subject && (
+          <div className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGoBack}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Subjects
+                  </Button>
+                  <div className="h-6 w-px bg-gray-300"></div>
+                  <div>
+                    <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
+                    <p className="text-sm text-gray-600">{subject.description}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">Loading exams...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <p className="mt-2 text-gray-600">Loading exams...</p>
@@ -50,21 +82,39 @@ export default function ExamSelection() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center mb-8">
-          <button 
-            onClick={handleGoBack}
-            className="flex items-center text-gray-600 hover:text-primary mr-4"
-          >
-            <i className="fas fa-arrow-left mr-2"></i>
-            Back to Subjects
-          </button>
-          <div className="flex items-center">
-            <i className={`${subject?.icon} text-2xl text-primary mr-3`}></i>
-            <h2 className="text-3xl font-bold text-gray-900">{subject?.name}</h2>
+      {/* Subject Header with Back Button - Same structure as question interface */}
+      {subject && (
+        <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGoBack}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Subjects
+                </Button>
+                <div className="h-6 w-px bg-gray-300"></div>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
+                  <p className="text-sm text-gray-600">{subject.description}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600">{exams?.length || 0} available exams</div>
+                <div className="text-xs text-gray-500">
+                  {subject.examCount} exams • {subject.questionCount} questions
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {exams?.map((exam) => (
             <ExamCard 
