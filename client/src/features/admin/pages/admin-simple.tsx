@@ -2925,62 +2925,20 @@ export default function AdminSimple() {
             <TabsTrigger value="csv" className="text-sm font-medium py-3 px-6">Import/Export</TabsTrigger>
           </TabsList>
           <TabsContent value="dashboard" className="space-y-6">
-            {/* Dashboard Overview */}
-            <DashboardOverview />
-            
-            {/* Dashboard Sub-tabs for Content Management */}
-            <div className="mt-8">
-              <Tabs defaultValue="categories" className="space-y-6">
+            {/* Dashboard Sub-tabs for Content Management - Moved to Top */}
+            <div>
+              <Tabs defaultValue="overview" className="space-y-6">
                 <TabsList className="grid w-full grid-cols-6 h-11 p-1 bg-gray-100">
+                  <TabsTrigger value="overview" className="text-xs font-medium py-2 px-4">Overview</TabsTrigger>
                   <TabsTrigger value="categories" className="text-xs font-medium py-2 px-4">Categories</TabsTrigger>
                   <TabsTrigger value="subcategories" className="text-xs font-medium py-2 px-4">Subcategories</TabsTrigger>
                   <TabsTrigger value="subjects" className="text-xs font-medium py-2 px-4">Subjects</TabsTrigger>
                   <TabsTrigger value="exams" className="text-xs font-medium py-2 px-4">Exams</TabsTrigger>
                   <TabsTrigger value="questions" className="text-xs font-medium py-2 px-4">Questions</TabsTrigger>
-                  <TabsTrigger value="overview" className="text-xs font-medium py-2 px-4">Overview</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="overview">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center space-x-2">
-                        <BarChart3 className="h-5 w-5" />
-                        <span>Content Management Overview</span>
-                      </CardTitle>
-                      <p className="text-gray-600">Quick overview of all content management features</p>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-blue-900 mb-2">Categories & Structure</h3>
-                          <p className="text-blue-700 text-sm">Manage the organizational structure of your content with categories and subcategories.</p>
-                          <div className="mt-3 text-xs text-blue-600">
-                            • Professional Certifications<br/>
-                            • University & College<br/>
-                            • Custom Categories
-                          </div>
-                        </div>
-                        <div className="bg-green-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-green-900 mb-2">Content Management</h3>
-                          <p className="text-green-700 text-sm">Create and manage subjects, exams, and questions for comprehensive learning.</p>
-                          <div className="mt-3 text-xs text-green-600">
-                            • {subjects?.length || 0} Subjects<br/>
-                            • {exams?.length || 0} Exams<br/>
-                            • {questions?.length || 0} Questions
-                          </div>
-                        </div>
-                        <div className="bg-purple-50 p-4 rounded-lg">
-                          <h3 className="font-semibold text-purple-900 mb-2">Quality Assurance</h3>
-                          <p className="text-purple-700 text-sm">Ensure content quality with validation, search, and comprehensive management tools.</p>
-                          <div className="mt-3 text-xs text-purple-600">
-                            • Content Validation<br/>
-                            • Search & Filter<br/>
-                            • Bulk Operations
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <DashboardOverview />
                 </TabsContent>
                 
                 <TabsContent value="categories">
