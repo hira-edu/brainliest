@@ -264,6 +264,24 @@ export class JSONService {
       });
     }
 
+    if (subject.name && subject.name.length > 255) {
+      errors.push({
+        path: 'subject',
+        field: 'name',
+        value: subject.name,
+        message: 'Subject name must be 255 characters or less'
+      });
+    }
+
+    if (subject.description && (subject.description.length < 10 || subject.description.length > 2000)) {
+      errors.push({
+        path: 'subject',
+        field: 'description',
+        value: subject.description,
+        message: 'Subject description must be between 10 and 2000 characters'
+      });
+    }
+
     if (!Array.isArray(subject.exams)) {
       errors.push({
         path: 'subject',
@@ -293,6 +311,24 @@ export class JSONService {
           field: 'title',
           value: exam.title,
           message: 'Exam title is required and must be a string'
+        });
+      }
+
+      if (exam.title && exam.title.length > 255) {
+        errors.push({
+          path: examPath,
+          field: 'title',
+          value: exam.title,
+          message: 'Exam title must be 255 characters or less'
+        });
+      }
+
+      if (exam.description && (exam.description.length < 10 || exam.description.length > 2000)) {
+        errors.push({
+          path: examPath,
+          field: 'description',
+          value: exam.description,
+          message: 'Exam description must be between 10 and 2000 characters'
         });
       }
 
@@ -334,6 +370,24 @@ export class JSONService {
             field: 'text',
             value: question.text,
             message: 'Question text is required and must be a string'
+          });
+        }
+
+        if (question.text && question.text.length > 2000) {
+          errors.push({
+            path: questionPath,
+            field: 'text',
+            value: question.text,
+            message: 'Question text must be 2000 characters or less'
+          });
+        }
+
+        if (question.explanation && question.explanation.length > 2000) {
+          errors.push({
+            path: questionPath,
+            field: 'explanation',
+            value: question.explanation,
+            message: 'Question explanation must be 2000 characters or less'
           });
         }
 

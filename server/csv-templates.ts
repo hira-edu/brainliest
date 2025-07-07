@@ -55,15 +55,24 @@ export const SUBJECT_CSV_TEMPLATE: CSVTemplate = {
       fieldKey: 'description',
       type: 'text',
       required: false,
-      validation: { max: 1000 },
-      description: 'Detailed description of the subject'
+      validation: { min: 10, max: 2000 },
+      description: 'Detailed description of the subject (10-2000 characters)'
     },
     {
       columnName: 'Icon',
       fieldKey: 'icon',
       type: 'text',
       required: false,
+      validation: { max: 100 },
       description: 'FontAwesome class (e.g., fas fa-certificate) or emoji'
+    },
+    {
+      columnName: 'Color',
+      fieldKey: 'color',
+      type: 'text',
+      required: false,
+      validation: { pattern: '^#[A-Fa-f0-9]{6}$' },
+      description: 'Color code (e.g., #3B82F6) for visual theming'
     },
     {
       columnName: 'Category ID',
@@ -151,8 +160,24 @@ export const EXAM_CSV_TEMPLATE: CSVTemplate = {
       fieldKey: 'description',
       type: 'text',
       required: false,
-      validation: { max: 1000 },
-      description: 'Description of the exam content'
+      validation: { min: 10, max: 2000 },
+      description: 'Description of the exam content (10-2000 characters)'
+    },
+    {
+      columnName: 'Question Count',
+      fieldKey: 'questionCount',
+      type: 'number',
+      required: true,
+      validation: { min: 1, max: 500 },
+      description: 'Number of questions in the exam'
+    },
+    {
+      columnName: 'Duration (minutes)',
+      fieldKey: 'duration',
+      type: 'number',
+      required: false,
+      validation: { min: 1, max: 480 },
+      description: 'Exam duration in minutes (optional)'
     },
     {
       columnName: 'Difficulty',
@@ -258,7 +283,8 @@ export const QUESTION_CSV_TEMPLATE: CSVTemplate = {
       fieldKey: 'explanation',
       type: 'text',
       required: false,
-      description: 'Explanation for the correct answer'
+      validation: { min: 20, max: 1500 },
+      description: 'Explanation for the correct answer (20-1500 characters)'
     },
     {
       columnName: 'Domain',
@@ -332,8 +358,8 @@ export const CATEGORY_CSV_TEMPLATE: CSVTemplate = {
       fieldKey: 'description',
       type: 'text',
       required: false,
-      validation: { max: 1000 },
-      description: 'Description of the category'
+      validation: { min: 10, max: 1000 },
+      description: 'Description of the category (10-1000 characters)'
     },
     {
       columnName: 'Icon',
@@ -409,8 +435,8 @@ export const SUBCATEGORY_CSV_TEMPLATE: CSVTemplate = {
       fieldKey: 'description',
       type: 'text',
       required: false,
-      validation: { max: 1000 },
-      description: 'Description of the subcategory'
+      validation: { min: 10, max: 1000 },
+      description: 'Description of the subcategory (10-1000 characters)'
     },
     {
       columnName: 'Icon',
