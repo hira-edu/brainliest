@@ -39,230 +39,152 @@ export function AdminProvider({ children }: AdminProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Industrial-grade session management refs
-  const sessionHealthMonitor = useRef<NodeJS.Timeout | null>(null);
-  const heartbeatInterval = useRef<NodeJS.Timeout | null>(null);
-  const retryAttempts = useRef<number>(0);
-  const maxRetryAttempts = 3;
+  // Token-only authentication state
+  const [adminToken, setAdminToken] = useState<string | null>(null);
   const sessionValidationInProgress = useRef<boolean>(false);
 
-  // Enterprise-grade activity tracking with multiple persistence layers
+  // Token-only activity tracking
   const trackActivity = useCallback(() => {
     const now = Date.now().toString();
     try {
-      // Primary: localStorage with error handling
-      try {
-        localStorage.setItem('admin_last_activity', now);
-        localStorage.setItem('admin_session_heartbeat', now);
-        localStorage.setItem('admin_session_health_check', now);
-      } catch (localStorageError) {
-        console.warn('localStorage unavailable:', localStorageError);
-      }
-      
-      // Secondary: sessionStorage fallback
-      try {
-        sessionStorage.setItem('admin_activity_backup', now);
-        sessionStorage.setItem('admin_health_backup', now);
-      } catch (sessionStorageError) {
-        console.warn('sessionStorage unavailable:', sessionStorageError);
-      }
-      
-      // Tertiary: Send heartbeat to server with timeout protection
-      const token = getTokenFromMultipleSources();
-      if (token && !sessionValidationInProgress.current) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
-        
-        fetch('/api/admin/session/heartbeat', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            timestamp: now,
-            clientHealth: 'active',
-            sessionMetrics: {
-              lastActivity: now,
-              tabVisible: !document.hidden,
-              networkOnline: navigator.onLine
-            }
-          }),
-          credentials: 'include',
-          signal: controller.signal
-        }).then(() => {
-          clearTimeout(timeoutId);
-          retryAttempts.current = 0; // Reset retry counter on success
-        }).catch((error) => {
-          clearTimeout(timeoutId);
-          if (error.name !== 'AbortError') {
-            console.warn('Heartbeat failed:', error);
-            retryAttempts.current++;
-            if (retryAttempts.current >= maxRetryAttempts) {
-              console.error('🚨 Multiple heartbeat failures detected - session may be compromised');
-            }
-          }
-        });
-      }
+      // Store activity timestamp
+      localStorage.setItem('admin_last_activity', now);
     } catch (error) {
       console.warn('Activity tracking failed:', error);
     }
   }, []);
 
-  // Multi-source token retrieval with enterprise-grade fallback and validation
-  const getTokenFromMultipleSources = useCallback((): string | null => {
-    const sources = [
-      // Primary: localStorage
-      () => {
-        try {
-          return localStorage.getItem('admin_token');
-        } catch {
-          return null;
-        }
-      },
-      // Secondary: cookies with enhanced parsing
-      () => {
-        try {
-          const cookies = document.cookie.split(';');
-          const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('admin_token='));
-          if (tokenCookie) {
-            const token = decodeURIComponent(tokenCookie.split('=')[1]);
-            if (token && token !== 'undefined' && token !== 'null') {
-              // Restore to localStorage for future access
-              try {
-                localStorage.setItem('admin_token', token);
-              } catch {
-                // Continue without localStorage backup
-              }
-              return token;
-            }
-          }
-        } catch {
-          // Continue to next source
-        }
-        return null;
-      },
-      // Tertiary: sessionStorage
-      () => {
-        try {
-          const token = sessionStorage.getItem('admin_token_backup');
-          if (token && token !== 'undefined' && token !== 'null') {
-            // Restore to localStorage
-            try {
-              localStorage.setItem('admin_token', token);
-            } catch {
-              // Continue without localStorage backup
-            }
-            return token;
-          }
-        } catch {
-          // Continue
-        }
-        return null;
-      },
-      // Quaternary: Check for session ID and attempt recovery
-      () => {
-        try {
-          const sessionId = sessionStorage.getItem('admin_session_id_backup');
-          if (sessionId) {
-            console.log('Attempting session recovery with session ID:', sessionId.substring(0, 8) + '...');
-            // Note: This would require a backend endpoint for session recovery
-          }
-        } catch {
-          // Continue
-        }
-        return null;
-      }
-    ];
-
-    for (const source of sources) {
-      try {
-        const token = source();
-        if (token) {
-          // Validate token format (basic JWT structure check)
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            return token;
-          }
-        }
-      } catch (error) {
-        console.warn('Token source failed:', error);
-        continue;
-      }
+  // Token management functions
+  const getStoredToken = useCallback((): string | null => {
+    try {
+      return localStorage.getItem('admin_token');
+    } catch {
+      return null;
     }
-
-    return null;
   }, []);
 
-  // War-tested session persistence with comprehensive error handling and atomic operations
-  const persistSessionData = useCallback((token: string, user: AdminUser) => {
-    const sessionData = {
-      token,
-      user,
-      timestamp: Date.now(),
-      sessionId: extractSessionIdFromToken(token),
-      fingerprint: generateClientFingerprint()
-    };
+  const storeToken = useCallback((token: string) => {
+    try {
+      localStorage.setItem('admin_token', token);
+      setAdminToken(token);
+    } catch (error) {
+      console.warn('Failed to store admin token:', error);
+    }
+  }, []);
 
-    const persistenceOperations = [
-      // Primary storage operations
-      () => {
-        try {
-          localStorage.setItem('admin_token', token);
-          localStorage.setItem('admin_user', JSON.stringify(user));
-          localStorage.setItem('admin_session_created', Date.now().toString());
-          localStorage.setItem('admin_session_fingerprint', sessionData.fingerprint);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      // Backup storage operations
-      () => {
-        try {
-          sessionStorage.setItem('admin_token_backup', token);
-          sessionStorage.setItem('admin_user_backup', JSON.stringify(user));
-          sessionStorage.setItem('admin_session_id_backup', sessionData.sessionId);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      // Minimal fallback storage
-      () => {
-        try {
-          sessionStorage.setItem('admin_minimal_session', JSON.stringify({
-            token: token.substring(0, 32) + '...', // Store partial token for recovery hints
-            userId: user.id,
-            email: user.email,
-            timestamp: Date.now()
-          }));
-          return true;
-        } catch {
-          return false;
-        }
+  const clearToken = useCallback(() => {
+    try {
+      localStorage.removeItem('admin_token');
+      setAdminToken(null);
+    } catch (error) {
+      console.warn('Failed to clear admin token:', error);
+    }
+  }, []);
+
+  // Initialize token from storage on mount
+  useEffect(() => {
+    const token = getStoredToken();
+    if (token) {
+      setAdminToken(token);
+      // Check authentication status if token exists
+      checkAuthStatus();
+    }
+  }, [getStoredToken]);
+
+  // Token-only login function  
+  const login = useCallback(async (email: string, password: string, recaptchaToken?: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/admin/token/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, recaptchaToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
-    ];
 
-    let successCount = 0;
-    persistenceOperations.forEach((operation, index) => {
-      if (operation()) {
-        successCount++;
+      if (data.success && data.token && data.user) {
+        storeToken(data.token);
+        setAdminUser(data.user);
+        trackActivity();
       } else {
-        console.warn(`Storage operation ${index + 1} failed`);
+        throw new Error(data.message || 'Invalid response from server');
       }
-    });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [storeToken, trackActivity]);
 
-    if (successCount === 0) {
-      console.error('🚨 CRITICAL: All storage mechanisms failed - session may not persist across refreshes');
-      throw new Error('Session persistence failed completely');
-    } else {
-      console.log(`✅ Session persisted successfully (${successCount}/${persistenceOperations.length} storage methods)`);
+  // Token-only logout function
+  const logout = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      clearToken();
+      setAdminUser(null);
+      setError(null);
+    } catch (err) {
+      console.warn('Logout cleanup failed:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [clearToken]);
+
+  // Check authentication status using token
+  const checkAuthStatus = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) {
+      setAdminUser(null);
+      return;
     }
 
-    // Track activity after successful persistence
-    trackActivity();
-  }, [trackActivity]);
+    if (sessionValidationInProgress.current) {
+      return;
+    }
+
+    try {
+      sessionValidationInProgress.current = true;
+      setIsLoading(true);
+
+      const response = await fetch('/api/admin/token/verify', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          setAdminUser(data.user);
+          trackActivity();
+        } else {
+          throw new Error('Invalid token');
+        }
+      } else {
+        throw new Error('Token verification failed');
+      }
+    } catch (err) {
+      console.warn('Token verification failed:', err);
+      clearToken();
+      setAdminUser(null);
+    } finally {
+      sessionValidationInProgress.current = false;
+      setIsLoading(false);
+    }
+  }, [getStoredToken, clearToken, trackActivity]);
 
   // Industrial-grade session clearing with comprehensive cleanup and verification
   const clearAllSessionData = useCallback(() => {
@@ -381,207 +303,6 @@ export function AdminProvider({ children }: AdminProviderProps) {
     }
   };
 
-  // Enterprise authentication verification with comprehensive error handling and retry logic
-  const checkAuthStatus = useCallback(async () => {
-    if (sessionValidationInProgress.current) {
-      return; // Prevent concurrent validation calls
-    }
-
-    try {
-      sessionValidationInProgress.current = true;
-      setIsLoading(true);
-      setError(null);
-
-      // Enterprise session validation through secure cookies (no tokens needed)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
-
-      const response = await fetch('/api/admin/session/status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Client-Fingerprint': generateClientFingerprint(),
-          'X-Session-Health': 'active'
-        },
-        credentials: 'include',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.session && data.session.user) {
-          setAdminUser(data.session.user);
-          retryAttempts.current = 0; // Reset retry counter
-          console.log('✅ Enterprise session status check successful');
-        } else {
-          console.warn('Session status check failed: Invalid session data', data);
-          setAdminUser(null);
-        }
-      } else if (response.status === 401) {
-        console.log('🔓 No active admin session found');
-        setAdminUser(null);
-      } else if (response.status >= 500) {
-        throw new Error(`Server error: ${response.status}`);
-      } else {
-        throw new Error(`Session status check failed: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('🚨 Auth verification error:', error);
-      retryAttempts.current++;
-      
-      if (error instanceof Error && error.name === 'AbortError') {
-        setError('Authentication verification timed out. Please check your connection.');
-      } else if (retryAttempts.current >= maxRetryAttempts) {
-        setError('Multiple authentication failures. Please log in again.');
-        clearAllSessionData();
-        setAdminUser(null);
-      } else {
-        setError(`Authentication error (attempt ${retryAttempts.current}/${maxRetryAttempts}). Retrying...`);
-        // Retry after exponential backoff
-        setTimeout(() => {
-          if (retryAttempts.current < maxRetryAttempts) {
-            checkAuthStatus();
-          }
-        }, Math.pow(2, retryAttempts.current) * 1000);
-      }
-    } finally {
-      setIsLoading(false);
-      sessionValidationInProgress.current = false;
-    }
-  }, [getTokenFromMultipleSources, persistSessionData, clearAllSessionData]);
-
-  // Industrial-grade login with comprehensive error handling and session establishment
-  const login = useCallback(async (email: string, password: string, recaptchaToken?: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      retryAttempts.current = 0; // Reset retry counter for new login attempt
-
-      // Pre-login validation
-      if (!email || !password) {
-        throw new Error('Email and password are required');
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30-second timeout for login
-
-      const response = await fetch('/api/admin/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Client-Fingerprint': generateClientFingerprint(),
-          'X-Login-Attempt': Date.now().toString()
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          recaptchaToken,
-          clientInfo: {
-            userAgent: navigator.userAgent,
-            timestamp: Date.now(),
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-          }
-        }),
-        credentials: 'include',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        if (data.user) {
-          setAdminUser(data.user);
-          setError(null);
-          console.log('✅ Admin login successful - enterprise session created with sessionId:', data.sessionId);
-          
-          // Start session monitoring with enterprise session manager
-          startSessionMonitoring();
-        } else {
-          throw new Error('Login response missing user data');
-        }
-      } else {
-        // Enhanced error handling for different failure scenarios
-        if (data.accountLocked) {
-          const lockoutMessage = data.lockoutExpires 
-            ? `Account locked until ${new Date(data.lockoutExpires).toLocaleString()}`
-            : 'Account is temporarily locked due to multiple failed attempts';
-          setError(lockoutMessage);
-        } else if (response.status === 429) {
-          setError('Too many login attempts. Please wait before trying again.');
-        } else if (response.status >= 500) {
-          setError('Server error occurred. Please try again later.');
-        } else if (response.status === 403) {
-          setError('Access denied. Please check your admin privileges.');
-        } else {
-          setError(data.message || 'Login failed. Please check your credentials.');
-        }
-      }
-    } catch (error) {
-      console.error('🚨 Login error:', error);
-      if (error instanceof Error && error.name === 'AbortError') {
-        setError('Login request timed out. Please check your connection and try again.');
-      } else {
-        setError('Login failed due to a network or system error. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [persistSessionData]);
-
-  // Enterprise logout with cookie-based session invalidation
-  const logout = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      
-      // Enterprise session logout through secure cookies (no tokens needed)
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch('/api/admin/session/invalidate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Client-Fingerprint': generateClientFingerprint(),
-            'X-Logout-Reason': 'user_initiated'
-          },
-          body: JSON.stringify({
-            clientInfo: {
-              timestamp: Date.now(),
-              reason: 'user_initiated'
-            }
-          }),
-          credentials: 'include',
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          console.log('✅ Enterprise session logout successful');
-        } else {
-          console.warn('Server logout failed, proceeding with client cleanup');
-        }
-      } catch (error) {
-        console.warn('Logout request failed:', error);
-        // Continue with client-side cleanup regardless
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Always perform client-side cleanup regardless of server response
-      clearAllSessionData();
-      setAdminUser(null);
-      setError(null);
-      setIsLoading(false);
-      retryAttempts.current = 0;
-      console.log('✅ Admin logout completed');
-    }
-  }, [getTokenFromMultipleSources, clearAllSessionData]);
-
   // Advanced session monitoring with health checks and automatic recovery
   const startSessionMonitoring = useCallback(() => {
     // Clear existing monitors
@@ -678,7 +399,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
           console.log('Token removed in another tab, logging out');
           setAdminUser(null);
           setError('Session ended in another tab');
-          clearAllSessionData();
+  
         } else if (e.newValue && !adminUser && !sessionValidationInProgress.current) {
           // Token was added in another tab, verify auth
           console.log('Token added in another tab, verifying auth');

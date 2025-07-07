@@ -7,7 +7,7 @@ import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { adminAuthService } from "./admin-auth-service";
 import { adminUserService } from './admin-user-management';
-import { enterpriseAdminSessionManager } from './enterprise-admin-session-manager';
+import { tokenAdminAuth } from './token-admin-auth';
 import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
@@ -1762,10 +1762,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== END ENHANCED AUTHENTICATION ====================
 
-  // ==================== ADMIN AUTHENTICATION ROUTES ====================
+  // ==================== ADMIN AUTHENTICATION ROUTES (TOKEN-ONLY) ====================
   
-  // Admin login - completely separate from regular user authentication
-  app.post("/api/admin/auth/login", extractClientInfo, async (req, res) => {
+  // Admin login - completely cookie-free authentication
+  app.post("/api/admin/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -1778,30 +1778,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate email format
-      if (!validateEmail(email)) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
         return res.status(400).json({ 
           success: false, 
           message: "Invalid email format" 
         });
       }
       
-      const result = await adminAuthService.login(
-        email, 
-        password, 
-        req.clientInfo?.ipAddress, 
-        req.clientInfo?.userAgent
-      );
+      // Use new token-only admin auth service
+      const result = await tokenAdminAuth.login(email, password);
       
-      // Set admin token as secure cookie if login successful
-      if (result.success && result.token) {
-        res.cookie('admin_token', result.token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 8 * 60 * 60 * 1000 // 8 hours
-        });
-      }
-      
+      // Return token in response body only (no cookies)
       res.json(result);
     } catch (error) {
       console.error("Admin login error:", error);
@@ -1812,20 +1800,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin token verification
+  // Admin token verification (token-only)
   app.get("/api/admin/auth/verify", async (req, res) => {
     try {
-      // Extract token from Authorization header or cookies
-      let token: string | undefined;
-      
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      }
-      
-      if (!token && req.cookies) {
-        token = req.cookies.admin_token;
-      }
+      // Extract token from Authorization header only
+      const token = tokenAdminAuth.extractTokenFromRequest(req);
       
       if (!token) {
         return res.status(401).json({
@@ -1834,7 +1813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const verification = await adminAuthService.verifyToken(token);
+      const verification = await tokenAdminAuth.verifyToken(token);
       
       if (verification.valid) {
         res.json({
@@ -1858,41 +1837,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin logout
-  app.post("/api/admin/auth/logout", extractClientInfo, async (req, res) => {
+  // Admin logout (token-only)
+  app.post("/api/admin/auth/logout", async (req, res) => {
     try {
-      // Extract token for logging purposes
-      let token: string | undefined;
+      // Token-only logout (client discards token)
+      const result = await tokenAdminAuth.logout();
       
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      }
-      
-      if (!token && req.cookies) {
-        token = req.cookies.admin_token;
-      }
-      
-      if (token) {
-        await adminAuthService.logout(
-          token, 
-          req.clientInfo?.ipAddress, 
-          req.clientInfo?.userAgent
-        );
-      }
-      
-      // Clear admin token cookie
-      res.clearCookie('admin_token');
-      
-      res.json({
-        success: true,
-        message: "Admin logout successful"
-      });
+      res.json(result);
     } catch (error) {
       console.error("Admin logout error:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Logout error" 
+        message: "Logout system error" 
       });
     }
   });
@@ -1915,32 +1871,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // ==================== ENTERPRISE ADMIN SESSION MANAGEMENT ====================
+  // ==================== TOKEN-ONLY ADMIN AUTHENTICATION ====================
   
-  // Admin session heartbeat endpoint
-  app.post("/api/admin/session/heartbeat", 
-    enterpriseAdminSessionManager.createAuthenticationMiddleware(),
-    async (req, res) => {
-      try {
-        // Session is already validated by middleware, just return success
-        res.json({
-          success: true,
-          message: "Session heartbeat successful",
-          timestamp: new Date().toISOString()
-        });
-      } catch (error) {
-        console.error("Session heartbeat error:", error);
-        res.status(500).json({
-          success: false,
-          message: "Session heartbeat failed"
-        });
+  // Token-only admin login
+  app.post("/api/admin/token/login", async (req, res) => {
+    try {
+      const { email, password, recaptchaToken } = req.body;
+      
+      const result = await tokenAdminAuth.login(email, password);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(401).json(result);
       }
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Login failed"
+      });
     }
-  );
+  });
 
-  // Admin session status endpoint
-  app.get("/api/admin/session/status", 
-    enterpriseAdminSessionManager.createAuthenticationMiddleware(),
+  // Token verification endpoint
+  app.get("/api/admin/token/verify", 
+    tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
       try {
         const session = req.adminSession;
@@ -1963,34 +1919,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Admin session invalidation endpoint
-  app.post("/api/admin/session/invalidate", 
-    enterpriseAdminSessionManager.createAuthenticationMiddleware(),
-    async (req, res) => {
-      try {
-        const session = req.adminSession;
-        const sessionId = req.sessionId;
-        
-        await enterpriseAdminSessionManager.invalidateSession(sessionId);
-        
-        // Clear all cookies
-        enterpriseAdminSessionManager.clearSecureCookies(res);
-        
-        res.json({
-          success: true,
-          message: "Session invalidated successfully"
-        });
-      } catch (error) {
-        console.error("Session invalidation error:", error);
-        res.status(500).json({
-          success: false,
-          message: "Failed to invalidate session"
-        });
-      }
+  // Token-only admin logout (client-side operation)
+  app.post("/api/admin/token/logout", async (req, res) => {
+    try {
+      const result = await tokenAdminAuth.logout();
+      res.json(result);
+    } catch (error) {
+      console.error("Admin logout error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Logout failed"
+      });
     }
-  );
+  });
 
-  // ==================== END ENTERPRISE ADMIN SESSION MANAGEMENT ====================
+  // ==================== END TOKEN-ONLY ADMIN AUTHENTICATION ====================
   
   // ==================== END ADMIN AUTHENTICATION ====================
 
@@ -2038,72 +1981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin login endpoint
-  app.post("/api/admin/login", async (req, res) => {
-    try {
-      const { email, password, recaptchaToken } = req.body;
-      
-      // Verify reCAPTCHA token if provided
-      if (recaptchaToken && recaptchaService.isConfigured()) {
-        console.log('🛡️ Verifying reCAPTCHA token for admin login');
-        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'admin_login');
-        
-        if (!recaptchaResult.success) {
-          console.log('❌ reCAPTCHA verification failed for admin login');
-          return res.status(400).json({
-            success: false,
-            message: "reCAPTCHA verification failed. Please try again."
-          });
-        }
-        
-        console.log('✅ reCAPTCHA verification successful for admin login');
-      }
-      
-      // For testing, allow a simple admin login
-      if (email === "admin@brainliest.com" && password === "admin123") {
-        // Create a test admin user object
-        const adminUser = {
-          id: 999,
-          email: "admin@brainliest.com",
-          username: "admin",
-          firstName: "Test",
-          lastName: "Admin",
-          role: "admin",
-          emailVerified: true
-        };
-        
-        console.log('🚀 Creating enterprise admin session...');
-        
-        // Create enterprise session using the session manager
-        const session = await enterpriseAdminSessionManager.createSession(adminUser, req);
-        
-        // Set secure cookies
-        enterpriseAdminSessionManager.setSecureCookies(res, session);
-        
-        console.log('✅ Enterprise admin session created successfully');
-        
-        // Return session data
-        res.json({
-          success: true,
-          user: session.user,
-          sessionId: session.token,
-          expiresAt: session.expiresAt,
-          message: "Admin login successful"
-        });
-      } else {
-        res.status(401).json({
-          success: false,
-          message: "Invalid admin credentials"
-        });
-      }
-    } catch (error) {
-      console.error('Admin login error:', error);
-      res.status(500).json({
-        success: false,
-        message: "Admin login failed"
-      });
-    }
-  });
+  // This route is deprecated - use /api/admin/auth/login instead
 
   // Unified CSV endpoints
   app.get("/api/csv/unified-template", requireNewAdminAuth, async (req, res) => {
