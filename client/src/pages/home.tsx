@@ -234,6 +234,82 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Trending Certifications Section */}
+        <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-gray-900">Trending Certifications</h3>
+            <TrendingUp className="w-6 h-6 text-green-500" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { name: 'PMP Certification', trend: '+15%', IconComponent: PMPIcon, searchTerm: 'pmp' },
+              { name: 'AWS Cloud Practitioner', trend: '+23%', IconComponent: AWSIcon, searchTerm: 'aws' },
+              { name: 'CompTIA Security+', trend: '+18%', IconComponent: CompTIAIcon, searchTerm: 'comptia' },
+              { name: 'Azure Fundamentals', trend: '+12%', IconComponent: AzureIcon, searchTerm: 'azure' }
+            ].map((cert) => (
+              <div 
+                key={cert.name}
+                className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setSearchQuery(cert.searchTerm);
+                  setSelectedCategory("certifications");
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <cert.IconComponent className="w-8 h-8" />
+                  <Badge variant="outline" className="text-xs text-green-600">
+                    {cert.trend}
+                  </Badge>
+                </div>
+                <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
+                  {cert.name}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Quick Category Links */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Browse by Category</h4>
+            <div className="flex flex-wrap gap-3">
+              {Object.entries(categoryConfig).map(([categoryKey, config]) => {
+                const IconComponent = config.icon;
+                const categorySubjects = categorizedSubjects[categoryKey] || [];
+                
+                return (
+                  <Button
+                    key={categoryKey}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center space-x-2"
+                    onClick={() => {
+                      setSelectedCategory(categoryKey);
+                      setSearchQuery("");
+                    }}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span>{config.title}</span>
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {categorySubjects.length}
+                    </Badge>
+                  </Button>
+                );
+              })}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center space-x-2"
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setSearchQuery("");
+                }}
+              >
+                <span>View All Subjects</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
         {/* Category Sections */}
         {!searchQuery && selectedCategory === "all" ? (
           <div className="space-y-12">
@@ -299,80 +375,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Enhanced Popular Certifications Section */}
-        <div className="bg-white rounded-xl shadow-sm p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Trending Certifications</h3>
-            <TrendingUp className="w-6 h-6 text-green-500" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { name: 'PMP Certification', trend: '+15%', IconComponent: PMPIcon, searchTerm: 'pmp' },
-              { name: 'AWS Cloud Practitioner', trend: '+23%', IconComponent: AWSIcon, searchTerm: 'aws' },
-              { name: 'CompTIA Security+', trend: '+18%', IconComponent: CompTIAIcon, searchTerm: 'comptia' },
-              { name: 'Azure Fundamentals', trend: '+12%', IconComponent: AzureIcon, searchTerm: 'azure' }
-            ].map((cert) => (
-              <div 
-                key={cert.name}
-                className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors group"
-                onClick={() => {
-                  setSearchQuery(cert.searchTerm);
-                  setSelectedCategory("certifications");
-                }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <cert.IconComponent className="w-8 h-8" />
-                  <Badge variant="outline" className="text-xs text-green-600">
-                    {cert.trend}
-                  </Badge>
-                </div>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
-                  {cert.name}
-                </span>
-              </div>
-            ))}
-          </div>
-          
-          {/* Quick Category Links */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Browse by Category</h4>
-            <div className="flex flex-wrap gap-3">
-              {Object.entries(categoryConfig).map(([categoryKey, config]) => {
-                const IconComponent = config.icon;
-                const categorySubjects = categorizedSubjects[categoryKey] || [];
-                
-                return (
-                  <Button
-                    key={categoryKey}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-2"
-                    onClick={() => {
-                      setSelectedCategory(categoryKey);
-                      setSearchQuery("");
-                    }}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    <span>{config.title}</span>
-                    <Badge variant="secondary" className="ml-1 text-xs">
-                      {categorySubjects.length}
-                    </Badge>
-                  </Button>
-                );
-              })}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedCategory("all");
-                  setSearchQuery("");
-                }}
-              >
-                View All Subjects
-              </Button>
-            </div>
-          </div>
-        </div>
+
       </main>
       <Footer />
     </div>
