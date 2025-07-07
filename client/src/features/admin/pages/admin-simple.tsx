@@ -2228,8 +2228,21 @@ export default function AdminSimple() {
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    // Display all questions without filtering for simpler dashboard
-    const displayQuestions = questions || [];
+    // Filter questions based on search and selections - use filter states for hierarchical linking
+    const filteredQuestions = questions?.filter(question => {
+      const matchesSearch = !searchTerm || 
+        question.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        question.explanation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        question.domain?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesSubject = selectedSubjectFilter === "all" || 
+        question.subjectId.toString() === selectedSubjectFilter;
+      
+      const matchesExam = selectedExamFilter === "all" || 
+        question.examId.toString() === selectedExamFilter;
+
+      return matchesSearch && matchesSubject && matchesExam;
+    }) || [];
 
     const questionForm = useForm<QuestionFormData>({
       resolver: zodResolver(questionFormSchema),

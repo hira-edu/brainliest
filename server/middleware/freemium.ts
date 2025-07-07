@@ -38,9 +38,14 @@ const freemiumRateLimit = rateLimit({
 export function enforceFreemiumLimit() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Skip freemium limits for authenticated users
-      if (req.user || req.session?.user) {
-        console.log('🔓 Authenticated user - bypassing freemium limits');
+      // Skip freemium limits for authenticated users (especially admins)
+      const user = req.user || req.session?.user;
+      if (user) {
+        if (user.role === 'admin') {
+          console.log('👑 Admin user - bypassing freemium limits');
+        } else {
+          console.log('🔓 Authenticated user - bypassing freemium limits');
+        }
         return next();
       }
 
