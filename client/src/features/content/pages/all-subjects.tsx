@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,7 +109,7 @@ function SubjectCard({ subject, onClick }: SubjectCardProps) {
 }
 
 export default function AllSubjects() {
-  // No redirect logic - using Link components directly
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("name");
@@ -124,7 +124,9 @@ export default function AllSubjects() {
     refetchInterval: 60000, // Refetch every minute
   });
 
-  // No redirect function needed - using Link components directly
+  const handleSelectSubject = (subjectId: number) => {
+    setLocation(`/subject/${subjectId}`);
+  };
 
   const categorizedSubjects = useMemo(() => {
     if (!subjects) return {};
@@ -431,14 +433,13 @@ export default function AllSubjects() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Link href={`/subject/${subject.slug}`}>
-                          <Button 
-                            size="sm" 
-                            className="bg-primary hover:bg-primary/90"
-                          >
-                            Start Practice
-                          </Button>
-                        </Link>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleSelectSubject(subject.id)}
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          Start Practice
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );

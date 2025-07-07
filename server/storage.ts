@@ -30,28 +30,19 @@ export interface IStorage {
   getSubjects(): Promise<Subject[]>;
   getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }>;
   getSubject(id: number): Promise<Subject | undefined>;
-  getSubjectBySlug(slug: string): Promise<Subject | undefined>;
   createSubject(subject: InsertSubject): Promise<Subject>;
   updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
   deleteSubject(id: number): Promise<boolean>;
   getSubjectCount(): Promise<number>;
 
-  // Exams - ID-based methods removed, slug-based operations only
+  // Exams
   getExams(): Promise<Exam[]>;
   getExamsPaginated(offset: number, limit: number, subjectId?: number): Promise<{ exams: Exam[], total: number }>;
   getExamsBySubject(subjectId: number): Promise<Exam[]>;
-  // REMOVED: getExam(id) - Use getExamBySlug() for public operations
-  getExamBySlug(slug: string): Promise<Exam | undefined>;
+  getExam(id: number): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
-  // REMOVED: updateExam(id) - Use CSV import/export for bulk operations
-  updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
-    throw new Error("Use CSV import/export for bulk operations");
-  }
-
-  // REMOVED: deleteExam(id) - Use CSV import/export for bulk operations  
-  deleteExam(id: number): Promise<boolean> {
-    throw new Error("Use CSV import/export for bulk operations");
-  }
+  updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined>;
+  deleteExam(id: number): Promise<boolean>;
   getExamCount(): Promise<number>;
 
   // Questions
@@ -115,8 +106,7 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      slug: subjects.slug
+      questionCount: subjects.questionCount
     }).from(subjects);
   }
 
@@ -130,25 +120,8 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      slug: subjects.slug
+      questionCount: subjects.questionCount
     }).from(subjects).where(eq(subjects.id, id));
-    return subject;
-  }
-
-  async getSubjectBySlug(slug: string): Promise<Subject | undefined> {
-    const [subject] = await db.select({
-      id: subjects.id,
-      name: subjects.name,
-      description: subjects.description,
-      icon: subjects.icon,
-      color: subjects.color,
-      categoryId: subjects.categoryId,
-      subcategoryId: subjects.subcategoryId,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      slug: subjects.slug
-    }).from(subjects).where(eq(subjects.slug, slug));
     return subject;
   }
 
@@ -189,8 +162,7 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive,
-      slug: exams.slug
+      isActive: exams.isActive
     }).from(exams);
   }
 
@@ -203,17 +175,11 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive,
-      slug: exams.slug
+      isActive: exams.isActive
     }).from(exams).where(eq(exams.subjectId, subjectId));
   }
 
-  // REMOVED: getExam(id) - Use getExamBySlug() for public operations
-  getExam(id: number): Promise<Exam | undefined> {
-    throw new Error("Use getExamBySlug() for public operations");
-  }
-
-  async getExamBySlug(slug: string): Promise<Exam | undefined> {
+  async getExam(id: number): Promise<Exam | undefined> {
     const [exam] = await db.select({
       id: exams.id,
       subjectId: exams.subjectId,
@@ -222,9 +188,8 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive,
-      slug: exams.slug
-    }).from(exams).where(eq(exams.slug, slug));
+      isActive: exams.isActive
+    }).from(exams).where(eq(exams.id, id));
     return exam;
   }
 
@@ -242,11 +207,34 @@ export class DatabaseStorage implements IStorage {
     return newExam;
   }
 
-  // REMOVED: ID-based exam updates - Use CSV import/export for bulk admin operations  
-  // Public operations should use slug-based methods only
+  async updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
+    const [updatedExam] = await db
+      .update(exams)
+      .set(exam)
+      .where(eq(exams.id, id))
+      .returning();
+    return updatedExam;
+  }
 
-  // REMOVED: ID-based exam deletion - Use CSV import/export for bulk admin operations
-  // Public operations should use slug-based methods only
+  async deleteExam(id: number): Promise<boolean> {
+    // Get the exam before deleting to know which subject to update
+    const [exam] = await db.select().from(exams).where(eq(exams.id, id));
+    if (!exam) return false;
+    
+    const result = await db.delete(exams).where(eq(exams.id, id));
+    
+    if ((result.rowCount || 0) > 0) {
+      // Update subject exam count
+      await db
+        .update(subjects)
+        .set({
+          examCount: sql`GREATEST(${subjects.examCount} - 1, 0)`
+        })
+        .where(eq(subjects.id, exam.subjectId));
+      return true;
+    }
+    return false;
+  }
 
   async getExamCount(): Promise<number> {
     const result = await db.select().from(exams);
@@ -733,8 +721,7 @@ export class DatabaseStorage implements IStorage {
       categoryId: subjects.categoryId,
       subcategoryId: subjects.subcategoryId,
       examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      slug: subjects.slug
+      questionCount: subjects.questionCount
     }).from(subjects);
 
     const conditions = [];
@@ -770,8 +757,7 @@ export class DatabaseStorage implements IStorage {
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
-      isActive: exams.isActive,
-      slug: exams.slug
+      isActive: exams.isActive
     }).from(exams);
 
     if (subjectId) {
@@ -890,36 +876,29 @@ async function seedDatabase() {
     console.log("Seeding database with initial data...");
 
     // Seed basic subjects (clean data without extra fields)
-    const { generateSlug } = await import('../shared/utils/slug.js');
-    
     const subjectData: InsertSubject[] = [
       {
         name: "PMP Certification",
-        slug: generateSlug("PMP Certification"),
         description: "Project Management Professional certification preparation",
         icon: "project-diagram"
       },
       {
         name: "AWS Certified Solutions Architect",
-        slug: generateSlug("AWS Certified Solutions Architect"),
         description: "Amazon Web Services cloud architecture certification",
         icon: "cloud"
       },
       {
         name: "CompTIA Security+",
-        slug: generateSlug("CompTIA Security+"),
         description: "Cybersecurity fundamentals and best practices",
         icon: "shield"
       },
       {
         name: "AP Statistics",
-        slug: generateSlug("AP Statistics"),
         description: "Advanced Placement Statistics course preparation",
         icon: "chart-bar"
       },
       {
         name: "Calculus",
-        slug: generateSlug("Calculus"),
         description: "Differential and integral calculus",
         icon: "function"
       }
@@ -937,7 +916,6 @@ async function seedDatabase() {
         {
           subjectId: subject.id,
           title: `${subject.name} Practice Exam 1`,
-          slug: generateSlug(`${subject.name} Practice Exam 1`),
           description: `Comprehensive practice exam covering ${subject.name} concepts`,
           questionCount: 5,
           duration: 90,

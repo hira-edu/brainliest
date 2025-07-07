@@ -10,7 +10,6 @@ import Home from "./features/pages/home";
 import AllSubjects from "./features/content/pages/all-subjects";
 import ExamSelection from "./features/exam/pages/exam-selection";
 import QuestionInterface from "./features/exam/pages/question-interface";
-
 import Results from "./features/exam/pages/results";
 import Analytics from "./features/analytics/pages/analytics";
 // Admin components removed - only accessible via subdomain
@@ -27,7 +26,6 @@ import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
 
-
 function Router() {
   return (
     <Switch>
@@ -40,9 +38,8 @@ function Router() {
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
-      <Route path="/subject/:slug" component={ExamSelection} />
-      {/* War-tested slug system: ONLY slug-based routes, no redirects */}
-      <Route path="/exam/:subjectSlug/:examSlug" component={QuestionInterface} />
+      <Route path="/subject/:id" component={ExamSelection} />
+      <Route path="/exam/:id" component={QuestionInterface} />
       <Route path="/results/:id" component={Results} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/settings" component={Settings} />
@@ -52,7 +49,6 @@ function Router() {
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
       <Route path="/auth/callback" component={AuthCallback} />
-      {/* Legacy numeric routes return 404 - no redirects */}
       <Route component={NotFound} />
     </Switch>
   );

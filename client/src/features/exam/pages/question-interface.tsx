@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { Question, ExamSession, Exam } from "@shared/schema";
 import { TimerState } from "../../../shared/types";
 import { apiRequest, queryClient } from "../../../services/queryClient";
@@ -17,24 +17,9 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function QuestionInterface() {
-  
-  // War-tested slug system: Only handle slug-based routes
-  const [slugMatch, slugParams] = useRoute("/exam/:subjectSlug/:examSlug");
-  
-  const subjectSlug = slugParams?.subjectSlug;
-  const examSlug = slugParams?.examSlug;
-
-  // Return 404 if route parameters are missing
-  if (!slugMatch || !subjectSlug || !examSlug) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Exam Not Found</h1>
-          <p className="text-gray-600">Please use a valid exam URL.</p>
-        </div>
-      </div>
-    );
-  }
+  const [, setLocation] = useLocation();
+  const [match, params] = useRoute("/exam/:id");
+  const examId = params?.id ? parseInt(params.id) : null;
 
   const { isSignedIn } = useAuth();
   const { 
@@ -56,31 +41,19 @@ export default function QuestionInterface() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(true);
 
-  // For slug-based routes, we need to get the exam by subject and exam slugs
-  const { data: subject } = useQuery({
-    queryKey: [`/api/subjects/by-slug/${subjectSlug}`],
-    enabled: !!subjectSlug,
-  });
-
-  // War-tested slug system: Get exam directly by slug
-  const { data: exam, isLoading: examLoading } = useQuery<Exam>({
-    queryKey: [`/api/exams/by-slug/${examSlug}`],
-    queryFn: async () => {
-      const response = await fetch(`/api/exams/by-slug/${examSlug}`);
-      if (!response.ok) throw new Error('Exam not found');
-      return response.json();
-    },
-    enabled: !!examSlug,
+  const { data: exam } = useQuery<Exam>({
+    queryKey: [`/api/exams/${examId}`],
+    enabled: !!examId,
   });
 
   const { data: questionsData, isLoading } = useQuery<{questions: Question[], freemiumSession?: any}>({
-    queryKey: ["/api/questions", exam?.id],
+    queryKey: ["/api/questions", examId],
     queryFn: async () => {
-      const response = await fetch(`/api/questions?examId=${exam?.id}`);
+      const response = await fetch(`/api/questions?examId=${examId}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: !!exam?.id,
+    enabled: !!examId,
   });
 
   const questions = questionsData?.questions || [];
@@ -119,10 +92,10 @@ export default function QuestionInterface() {
 
   // Initialize session when exam loads
   useEffect(() => {
-    if (exam?.id && !sessionId) {
-      createSessionMutation.mutate(exam.id);
+    if (examId && !sessionId) {
+      createSessionMutation.mutate(examId);
     }
-  }, [exam?.id, sessionId]);
+  }, [examId, sessionId]);
 
   // PERFORMANCE OPTIMIZED: Timer countdown with proper cleanup
   const handleFinishExamCallback = useCallback(() => {
@@ -136,9 +109,9 @@ export default function QuestionInterface() {
           score: `${Math.round((session?.score || 0) * 100)}%`,
         },
       });
-      // Results are now handled in components directly - no redirect needed
+      setLocation("/results");
     }
-  }, [sessionId, questions, currentQuestionIndex, session?.score, updateSessionMutation]);
+  }, [sessionId, questions, currentQuestionIndex, session?.score, updateSessionMutation, setLocation]);
 
   useEffect(() => {
     // Clear any existing timer
@@ -294,7 +267,7 @@ export default function QuestionInterface() {
       },
     });
 
-    // Results displayed in component - no redirect needed
+    setLocation(`/results/${sessionId}`);
   };
 
   if (isLoading) {
@@ -322,16 +295,15 @@ export default function QuestionInterface() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Link href={subject?.slug ? `/subject/${subject.slug}` : `/subject/${exam.subjectId}`}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back to Exams
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Exams
+                  </Button>
                   <div className="h-6 w-px bg-gray-300"></div>
                   <div>
                     <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
@@ -364,14 +336,13 @@ export default function QuestionInterface() {
               <p className="text-gray-600 mb-6">
                 This exam doesn't have any questions yet. Please check back later or contact support.
               </p>
-              <Link href={subject?.slug ? `/subject/${subject.slug}` : `/subject/${exam?.subjectId}`}>
-                <Button 
-                  variant="default"
-                  className="px-6 py-2"
-                >
-                  Back to Exams
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => setLocation(`/subject/${exam?.subjectId}`)}
+                variant="default"
+                className="px-6 py-2"
+              >
+                Back to Exams
+              </Button>
             </div>
           </div>
         </div>
@@ -399,16 +370,15 @@ export default function QuestionInterface() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Link href={`/subject/${exam.subjectId}`}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Exams
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocation(`/subject/${exam.subjectId}`)}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Exams
+                </Button>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>

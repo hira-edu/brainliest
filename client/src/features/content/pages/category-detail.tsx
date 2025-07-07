@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Subject } from "@shared/schema";
 import { categoryStructure, getCategoryForSubject } from "@shared/constants";
 import SubjectCard from "../components/subject-card";
@@ -23,7 +23,7 @@ interface CategoryDetailPageProps {
 }
 
 export default function CategoryDetailPage({ categoryId, subCategoryId }: CategoryDetailPageProps) {
-  // No redirect logic - using Link components directly
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("name");
   
@@ -84,7 +84,17 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     return filtered;
   }, [subjects, categoryData, searchQuery, sortBy]);
 
-  // No redirect functions needed - using Link components directly
+  const handleSelectSubject = (subjectId: number) => {
+    setLocation(`/subject/${subjectId}`);
+  };
+
+  const handleBackClick = () => {
+    if (categoryData?.subCategory) {
+      setLocation(categoryData.category.route);
+    } else {
+      setLocation("/categories");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -130,15 +140,14 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb and Header */}
         <div className="mb-8">
-          <Link href={categoryData?.subCategory ? categoryData.category.route : "/categories"}>
-            <Button
-              variant="ghost"
-              className="mb-4 text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back {subCategory ? `to ${category.title}` : "to Categories"}
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            onClick={handleBackClick}
+            className="mb-4 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back {subCategory ? `to ${category.title}` : "to Categories"}
+          </Button>
           
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -226,11 +235,11 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
         {filteredSubjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSubjects.map((subject) => (
-              <Link key={subject.id} href={`/subject/${subject.slug}`}>
-                <SubjectCard 
-                  subject={subject} 
-                />
-              </Link>
+              <SubjectCard 
+                key={subject.id} 
+                subject={subject} 
+                onClick={() => handleSelectSubject(subject.id)}
+              />
             ))}
           </div>
         ) : (

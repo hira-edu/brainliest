@@ -134,7 +134,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(exams).where(eq(exams.subjectId, subjectId));
   }
 
-  // REMOVED: ID-based exam retrieval - Use getExamBySlug() for public operations
+  async getExam(id: number): Promise<Exam | undefined> {
+    const [exam] = await db.select().from(exams).where(eq(exams.id, id));
+    return exam;
+  }
 
   async createExam(exam: InsertExam): Promise<Exam> {
     const [newExam] = await db.insert(exams).values(exam).returning();
@@ -150,9 +153,34 @@ export class DatabaseStorage implements IStorage {
     return newExam;
   }
 
-  // REMOVED: ID-based exam updates - Use CSV import/export for bulk operations
+  async updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined> {
+    const [updatedExam] = await db
+      .update(exams)
+      .set(exam)
+      .where(eq(exams.id, id))
+      .returning();
+    return updatedExam;
+  }
 
-  // REMOVED: ID-based exam deletion - Use CSV import/export for bulk operations
+  async deleteExam(id: number): Promise<boolean> {
+    // Get the exam before deleting to know which subject to update
+    const [exam] = await db.select().from(exams).where(eq(exams.id, id));
+    if (!exam) return false;
+    
+    const result = await db.delete(exams).where(eq(exams.id, id));
+    
+    if ((result.rowCount || 0) > 0) {
+      // Update subject exam count
+      await db
+        .update(subjects)
+        .set({
+          examCount: sql`GREATEST(${subjects.examCount} - 1, 0)`
+        })
+        .where(eq(subjects.id, exam.subjectId));
+      return true;
+    }
+    return false;
+  }
 
   async getExamCount(): Promise<number> {
     const result = await db.select().from(exams);

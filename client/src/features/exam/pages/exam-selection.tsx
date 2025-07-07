@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { Subject, Exam } from "@shared/schema";
 import ExamCard from "../components/exam-card";
 import { Header } from "../../shared";
@@ -7,30 +7,32 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
-  
-  // Modern slug-based routing only  
-  const [match, params] = useRoute("/subject/:slug");
-  const subjectSlug = params?.slug;
+  const [, setLocation] = useLocation();
+  const [match, params] = useRoute("/subject/:id");
+  const subjectId = params?.id ? parseInt(params.id) : null;
 
-  // Get subject by slug
   const { data: subject } = useQuery<Subject>({
-    queryKey: [`/api/subjects/by-slug/${subjectSlug}`],
-    enabled: !!subjectSlug,
+    queryKey: [`/api/subjects/${subjectId}`],
+    enabled: !!subjectId,
   });
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
-    queryKey: ["/api/exams", subject?.id],
+    queryKey: ["/api/exams", subjectId],
     queryFn: async () => {
-      const response = await fetch(`/api/exams?subjectId=${subject?.id}`);
+      const response = await fetch(`/api/exams?subjectId=${subjectId}`);
       if (!response.ok) throw new Error('Failed to fetch exams');
       return response.json();
     },
-    enabled: !!subject?.id,
+    enabled: !!subjectId,
   });
 
-  // No redirect function needed - using Link components directly
+  const handleStartExam = (examId: number) => {
+    setLocation(`/exam/${examId}`);
+  };
 
-  // No redirect function needed - using Link components directly
+  const handleGoBack = () => {
+    setLocation("/");
+  };
 
   if (isLoading) {
     return (
@@ -43,16 +45,15 @@ export default function ExamSelection() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Link href="/">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      <ArrowLeft className="w-4 h-4 mr-2" />
-                      Back to Subjects
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleGoBack}
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Subjects
+                  </Button>
                   <div className="h-6 w-px bg-gray-300"></div>
                   <div>
                     <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
@@ -87,16 +88,15 @@ export default function ExamSelection() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Link href="/">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Subjects
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGoBack}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Subjects
+                </Button>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
@@ -120,7 +120,7 @@ export default function ExamSelection() {
             <ExamCard 
               key={exam.id} 
               exam={exam} 
-              subject={subject}
+              onStart={() => handleStartExam(exam.id)}
               // Completion tracking implemented via user sessions and analytics
             />
           ))}
