@@ -266,6 +266,14 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 07, 2025 - CSS Files Moved to Public Folder for Static Serving (COMPLETED)
+- **Moved all CSS to public folder**: Relocated all CSS files from `client/src/styles/` to `public/css/` for proper static serving
+- **Updated HTML references**: Added CSS link tags to `client/index.html` for all stylesheets (variables, reset, animations, main, index)
+- **Removed CSS imports from React**: Removed CSS import from `client/src/main.tsx` since CSS is now served statically
+- **Fixed import paths**: Updated @import statements in `main.css` to use absolute paths from public folder
+- **Clean file structure**: Removed old CSS files from src directory, maintaining only the public/css structure
+- **Static asset optimization**: CSS files now served directly by web server instead of being bundled with JavaScript
+
 ### July 07, 2025 - Complete Import Path Resolution and Application Startup Fix (COMPLETED)
 - **Comprehensive debugging session**: Successfully resolved all import path issues that were preventing application startup after enterprise architecture reorganization
 - **Fixed 50+ UI component imports**: Updated all @/lib/utils imports to @/utils/utils across the entire component library
