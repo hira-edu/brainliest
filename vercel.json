@@ -10,7 +10,7 @@
       }
     },
     {
-      "src": "client/**",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist/public"
@@ -21,6 +21,54 @@
     {
       "src": "/api/(.*)",
       "dest": "/server/index.ts"
+    },
+    {
+      "src": "/admin",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/subjects",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/categories",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/categories/(.*)",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/question-interface",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/analytics",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/settings",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/privacy",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/terms",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/contact",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/cookie-settings",
+      "dest": "/dist/public/index.html"
+    },
+    {
+      "src": "/our-story",
+      "dest": "/dist/public/index.html"
     },
     {
       "src": "/(.*)",
@@ -34,5 +82,7 @@
     "server/index.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm install"
 }
