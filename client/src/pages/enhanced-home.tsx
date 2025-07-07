@@ -78,11 +78,11 @@ function getCategoryForSubject(subject: Subject): string {
   return "other";
 }
 
-function SubjectCard({ subject, onSelect }: { subject: Subject; onSelect: (id: number) => void }) {
+function SubjectCard({ subject, onSelect }: { subject: Subject; onSelect: (subject: Subject) => void }) {
   return (
     <Card 
       className="hover:shadow-lg transition-all duration-200 cursor-pointer group h-full"
-      onClick={() => onSelect(subject.id)}
+      onClick={() => onSelect(subject)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-center space-x-3">
@@ -129,8 +129,10 @@ export default function EnhancedHome() {
     queryKey: ["/api/subjects"],
   });
 
-  const handleSelectSubject = (subjectId: number) => {
-    setLocation(`/subject/${subjectId}`);
+  const handleSelectSubject = (subject: Subject) => {
+    // Use slug-based navigation if available, otherwise fallback to ID
+    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.id}`;
+    setLocation(path);
   };
 
   const categorizedSubjects = useMemo(() => {
