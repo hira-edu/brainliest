@@ -347,7 +347,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     }, 60 * 1000); // Every minute
 
     console.log('✅ Session monitoring started');
-  }, [adminUser, checkAuthStatus, trackActivity]);
+  }, [checkAuthStatus, trackActivity]); // Remove adminUser dependency to prevent infinite loop
 
   // Enhanced initialization with recovery mechanisms and connection monitoring
   useEffect(() => {
@@ -383,7 +383,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       if (sessionHealthMonitor.current) clearInterval(sessionHealthMonitor.current);
       if (heartbeatInterval.current) clearInterval(heartbeatInterval.current);
     };
-  }, [adminUser, checkAuthStatus]);
+  }, [checkAuthStatus]); // Remove adminUser dependency to prevent infinite loop
 
   // Start session monitoring when user logs in
   useEffect(() => {
@@ -451,7 +451,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [adminUser, checkAuthStatus, trackActivity, logout, clearAllSessionData]);
+  }, [checkAuthStatus, trackActivity, logout, clearAllSessionData]); // Remove adminUser dependency
 
   const value: AdminContextType = {
     adminUser,
