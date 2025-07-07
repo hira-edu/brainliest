@@ -355,9 +355,16 @@ export default function AdminSimple() {
       const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
       
       if (values.length >= 14) {
+        // Safe parseInt function to prevent NaN crashes
+        const safeParseInt = (value: string, defaultValue: number): number => {
+          if (!value || typeof value !== 'string') return defaultValue;
+          const parsed = parseInt(value.trim(), 10);
+          return isNaN(parsed) || parsed < 0 ? defaultValue : parsed;
+        };
+
         const questionData = {
-          subjectId: isNaN(parseInt(values[0])) ? 1 : parseInt(values[0]),
-          examId: isNaN(parseInt(values[2])) ? 1 : parseInt(values[2]),
+          subjectId: safeParseInt(values[0], 1),
+          examId: safeParseInt(values[2], 1),
           text: values[4] || "",
           options: [
             values[5] || "",
@@ -365,11 +372,11 @@ export default function AdminSimple() {
             values[7] || "",
             values[8] || ""
           ],
-          correctAnswer: isNaN(parseInt(values[9])) ? 0 : parseInt(values[9]),
+          correctAnswer: safeParseInt(values[9], 0),
           explanation: values[10] || "",
           domain: values[11] || "",
           difficulty: values[12] || "Intermediate",
-          order: isNaN(parseInt(values[13])) ? 1 : parseInt(values[13])
+          order: safeParseInt(values[13], 1)
         };
         
         if (questionData.text && questionData.options.every(opt => opt)) {
@@ -709,7 +716,10 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Sort Order</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                          <Input type="number" placeholder="0" {...field} onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? 0 : value);
+                          }} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1010,7 +1020,10 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Sort Order</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                          <Input type="number" placeholder="0" {...field} onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? 0 : value);
+                          }} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

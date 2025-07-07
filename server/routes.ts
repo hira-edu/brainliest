@@ -9,7 +9,7 @@ import { requireAdminAuth, logAdminAction } from "./middleware/auth";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
-import { parseId, parseOptionalId } from "./utils/validation";
+import { parseId, parseOptionalId, validateEmail, validatePassword } from "./utils/validation";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -149,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/subjects/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'subject ID');
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ message: "Invalid subject ID" });
       }
@@ -179,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Exam routes
   app.get("/api/exams", async (req, res) => {
     try {
-      const subjectId = req.query.subjectId ? parseInt(req.query.subjectId as string) : undefined;
+      const subjectId = parseOptionalId(req.query.subjectId as string);
       const exams = subjectId 
         ? await storage.getExamsBySubject(subjectId)
         : await storage.getExams();
@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/exams/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'exam ID');
       const exam = await storage.getExam(id);
       if (!exam) {
         return res.status(404).json({ message: "Exam not found" });
@@ -218,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Question routes
   app.get("/api/questions", async (req, res) => {
     try {
-      const examId = req.query.examId ? parseInt(req.query.examId as string) : undefined;
+      const examId = parseOptionalId(req.query.examId as string);
       const questions = examId 
         ? await storage.getQuestionsByExam(examId)
         : await storage.getQuestions();
@@ -230,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/questions/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'question ID');
       const question = await storage.getQuestion(id);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
@@ -256,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/questions/:id", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'question ID');
       const validation = insertQuestionSchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid question data", errors: validation.error.errors });
@@ -285,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/questions/:id", requireAdminAuth, logAdminAction, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'question ID');
       const deleted = await storage.deleteQuestion(id);
       if (!deleted) {
         return res.status(404).json({ message: "Question not found" });
@@ -505,7 +505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/sessions/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'session ID');
       const session = await storage.getExamSession(id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
@@ -518,7 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/sessions/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'session ID');
       const validation = insertExamSessionSchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid session data", errors: validation.error.errors });
@@ -536,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comment routes
   app.get("/api/comments", async (req, res) => {
     try {
-      const questionId = req.query.questionId ? parseInt(req.query.questionId as string) : undefined;
+      const questionId = parseOptionalId(req.query.questionId as string);
       const comments = questionId 
         ? await storage.getCommentsByQuestion(questionId)
         : await storage.getComments();
@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/comments/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'comment ID');
       const deleted = await storage.deleteComment(id);
       if (!deleted) {
         return res.status(404).json({ message: "Comment not found" });
@@ -744,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'user ID');
       const user = await storage.getUser(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -770,7 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/users/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'user ID');
       const validation = insertUserSchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid user data", errors: validation.error.errors });
@@ -787,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'user ID');
       const deleted = await storage.deleteUser(id);
       if (!deleted) {
         return res.status(404).json({ message: "User not found" });
@@ -990,6 +990,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, username, firstName, lastName, recaptchaToken } = req.body;
       
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Email and password are required" });
+      }
+      
+      // Validate email format
+      if (!validateEmail(email)) {
+        return res.status(400).json({ success: false, message: "Invalid email format" });
+      }
+      
+      // Validate password strength
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        return res.status(400).json({ success: false, message: passwordValidation.errors[0] });
+      }
+      
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log('Registration with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
@@ -1013,6 +1029,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password, recaptchaToken } = req.body;
+      
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ success: false, message: "Email and password are required" });
+      }
+      
+      // Validate email format
+      if (!validateEmail(email)) {
+        return res.status(400).json({ success: false, message: "Invalid email format" });
+      }
       
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log('Login with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
@@ -1371,7 +1397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/audit-logs/:id", requireAdminAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseId(req.params.id, 'audit log ID');
       const auditLog = await storage.getAuditLog(id);
       if (!auditLog) {
         return res.status(404).json({ message: "Audit log not found" });

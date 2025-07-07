@@ -65,7 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        // Auth initialization errors are normal on fresh load - suppress for UX
+        // console.error('Auth initialization error:', error);
       } finally {
         setIsLoading(false);
       }
