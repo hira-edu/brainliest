@@ -266,6 +266,13 @@ The application uses four main entities:
 
 ## Recent Changes
 
+### July 07, 2025 - Icon System Fixes and Subject Coverage Improvement (COMPLETED)
+- **Fixed missing icons**: Added ComputerScienceIcon, HistoryIcon, PsychologyIcon, TestPrepIcon, and LanguageIcon for complete subject coverage
+- **Improved icon mapping**: Updated subject-to-icon mapping to eliminate repeated icons and provide more specific visual representation
+- **Better categorization**: Computer Science subjects now use dedicated icon, Social Sciences have appropriate icons, Test Prep has unified icon
+- **Enhanced visual diversity**: Each subject category now has distinct visual identity reducing icon repetition across subjects
+- **Complete subject coverage**: All 47+ subjects now have appropriate, non-repeating icons for better user experience
+
 ### July 07, 2025 - Modern Icon System Implementation with Industry Best Practices (COMPLETED)
 - **Enterprise-grade icon architecture**: Implemented comprehensive icon system with Registry Pattern, Factory Pattern, and TypeScript interfaces
 - **Icon Registry with metadata**: Centralized icon management with rich metadata, search functionality, and categorization system

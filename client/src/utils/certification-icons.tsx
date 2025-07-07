@@ -188,6 +188,71 @@ export const MedicalIcon = ({ className = "w-8 h-8" }: { className?: string }) =
   </svg>
 );
 
+export const ComputerScienceIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="20" fill="#1e40af"/>
+    <rect x="15" y="25" width="70" height="45" rx="5" fill="#fff"/>
+    <rect x="20" y="30" width="60" height="25" fill="#1e40af"/>
+    <rect x="25" y="35" width="8" height="3" fill="#fff"/>
+    <rect x="25" y="40" width="12" height="3" fill="#fff"/>
+    <rect x="25" y="45" width="6" height="3" fill="#fff"/>
+    <rect x="50" y="35" width="20" height="15" rx="2" fill="#fff"/>
+    <rect x="40" y="75" width="20" height="5" rx="2" fill="#fff"/>
+  </svg>
+);
+
+export const HistoryIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="20" fill="#92400e"/>
+    <rect x="20" y="25" width="60" height="50" rx="5" fill="#fff"/>
+    <rect x="25" y="35" width="20" height="3" fill="#92400e"/>
+    <rect x="25" y="42" width="30" height="3" fill="#92400e"/>
+    <rect x="25" y="49" width="25" height="3" fill="#92400e"/>
+    <rect x="25" y="56" width="35" height="3" fill="#92400e"/>
+    <rect x="25" y="63" width="15" height="3" fill="#92400e"/>
+    <circle cx="70" cy="35" r="8" fill="#92400e"/>
+    <rect x="67" y="32" width="6" height="6" fill="#fff"/>
+  </svg>
+);
+
+export const PsychologyIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="20" fill="#7c3aed"/>
+    <circle cx="50" cy="45" r="20" stroke="#fff" strokeWidth="3" fill="none"/>
+    <circle cx="50" cy="45" r="12" fill="#fff"/>
+    <circle cx="45" cy="42" r="2" fill="#7c3aed"/>
+    <circle cx="55" cy="42" r="2" fill="#7c3aed"/>
+    <path d="M45 50 Q50 55 55 50" stroke="#7c3aed" strokeWidth="2" fill="none"/>
+    <path d="M35 65 Q50 75 65 65" stroke="#fff" strokeWidth="3" fill="none"/>
+  </svg>
+);
+
+export const TestPrepIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="20" fill="#f59e0b"/>
+    <rect x="20" y="25" width="60" height="50" rx="5" fill="#fff"/>
+    <rect x="30" y="35" width="40" height="3" fill="#f59e0b"/>
+    <rect x="30" y="42" width="25" height="3" fill="#d1d5db"/>
+    <rect x="30" y="49" width="35" height="3" fill="#d1d5db"/>
+    <rect x="30" y="56" width="20" height="3" fill="#d1d5db"/>
+    <circle cx="70" cy="40" r="3" fill="#10b981"/>
+    <circle cx="70" cy="50" r="3" fill="#ef4444"/>
+    <circle cx="70" cy="60" r="3" fill="#6b7280"/>
+  </svg>
+);
+
+export const LanguageIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="20" fill="#059669"/>
+    <circle cx="50" cy="50" r="25" stroke="#fff" strokeWidth="3" fill="none"/>
+    <path d="M30 50 Q50 30 70 50" stroke="#fff" strokeWidth="2" fill="none"/>
+    <path d="M30 50 Q50 70 70 50" stroke="#fff" strokeWidth="2" fill="none"/>
+    <rect x="47" y="25" width="6" height="50" fill="#fff"/>
+    <text x="50" y="45" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">A</text>
+    <text x="50" y="60" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">世</text>
+  </svg>
+);
+
 // Icon mapping for easy lookup
 export const CertificationIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   'pmp': PMPIcon,
@@ -207,6 +272,11 @@ export const CertificationIcons: Record<string, React.ComponentType<{ className?
   'engineering': EngineeringIcon,
   'business': BusinessIcon,
   'medical': MedicalIcon,
+  'computerscience': ComputerScienceIcon,
+  'history': HistoryIcon,
+  'psychology': PsychologyIcon,
+  'testprep': TestPrepIcon,
+  'language': LanguageIcon,
 };
 
 // Function to get icon component for a subject name
@@ -233,13 +303,13 @@ export function getIconComponent(subjectName: string): React.ComponentType<{ cla
     'Docker Certified Associate': 'docker',
     
     // Computer Science & Technology
-    'Programming': 'science',
-    'Data Structures': 'science',
-    'Algorithms': 'science',
-    'Computer Science': 'science',
-    'Web Development': 'science',
-    'Database Design': 'science',
-    'Computer Science Fundamentals': 'science',
+    'Programming': 'computerscience',
+    'Data Structures': 'computerscience',
+    'Algorithms': 'computerscience',
+    'Computer Science': 'computerscience',
+    'Web Development': 'computerscience',
+    'Database Design': 'computerscience',
+    'Computer Science Fundamentals': 'computerscience',
     
     // Mathematics & Statistics
     'Mathematics': 'math',
@@ -284,19 +354,19 @@ export function getIconComponent(subjectName: string): React.ComponentType<{ cla
     'TEAS': 'medical',
     
     // Social Sciences & Liberal Arts
-    'Psychology': 'science',
-    'History': 'business',
-    'Philosophy': 'business', 
-    'Sociology': 'science',
-    'Political Science': 'science',
-    'English': 'business',
-    'Writing': 'business',
+    'Psychology': 'psychology',
+    'History': 'history',
+    'Philosophy': 'psychology', 
+    'Sociology': 'psychology',
+    'Political Science': 'history',
+    'English': 'language',
+    'Writing': 'language',
     
     // Test Preparation
-    'GRE': 'business',
-    'LSAT': 'business',
-    'TOEFL': 'business',
-    'GED': 'business'
+    'GRE': 'testprep',
+    'LSAT': 'testprep',
+    'TOEFL': 'language',
+    'GED': 'testprep'
   };
   
   // Check EXACT subject name mapping first (case-sensitive)
