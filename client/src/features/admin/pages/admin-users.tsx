@@ -635,70 +635,89 @@ export default function AdminUsers() {
             Manage user accounts, permissions, and access control
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead>
+              <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">User</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Role</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Last Login</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Location</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Actions</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">User</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Role</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Status</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Last Login</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Location</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {users.map((user: User) => (
-                  <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {user.firstName} {user.lastName}
+                  <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                            <UserIcon className="h-5 w-5 text-white" />
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {user.email}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-500">
-                          @{user.username || 'N/A'}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 dark:text-white text-sm">
+                            {user.firstName || 'N/A'} {user.lastName || ''}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                            {user.email}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-500">
+                            @{user.username || 'N/A'}
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-6">
                       <Badge className={getRoleBadgeColor(user.role)}>
+                        <Shield className="h-3 w-3 mr-1" />
                         {user.role || 'user'}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4">
-                      <Badge className={getStatusBadgeColor(user)}>
-                        {getStatusText(user)}
-                      </Badge>
-                      {user.banReason && (
-                        <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                          {user.banReason}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(user.lastLoginAt)}
+                    <td className="py-4 px-6">
+                      <div className="space-y-1">
+                        <Badge className={getStatusBadgeColor(user)}>
+                          {getStatusText(user)}
+                        </Badge>
+                        {user.banReason && (
+                          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                            {user.banReason}
+                          </div>
+                        )}
                       </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <AutoLocationDisplay ipAddress={user.lastLoginIp} />
-                      {user.registrationIp && user.registrationIp !== user.lastLoginIp && (
-                        <div className="mt-2">
-                          <div className="text-xs text-gray-500 dark:text-gray-500 mb-1">Registration IP:</div>
-                          <AutoLocationDisplay ipAddress={user.registrationIp} className="text-xs" />
+                    <td className="py-4 px-6">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Calendar className="h-3 w-3 text-gray-400" />
+                          <span>{formatDate(user.lastLoginAt)}</span>
                         </div>
-                      )}
+                        {user.loginCount > 0 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {user.loginCount} logins
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
+                    <td className="py-4 px-6">
+                      <div className="space-y-2">
+                        <AutoLocationDisplay ipAddress={user.lastLoginIp} />
+                        {user.registrationIp && user.registrationIp !== user.lastLoginIp && (
+                          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                            <div className="text-xs text-gray-500 dark:text-gray-500 mb-1 font-medium">Registration:</div>
+                            <AutoLocationDisplay ipAddress={user.registrationIp} className="text-xs" />
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="ghost"
                           onClick={() => {
                             setSelectedUser(user);
                             editForm.reset({
@@ -712,30 +731,33 @@ export default function AdminUsers() {
                             });
                             setShowEditDialog(true);
                           }}
-                          className="text-blue-600 hover:text-blue-700 border-blue-600 hover:border-blue-700"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          title="Edit User"
                         >
-                          <Edit className="h-3 w-3" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         
                         {user.isBanned ? (
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => handleUnbanUser(user)}
                             disabled={unbanUserMutation.isPending}
-                            className="text-green-600 hover:text-green-700 border-green-600 hover:border-green-700"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                            title="Unban User"
                           >
-                            Unban
+                            <UserX className="h-4 w-4" />
                           </Button>
                         ) : (
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => handleBanUser(user)}
                             disabled={banUserMutation.isPending}
-                            className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                            title="Ban User"
                           >
-                            <Ban className="h-3 w-3" />
+                            <Ban className="h-4 w-4" />
                           </Button>
                         )}
                         
@@ -743,10 +765,11 @@ export default function AdminUsers() {
                           <AlertDialogTrigger asChild>
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700"
+                              variant="ghost"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              title="Delete User"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
@@ -776,9 +799,19 @@ export default function AdminUsers() {
             </table>
             
             {users.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">No users found matching your criteria</p>
+              <div className="text-center py-12 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col items-center">
+                  <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                    <Users className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No users found</h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                    {filters.search || filters.role !== 'all' || filters.isActive !== 'all' || filters.isBanned !== 'all' 
+                      ? 'Try adjusting your filters to see more results.'
+                      : 'There are no registered users in the system yet.'
+                    }
+                  </p>
+                </div>
               </div>
             )}
           </div>
