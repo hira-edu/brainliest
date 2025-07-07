@@ -9,26 +9,31 @@ export default function SlugExamInterface() {
   const subjectSlug = params?.subjectSlug;
   const examSlug = params?.examSlug;
 
-  // Resolve slug to exam ID
-  const { data: resolvedData, isLoading, error } = useQuery({
-    queryKey: [`/api/slug-resolve/${subjectSlug}/${examSlug}`],
-    queryFn: async () => {
-      const response = await fetch(`/api/slug-resolve/${subjectSlug}/${examSlug}`);
-      if (!response.ok) throw new Error('Failed to resolve slug');
-      return response.json();
-    },
+  // Fetch subjects and exams to resolve slug combination
+  const { data: subjects, isLoading: subjectsLoading } = useQuery({
+    queryKey: ['/api/subjects'],
     enabled: !!subjectSlug && !!examSlug,
   });
 
+  const subject = subjects?.find((s: any) => s.slug === subjectSlug);
+
+  const { data: exams, isLoading: examsLoading } = useQuery({
+    queryKey: [`/api/exams/by-subject/${subject?.id}`],
+    enabled: !!subject?.id,
+  });
+
+  const exam = exams?.find((e: any) => e.slug === examSlug);
+  const isLoading = subjectsLoading || examsLoading;
+
   useEffect(() => {
-    if (resolvedData) {
+    if (exam && subject) {
       // Redirect to the exam interface using the resolved exam ID
-      setLocation(`/exam/${resolvedData.examId}`);
-    } else if (error) {
+      setLocation(`/exam/${exam.id}`);
+    } else if (!subjectsLoading && !examsLoading && subjectSlug && examSlug && (!subject || !exam)) {
       // If slug resolution fails, redirect to homepage
       setLocation("/");
     }
-  }, [resolvedData, error, setLocation]);
+  }, [exam, subject, subjectsLoading, examsLoading, subjectSlug, examSlug, setLocation]);
 
   if (isLoading) {
     return (
@@ -41,19 +46,5 @@ export default function SlugExamInterface() {
     );
   }
 
-  // Show error state if slug resolution fails
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Exam Not Found</h1>
-        <p className="text-gray-600 mb-6">The exam you're looking for could not be found.</p>
-        <button
-          onClick={() => setLocation("/")}
-          className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-        >
-          Go Home
-        </button>
-      </div>
-    </div>
-  );
+  return null; // This component only handles redirects
 }
