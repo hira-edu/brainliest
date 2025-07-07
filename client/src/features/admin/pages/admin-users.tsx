@@ -636,23 +636,21 @@ export default function AdminUsers() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] table-fixed">
+          <div className="overflow-hidden">
+            <table className="w-full">
               <colgroup>
-                <col className="w-[25%]" />
-                <col className="w-[12%]" />
-                <col className="w-[12%]" />
-                <col className="w-[18%]" />
-                <col className="w-[18%]" />
+                <col className="w-[30%]" />
                 <col className="w-[15%]" />
+                <col className="w-[15%]" />
+                <col className="w-[20%]" />
+                <col className="w-[20%]" />
               </colgroup>
               <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">User</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Role</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Last Login</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Location</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Last Login & Location</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -698,20 +696,18 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="truncate">{formatDate(user.lastLoginAt)}</span>
-                        </div>
-                        {user.loginCount > 0 && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {user.loginCount} logins
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
                       <div className="space-y-2">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          <div className="flex items-center gap-1 mb-1">
+                            <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{formatDate(user.lastLoginAt)}</span>
+                          </div>
+                          {user.loginCount > 0 && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {user.loginCount} logins
+                            </div>
+                          )}
+                        </div>
                         <AutoLocationDisplay ipAddress={user.lastLoginIp} />
                         {user.registrationIp && user.registrationIp !== user.lastLoginIp && (
                           <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
