@@ -31,12 +31,12 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/subjects" component={AllSubjects} />
-      <Route path="/categories" component={CategoriesPage} />
+      <Route path="/categories" component={Categories} />
       <Route path="/categories/:categoryId">
-        {(params) => <CategoryDetailPage categoryId={params.categoryId} />}
+        {(params) => <CategoryDetail categoryId={params.categoryId} />}
       </Route>
       <Route path="/categories/:categoryId/:subCategoryId">
-        {(params) => <CategoryDetailPage categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
+        {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
       </Route>
       <Route path="/subject/:id" component={ExamSelection} />
       <Route path="/exam/:id" component={QuestionInterface} />

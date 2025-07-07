@@ -1,14 +1,12 @@
-/* Base styles */
+/* All @import statements must come first */
 @import './base/reset.css';
 @import './base/variables.css';
+@import './components/animations.css';
 
 /* Tailwind CSS */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Component-specific styles */
-@import './components/animations.css';
 
 /* Global application styles */
 body {

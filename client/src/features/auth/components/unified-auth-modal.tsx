@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "../AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../../shared/hooks/use-toast";
 import { Loader2, Eye, EyeOff, Mail, Lock, User, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import RecaptchaProvider from './recaptcha-provider';
