@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -117,8 +117,12 @@ export default function AllSubjects() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  const { data: subjects, isLoading } = useQuery<Subject[]>({
+  const { data: subjects, isLoading, refetch } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // Refetch every minute
   });
 
   const handleSelectSubject = (subjectId: number) => {
@@ -224,9 +228,21 @@ export default function AllSubjects() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            All Subjects
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-4xl font-bold text-gray-900">
+              All Subjects
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Explore our comprehensive collection of {subjects?.length || 0} subjects covering professional certifications, 
             academic courses, and test preparation materials.

@@ -1787,6 +1787,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
         toast({ title: "Exam created successfully!" });
         setIsDialogOpen(false);
         examForm.reset();
@@ -1799,6 +1800,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
         toast({ title: "Exam deleted successfully!" });
       },
     });
@@ -1819,6 +1821,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
         toast({ title: "Exam updated successfully!" });
         setIsEditDialogOpen(false);
         setEditingExam(null);
@@ -1837,6 +1840,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
         toast({ title: "Exam cloned successfully!" });
       },
     });
