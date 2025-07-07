@@ -647,10 +647,14 @@ function UnifiedAuthModalContent({
   );
 }
 
-export default function UnifiedAuthModal(props: UnifiedAuthModalProps) {
+// Named export for use in imports
+export function UnifiedAuthModal(props: UnifiedAuthModalProps) {
   return (
     <RecaptchaProvider>
       <UnifiedAuthModalContent {...props} />
     </RecaptchaProvider>
   );
 }
+
+// Default export for backward compatibility
+export default UnifiedAuthModal;

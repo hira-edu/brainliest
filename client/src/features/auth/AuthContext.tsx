@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize authentication state
+    // Initialize authentication state without automatic sign-in
     const initAuth = async () => {
       try {
         // Check for OAuth callback parameters first
@@ -56,13 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Initialize Google Auth service for popup fallback (if needed)
           await googleAuthService.initialize();
           
-          // Check for existing JWT authentication
-          const authenticatedUser = await authUtils.initializeAuth();
-          if (authenticatedUser) {
-            setUser(authenticatedUser);
-            setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
-            setIsSignedIn(true);
-          }
+          // DON'T automatically sign in - require explicit user action
+          // Only check for existing valid sessions but don't auto-authenticate
+          
+          // Users must explicitly click Sign In to authenticate
+          console.log('🔒 Authentication system ready - users must sign in explicitly');
         }
       } catch (error) {
         // Auth initialization errors are normal on fresh load - suppress for UX
