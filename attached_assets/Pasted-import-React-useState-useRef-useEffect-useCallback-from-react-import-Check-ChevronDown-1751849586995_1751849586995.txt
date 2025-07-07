@@ -114,11 +114,11 @@ export const SearchableSelect = React.forwardRef<
   }, [filteredOptions, open, highlightedIdx]);
 
   // Always refocus input after selection
-  const handleSelect = useCallback((selectedValue: string) => {
+  const handleSelect = (selectedValue: string) => {
     if (onValueChange) onValueChange(selectedValue);
     setOpen(false);
     setTimeout(() => inputRef.current?.focus(), 100);
-  }, [onValueChange]);
+  };
 
   const handleClear = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -152,7 +152,11 @@ export const SearchableSelect = React.forwardRef<
       <PopoverTrigger asChild>
         <div className="relative">
           <Input
-            ref={inputRef}
+            ref={(r) => {
+              inputRef.current = r;
+              if (typeof ref === "function") ref(r);
+              else if (ref) (ref as React.MutableRefObject<HTMLInputElement | null>).current = r;
+            }}
             autoFocus={autoFocus}
             id={id}
             name={name}
@@ -250,5 +254,3 @@ export const SearchableSelect = React.forwardRef<
 });
 
 SearchableSelect.displayName = "SearchableSelect";
-
-export default SearchableSelect;
