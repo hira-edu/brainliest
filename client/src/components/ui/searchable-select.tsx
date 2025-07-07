@@ -135,15 +135,10 @@ export const SearchableSelect = React.forwardRef<
         align="start"
         onOpenAutoFocus={(e) => {
           console.log("PopoverContent onOpenAutoFocus");
-          e.preventDefault();
+          // Don't prevent default - let focus work naturally
         }}
       >
-        <Command
-          onMouseDown={(e) => {
-            console.log("Command onMouseDown");
-            e.stopPropagation();
-          }}
-        >
+        <Command>
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -152,9 +147,19 @@ export const SearchableSelect = React.forwardRef<
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="border-0 p-2 focus:ring-0 focus:ring-offset-0"
+              onMouseDown={(e) => {
+                console.log("Search input onMouseDown");
+                // Don't prevent default to allow typing but stop propagation
+                e.stopPropagation();
+              }}
             />
           </div>
-          <CommandList>
+          <CommandList
+            onMouseDown={(e) => {
+              console.log("CommandList onMouseDown");
+              // Don't stop propagation here to allow item selection
+            }}
+          >
             {loading ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 Loading...
