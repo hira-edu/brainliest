@@ -11,6 +11,8 @@ import ProgressBar from "@/components/progress-bar";
 import QuestionCard from "@/components/question-card";
 import FeedbackCard from "@/components/feedback-card";
 import UnifiedAuthModal from "@/components/unified-auth-modal";
+import SEOHead from "@/components/seo-head";
+import DynamicFAQ from "@/components/dynamic-faq";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();
@@ -242,8 +244,28 @@ export default function QuestionInterface() {
     );
   }
 
+  const currentQuestionData = currentQuestion ? {
+    id: currentQuestion.id,
+    text: currentQuestion.text,
+    options: currentQuestion.options,
+    correctAnswer: currentQuestion.correctAnswer,
+    explanation: currentQuestion.explanation,
+    subject: exam?.title || '',
+    url: window.location.href
+  } : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* SEO Head for question pages */}
+      {currentQuestion && (
+        <SEOHead
+          title={`${currentQuestion.text.substring(0, 60)}... | ${exam?.title || 'Practice Exam'}`}
+          description={`Practice question from ${exam?.title || 'exam'}: ${currentQuestion.text.substring(0, 120)}...`}
+          type="question"
+          keywords={[exam?.title || '', 'practice questions', 'exam preparation', 'study guide']}
+        />
+      )}
+      
       <Header />
       
       <ProgressBar 
@@ -311,6 +333,20 @@ export default function QuestionInterface() {
             />
           )}
         </div>
+
+        {/* Dynamic FAQ Section */}
+        {showFeedback && currentQuestion && (
+          <div className="mt-8">
+            <DynamicFAQ
+              questionText={currentQuestion.text}
+              options={currentQuestion.options}
+              explanation={currentQuestion.explanation || undefined}
+              subject={exam?.title || undefined}
+              category="exam preparation"
+              className="bg-white rounded-lg shadow-sm p-6"
+            />
+          </div>
+        )}
       </div>
 
       {/* Authentication Modal */}

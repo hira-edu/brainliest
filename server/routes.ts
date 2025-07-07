@@ -6,6 +6,7 @@ import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
 import { authService } from "./auth-service";
 import { requireAdminAuth, logAdminAction } from "./middleware/auth";
+import { seoService } from "./seo-service";
 import { 
   insertCategorySchema,
   insertSubcategorySchema,
@@ -1706,6 +1707,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedCount: 0,
         deletedCount: 0,
         errors: []
+      });
+    }
+  });
+
+  // SEO API routes
+  app.post("/api/seo/generate", async (req, res) => {
+    try {
+      const { type, title, description, content, url, category, subject } = req.body;
+      
+      const seoData = await seoService.generatePageSEO({
+        type,
+        title,
+        description,
+        content,
+        url,
+        category,
+        subject
+      });
+      
+      res.json(seoData);
+    } catch (error) {
+      console.error('SEO generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate SEO data',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/seo/faqs", async (req, res) => {
+    try {
+      const { text, options, explanation, subject, category } = req.body;
+      
+      const faqs = await seoService.generateQuestionFAQs({
+        text,
+        options,
+        explanation,
+        subject,
+        category
+      });
+      
+      res.json(faqs);
+    } catch (error) {
+      console.error('FAQ generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate FAQs',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/seo/structured-data", async (req, res) => {
+    try {
+      const { question, faqs, type = 'question' } = req.body;
+      
+      let structuredData = [];
+      
+      if (type === 'question' && question) {
+        structuredData = seoService.generateQuestionStructuredData(question, faqs || []);
+      } else if (type === 'category') {
+        structuredData = seoService.generateCategoryStructuredData(req.body.category);
+      } else if (type === 'breadcrumbs') {
+        structuredData = [seoService.generateBreadcrumbStructuredData(req.body.breadcrumbs)];
+      }
+      
+      res.json(structuredData);
+    } catch (error) {
+      console.error('Structured data generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate structured data',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/seo/keywords", async (req, res) => {
+    try {
+      const { name, description, category } = req.body;
+      
+      const keywords = await seoService.generateSubjectKeywords({
+        name,
+        description,
+        category
+      });
+      
+      res.json(keywords);
+    } catch (error) {
+      console.error('Keyword generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate keywords',
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });

@@ -5,6 +5,7 @@ import { Subject } from "@shared/schema";
 import SubjectCard from "@/components/subject-card";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import SEOHead from "@/components/seo-head";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +135,18 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* SEO Head for homepage */}
+      <SEOHead
+        title="Brainliest - Comprehensive Practice Exams for Professional Certification"
+        description="Master your certification exams with our comprehensive practice tests. Featuring PMP, AWS, CompTIA, and 40+ subjects with expert-designed questions and detailed explanations."
+        type="homepage"
+        keywords={[
+          'certification exams', 'practice tests', 'PMP', 'AWS', 'CompTIA', 
+          'exam preparation', 'professional certification', 'study guide',
+          'test prep', 'online practice exams', 'certification training'
+        ]}
+      />
+      
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
