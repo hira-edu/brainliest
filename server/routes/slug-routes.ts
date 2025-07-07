@@ -28,25 +28,32 @@ router.get('/:subjectSlug/:examSlug', async (req, res, next) => {
   if (subjectSlug.includes('.') || examSlug.includes('.')) {
     return next();
   }
+  
   try {
-    const { subjectSlug, examSlug } = req.params;
+    // Debug logging
+    console.log('Slug route called with:', { subjectSlug, examSlug, fullPath });
     
     // Find subject by slug
     const subjects = await storage.getSubjects();
+    console.log('Available subject slugs:', subjects.map(s => s.slug));
     const subject = subjects.find(s => s.slug === subjectSlug);
     
     if (!subject) {
+      console.log('Subject not found for slug:', subjectSlug);
       return res.status(404).json({ error: 'Subject not found' });
     }
     
     // Find exam by slug
     const exams = await storage.getExamsBySubject(subject.id);
+    console.log('Available exam slugs for subject:', exams.map(e => e.slug));
     const exam = exams.find(e => e.slug === examSlug);
     
     if (!exam) {
+      console.log('Exam not found for slug:', examSlug);
       return res.status(404).json({ error: 'Exam not found' });
     }
     
+    console.log('Found exam:', exam.title);
     // Return exam and subject data
     res.json({
       exam,
