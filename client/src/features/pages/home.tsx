@@ -16,7 +16,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Search, Filter, TrendingUp, Users, Award, BookOpen } from "lucide-react";
+import { Search, Filter, TrendingUp, Users, Award, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
 import { 
   PMPIcon, 
   AWSIcon, 
@@ -92,6 +92,16 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [currentPage, setCurrentPage] = useState<Record<string, number>>({});
+
+  // Helper function to get current page for a category
+  const getCurrentPage = (categoryKey: string) => currentPage[categoryKey] || 1;
+  
+  // Helper function to set current page for a category
+  const setCurrentPageForCategory = (categoryKey: string, page: number) => {
+    setCurrentPage(prev => ({ ...prev, [categoryKey]: page }));
+  };
   
   const { data: subjects, isLoading } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
@@ -350,15 +360,142 @@ export default function Home() {
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {categorySubjects.map((subject) => (
-                      <SubjectCard 
-                        key={subject.id} 
-                        subject={subject} 
-                        onClick={() => handleSelectSubject(subject.id)}
-                      />
-                    ))}
-                  </div>
+                  {/* Category Pagination and Filter Controls */}
+                  {(() => {
+                    const currentPageNum = getCurrentPage(categoryKey);
+                    const totalPages = Math.ceil(categorySubjects.length / itemsPerPage);
+                    const startIndex = (currentPageNum - 1) * itemsPerPage;
+                    const endIndex = startIndex + itemsPerPage;
+                    const paginatedSubjects = categorySubjects.slice(startIndex, endIndex);
+                    
+                    return (
+                      <>
+                        {categorySubjects.length > 12 && (
+                          <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg">
+                            <div className="flex items-center space-x-4">
+                              <span className="text-sm text-gray-600">Show:</span>
+                              <Select 
+                                value={itemsPerPage.toString()} 
+                                onValueChange={(value) => {
+                                  setItemsPerPage(parseInt(value));
+                                  setCurrentPageForCategory(categoryKey, 1); // Reset to first page
+                                }}
+                              >
+                                <SelectTrigger className="w-20">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="10">10</SelectItem>
+                                  <SelectItem value="20">20</SelectItem>
+                                  <SelectItem value="30">30</SelectItem>
+                                  <SelectItem value="50">50</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <span className="text-sm text-gray-600">
+                                Showing {startIndex + 1}-{Math.min(endIndex, categorySubjects.length)} of {categorySubjects.length}
+                              </span>
+                            </div>
+                            
+                            {totalPages > 1 && (
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentPageForCategory(categoryKey, currentPageNum - 1)}
+                                  disabled={currentPageNum === 1}
+                                >
+                                  <ChevronLeft className="w-4 h-4" />
+                                  Previous
+                                </Button>
+                                
+                                <div className="flex items-center space-x-1">
+                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                    if (
+                                      page === 1 ||
+                                      page === totalPages ||
+                                      (page >= currentPageNum - 1 && page <= currentPageNum + 1)
+                                    ) {
+                                      return (
+                                        <Button
+                                          key={page}
+                                          variant={page === currentPageNum ? "default" : "outline"}
+                                          size="sm"
+                                          className="w-8 h-8 p-0"
+                                          onClick={() => setCurrentPageForCategory(categoryKey, page)}
+                                        >
+                                          {page}
+                                        </Button>
+                                      );
+                                    } else if (
+                                      page === currentPageNum - 2 ||
+                                      page === currentPageNum + 2
+                                    ) {
+                                      return (
+                                        <span key={page} className="px-2 text-gray-400">
+                                          ...
+                                        </span>
+                                      );
+                                    }
+                                    return null;
+                                  })}
+                                </div>
+                                
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentPageForCategory(categoryKey, currentPageNum + 1)}
+                                  disabled={currentPageNum === totalPages}
+                                >
+                                  Next
+                                  <ChevronRight className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                          {paginatedSubjects.map((subject) => (
+                            <SubjectCard 
+                              key={subject.id} 
+                              subject={subject} 
+                              onClick={() => handleSelectSubject(subject.id)}
+                            />
+                          ))}
+                        </div>
+                        
+                        {categorySubjects.length > 12 && totalPages > 1 && (
+                          <div className="flex justify-center mt-8">
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPageForCategory(categoryKey, currentPageNum - 1)}
+                                disabled={currentPageNum === 1}
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                                Previous
+                              </Button>
+                              
+                              <span className="text-sm text-gray-600 px-4">
+                                Page {currentPageNum} of {totalPages}
+                              </span>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPageForCategory(categoryKey, currentPageNum + 1)}
+                                disabled={currentPageNum === totalPages}
+                              >
+                                Next
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               );
             })}
