@@ -27,7 +27,10 @@ export interface SearchableSelectProps {
   allowCustomValue?: boolean;
 }
 
-export function SearchableSelect({
+export const SearchableSelect = React.forwardRef<
+  HTMLButtonElement,
+  SearchableSelectProps
+>(({
   options = [],
   value,
   onValueChange,
@@ -40,19 +43,18 @@ export function SearchableSelect({
   onSearch,
   clearable = false,
   allowCustomValue = false,
-}: SearchableSelectProps) {
+}, ref) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Find the selected option
+  const selectedOption = options.find((option) => option.value === value);
+
   // Filter options based on search query
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    option.value.toLowerCase().includes(searchQuery.toLowerCase())
+    option.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Get the selected option
-  const selectedOption = options.find((option) => option.value === value);
 
   // Handle search input change
   const handleSearchChange = (query: string) => {
@@ -73,19 +75,26 @@ export function SearchableSelect({
 
   // Handle clear selection
   const handleClear = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (onValueChange) {
       onValueChange("");
     }
-    setSearchQuery("");
   };
 
-  // Focus search input when popover opens
+  // Handle custom value creation
+  const handleCreateCustom = () => {
+    if (allowCustomValue && searchQuery && onValueChange) {
+      onValueChange(searchQuery);
+      setOpen(false);
+      setSearchQuery("");
+    }
+  };
+
+  // Auto-focus search input when popover opens
   useEffect(() => {
     if (open && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
+      inputRef.current.focus();
     }
   }, [open]);
 
@@ -93,6 +102,7 @@ export function SearchableSelect({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={ref}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -126,22 +136,21 @@ export function SearchableSelect({
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="border-0 p-2 focus:ring-0 focus:ring-offset-0"
             />
           </div>
           <CommandList>
             {loading ? (
-              <div className="p-6 text-center text-sm">
-                <div className="animate-spin mx-auto w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                <p className="mt-2">Loading...</p>
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                Loading...
               </div>
             ) : filteredOptions.length === 0 ? (
               <CommandEmpty>
-                {searchQuery && allowCustomValue ? (
+                {allowCustomValue && searchQuery ? (
                   <Button
                     variant="ghost"
                     className="w-full justify-start"
-                    onClick={() => handleSelect(searchQuery)}
+                    onClick={handleCreateCustom}
                   >
                     Create "{searchQuery}"
                   </Button>
