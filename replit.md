@@ -285,6 +285,8 @@ The application uses four main entities:
 - **Fixed auth logging**: Removed email parameter from auth_logs table insert to match actual database schema
 - **Password validation working**: Confirmed password requirements (uppercase, lowercase, numbers, special characters) are functioning
 - **Email verification flow**: Registration now properly creates users and sends verification emails
+- **Fixed registration logic**: Now only blocks verified email addresses, allowing re-registration with unverified emails
+- **Added method column**: Added missing method column to auth_logs table for complete authentication tracking
 
 ### July 07, 2025 - Fixed Question Interface Empty State to Match Card Design (COMPLETED)
 - **Fixed no questions display issue**: Applied same card layout structure when no questions are available

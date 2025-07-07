@@ -167,11 +167,17 @@ export class AuthService {
         return { success: false, message: passwordValidation.errors.join('. ') };
       }
 
-      // Check if user already exists
+      // Check if user already exists and is verified
       const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
-      if (existingUser.length > 0) {
-        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Email already exists');
-        return { success: false, message: 'Email address is already registered' };
+      if (existingUser.length > 0 && existingUser[0].emailVerified) {
+        await logAuthEvent(null, email, 'register_failed', 'email', false, ipAddress, userAgent, 'Email already exists and verified');
+        return { success: false, message: 'Email address is already registered and verified' };
+      }
+      
+      // If user exists but not verified, delete the old unverified account
+      if (existingUser.length > 0 && !existingUser[0].emailVerified) {
+        await db.delete(users).where(eq(users.email, email));
+        await logAuthEvent(existingUser[0].id, email, 'unverified_account_replaced', 'email', true, ipAddress, userAgent);
       }
 
       // Hash password
