@@ -407,13 +407,20 @@ export default function AllSubjects() {
                 {paginatedSubjects.map((subject) => {
                   const category = getCategoryForSubject(subject);
                   const categoryData = categoryConfig[category as keyof typeof categoryConfig];
-                  const IconComponent = categoryData?.icon || BookOpen;
+                  const categoryIcon = categoryData?.icon;
+                  
+                  // Check if the icon is an emoji or a React component
+                  const isEmojiIcon = typeof categoryIcon === 'string' && /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(categoryIcon);
                   
                   return (
                     <TableRow key={subject.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-3">
-                          <IconComponent className="w-5 h-5 text-primary" />
+                          {isEmojiIcon ? (
+                            <span className="text-lg">{categoryIcon}</span>
+                          ) : (
+                            <BookOpen className="w-5 h-5 text-primary" />
+                          )}
                           <span>{subject.name}</span>
                         </div>
                       </TableCell>
