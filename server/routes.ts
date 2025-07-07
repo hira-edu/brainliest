@@ -5,7 +5,8 @@ import { analyticsService } from "./analytics";
 import { getQuestionHelp, explainAnswer } from "./ai";
 import { emailService } from "./email-service";
 import { authService } from "./auth-service";
-import { requireAdminAuth, logAdminAction } from "./middleware/auth";
+import { adminAuthService } from "./admin-auth-service";
+import { requireNewAdminAuth, logNewAdminAction, extractClientInfo } from "./middleware/admin-auth";
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
 import { seoService } from "./seo-service";
 import { recaptchaService } from "./recaptcha-service";
@@ -177,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subjects", requireAdminAuth, logAdminAction, async (req, res) => {
+  app.post("/api/subjects", requireNewAdminAuth, logNewAdminAction('CREATE_SUBJECT'), async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
       if (!validation.success) {
@@ -216,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/exams", requireAdminAuth, logAdminAction, async (req, res) => {
+  app.post("/api/exams", requireNewAdminAuth, logNewAdminAction('CREATE_EXAM'), async (req, res) => {
     try {
       const validation = insertExamSchema.safeParse(req.body);
       if (!validation.success) {
@@ -269,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", requireAdminAuth, logAdminAction, async (req, res) => {
+  app.post("/api/questions", requireNewAdminAuth, logNewAdminAction('CREATE_QUESTION'), async (req, res) => {
     try {
       const validation = insertQuestionSchema.safeParse(req.body);
       if (!validation.success) {
@@ -282,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", requireAdminAuth, logAdminAction, async (req, res) => {
+  app.put("/api/questions/:id", requireNewAdminAuth, logNewAdminAction('UPDATE_QUESTION'), async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const validation = insertQuestionSchema.partial().safeParse(req.body);
@@ -299,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/all", requireAdminAuth, logAdminAction, async (req, res) => {
+  app.delete("/api/questions/all", requireNewAdminAuth, logNewAdminAction('DELETE_ALL_QUESTIONS'), async (req, res) => {
     try {
       const questions = await storage.getQuestions();
       for (const question of questions) {
@@ -311,7 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", requireAdminAuth, logAdminAction, async (req, res) => {
+  app.delete("/api/questions/:id", requireNewAdminAuth, logNewAdminAction('DELETE_QUESTION'), async (req, res) => {
     try {
       const id = parseId(req.params.id, 'question ID');
       const deleted = await storage.deleteQuestion(id);
@@ -355,25 +356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/all", requireAdminAuth, logAdminAction, async (req, res) => {
-    try {
-      const questions = await storage.getQuestions();
-      let deletedCount = 0;
-      
-      for (const question of questions) {
-        const success = await storage.deleteQuestion(question.id);
-        if (success) deletedCount++;
-      }
 
-      res.json({ 
-        message: `Successfully deleted ${deletedCount} questions`,
-        deleted: deletedCount,
-        total: questions.length
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete all questions" });
-    }
-  });
 
   // Analytics routes
   app.get("/api/analytics/overview/:userName", async (req, res) => {
@@ -1408,6 +1391,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== END ENHANCED AUTHENTICATION ====================
 
+  // ==================== ADMIN AUTHENTICATION ROUTES ====================
+  
+  // Admin login - completely separate from regular user authentication
+  app.post("/api/admin/auth/login", extractClientInfo, async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email and password are required for admin access" 
+        });
+      }
+      
+      // Validate email format
+      if (!validateEmail(email)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid email format" 
+        });
+      }
+      
+      const result = await adminAuthService.login(
+        email, 
+        password, 
+        req.clientInfo?.ipAddress, 
+        req.clientInfo?.userAgent
+      );
+      
+      // Set admin token as secure cookie if login successful
+      if (result.success && result.token) {
+        res.cookie('admin_token', result.token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 8 * 60 * 60 * 1000 // 8 hours
+        });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Admin authentication system error" 
+      });
+    }
+  });
+  
+  // Admin token verification
+  app.get("/api/admin/auth/verify", async (req, res) => {
+    try {
+      // Extract token from Authorization header or cookies
+      let token: string | undefined;
+      
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+      
+      if (!token && req.cookies) {
+        token = req.cookies.admin_token;
+      }
+      
+      if (!token) {
+        return res.status(401).json({
+          valid: false,
+          message: "No admin token provided"
+        });
+      }
+      
+      const verification = await adminAuthService.verifyToken(token);
+      
+      if (verification.valid) {
+        res.json({
+          valid: true,
+          user: verification.user,
+          message: "Admin token valid"
+        });
+      } else {
+        res.status(401).json({
+          valid: false,
+          expired: verification.expired,
+          message: verification.expired ? "Admin session expired" : "Invalid admin token"
+        });
+      }
+    } catch (error) {
+      console.error("Admin token verification error:", error);
+      res.status(500).json({ 
+        valid: false, 
+        message: "Token verification error" 
+      });
+    }
+  });
+  
+  // Admin logout
+  app.post("/api/admin/auth/logout", extractClientInfo, async (req, res) => {
+    try {
+      // Extract token for logging purposes
+      let token: string | undefined;
+      
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+      
+      if (!token && req.cookies) {
+        token = req.cookies.admin_token;
+      }
+      
+      if (token) {
+        await adminAuthService.logout(
+          token, 
+          req.clientInfo?.ipAddress, 
+          req.clientInfo?.userAgent
+        );
+      }
+      
+      // Clear admin token cookie
+      res.clearCookie('admin_token');
+      
+      res.json({
+        success: true,
+        message: "Admin logout successful"
+      });
+    } catch (error) {
+      console.error("Admin logout error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Logout error" 
+      });
+    }
+  });
+  
+  // Get authorized admin emails (for reference only)
+  app.get("/api/admin/auth/authorized-emails", requireNewAdminAuth, async (req, res) => {
+    try {
+      const emails = adminAuthService.getAuthorizedEmails();
+      res.json({
+        success: true,
+        authorizedEmails: emails,
+        message: "Authorized admin emails retrieved"
+      });
+    } catch (error) {
+      console.error("Get authorized emails error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to retrieve authorized emails" 
+      });
+    }
+  });
+  
+  // ==================== END ADMIN AUTHENTICATION ====================
+
   // Email service test endpoint
   app.get("/api/email-test", async (req, res) => {
     try {
@@ -1430,7 +1568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Audit Log endpoints
-  app.get("/api/audit-logs", requireAdminAuth, async (req, res) => {
+  app.get("/api/audit-logs", requireNewAdminAuth, async (req, res) => {
     try {
       const auditLogs = await storage.getAuditLogs();
       res.json(auditLogs);
@@ -1439,7 +1577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/audit-logs/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/audit-logs/:id", requireNewAdminAuth, async (req, res) => {
     try {
       const id = parseId(req.params.id, 'audit log ID');
       const auditLog = await storage.getAuditLog(id);
@@ -1522,7 +1660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unified CSV endpoints
-  app.get("/api/csv/unified-template", requireAdminAuth, async (req, res) => {
+  app.get("/api/csv/unified-template", requireNewAdminAuth, async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -1541,7 +1679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/csv/unified-export", requireAdminAuth, async (req, res) => {
+  app.get("/api/csv/unified-export", requireNewAdminAuth, async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -1560,7 +1698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/csv/unified-import", requireAdminAuth, async (req, res) => {
+  app.post("/api/csv/unified-import", requireNewAdminAuth, async (req, res) => {
     try {
       const { UnifiedCSVService } = await import('./unified-csv-service.js');
       const csvService = new UnifiedCSVService(storage);
@@ -1586,7 +1724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSV Import/Export endpoints
-  app.get("/api/csv/template/:entityType", requireAdminAuth, async (req, res) => {
+  app.get("/api/csv/template/:entityType", requireNewAdminAuth, async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
@@ -1606,7 +1744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/csv/export/:entityType", requireAdminAuth, async (req, res) => {
+  app.get("/api/csv/export/:entityType", requireNewAdminAuth, async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);
@@ -1632,7 +1770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/csv/import/:entityType", requireAdminAuth, async (req, res) => {
+  app.post("/api/csv/import/:entityType", requireNewAdminAuth, async (req, res) => {
     try {
       const { CSVService } = await import('./csv-service');
       const csvService = new CSVService(storage);

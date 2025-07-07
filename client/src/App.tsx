@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./features/auth/AuthContext";
+import { AdminProvider } from "./features/admin/AdminContext";
 import { QuestionLimitProvider } from "./features/shared/QuestionLimitContext";
 import Home from "./features/pages/home";
 import AllSubjects from "./features/content/pages/all-subjects";
@@ -66,13 +67,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <IconProvider>
         <AuthProvider>
-          <QuestionLimitProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-              <CookieConsentBanner />
-            </TooltipProvider>
-          </QuestionLimitProvider>
+          <AdminProvider>
+            <QuestionLimitProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+                <CookieConsentBanner />
+              </TooltipProvider>
+            </QuestionLimitProvider>
+          </AdminProvider>
         </AuthProvider>
       </IconProvider>
     </QueryClientProvider>
