@@ -164,13 +164,13 @@ export class AdminAuthService {
       }
 
       // Check if account is locked
-      if (user.accountLockedUntil && new Date() < user.accountLockedUntil) {
+      if (user.lockedUntil && new Date() < user.lockedUntil) {
         await logAdminAuthEvent(email, 'LOGIN_ATTEMPT', false, ipAddress, userAgent, 'Account locked');
         return {
           success: false,
           accountLocked: true,
-          lockoutExpires: user.accountLockedUntil,
-          message: `Account is locked until ${user.accountLockedUntil.toLocaleString()}`
+          lockoutExpires: user.lockedUntil,
+          message: `Account is locked until ${user.lockedUntil.toLocaleString()}`
         };
       }
 
@@ -184,7 +184,7 @@ export class AdminAuthService {
           .update(users)
           .set({
             failedLoginAttempts: newFailedAttempts,
-            accountLockedUntil: shouldLock ? new Date(Date.now() + ADMIN_LOCKOUT_TIME) : null,
+            lockedUntil: shouldLock ? new Date(Date.now() + ADMIN_LOCKOUT_TIME) : null,
             lastLoginAt: new Date()
           })
           .where(eq(users.id, user.id));
@@ -215,14 +215,15 @@ export class AdminAuthService {
         };
       }
 
-      // Successful login - reset failed attempts
+      // Successful login - reset failed attempts and update login tracking
       await db
         .update(users)
         .set({
           failedLoginAttempts: 0,
-          accountLockedUntil: null,
+          lockedUntil: null,
           lastLoginAt: new Date(),
-          lastLoginIp: ipAddress || null
+          lastLoginIp: ipAddress || null,
+          loginCount: (user.loginCount || 0) + 1
         })
         .where(eq(users.id, user.id));
 
