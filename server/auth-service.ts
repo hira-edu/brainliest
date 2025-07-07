@@ -129,7 +129,6 @@ async function logAuthEvent(
   try {
     await db.insert(authLogs).values({
       userId,
-      email,
       action,
       method,
       success,
@@ -182,9 +181,13 @@ export class AuthService {
       const emailVerificationToken = generateSecureToken();
       const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+      // Generate username from email if not provided
+      const generatedUsername = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
+      
       // Create user
       const [newUser] = await db.insert(users).values({
         email,
+        username: generatedUsername,
         firstName: firstName || null,
         lastName: lastName || null,
         passwordHash,

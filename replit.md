@@ -279,6 +279,13 @@ The application uses four main entities:
 - **Removed duplicate bottom pagination**: Eliminated redundant pagination controls at bottom of each category, keeping only the controls after category headers
 - **Set default pagination to 10 cards**: Changed default cards per page from 12 to 10 for better user experience and consistent display
 
+### July 07, 2025 - Fixed Email Registration Authentication Issues (COMPLETED)
+- **Fixed database schema constraint**: Removed NOT NULL constraint from users.username column to allow email-only registration
+- **Auto-generated usernames**: Added automatic username generation from email address for user registration
+- **Fixed auth logging**: Removed email parameter from auth_logs table insert to match actual database schema
+- **Password validation working**: Confirmed password requirements (uppercase, lowercase, numbers, special characters) are functioning
+- **Email verification flow**: Registration now properly creates users and sends verification emails
+
 ### July 07, 2025 - Fixed Question Interface Empty State to Match Card Design (COMPLETED)
 - **Fixed no questions display issue**: Applied same card layout structure when no questions are available
 - **Maintained consistent UI**: Added back button, exam name, progress bar, and timer to empty state
