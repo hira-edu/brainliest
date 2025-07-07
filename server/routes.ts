@@ -22,6 +22,88 @@ import {
 // Store verification codes temporarily (in production, use Redis)
 const verificationCodes = new Map<string, { code: string; expires: number }>();
 
+// Google OAuth configuration
+const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
+interface GoogleTokenResponse {
+  access_token: string;
+  id_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+  refresh_token?: string;
+}
+
+interface GoogleUserInfo {
+  id: string;
+  email: string;
+  verified_email: boolean;
+  name: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+  locale: string;
+}
+
+// Exchange authorization code for user information
+async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
+  try {
+    console.log('🔄 Exchanging OAuth code for tokens...');
+    
+    // Determine the correct redirect URI based on environment
+    const redirectUri = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:5000/api/auth/oauth/google/callback'
+      : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/oauth/google/callback`;
+    
+    console.log('🔗 Using redirect URI:', redirectUri);
+    
+    // Step 1: Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID!,
+        client_secret: GOOGLE_CLIENT_SECRET || '',
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('❌ Token exchange failed:', errorText);
+      throw new Error(`Token exchange failed: ${tokenResponse.status} - ${errorText}`);
+    }
+
+    const tokens: GoogleTokenResponse = await tokenResponse.json();
+    console.log('✅ Tokens received successfully');
+
+    // Step 2: Get user info using access token
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${tokens.access_token}`,
+      },
+    });
+
+    if (!userResponse.ok) {
+      console.error('❌ User info fetch failed:', userResponse.status);
+      throw new Error(`User info fetch failed: ${userResponse.status}`);
+    }
+
+    const userInfo: GoogleUserInfo = await userResponse.json();
+    console.log('✅ User info retrieved:', { email: userInfo.email, name: userInfo.name });
+
+    return userInfo;
+  } catch (error) {
+    console.error('❌ OAuth code exchange error:', error);
+    throw new Error('Failed to authenticate with Google');
+  }
+}
+
 // Generate 6-digit verification code
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -1079,7 +1161,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // OAuth Google login
+  // OAuth Google callback - handles the authorization code from Google
+  app.get("/api/auth/oauth/google/callback", async (req, res) => {
+    try {
+      const { code, state, error } = req.query;
+      
+      console.log('🔍 Google OAuth callback received:', { code: code ? 'present' : 'missing', state, error });
+      
+      if (error) {
+        console.error('❌ Google OAuth error:', error);
+        return res.send(`
+          <script>
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_ERROR',
+              error: '${error}'
+            }, window.location.origin);
+            window.close();
+          </script>
+        `);
+      }
+      
+      if (!code) {
+        console.error('❌ No authorization code received');
+        return res.send(`
+          <script>
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_ERROR',
+              error: 'No authorization code received'
+            }, window.location.origin);
+            window.close();
+          </script>
+        `);
+      }
+      
+      // Exchange authorization code for tokens
+      const googleUser = await exchangeCodeForUserInfo(code as string);
+      
+      // Process OAuth login through existing auth service
+      const result = await authService.oauthLogin(
+        'google',
+        googleUser.id,
+        googleUser.email,
+        googleUser.given_name,
+        googleUser.family_name,
+        googleUser.picture,
+        req.ip,
+        req.get('User-Agent')
+      );
+      
+      if (result.success) {
+        console.log('✅ Google OAuth login successful');
+        res.send(`
+          <script>
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_SUCCESS',
+              user: ${JSON.stringify(googleUser)},
+              state: '${state}',
+              authResult: ${JSON.stringify(result)}
+            }, window.location.origin);
+            window.close();
+          </script>
+        `);
+      } else {
+        console.error('❌ OAuth login failed:', result.message);
+        res.send(`
+          <script>
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_ERROR',
+              error: '${result.message || 'Login failed'}'
+            }, window.location.origin);
+            window.close();
+          </script>
+        `);
+      }
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      res.send(`
+        <script>
+          window.opener.postMessage({
+            type: 'GOOGLE_AUTH_ERROR',
+            error: 'Authentication failed. Please try again.'
+          }, window.location.origin);
+          window.close();
+        </script>
+      `);
+    }
+  });
+
+  // OAuth Google login (legacy endpoint for direct user data)
   app.post("/api/auth/oauth/google", async (req, res) => {
     try {
       const { email, googleId, firstName, lastName, profileImage } = req.body;

@@ -67,8 +67,8 @@ class GoogleAuthService {
       throw new Error('Google Client ID not configured. Please set VITE_GOOGLE_CLIENT_ID environment variable.');
     }
 
-    // Use direct OAuth 2.0 popup without One Tap to avoid domain issues
-    return this.openDirectOAuthPopup();
+    // Use proper OAuth 2.0 Authorization Code flow with server callback
+    return this.openOAuthPopupWithCallback();
   }
 
   private async signInWithPopup(): Promise<GoogleUser> {
@@ -203,77 +203,92 @@ class GoogleAuthService {
     });
   }
 
-  private async openDirectOAuthPopup(): Promise<GoogleUser> {
+  private async openOAuthPopupWithCallback(): Promise<GoogleUser> {
     return new Promise((resolve, reject) => {
-      // Create a simple OAuth URL that works without pre-configured domains
-      const state = 'auth_' + Math.random().toString(36).substring(2);
-      const nonce = Date.now().toString();
+      // Generate secure state parameter
+      const state = 'oauth_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       
+      // Get current domain for proper redirect URI
+      const currentOrigin = window.location.origin;
+      const redirectUri = `${currentOrigin}/api/auth/oauth/google/callback`;
+      
+      // Create proper OAuth 2.0 Authorization Code flow URL
       const authUrl = 'https://accounts.google.com/oauth/authorize?' + 
         new URLSearchParams({
           client_id: this.clientId!,
-          response_type: 'id_token',
+          response_type: 'code',
           scope: 'openid email profile',
-          redirect_uri: 'postmessage',
+          redirect_uri: redirectUri,
           state: state,
-          nonce: nonce,
+          access_type: 'offline',
+          prompt: 'select_account'
         }).toString();
 
-      // Open popup
+      console.log('🔗 Opening Google OAuth with:', {
+        clientId: this.clientId?.substring(0, 20) + '...',
+        redirectUri,
+        authUrl: authUrl.substring(0, 100) + '...'
+      });
+
+      // Open popup window
       const popup = window.open(
         authUrl,
-        'google_auth',
-        'width=500,height=600,resizable=yes,scrollbars=yes'
+        'google_oauth',
+        'width=500,height=600,resizable=yes,scrollbars=yes,status=yes,location=yes'
       );
 
       if (!popup) {
-        reject(new Error('Popup blocked. Please allow popups for this site.'));
+        reject(new Error('Popup blocked. Please allow popups for this site and try again.'));
         return;
       }
 
-      // Monitor popup
-      const checkInterval = setInterval(() => {
-        try {
-          if (popup.closed) {
-            clearInterval(checkInterval);
-            reject(new Error('Authentication cancelled'));
-            return;
-          }
+      // Listen for callback completion via postMessage
+      const messageHandler = (event: MessageEvent) => {
+        console.log('📩 Received postMessage:', event.origin, event.data);
+        
+        // Verify origin for security
+        if (event.origin !== currentOrigin) {
+          console.warn('⚠️ Ignoring message from unauthorized origin:', event.origin);
+          return;
+        }
+        
+        if (event.data.type === 'GOOGLE_AUTH_SUCCESS' && event.data.state === state) {
+          clearInterval(popupChecker);
+          window.removeEventListener('message', messageHandler);
+          popup.close();
+          
+          console.log('✅ Google authentication successful:', event.data.user);
+          resolve(event.data.user);
+        } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+          clearInterval(popupChecker);
+          window.removeEventListener('message', messageHandler);
+          popup.close();
+          
+          console.error('❌ Google authentication error:', event.data);
+          reject(new Error(event.data.error || 'Google authentication failed'));
+        }
+      };
 
-          // Try to access popup URL (limited by CORS but may work)
-          try {
-            const url = popup.location.href;
-            if (url.includes('id_token=')) {
-              clearInterval(checkInterval);
-              popup.close();
-              
-              // Extract and parse the ID token
-              const fragment = url.split('#')[1];
-              const params = new URLSearchParams(fragment);
-              const idToken = params.get('id_token');
-              
-              if (idToken) {
-                const userInfo = this.parseJWT(idToken);
-                resolve(userInfo);
-                return;
-              }
-            }
-          } catch (e) {
-            // Expected CORS error - continue monitoring
-          }
-        } catch (e) {
-          // Continue monitoring
+      window.addEventListener('message', messageHandler);
+
+      // Check if popup was closed manually
+      const popupChecker = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(popupChecker);
+          window.removeEventListener('message', messageHandler);
+          reject(new Error('Authentication cancelled by user'));
         }
       }, 1000);
 
-      // Set timeout
+      // Set reasonable timeout
       setTimeout(() => {
-        clearInterval(checkInterval);
+        clearInterval(popupChecker);
+        window.removeEventListener('message', messageHandler);
         if (!popup.closed) {
           popup.close();
         }
         reject(new Error('Authentication timeout. Please try again.'));
-      }, 120000);
+      }, 300000); // 5 minutes timeout
     });
   }
 

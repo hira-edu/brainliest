@@ -116,26 +116,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const googleUser = await googleAuthService.signIn();
+      console.log('🚀 Starting Google sign-in process...');
       
-      // Send Google user data to backend for OAuth processing
-      const response = await authAPI.googleOAuth({
-        email: googleUser.email,
-        googleId: googleUser.id,
-        firstName: googleUser.given_name,
-        lastName: googleUser.family_name,
-        profileImage: googleUser.picture
-      });
-
-      if (response.success && response.user) {
-        const authenticatedUser = authUtils.handleAuthSuccess(response);
-        if (authenticatedUser) {
-          setUser(authenticatedUser);
-          setUserName(authenticatedUser.firstName || authenticatedUser.username || authenticatedUser.email);
-          setIsSignedIn(true);
-        }
+      // The new OAuth flow handles authentication entirely through the callback
+      // and returns the authentication result via postMessage
+      const authResult = await googleAuthService.signIn();
+      
+      console.log('✅ Google sign-in successful:', authResult);
+      
+      // The authentication is already processed by the server callback
+      // We just need to handle the final user state update
+      if (authResult && authResult.email) {
+        // Create a simplified user object from Google user data
+        const user = {
+          id: 0, // Will be set by backend
+          email: authResult.email,
+          username: authResult.email,
+          firstName: authResult.given_name || authResult.name?.split(' ')[0],
+          lastName: authResult.family_name || authResult.name?.split(' ')[1],
+          profileImage: authResult.picture,
+          role: 'user',
+          emailVerified: true,
+          oauthProvider: 'google'
+        };
+        
+        setUser(user);
+        setUserName(user.firstName || user.username || user.email);
+        setIsSignedIn(true);
       } else {
-        throw new Error(response.message || "Google sign-in failed");
+        throw new Error("Invalid authentication response");
       }
     } catch (error) {
       console.error('Google sign-in failed:', error);
