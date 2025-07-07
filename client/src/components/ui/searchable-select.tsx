@@ -130,8 +130,20 @@ export const SearchableSelect = React.forwardRef<
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-50 bg-popover text-popover-foreground shadow-md border" align="start">
-        <Command>
+      <PopoverContent 
+        className="w-full p-0" 
+        align="start"
+        onOpenAutoFocus={(e) => {
+          console.log("PopoverContent onOpenAutoFocus");
+          e.preventDefault();
+        }}
+      >
+        <Command
+          onMouseDown={(e) => {
+            console.log("Command onMouseDown");
+            e.stopPropagation();
+          }}
+        >
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -167,13 +179,22 @@ export const SearchableSelect = React.forwardRef<
                   <CommandItem
                     key={option.value}
                     value={option.value}
-                    onSelect={(selectedValue) => handleSelect(selectedValue)}
+                    onSelect={(selectedValue) => {
+                      console.log("CommandItem onSelect triggered:", selectedValue);
+                      handleSelect(selectedValue);
+                    }}
+                    onClick={(e) => {
+                      console.log("CommandItem onClick triggered:", option.value);
+                      e.stopPropagation();
+                      handleSelect(option.value);
+                    }}
                     onMouseDown={(e) => {
+                      console.log("CommandItem onMouseDown triggered:", option.value);
                       e.preventDefault();
                       handleSelect(option.value);
                     }}
                     disabled={option.disabled}
-                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(
