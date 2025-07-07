@@ -2187,6 +2187,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // JSON Import/Export endpoints
+  app.get("/api/json/template", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { JSONService } = await import('./json-service');
+      const jsonService = new JSONService(storage);
+      
+      const templateData = jsonService.generateTemplate();
+      const jsonContent = jsonService.formatJSONForDownload(templateData, { prettyFormat: true });
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="brainliest_template.json"');
+      res.send(jsonContent);
+    } catch (error) {
+      console.error('JSON template generation error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Template generation failed' 
+      });
+    }
+  });
+
+  app.get("/api/json/export/:subjectId", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { JSONService } = await import('./json-service');
+      const jsonService = new JSONService(storage);
+      
+      const subjectId = parseInt(req.params.subjectId);
+      if (isNaN(subjectId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid subject ID' 
+        });
+      }
+      
+      const exportData = await jsonService.exportSubjectToJSON(subjectId, { 
+        includeMetadata: true, 
+        prettyFormat: true 
+      });
+      
+      const jsonContent = jsonService.formatJSONForDownload(exportData, { prettyFormat: true });
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="subject_${subjectId}_export.json"`);
+      res.send(jsonContent);
+    } catch (error) {
+      console.error('JSON export error:', error);
+      res.status(400).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Export failed' 
+      });
+    }
+  });
+
+  app.post("/api/json/import", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { JSONService } = await import('./json-service');
+      const jsonService = new JSONService(storage);
+      
+      const jsonData = req.body;
+      
+      if (!jsonData) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'JSON data is required' 
+        });
+      }
+
+      const result = await jsonService.processJSONImport(jsonData);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error('JSON import error:', error);
+      res.status(500).json({ 
+        success: false, 
+        subjectId: undefined,
+        examIds: [],
+        questionIds: [],
+        createdCounts: { subjects: 0, exams: 0, questions: 0 },
+        errors: [{
+          path: 'import',
+          field: 'general',
+          value: null,
+          message: error instanceof Error ? error.message : 'Import failed'
+        }],
+        message: 'Import process failed'
+      });
+    }
+  });
+
   // Freemium API routes
   app.get("/api/freemium/status", checkFreemiumStatus(), async (req, res) => {
     try {

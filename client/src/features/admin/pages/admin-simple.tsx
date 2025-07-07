@@ -82,7 +82,8 @@ import {
   Filter,
   Eye,
   Settings,
-  LogOut
+  LogOut,
+  FileJson
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -190,6 +191,7 @@ export default function AdminSimple() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const csvFileInputRef = useRef<HTMLInputElement>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importStats, setImportStats] = useState<{created: number, total: number} | null>(null);
 
@@ -234,6 +236,49 @@ export default function AdminSimple() {
     };
     reader.readAsText(file);
   };
+
+  // Handle JSON import function
+  const handleJsonImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const jsonContent = event.target?.result as string;
+      try {
+        const token = localStorage.getItem('brainliest_access_token');
+        const response = await fetch('/api/json/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ jsonData: JSON.parse(jsonContent) })
+        });
+        const result = await response.json();
+        if (result.success) {
+          setImportStats({ created: result.createdCounts.subjects + result.createdCounts.exams + result.createdCounts.questions, total: result.createdCounts.subjects + result.createdCounts.exams + result.createdCounts.questions });
+          toast({ 
+            title: "JSON Import successful", 
+            description: `Data imported: ${result.createdCounts.subjects} subjects, ${result.createdCounts.exams} exams, ${result.createdCounts.questions} questions` 
+          });
+          // Invalidate all related queries
+          queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        } else {
+          toast({ title: "JSON Import failed", description: result.message, variant: "destructive" });
+        }
+      } catch (error) {
+        toast({ title: "JSON Import failed", description: "Invalid JSON format or server error", variant: "destructive" });
+      } finally {
+        setIsImporting(false);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedExam, setSelectedExam] = useState<string>("all");
@@ -3112,6 +3157,126 @@ export default function AdminSimple() {
                         </div>
                       </div>
                     </div>
+
+                  {/* JSON Operations */}
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold mb-6 text-gray-800">JSON Import/Export Operations</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Card className="p-6 border-2 border-dashed border-green-200 hover:border-green-400 transition-colors">
+                        <h4 className="font-medium mb-3 flex items-center text-green-900">
+                          <Download className="h-5 w-5 mr-2" />
+                          Download JSON Template
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">Get structured JSON template for hierarchical data import with all fields and validation.</p>
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const token = localStorage.getItem('brainliest_access_token');
+                              const response = await fetch('/api/json/template', {
+                                method: 'GET',
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              if (response.ok) {
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'brainliest_template.json';
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                                toast({ title: "JSON template downloaded successfully!" });
+                              } else {
+                                toast({ title: "Failed to download JSON template", variant: "destructive" });
+                              }
+                            } catch (error) {
+                              toast({ title: "Error downloading JSON template", variant: "destructive" });
+                            }
+                          }}
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download JSON Template
+                        </Button>
+                      </Card>
+
+                      <Card className="p-6 border-2 border-dashed border-orange-200 hover:border-orange-400 transition-colors">
+                        <h4 className="font-medium mb-3 flex items-center text-orange-900">
+                          <Upload className="h-5 w-5 mr-2" />
+                          Export Data to JSON
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">Export existing data as structured JSON format for backup or migration.</p>
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const token = localStorage.getItem('brainliest_access_token');
+                              const response = await fetch('/api/json/export', {
+                                method: 'GET',
+                                headers: {
+                                  'Authorization': `Bearer ${token}`
+                                }
+                              });
+                              if (response.ok) {
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `brainliest_export_${new Date().toISOString().split('T')[0]}.json`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                                toast({ title: "Data exported to JSON successfully!" });
+                              } else {
+                                toast({ title: "Failed to export data", variant: "destructive" });
+                              }
+                            } catch (error) {
+                              toast({ title: "Error exporting data", variant: "destructive" });
+                            }
+                          }}
+                          size="sm"
+                          className="w-full bg-orange-600 hover:bg-orange-700"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Export to JSON
+                        </Button>
+                      </Card>
+
+                      <Card className="p-6 border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors">
+                        <h4 className="font-medium mb-3 flex items-center text-indigo-900">
+                          <FileJson className="h-5 w-5 mr-2" />
+                          Import JSON Data
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">Upload JSON file to import structured data with automatic relationship handling.</p>
+                        <Button
+                          onClick={() => jsonFileInputRef.current?.click()}
+                          size="sm"
+                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                          disabled={isImporting}
+                        >
+                          {isImporting ? (
+                            "Importing..."
+                          ) : (
+                            <>
+                              <FileJson className="h-4 w-4 mr-2" />
+                              Import JSON
+                            </>
+                          )}
+                        </Button>
+                        <input
+                          ref={jsonFileInputRef}
+                          type="file"
+                          accept=".json"
+                          onChange={handleJsonImport}
+                          className="hidden"
+                        />
+                      </Card>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
           </TabsContent>
