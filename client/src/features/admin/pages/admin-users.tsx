@@ -637,25 +637,33 @@ export default function AdminUsers() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1000px] table-fixed">
+              <colgroup>
+                <col className="w-[25%]" />
+                <col className="w-[12%]" />
+                <col className="w-[12%]" />
+                <col className="w-[18%]" />
+                <col className="w-[18%]" />
+                <col className="w-[15%]" />
+              </colgroup>
               <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">User</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Role</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Status</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Last Login</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Location</th>
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900 dark:text-white text-sm uppercase tracking-wider">Actions</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">User</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Role</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Last Login</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Location</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {users.map((user: User) => (
                   <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors duration-150">
-                    <td className="py-4 px-6">
+                    <td className="py-3 px-4">
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                            <UserIcon className="h-5 w-5 text-white" />
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                            <UserIcon className="h-4 w-4 text-white" />
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -671,29 +679,29 @@ export default function AdminUsers() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3 px-4">
                       <Badge className={getRoleBadgeColor(user.role)}>
-                        <Shield className="h-3 w-3 mr-1" />
+                        <Shield className="h-3 w-3 mr-1 flex-shrink-0" />
                         {user.role || 'user'}
                       </Badge>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3 px-4">
                       <div className="space-y-1">
                         <Badge className={getStatusBadgeColor(user)}>
                           {getStatusText(user)}
                         </Badge>
                         {user.banReason && (
-                          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+                          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded truncate">
                             {user.banReason}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3 px-4">
                       <div className="text-sm text-gray-900 dark:text-white">
                         <div className="flex items-center gap-1 mb-1">
-                          <Calendar className="h-3 w-3 text-gray-400" />
-                          <span>{formatDate(user.lastLoginAt)}</span>
+                          <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{formatDate(user.lastLoginAt)}</span>
                         </div>
                         {user.loginCount > 0 && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -702,7 +710,7 @@ export default function AdminUsers() {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3 px-4">
                       <div className="space-y-2">
                         <AutoLocationDisplay ipAddress={user.lastLoginIp} />
                         {user.registrationIp && user.registrationIp !== user.lastLoginIp && (
@@ -713,8 +721,8 @@ export default function AdminUsers() {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -731,10 +739,10 @@ export default function AdminUsers() {
                             });
                             setShowEditDialog(true);
                           }}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8 w-8 p-0"
                           title="Edit User"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3" />
                         </Button>
                         
                         {user.isBanned ? (
@@ -743,10 +751,10 @@ export default function AdminUsers() {
                             variant="ghost"
                             onClick={() => handleUnbanUser(user)}
                             disabled={unbanUserMutation.isPending}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 h-8 w-8 p-0"
                             title="Unban User"
                           >
-                            <UserX className="h-4 w-4" />
+                            <UserX className="h-3 w-3" />
                           </Button>
                         ) : (
                           <Button
@@ -754,10 +762,10 @@ export default function AdminUsers() {
                             variant="ghost"
                             onClick={() => handleBanUser(user)}
                             disabled={banUserMutation.isPending}
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 h-8 w-8 p-0"
                             title="Ban User"
                           >
-                            <Ban className="h-4 w-4" />
+                            <Ban className="h-3 w-3" />
                           </Button>
                         )}
                         
@@ -766,10 +774,10 @@ export default function AdminUsers() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 p-0"
                               title="Delete User"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
