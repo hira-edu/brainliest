@@ -32,6 +32,7 @@ export interface IStorage {
   createSubject(subject: InsertSubject): Promise<Subject>;
   updateSubject(id: number, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
   deleteSubject(id: number): Promise<boolean>;
+  getSubjectCount(): Promise<number>;
 
   // Exams
   getExams(): Promise<Exam[]>;
@@ -40,6 +41,7 @@ export interface IStorage {
   createExam(exam: InsertExam): Promise<Exam>;
   updateExam(id: number, exam: Partial<InsertExam>): Promise<Exam | undefined>;
   deleteExam(id: number): Promise<boolean>;
+  getExamCount(): Promise<number>;
 
   // Questions
   getQuestions(): Promise<Question[]>;
@@ -48,6 +50,7 @@ export interface IStorage {
   createQuestion(question: InsertQuestion): Promise<Question>;
   updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
   deleteQuestion(id: number): Promise<boolean>;
+  getQuestionCount(): Promise<number>;
 
   // Exam Sessions
   getExamSessions(): Promise<ExamSession[]>;
@@ -117,6 +120,11 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
+  async getSubjectCount(): Promise<number> {
+    const result = await db.select().from(subjects);
+    return result.length;
+  }
+
   // Exams
   async getExams(): Promise<Exam[]> {
     return await db.select().from(exams);
@@ -150,6 +158,11 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
+  async getExamCount(): Promise<number> {
+    const result = await db.select().from(exams);
+    return result.length;
+  }
+
   // Questions
   async getQuestions(): Promise<Question[]> {
     return await db.select().from(questions);
@@ -181,6 +194,11 @@ export class DatabaseStorage implements IStorage {
   async deleteQuestion(id: number): Promise<boolean> {
     const result = await db.delete(questions).where(eq(questions.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  async getQuestionCount(): Promise<number> {
+    const result = await db.select().from(questions);
+    return result.length;
   }
 
   // Exam Sessions

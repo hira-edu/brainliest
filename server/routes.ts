@@ -1598,6 +1598,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Statistics API routes
+  app.get("/api/stats", async (req, res) => {
+    try {
+      const [subjectCount, examCount, questionCount] = await Promise.all([
+        storage.getSubjectCount(),
+        storage.getExamCount(), 
+        storage.getQuestionCount()
+      ]);
+
+      const stats = {
+        subjects: subjectCount,
+        exams: examCount,
+        questions: questionCount,
+        successRate: 95 // This could be calculated from user sessions in the future
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      res.status(500).json({ error: "Failed to fetch statistics" });
+    }
+  });
+
   // Trending API routes
   app.get("/api/trending/certifications", async (req, res) => {
     try {

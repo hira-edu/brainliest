@@ -1186,6 +1186,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         toast({ title: "Subject created successfully!" });
         setIsDialogOpen(false);
         subjectForm.reset();
@@ -1222,6 +1223,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         toast({ title: "Subject deleted successfully!" });
       },
     });
@@ -1788,6 +1790,7 @@ export default function AdminSimple() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         toast({ title: "Exam created successfully!" });
         setIsDialogOpen(false);
         examForm.reset();
@@ -1801,6 +1804,7 @@ export default function AdminSimple() {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         toast({ title: "Exam deleted successfully!" });
       },
     });
@@ -2242,6 +2246,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         toast({ title: "Question created successfully!" });
         setIsDialogOpen(false);
         questionForm.reset();
@@ -2275,6 +2280,7 @@ export default function AdminSimple() {
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
         toast({ title: "Question deleted successfully!" });
       },
     });
