@@ -33,16 +33,8 @@ export default function ExamSelection() {
   });
 
   const handleStartExam = (examId: number) => {
-    // Find the exam to get its title and generate slug URL
-    const exam = exams?.find(e => e.id === examId);
-    if (exam && subject) {
-      const slugUrl = `/api/slug-resolve/${subject.slug}/${exam.slug}`;
-      // Navigate to slug-based URL if available, fallback to ID-based
-      setLocation(`/${subject.slug}/${exam.slug}`);
-    } else {
-      // Fallback to ID-based navigation
-      setLocation(`/exam/${examId}`);
-    }
+    // Navigate directly to the exam interface using exam ID
+    setLocation(`/exam/${examId}`);
   };
 
   const handleGoBack = () => {
