@@ -23,6 +23,7 @@ import CategoryDetail from "./features/content/pages/category-detail";
 import AuthCallback from "./features/auth/pages/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
+import { IconProvider } from "./components/icons";
 
 function Router() {
   return (
@@ -56,15 +57,17 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <QuestionLimitProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <CookieConsentBanner />
-          </TooltipProvider>
-        </QuestionLimitProvider>
-      </AuthProvider>
+      <IconProvider>
+        <AuthProvider>
+          <QuestionLimitProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+              <CookieConsentBanner />
+            </TooltipProvider>
+          </QuestionLimitProvider>
+        </AuthProvider>
+      </IconProvider>
     </QueryClientProvider>
   );
 }

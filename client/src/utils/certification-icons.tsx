@@ -1,3 +1,9 @@
+/**
+ * @deprecated This file is deprecated in favor of the new icon system.
+ * Use '@/components/icons' instead for new development.
+ * This file is maintained for backward compatibility only.
+ */
+
 import React from 'react';
 
 // Official certification logos as SVG components for better scalability and performance
