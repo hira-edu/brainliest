@@ -2336,11 +2336,11 @@ export default function AdminSimple() {
         question.explanation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         question.domain?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesSubject = selectedSubjectFilter === "all" || 
-        question.subjectId.toString() === selectedSubjectFilter;
+      const matchesSubject = selectedSubject === "all" || 
+        question.subjectId.toString() === selectedSubject;
       
-      const matchesExam = selectedExamFilter === "all" || 
-        question.examId.toString() === selectedExamFilter;
+      const matchesExam = selectedExam === "all" || 
+        question.examId.toString() === selectedExam;
 
       return matchesSearch && matchesSubject && matchesExam;
     }) || [];
