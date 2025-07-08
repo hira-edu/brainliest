@@ -116,22 +116,31 @@ export class TokenAdminAuthService {
   async verifyToken(token: string): Promise<{ valid: boolean; user?: AdminUser; expired?: boolean }> {
     try {
       const decoded = jwt.verify(token, ADMIN_JWT_SECRET) as any;
+      console.log('🔍 Token decoded structure:', JSON.stringify(decoded, null, 2));
       
       // Validate token structure
       if (!decoded || !decoded.user || !decoded.user.email) {
+        console.log('❌ Token validation failed: Missing required fields');
+        console.log('  - decoded exists:', !!decoded);
+        console.log('  - decoded.user exists:', !!decoded?.user);
+        console.log('  - decoded.user.email exists:', !!decoded?.user?.email);
         return { valid: false };
       }
 
       // Verify admin authorization
       if (!AUTHORIZED_ADMIN_EMAILS.includes(decoded.user.email)) {
+        console.log('❌ Email not authorized:', decoded.user.email);
+        console.log('  - Authorized emails:', AUTHORIZED_ADMIN_EMAILS);
         return { valid: false };
       }
 
+      console.log('✅ Token verification successful for:', decoded.user.email);
       return {
         valid: true,
         user: decoded.user
       };
     } catch (error) {
+      console.log('❌ Token verification error:', error instanceof Error ? error.message : 'Unknown error');
       if (error instanceof jwt.TokenExpiredError) {
         return { valid: false, expired: true };
       }

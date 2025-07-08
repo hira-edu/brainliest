@@ -26,9 +26,10 @@ import { eq, like, and, or, desc, sql } from "drizzle-orm";
 
 // Lazy import to avoid circular dependencies
 let sitemapService: any = null;
-function getSitemapService() {
+async function getSitemapService() {
   if (!sitemapService) {
-    sitemapService = require("./sitemap-service").sitemapService;
+    const module = await import("./sitemap-service.js");
+    sitemapService = module.sitemapService;
   }
   return sitemapService;
 }
@@ -203,9 +204,12 @@ export class DatabaseStorage implements IStorage {
     
     // Invalidate sitemap cache after creating subject
     try {
-      getSitemapService().invalidateSitemapCache();
+      const sitemap = await getSitemapService();
+      if (sitemap && sitemap.invalidateSitemapCache) {
+        await sitemap.invalidateSitemapCache();
+      }
     } catch (error) {
-      console.warn('Failed to invalidate sitemap cache:', error);
+      console.error('Failed to invalidate sitemap cache:', error);
     }
     
     return newSubject;
@@ -227,9 +231,12 @@ export class DatabaseStorage implements IStorage {
     // Invalidate sitemap cache after updating subject
     if (updatedSubject) {
       try {
-        getSitemapService().invalidateSitemapCache();
+        const sitemap = await getSitemapService();
+        if (sitemap && sitemap.invalidateSitemapCache) {
+          await sitemap.invalidateSitemapCache();
+        }
       } catch (error) {
-        console.warn('Failed to invalidate sitemap cache:', error);
+        console.error('Failed to invalidate sitemap cache:', error);
       }
     }
     
@@ -327,9 +334,12 @@ export class DatabaseStorage implements IStorage {
     
     // Invalidate sitemap cache after creating exam
     try {
-      getSitemapService().invalidateSitemapCache();
+      const sitemap = await getSitemapService();
+      if (sitemap && sitemap.invalidateSitemapCache) {
+        await sitemap.invalidateSitemapCache();
+      }
     } catch (error) {
-      console.warn('Failed to invalidate sitemap cache:', error);
+      console.error('Failed to invalidate sitemap cache:', error);
     }
     
     return newExam;
@@ -351,9 +361,12 @@ export class DatabaseStorage implements IStorage {
     // Invalidate sitemap cache after updating exam
     if (updatedExam) {
       try {
-        getSitemapService().invalidateSitemapCache();
+        const sitemap = await getSitemapService();
+        if (sitemap && sitemap.invalidateSitemapCache) {
+          await sitemap.invalidateSitemapCache();
+        }
       } catch (error) {
-        console.warn('Failed to invalidate sitemap cache:', error);
+        console.error('Failed to invalidate sitemap cache:', error);
       }
     }
     
