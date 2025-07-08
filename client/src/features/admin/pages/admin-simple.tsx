@@ -189,7 +189,7 @@ type QuestionFormData = z.infer<typeof questionFormSchema>;
 export default function AdminSimple() {
   const { adminUser, logout } = useAdmin();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const csvFileInputRef = useRef<HTMLInputElement>(null);
   const jsonFileInputRef = useRef<HTMLInputElement>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -373,189 +373,7 @@ export default function AdminSimple() {
     return Array.from(new Set(icons)); // Remove duplicates
   };
 
-  // CSV Template Generation
-  const generateCSVTemplate = () => {
-    const headers = [
-      "Subject ID", "Subject Name", "Exam ID", "Exam Title", "Question Text",
-      "Option A", "Option B", "Option C", "Option D", "Correct Answer (0-3)",
-      "Explanation", "Domain", "Difficulty", "Order"
-    ];
-    
-    const sampleData = [
-      "1", "PMP Certification", "1", "PMP Practice Exam 1", 
-      "What is the primary purpose of project management?",
-      "To complete projects on time", "To manage resources effectively", 
-      "To deliver value to stakeholders", "To reduce project costs",
-      "2", "Project management focuses on delivering value to stakeholders through successful project outcomes.",
-      "Project Management Fundamentals", "Intermediate", "1"
-    ];
 
-    const csvContent = [headers, sampleData].map(row => 
-      row.map(field => `"${field}"`).join(",")
-    ).join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "questions_template.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({ title: "CSV template downloaded successfully!" });
-  };
-
-  // CSV Export
-  const exportQuestionsCSV = () => {
-    if (!questions || questions.length === 0) {
-      toast({ title: "No questions to export", variant: "destructive" });
-      return;
-    }
-
-    const headers = [
-      "Question ID", "Subject ID", "Subject Name", "Exam ID", "Exam Title", "Question Text",
-      "Option A", "Option B", "Option C", "Option D", "Correct Answer (0-3)",
-      "Explanation", "Domain", "Difficulty", "Order"
-    ];
-
-    const csvData = questions.map(question => {
-      const subject = subjects?.find(s => s.id === question.subjectId);
-      const exam = exams?.find(e => e.id === question.examId);
-      return [
-        question.id,
-        question.subjectId,
-        subject?.name || "",
-        question.examId,
-        exam?.title || "",
-        question.text,
-        question.options[0] || "",
-        question.options[1] || "",
-        question.options[2] || "",
-        question.options[3] || "",
-        question.correctAnswer,
-        question.explanation || "",
-        question.domain || "",
-        question.difficulty || "",
-        question.order
-      ];
-    });
-
-    const csvContent = [headers, ...csvData].map(row => 
-      row.map(field => `"${field}"`).join(",")
-    ).join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `questions_export_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast({ title: "Questions exported successfully!" });
-  };
-
-  // CSV Import
-  const parseCSVData = (csvText: string) => {
-    const lines = csvText.trim().split('\n');
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-    
-    const questions: any[] = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
-      
-      if (values.length >= 14) {
-        // Safe parseInt function to prevent NaN crashes
-        const safeParseInt = (value: string, defaultValue: number): number => {
-          if (!value || typeof value !== 'string') return defaultValue;
-          const parsed = parseInt(value.trim(), 10);
-          return isNaN(parsed) || parsed < 0 ? defaultValue : parsed;
-        };
-
-        const questionData = {
-          subjectId: safeParseInt(values[0], 1),
-          examId: safeParseInt(values[2], 1),
-          text: values[4] || "",
-          options: [
-            values[5] || "",
-            values[6] || "",
-            values[7] || "",
-            values[8] || ""
-          ],
-          correctAnswer: safeParseInt(values[9], 0),
-          explanation: values[10] || "",
-          domain: values[11] || "",
-          difficulty: values[12] || "Intermediate",
-          order: safeParseInt(values[13], 1)
-        };
-        
-        if (questionData.text && questionData.options.every(opt => opt)) {
-          questions.push(questionData);
-        }
-      }
-    }
-    
-    return questions;
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      toast({ title: "Please select a CSV file", variant: "destructive" });
-      return;
-    }
-
-    setIsImporting(true);
-    setImportStats(null);
-
-    try {
-      const text = await file.text();
-      const questions = parseCSVData(text);
-      
-      if (questions.length === 0) {
-        toast({ 
-          title: "No valid questions found", 
-          description: "Please check your CSV format",
-          variant: "destructive" 
-        });
-        return;
-      }
-
-      const response = await apiRequest("POST", "/api/questions/bulk", { questions }) as any;
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      
-      setImportStats({
-        created: response.created,
-        total: response.total
-      });
-      
-      toast({ 
-        title: "CSV imported successfully!", 
-        description: `${response.created} out of ${response.total} questions imported`
-      });
-      
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({ 
-        title: "Import failed", 
-        description: "Please check your CSV format and try again",
-        variant: "destructive" 
-      });
-    } finally {
-      setIsImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   const deleteAllQuestions = useMutation({
     mutationFn: async () => {
@@ -2446,32 +2264,9 @@ export default function AdminSimple() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Manage Questions</h2>
-              <p className="text-gray-600">Create and organize exam questions with CSV import/export</p>
+              <p className="text-gray-600">Create and organize exam questions</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={generateCSVTemplate}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Download Template
-            </Button>
-            <Button variant="outline" onClick={exportQuestionsCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <Button 
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isImporting}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              {isImporting ? "Importing..." : "Import CSV"}
-            </Button>
             <Button 
               variant="destructive"
               onClick={() => deleteAllQuestions.mutate()}
