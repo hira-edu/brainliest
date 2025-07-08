@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { subjects, userSubjectInteractions, subjectTrendingStats, dailyTrendingSnapshot } from "@shared/schema";
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
 
 export interface TrendingCertification {
   id: number;
@@ -117,10 +117,13 @@ export class TrendingService {
     const topSubjectIds = trendingData.slice(0, limit).map(t => t.subjectId);
 
     // Get subject details
-    const subjectDetails = await db
-      .select()
-      .from(subjects)
-      .where(sql`id = ANY(${topSubjectIds})`);
+    let subjectDetails = [];
+    if (topSubjectIds.length > 0) {
+      subjectDetails = await db
+        .select()
+        .from(subjects)
+        .where(inArray(subjects.id, topSubjectIds));
+    }
 
     // Combine data and return
     return trendingData.slice(0, limit).map(trend => {
