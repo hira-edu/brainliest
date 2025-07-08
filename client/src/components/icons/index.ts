@@ -1,31 +1,54 @@
 /**
  * Icon System Public API
  * Main entry point for the icon system
+ * 
+ * Provides all core components, hooks, utilities, and types for working
+ * with the icon registry in a robust, lazy-loaded, and fallback-aware way.
  */
 
-// Core exports
+// Core components
 export { Icon, SubjectIcon, CategoryIcon, StatusIcon } from './icon';
-export { IconProvider, useIcons, useIcon, useIconSearch, useSubjectIcon } from './icon-provider';
-export { BaseIcon, createIcon, LoadingIcon, FallbackIcon } from './base-icon';
+
+// Provider & hooks
+export {
+  IconProvider,
+  useIcons,
+  useIcon,
+  useIconSearch,
+  useSubjectIcon,
+} from './icon-provider';
+
+// Base primitives
+export {
+  BaseIcon,
+  createIcon,
+  LoadingIcon,
+  FallbackIcon,
+} from './base-icon';
+
+// Registry (underlying storage & lookup)
 export { iconRegistry } from './registry';
 
-// Type exports
+// Utility functions
+export {
+  preloadCriticalIcons,
+  registerAllIcons,
+} from './definitions';
+
+// Types
 export type {
-  IconProps,
-  IconSize,
-  IconColor,
-  IconVariant,
   IconCategory,
-  IconMetadata,
+  IconColor,
   IconComponent,
-  IconRegistryEntry,
-  IconContextValue,
   IconConfig,
-  SubjectIconMapping
+  IconContextValue,
+  IconMetadata,
+  IconProps,
+  IconRegistryEntry,
+  IconSize,
+  IconVariant,
+  SubjectIconMapping,
 } from './types';
 
-// Utility exports
-export { registerAllIcons, preloadCriticalIcons } from './definitions';
-
-// Legacy compatibility (for gradual migration)
+// Legacy compatibility (default export)
 export { Icon as default } from './icon';

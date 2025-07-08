@@ -1,8 +1,3 @@
-/**
- * Main Icon Component - Public interface for the icon system
- * Provides smart icon resolution with fallbacks and error handling
- */
-
 import React, { Suspense, forwardRef } from 'react';
 import { IconProps } from './types';
 import { useIcon } from './icon-provider';
@@ -22,34 +17,56 @@ interface IconComponentProps extends IconProps {
  */
 export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
   ({ name, fallback, showLoading = true, ...props }, ref) => {
-    // Always call hooks consistently
-    const primaryIcon = useIcon(name);
-    const fallbackIcon = fallback ? useIcon(fallback) : { component: null, loading: false };
+    // Normalize fallback name so hooks are always called in same order
+    const fallbackName = fallback ?? '';
 
-    // Show loading state
-    if (primaryIcon.loading && showLoading) {
+    // Always call hooks consistently
+    const {
+      component: PrimaryComponent,
+      loading: primaryLoading,
+      error: primaryError,
+    } = useIcon(name);
+    const {
+      component: FallbackComponent,
+      loading: fallbackLoading,
+      error: fallbackError,
+    } = useIcon(fallbackName);
+
+    // If primary is loading, show loading state
+    if (primaryLoading && showLoading) {
       return <LoadingIcon ref={ref} {...props} />;
     }
 
-    // Show primary icon if available
-    if (primaryIcon.component) {
+    // If primary loaded successfully and no error, render it
+    if (PrimaryComponent && !primaryError) {
       return (
-        <Suspense fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}>
-          <primaryIcon.component ref={ref} {...props} />
+        <Suspense
+          fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}
+        >
+          <PrimaryComponent ref={ref} {...props} />
         </Suspense>
       );
     }
 
-    // Try fallback icon
-    if (fallback && fallbackIcon.component) {
-      return (
-        <Suspense fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}>
-          <fallbackIcon.component ref={ref} {...props} />
-        </Suspense>
-      );
+    // If primary failed or not found, try fallback
+    if (fallbackName) {
+      // While fallback loading, show loading state
+      if (fallbackLoading && showLoading) {
+        return <LoadingIcon ref={ref} {...props} />;
+      }
+      // If fallback loaded successfully, render it
+      if (FallbackComponent && !fallbackError) {
+        return (
+          <Suspense
+            fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}
+          >
+            <FallbackComponent ref={ref} {...props} />
+          </Suspense>
+        );
+      }
     }
 
-    // Final fallback
+    // As a last resort, render the generic fallback icon
     return <FallbackIcon ref={ref} {...props} />;
   }
 );
@@ -68,15 +85,14 @@ interface SubjectIconProps extends IconProps {
 
 export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
   ({ subjectName, fallback = 'academic', ...props }, ref) => {
-    // Always call the hook - React requirement
+    // Always call hook
     const iconName = useSubjectIconName(subjectName);
-    
     return (
-      <Icon 
-        ref={ref} 
-        name={iconName || fallback} 
+      <Icon
+        ref={ref}
+        name={iconName || fallback}
         fallback={fallback}
-        {...props} 
+        {...props}
       />
     );
   }
@@ -95,21 +111,19 @@ interface CategoryIconProps extends IconProps {
 export const CategoryIcon = forwardRef<SVGSVGElement, CategoryIconProps>(
   ({ category, ...props }, ref) => {
     const categoryIconMap: Record<string, string> = {
-      'certification': 'certificate',
-      'academic': 'graduation-cap',
-      'technology': 'laptop',
-      'business': 'briefcase',
-      'medical': 'stethoscope',
-      'science': 'flask',
-      'mathematics': 'calculator',
-      'engineering': 'cog',
-      'social': 'users',
-      'language': 'globe',
-      'test-prep': 'clipboard-list'
+      certification: 'certificate',
+      academic: 'graduation-cap',
+      technology: 'laptop',
+      business: 'briefcase',
+      medical: 'stethoscope',
+      science: 'flask',
+      mathematics: 'calculator',
+      engineering: 'cog',
+      social: 'users',
+      language: 'globe',
+      'test-prep': 'clipboard-list',
     };
-
     const iconName = categoryIconMap[category.toLowerCase()] || 'folder';
-    
     return <Icon ref={ref} name={iconName} {...props} />;
   }
 );
@@ -126,24 +140,22 @@ interface StatusIconProps extends IconProps {
 
 export const StatusIcon = forwardRef<SVGSVGElement, StatusIconProps>(
   ({ status, ...props }, ref) => {
-    const statusIconMap = {
-      'success': 'check-circle',
-      'error': 'x-circle',
-      'warning': 'alert-triangle',
-      'info': 'info-circle',
-      'loading': 'loader'
+    const statusIconMap: Record<string, string> = {
+      success: 'check-circle',
+      error: 'x-circle',
+      warning: 'alert-triangle',
+      info: 'info-circle',
+      loading: 'loader',
     };
-
-    const statusColorMap = {
-      'success': 'success' as const,
-      'error': 'destructive' as const,
-      'warning': 'warning' as const,
-      'info': 'info' as const,
-      'loading': 'muted' as const
+    const statusColorMap: Record<string, IconProps['color']> = {
+      success: 'success',
+      error: 'destructive',
+      warning: 'warning',
+      info: 'info',
+      loading: 'muted',
     };
-
     return (
-      <Icon 
+      <Icon
         ref={ref}
         name={statusIconMap[status]}
         color={statusColorMap[status]}
@@ -158,7 +170,6 @@ StatusIcon.displayName = 'StatusIcon';
 
 // Helper hook to get subject icon name - always returns a string
 function useSubjectIconName(subjectName: string): string {
-  // Always return a valid string to prevent conditional hook calls
   const subjectIconMap: Record<string, string> = {
     'PMP Certification': 'pmp',
     'AWS Cloud Practitioner': 'aws',
@@ -177,58 +188,57 @@ function useSubjectIconName(subjectName: string): string {
     'VMware vSphere': 'vmware',
     'Kubernetes Administrator': 'kubernetes',
     'Docker Certified Associate': 'docker',
-    'Mathematics': 'mathematics',
-    'Calculus': 'mathematics',
+    Mathematics: 'mathematics',
+    Calculus: 'mathematics',
     'Linear Algebra': 'mathematics',
     'Discrete Mathematics': 'mathematics',
-    'Geometry': 'mathematics',
+    Geometry: 'mathematics',
     'Pre-Calculus': 'mathematics',
-    'Statistics': 'statistics',
+    Statistics: 'statistics',
     'AP Statistics': 'statistics',
-    'Biostatistics': 'statistics',
+    Biostatistics: 'statistics',
     'Business Statistics': 'statistics',
     'Elementary Statistics': 'statistics',
     'Intro to Statistics': 'statistics',
-    'Physics': 'science',
-    'Chemistry': 'science',
-    'Biology': 'science',
-    'Astronomy': 'science',
+    Physics: 'science',
+    Chemistry: 'science',
+    Biology: 'science',
+    Astronomy: 'science',
     'Earth Science': 'science',
     'Computer Science': 'computer-science',
-    'Programming': 'code',
+    Programming: 'code',
     'Data Structures': 'algorithm',
-    'Algorithms': 'algorithm',
+    Algorithms: 'algorithm',
     'Web Development': 'web-dev',
     'Database Design': 'database',
     'Computer Science Fundamentals': 'computer-science',
-    'Business': 'business',
-    'Accounting': 'business',
-    'Economics': 'business',
-    'Finance': 'business',
+    Business: 'business',
+    Accounting: 'business',
+    Economics: 'business',
+    Finance: 'business',
     'Business Administration': 'business',
-    'Engineering': 'engineering',
+    Engineering: 'engineering',
     'Mechanical Engineering': 'engineering',
     'Electrical Engineering': 'engineering',
-    'Nursing': 'medical',
-    'Pharmacology': 'medical',
+    Nursing: 'medical',
+    Pharmacology: 'medical',
     'Medical Sciences': 'medical',
     'Health Sciences': 'medical',
-    'Anatomy': 'medical',
-    'HESI': 'medical',
-    'TEAS': 'medical',
-    'Psychology': 'science',
-    'History': 'business',
-    'Philosophy': 'business',
-    'Sociology': 'science',
+    Anatomy: 'medical',
+    HESI: 'medical',
+    TEAS: 'medical',
+    Psychology: 'science',
+    History: 'business',
+    Philosophy: 'business',
+    Sociology: 'science',
     'Political Science': 'science',
-    'English': 'business',
-    'Writing': 'business',
-    'GRE': 'test-prep',
-    'LSAT': 'test-prep',
-    'TOEFL': 'test-prep',
-    'GED': 'test-prep'
+    English: 'business',
+    Writing: 'business',
+    GRE: 'test-prep',
+    LSAT: 'test-prep',
+    TOEFL: 'test-prep',
+    GED: 'test-prep',
   };
-
   return subjectIconMap[subjectName] || 'academic';
 }
 

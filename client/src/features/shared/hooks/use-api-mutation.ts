@@ -1,8 +1,8 @@
 /**
- * Reusable API mutation hook - DRY solution for repeated API call patterns
+ * Reusable API mutation hook - Industrial-grade, war-tested logic
  */
-import { useState, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useMutation, UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/services/queryClient';
 import { useToast } from './use-toast';
 
@@ -10,10 +10,10 @@ export interface ApiMutationOptions<TData = any, TVariables = any> {
   method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   url: string | ((variables: TVariables) => string);
   onSuccess?: (data: TData, variables: TVariables) => void;
-  onError?: (error: Error, variables: TVariables) => void;
-  invalidateQueries?: string[] | string[][];
+  onError?: (error: unknown, variables: TVariables) => void;
+  invalidateQueries?: Array<string | readonly string[]>;
   successMessage?: string | ((data: TData, variables: TVariables) => string);
-  errorMessage?: string | ((error: Error, variables: TVariables) => string);
+  errorMessage?: string | ((error: unknown, variables: TVariables) => string);
   showToast?: boolean;
 }
 
@@ -22,119 +22,114 @@ export interface ApiMutationOptions<TData = any, TVariables = any> {
  */
 export function useApiMutation<TData = any, TVariables = any>(
   options: ApiMutationOptions<TData, TVariables>
-) {
+): UseMutationResult<TData, unknown, TVariables> & { execute: (vars: TVariables) => void; executeAsync: (vars: TVariables) => Promise<TData> } {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const mutation = useMutation({
+  const mutation = useMutation<TData, unknown, TVariables>({
+    // Core API call logic
     mutationFn: async (variables: TVariables): Promise<TData> => {
-      setIsSubmitting(true);
-      try {
-        const url = typeof options.url === 'function' 
-          ? options.url(variables) 
-          : options.url;
-        
-        const response = await apiRequest(options.method, url, variables);
-        const data = await response.json();
-        return data;
-      } finally {
-        setIsSubmitting(false);
+      // Determine endpoint URL
+      const endpoint = typeof options.url === 'function' ? options.url(variables) : options.url;
+
+      // Execute the request
+      const response = await apiRequest(options.method, endpoint, variables);
+
+      // Ensure HTTP success, otherwise throw
+      if (!response.ok) {
+        // Attempt to parse error body if available
+        let errorDetail: string;
+        try {
+          const errJson = await response.json();
+          errorDetail = JSON.stringify(errJson);
+        } catch {
+          errorDetail = response.statusText;
+        }
+        throw new Error(`Request failed: ${response.status} ${errorDetail}`);
       }
+
+      // Parse successful JSON
+      return response.json();
     },
+
+    // On success: invalidate cache, show toast, invoke custom handler
     onSuccess: (data, variables) => {
-      // Invalidate specified queries
       if (options.invalidateQueries) {
-        options.invalidateQueries.forEach(queryKey => {
-          queryClient.invalidateQueries({ 
-            queryKey: Array.isArray(queryKey) ? queryKey : [queryKey] 
-          });
+        // Invalidate all provided query keys
+        options.invalidateQueries.forEach((key) => {
+          const queryKey = Array.isArray(key) ? key : [key];
+          queryClient.invalidateQueries(queryKey);
         });
       }
 
-      // Show success toast
-      if (options.showToast !== false) {
+      if (options.showToast ?? true) {
         const message = typeof options.successMessage === 'function'
           ? options.successMessage(data, variables)
           : options.successMessage || 'Operation successful';
-        
-        toast({
-          title: 'Success',
-          description: message,
-          variant: 'default'
-        });
+        toast({ title: 'Success', description: message, variant: 'default' });
       }
 
-      // Custom success handler
       options.onSuccess?.(data, variables);
     },
-    onError: (error: Error, variables) => {
-      // Show error toast
-      if (options.showToast !== false) {
+
+    // On error: show toast and invoke custom handler
+    onError: (error, variables) => {
+      if (options.showToast ?? true) {
         const message = typeof options.errorMessage === 'function'
           ? options.errorMessage(error, variables)
-          : options.errorMessage || error.message || 'Operation failed';
-        
-        toast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive'
-        });
+          // Handle unknown error types
+          : (error instanceof Error ? error.message : String(error)) || 'Operation failed';
+        toast({ title: 'Error', description: message, variant: 'destructive' });
       }
 
-      // Custom error handler
       options.onError?.(error, variables);
     }
   });
 
-  return {
-    ...mutation,
-    isSubmitting,
-    execute: mutation.mutate,
-    executeAsync: mutation.mutateAsync
-  };
+  // Aliases for consistency and readability
+  const execute = useCallback((vars: TVariables) => mutation.mutate(vars), [mutation]);
+  const executeAsync = useCallback((vars: TVariables) => mutation.mutateAsync(vars), [mutation]);
+
+  return { ...mutation, execute, executeAsync };
 }
 
 /**
- * Specialized mutation hooks for common operations
+ * Specialized mutation hooks for common CRUD operations
  */
 
-// Create operation
 export function useCreateMutation<TData = any, TVariables = any>(
   entityName: string,
-  queryKey: string[]
+  queryKeys: Array<string | readonly string[]>
 ) {
   return useApiMutation<TData, TVariables>({
     method: 'POST',
     url: `/api/${entityName.toLowerCase()}`,
     successMessage: `${entityName} created successfully`,
-    invalidateQueries: [queryKey]
+    invalidateQueries: queryKeys,
   });
 }
 
-// Update operation
-export function useUpdateMutation<TData = any, TVariables = any & { id: number }>(
+export function useUpdateMutation<TData = any, TVariables extends { id: number }>(
   entityName: string,
-  queryKey: string[]
+  queryKeys: Array<string | readonly string[]>
 ) {
   return useApiMutation<TData, TVariables>({
     method: 'PUT',
-    url: (variables) => `/api/${entityName.toLowerCase()}/${variables.id}`,
+    url: (vars) => `/api/${entityName.toLowerCase()}/${vars.id}`,
     successMessage: `${entityName} updated successfully`,
-    invalidateQueries: [queryKey, [`/api/${entityName.toLowerCase()}`]]
+    invalidateQueries: [...queryKeys, `/api/${entityName.toLowerCase()}`],
   });
 }
 
-// Delete operation
-export function useDeleteMutation<TVariables = { id: number }>(
+export function useDeleteMutation<TVariables extends { id: number }>(
   entityName: string,
-  queryKey: string[]
+  queryKeys: Array<string | readonly string[]>
 ) {
-  return useApiMutation<any, TVariables>({
+  return useApiMutation<void, TVariables>({
     method: 'DELETE',
-    url: (variables) => `/api/${entityName.toLowerCase()}/${variables.id}`,
+    url: (vars) => `/api/${entityName.toLowerCase()}/${vars.id}`,
     successMessage: `${entityName} deleted successfully`,
-    invalidateQueries: [queryKey]
+    invalidateQueries: queryKeys,
   });
 }
 
@@ -143,37 +138,14 @@ export function useDeleteMutation<TVariables = { id: number }>(
  */
 export function useAuthMutation() {
   return {
-    login: useApiMutation({
-      method: 'POST',
-      url: '/api/auth/login',
-      successMessage: 'Signed in successfully',
-      showToast: false // Let auth context handle toasts
-    }),
-    
-    register: useApiMutation({
-      method: 'POST',
-      url: '/api/auth/register',
-      successMessage: 'Account created successfully',
-      showToast: false
-    }),
-    
+    login: useApiMutation({ method: 'POST', url: '/api/auth/login', showToast: false }),
+    register: useApiMutation({ method: 'POST', url: '/api/auth/register', showToast: false }),
     logout: useApiMutation({
       method: 'POST',
       url: '/api/auth/logout',
-      successMessage: 'Signed out successfully',
-      invalidateQueries: [['user'], ['session']]
+      invalidateQueries: [['user'], ['session']],
     }),
-    
-    verifyEmail: useApiMutation({
-      method: 'POST',
-      url: '/api/auth/verify-email',
-      successMessage: 'Email verified successfully'
-    }),
-    
-    resetPassword: useApiMutation({
-      method: 'POST',
-      url: '/api/auth/reset-password',
-      successMessage: 'Password reset successfully'
-    })
+    verifyEmail: useApiMutation({ method: 'POST', url: '/api/auth/verify-email' }),
+    resetPassword: useApiMutation({ method: 'POST', url: '/api/auth/reset-password' }),
   };
 }

@@ -8,24 +8,40 @@ import { Button } from "@/components/ui/button";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();
-  
+
   // Try slug-based route first, then fall back to ID-based route
   const [slugMatch, slugParams] = useRoute("/subject/:slug");
   const [idMatch, idParams] = useRoute("/subject/id/:id");
-  
+
   const isSlugRoute = slugMatch && slugParams?.slug;
   const isIdRoute = idMatch && idParams?.id;
-  
+
   const subjectSlug = isSlugRoute ? slugParams.slug : null;
-  const subjectId = isIdRoute ? parseInt(idParams.id) : null;
+  const subjectId = isIdRoute ? parseInt(idParams.id, 10) : null;
 
   // Fetch subject by slug or ID
-  const { data: subject } = useQuery<Subject>({
-    queryKey: isSlugRoute ? [`/api/subjects/by-slug/${subjectSlug}`] : [`/api/subjects/${subjectId}`],
-    enabled: !!(subjectSlug || subjectId),
+  const {
+    data: subject,
+    isLoading: isSubjectLoading
+  } = useQuery<Subject>({
+    queryKey: isSlugRoute
+      ? [`/api/subjects/by-slug/${subjectSlug}`]
+      : [`/api/subjects/${subjectId}`],
+    queryFn: async () => {
+      const url = isSlugRoute
+        ? `/api/subjects/by-slug/${subjectSlug}`
+        : `/api/subjects/${subjectId}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch subject');
+      return res.json();
+    },
+    enabled: !!(subjectSlug || subjectId)
   });
 
-  const { data: exams, isLoading } = useQuery<Exam[]>({
+  const {
+    data: exams,
+    isLoading: isExamsLoading
+  } = useQuery<Exam[]>({
     queryKey: ["/api/exams", subject?.slug],
     queryFn: async () => {
       const response = await fetch(`/api/exams?subjectSlug=${subject?.slug}`);
@@ -37,7 +53,9 @@ export default function ExamSelection() {
 
   const handleStartExam = (exam: Exam) => {
     // Use slug-based navigation if exam has slug, otherwise use ID
-    const examPath = exam.slug ? `/exam/${exam.slug}` : `/exam/id/${exam.id}`;
+    const examPath = exam.slug
+      ? `/exam/${exam.slug}`
+      : `/exam/id/${exam.id}`;
     setLocation(examPath);
   };
 
@@ -45,11 +63,13 @@ export default function ExamSelection() {
     setLocation("/");
   };
 
+  const isLoading = isSubjectLoading || isExamsLoading;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
-        
+
         {/* Subject Header with Back Button - Same style as question interface */}
         {subject && (
           <div className="bg-white border-b border-gray-200 shadow-sm">
@@ -82,7 +102,7 @@ export default function ExamSelection() {
             </div>
           </div>
         )}
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -96,7 +116,7 @@ export default function ExamSelection() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       {/* Subject Header with Back Button - Same style as question interface */}
       {subject && (
         <div className="bg-white border-b border-gray-200 shadow-sm">
@@ -139,11 +159,10 @@ export default function ExamSelection() {
                 key={exam.slug} 
                 exam={exam} 
                 onStart={() => handleStartExam(exam)}
-                // Completion tracking implemented via user sessions and analytics
               />
             ))}
           </div>
-        ) : !isLoading && (!exams || exams.length === 0) ? (
+        ) : (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm p-8 text-center">
               <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -167,7 +186,7 @@ export default function ExamSelection() {
               </div>
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
