@@ -15,8 +15,8 @@ import { recaptchaService } from "./recaptcha-service";
 import { trendingService } from "./trending-service";
 import { sitemapService } from "./sitemap-service";
 import { geolocationService } from "./geolocation-service";
-import { parseId, parseOptionalId, validateEmail, validatePassword } from "./utils/validation";
-import { sanitizeInput, sanitizeRequestBody, checkRateLimit } from './security/input-sanitizer';
+import { parseId, parseOptionalId, sanitizeInput, sanitizeRequestBody, checkRateLimit, validatePassword } from './security/input-sanitizer';
+import { validateEmail } from './auth-service';
 import { logAdminAction } from './middleware/auth';
 import { 
   insertSubjectSchema, 
