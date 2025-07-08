@@ -87,7 +87,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { useAdmin } from "../AdminContext";
+import { useAdmin } from "./AdminContext";
 
 // Pagination component
 function PaginationControls({ 

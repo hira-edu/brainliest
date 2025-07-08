@@ -1,6 +1,6 @@
 // ProtectedAdminRoute.tsx
 import React, { useState, useEffect } from 'react';
-import { useAdmin } from '../AdminContext';
+import { useAdmin } from './AdminContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
