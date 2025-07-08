@@ -73,6 +73,7 @@
                         userAnswer,
                       }),
                     onSuccess: (data: { explanation: string }) => {
+                      console.log("AI explanation received:", data);
                       setAiExplanation(data.explanation);
                       setShowAiExplanation(true);
                     },
@@ -175,7 +176,10 @@
                             {/* AI Explanation Section */}
                             <div className="mb-4">
                               <button
-                                onClick={() => getAiExplanationMutation.mutate()}
+                                onClick={() => {
+                                  console.log("AI explanation button clicked");
+                                  getAiExplanationMutation.mutate();
+                                }}
                                 disabled={getAiExplanationMutation.isLoading || showAiExplanation}
                                 className="flex items-center px-3 py-2 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
                               >
