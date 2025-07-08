@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// AdminLoginModal.tsx
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,23 +17,38 @@ interface AdminLoginModalProps {
 export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
   const { executeRecaptcha } = useGoogleReCaptcha();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Clear local validation error when inputs change
+  useEffect(() => {
+    if (localError) {
+      setLocalError(null);
+    }
+  }, [email, password]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setLocalError('Email and password are required');
+      return;
+    }
+
     let recaptchaToken: string | undefined;
     if (executeRecaptcha) {
       try {
         recaptchaToken = await executeRecaptcha('admin_login');
-      } catch (error) {
-        console.error('reCAPTCHA error:', error);
+      } catch (recapErr) {
+        console.error('reCAPTCHA error:', recapErr);
+        setLocalError('reCAPTCHA validation failed. Please try again.');
+        return;
       }
     }
-    
-    await onLogin(email, password, recaptchaToken);
-  };
+
+    // Attempt login; onLogin manages context error state
+    await onLogin(trimmedEmail, password, recaptchaToken);
+  }, [email, password, executeRecaptcha, onLogin]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -47,12 +63,12 @@ export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalPr
           </p>
         </CardHeader>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <CardContent className="space-y-4">
-            {error && (
+            {(localError || error) && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{localError || error}</AlertDescription>
               </Alert>
             )}
 
@@ -94,7 +110,7 @@ export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalPr
                 <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="ml-2">
                   <p className="text-xs text-amber-800 dark:text-amber-200">
-                    <strong>Security Notice:</strong> Admin access is restricted to authorized personnel only. 
+                    <strong>Security Notice:</strong> Admin access is restricted to authorized personnel only.
                     All login attempts are logged and monitored. This form is protected by reCAPTCHA.
                   </p>
                 </div>
@@ -103,10 +119,10 @@ export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalPr
           </CardContent>
 
           <CardFooter>
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading || !email || !password}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || !email.trim() || !password}
             >
               {isLoading ? (
                 <>
