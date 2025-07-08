@@ -2281,6 +2281,7 @@ export default function AdminSimple() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
 
     // Filter questions based on search and selections - use filter states for hierarchical linking
     const filteredQuestions = questions?.filter(question => {
@@ -2367,6 +2368,18 @@ export default function AdminSimple() {
       },
     });
 
+    const bulkDeleteQuestionsMutation = useMutation({
+      mutationFn: async (ids: number[]) => {
+        await apiRequest("DELETE", "/api/admin/bulk/questions", { ids });
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+        setSelectedQuestions([]);
+        toast({ title: `${selectedQuestions.length} questions deleted successfully!` });
+      },
+    });
+
     const onSubmit = (data: QuestionFormData) => {
       createQuestionMutation.mutate(data);
     };
@@ -2393,24 +2406,58 @@ export default function AdminSimple() {
       setIsEditDialogOpen(true);
     };
 
+    const handleSelectQuestion = (questionId: number, checked: boolean) => {
+      setSelectedQuestions(prev => 
+        checked 
+          ? [...prev, questionId]
+          : prev.filter(id => id !== questionId)
+      );
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+      setSelectedQuestions(checked ? filteredQuestions.map(q => q.id) : []);
+    };
+
+    const handleBulkDelete = () => {
+      if (selectedQuestions.length > 0) {
+        bulkDeleteQuestionsMutation.mutate(selectedQuestions);
+      }
+    };
+
     return (
       <div className="space-y-6">
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">Manage Questions</h2>
-              <p className="text-gray-600">Create and organize exam questions</p>
+          {selectedQuestions.length > 0 ? (
+            <BulkSelectionHeader
+              isAllSelected={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
+              isPartiallySelected={selectedQuestions.length > 0 && selectedQuestions.length < filteredQuestions.length}
+              onToggleSelectAll={handleSelectAll}
+              selectedCount={selectedQuestions.length}
+              totalCount={filteredQuestions.length}
+              onBulkDelete={handleBulkDelete}
+              entityName="questions"
+            />
+          ) : (
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Manage Questions</h2>
+                <p className="text-gray-600">Create and organize exam questions</p>
+              </div>
+              <div className="flex gap-2">
+              <Button 
+                variant="destructive"
+                onClick={() => deleteAllQuestions.mutate()}
+                disabled={deleteAllQuestions.isPending}
+              >
+                <Database className="w-4 h-4 mr-2" />
+                Clear All
+              </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-            <Button 
-              variant="destructive"
-              onClick={() => deleteAllQuestions.mutate()}
-              disabled={deleteAllQuestions.isPending}
-            >
-              <Database className="w-4 h-4 mr-2" />
-              Clear All
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          )}
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -2751,10 +2798,9 @@ export default function AdminSimple() {
                 </Form>
               </DialogContent>
             </Dialog>
-            </div>
-          </div>
 
-          {/* Search and Filter Controls */}
+          <div>
+            {/* Search and Filter Controls */}
           <div className="flex gap-4 items-center">
             <div className="flex-1">
               <div className="relative">
@@ -2841,8 +2887,6 @@ export default function AdminSimple() {
             </AlertDescription>
           </Alert>
         )}
-        
-
 
         <div className="space-y-4">
           {filteredQuestions.slice((questionsPage - 1) * questionsPerPage, questionsPage * questionsPerPage).map((question) => {
@@ -2853,7 +2897,11 @@ export default function AdminSimple() {
               <Card key={question.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                    <ItemSelection
+                      isSelected={selectedQuestions.includes(question.id)}
+                      onToggle={() => handleSelectQuestion(question.id, !selectedQuestions.includes(question.id))}
+                    />
+                    <div className="flex-1 ml-3">
                       <CardTitle className="text-base mb-2">{question.text}</CardTitle>
                       <p className="text-sm text-gray-600">{subject?.name} - {exam?.title}</p>
                     </div>
