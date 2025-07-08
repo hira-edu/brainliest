@@ -1031,6 +1031,46 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  // Backfill missing slugs for existing records (migration support)
+  async backfillSlugsForExistingRecords(): Promise<void> {
+    try {
+      // Check subjects without slugs
+      const subjectsWithoutSlugs = await db.select()
+        .from(subjects)
+        .where(sql`slug IS NULL OR slug = ''`);
+
+      for (const subject of subjectsWithoutSlugs) {
+        const baseSlug = slugify(subject.name);
+        const uniqueSlug = await generateUniqueSlug(baseSlug, 'subjects');
+        await db.update(subjects)
+          .set({ slug: uniqueSlug })
+          .where(eq(subjects.slug, subject.slug));
+        console.log(`✓ Generated slug for subject: ${subject.name} -> ${uniqueSlug}`);
+      }
+
+      // Check exams without slugs
+      const examsWithoutSlugs = await db.select()
+        .from(exams)
+        .where(sql`slug IS NULL OR slug = ''`);
+
+      for (const exam of examsWithoutSlugs) {
+        const baseSlug = slugify(exam.title);
+        const uniqueSlug = await generateUniqueSlug(baseSlug, 'exams');
+        await db.update(exams)
+          .set({ slug: uniqueSlug })
+          .where(eq(exams.slug, exam.slug));
+        console.log(`✓ Generated slug for exam: ${exam.title} -> ${uniqueSlug}`);
+      }
+
+      if (subjectsWithoutSlugs.length === 0 && examsWithoutSlugs.length === 0) {
+        console.log("✓ All records already have slugs");
+      }
+    } catch (error) {
+      console.error("Error backfilling slugs:", error);
+      throw error;
+    }
+  }
+
 
 }
 
