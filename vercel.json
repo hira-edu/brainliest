@@ -1,83 +1,27 @@
 {
   "version": 2,
   "name": "brainliest",
-  "builds": [
-    {
-      "src": "server/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["shared/**", "drizzle.config.ts"]
-      }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
-      }
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs18.x"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/server/index.ts"
+      "dest": "/api/index.js"
     },
     {
-      "src": "/admin",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/subjects",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/categories",
-      "dest": "/dist/public/index.html"
+      "src": "/(admin|subjects|categories|question-interface|analytics|settings|privacy|terms|contact|cookie-settings|our-story)",
+      "dest": "/index.html"
     },
     {
       "src": "/categories/(.*)",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/question-interface",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/analytics",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/settings",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/privacy",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/terms",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/contact",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/cookie-settings",
-      "dest": "/dist/public/index.html"
-    },
-    {
-      "src": "/our-story",
-      "dest": "/dist/public/index.html"
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/$1"
+      "dest": "/$1"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "buildCommand": "npm run build",
-  "installCommand": "npm install"
+  ]
 }
