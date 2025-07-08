@@ -253,17 +253,23 @@ export default function QuestionInterface() {
       setShowAuthModal(true);
       return;
     }
-    if (selectedAnswer == null || !sessionId) return;
+    if (selectedAnswer == null) {
+      return;
+    }
 
-    const updatedAnswers = [...(session?.answers || [])];
-    updatedAnswers[currentQuestionIndex] = selectedAnswer.toString();
-
-    updateSessionMutation.mutate({
-      sessionId,
-      updates: { answers: updatedAnswers, currentQuestionIndex }
-    });
-
+    // Show feedback immediately for better UX
     setShowFeedback(true);
+
+    // Update session if we have one
+    if (sessionId && session) {
+      const updatedAnswers = [...(session?.answers || [])];
+      updatedAnswers[currentQuestionIndex] = selectedAnswer.toString();
+
+      updateSessionMutation.mutate({
+        sessionId,
+        updates: { answers: updatedAnswers, currentQuestionIndex }
+      });
+    }
   };
 
   const handleNextQuestion = () => {
@@ -404,7 +410,7 @@ export default function QuestionInterface() {
           />
 
           {shouldBlurQuestion && (
-            <div className="absolute inset-0 backdrop-blur-sm bg-white/10 rounded-lg flex items-center justify-center z-10">
+            <div className="absolute inset-0 bg-gray-100/95 rounded-lg flex items-center justify-center z-10">
               <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
                 <h3 className="text-lg font-semibold mb-2">Sign in to continue</h3>
                 <p className="text-gray-600 mb-4">
