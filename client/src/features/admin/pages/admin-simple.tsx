@@ -643,6 +643,13 @@ export default function AdminSimple() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    const { data: categories } = useQuery({
+      queryKey: ["/api/categories"],
+    });
+
+    // Bulk selection functionality
+    const categoryBulkSelection = useBulkSelection(categories || []);
     
     const categoryForm = useForm<z.infer<typeof insertCategorySchema>>({
       resolver: zodResolver(insertCategorySchema),
@@ -693,6 +700,20 @@ export default function AdminSimple() {
       onError: (error) => {
         toast({ title: "Failed to delete category", variant: "destructive" });
         console.error("Error deleting category:", error);
+      },
+    });
+
+    const bulkDeleteCategoriesMutation = useMutation({
+      mutationFn: (ids: number[]) => 
+        apiRequest("POST", "/api/categories/bulk-delete", { ids }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+        categoryBulkSelection.clearSelection();
+        toast({ title: "Categories deleted successfully!" });
+      },
+      onError: (error) => {
+        toast({ title: "Failed to delete categories", variant: "destructive" });
+        console.error("Error deleting categories:", error);
       },
     });
 
@@ -808,10 +829,25 @@ export default function AdminSimple() {
             <CardTitle>Categories ({categories?.length || 0})</CardTitle>
           </CardHeader>
           <CardContent>
+            {categoryBulkSelection.selectedItems.length > 0 && (
+              <BulkSelectionHeader
+                isAllSelected={categoryBulkSelection.isAllSelected}
+                isPartiallySelected={categoryBulkSelection.isPartiallySelected}
+                onToggleSelectAll={categoryBulkSelection.toggleSelectAll}
+                selectedCount={categoryBulkSelection.selectedItems.length}
+                totalCount={categories?.length || 0}
+                onBulkDelete={() => bulkDeleteCategoriesMutation.mutate(categoryBulkSelection.selectedItems.map(item => item.id))}
+                entityName="categories"
+              />
+            )}
             <div className="space-y-4">
               {categories?.map((category) => (
                 <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
+                    <ItemSelection
+                      isSelected={categoryBulkSelection.isSelected(category)}
+                      onToggle={() => categoryBulkSelection.toggleItem(category)}
+                    />
                     {category.icon && <span className={category.icon}></span>}
                     <div>
                       <h3 className="font-medium">{category.name}</h3>
@@ -918,6 +954,13 @@ export default function AdminSimple() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    const { data: subcategories } = useQuery({
+      queryKey: ["/api/subcategories"],
+    });
+
+    // Bulk selection functionality
+    const subcategoryBulkSelection = useBulkSelection(subcategories || []);
     
     const subcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
       resolver: zodResolver(insertSubcategorySchema),
@@ -970,6 +1013,20 @@ export default function AdminSimple() {
       onError: (error) => {
         toast({ title: "Failed to delete subcategory", variant: "destructive" });
         console.error("Error deleting subcategory:", error);
+      },
+    });
+
+    const bulkDeleteSubcategoriesMutation = useMutation({
+      mutationFn: (ids: number[]) => 
+        apiRequest("POST", "/api/subcategories/bulk-delete", { ids }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
+        subcategoryBulkSelection.clearSelection();
+        toast({ title: "Subcategories deleted successfully!" });
+      },
+      onError: (error) => {
+        toast({ title: "Failed to delete subcategories", variant: "destructive" });
+        console.error("Error deleting subcategories:", error);
       },
     });
 
@@ -1112,12 +1169,27 @@ export default function AdminSimple() {
             <CardTitle>Subcategories ({subcategories?.length || 0})</CardTitle>
           </CardHeader>
           <CardContent>
+            {subcategoryBulkSelection.selectedItems.length > 0 && (
+              <BulkSelectionHeader
+                isAllSelected={subcategoryBulkSelection.isAllSelected}
+                isPartiallySelected={subcategoryBulkSelection.isPartiallySelected}
+                onToggleSelectAll={subcategoryBulkSelection.toggleSelectAll}
+                selectedCount={subcategoryBulkSelection.selectedItems.length}
+                totalCount={subcategories?.length || 0}
+                onBulkDelete={() => bulkDeleteSubcategoriesMutation.mutate(subcategoryBulkSelection.selectedItems.map(item => item.id))}
+                entityName="subcategories"
+              />
+            )}
             <div className="space-y-4">
               {subcategories?.map((subcategory) => {
                 const parentCategory = categories?.find(cat => cat.id === subcategory.categoryId);
                 return (
                   <div key={subcategory.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-3">
+                      <ItemSelection
+                        isSelected={subcategoryBulkSelection.isSelected(subcategory)}
+                        onToggle={() => subcategoryBulkSelection.toggleItem(subcategory)}
+                      />
                       {subcategory.icon && <span className={subcategory.icon}></span>}
                       <div>
                         <h3 className="font-medium">{subcategory.name}</h3>
