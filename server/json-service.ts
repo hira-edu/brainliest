@@ -241,8 +241,15 @@ export class JSONService {
   validateJSONData(data: any): JSONValidationError[] {
     const errors: JSONValidationError[] = [];
 
+    // Add comprehensive debugging for data structure validation
+    console.log('🔍 JSON Validation - Received data structure:', JSON.stringify(data, null, 2));
+    console.log('🔍 JSON Validation - data.subject exists:', !!data.subject);
+    console.log('🔍 JSON Validation - data keys:', Object.keys(data || {}));
+    
     // Validate root structure
     if (!data.subject) {
+      console.log('❌ JSON Validation - Subject field missing at root level');
+      console.log('🔍 JSON Validation - Full data dump:', data);
       errors.push({
         path: 'root',
         field: 'subject',

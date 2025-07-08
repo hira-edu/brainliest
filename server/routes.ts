@@ -2246,20 +2246,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { JSONService } = await import('./json-service');
       const jsonService = new JSONService(storage);
       
-      const jsonData = req.body;
+      let jsonData = req.body;
+      
+      // Enhanced logging and data structure handling
+      console.log('JSON Import - Raw request body type:', typeof jsonData);
+      console.log('JSON Import - Raw request body keys:', Object.keys(jsonData || {}));
       
       if (!jsonData) {
+        console.log('JSON Import - Error: No JSON data provided');
         return res.status(400).json({ 
           success: false, 
-          message: 'JSON data is required' 
+          message: 'JSON data is required',
+          debug: 'Request body is empty or null'
         });
+      }
+
+      // Handle nested structure from frontend: { jsonData: actualData }
+      if (jsonData.jsonData) {
+        console.log('JSON Import - Detected nested jsonData structure, extracting...');
+        jsonData = jsonData.jsonData;
+        
+        // After extraction, ensure the data has the proper wrapper structure
+        // The validation function expects { subject: {...} } format
+        if (!jsonData.subject && jsonData.name) {
+          console.log('JSON Import - Restructuring extracted data to add subject wrapper');
+          jsonData = { subject: jsonData };
+        }
+      }
+
+      // Log the actual data structure being processed
+      console.log('JSON Import - Processing data structure:');
+      console.log('- Has subject:', !!jsonData.subject);
+      console.log('- Subject type:', typeof jsonData.subject);
+      if (jsonData.subject) {
+        console.log('- Subject name:', jsonData.subject.name);
+        console.log('- Subject exams count:', Array.isArray(jsonData.subject.exams) ? jsonData.subject.exams.length : 'not array');
       }
 
       const result = await jsonService.processJSONImport(jsonData);
       
+      // Enhanced logging for validation errors
+      if (!result.success && result.errors.length > 0) {
+        console.log('JSON Import - Validation errors found:');
+        result.errors.forEach((error, index) => {
+          console.log(`  ${index + 1}. Path: ${error.path}, Field: ${error.field}, Message: ${error.message}`);
+          console.log(`     Value: ${JSON.stringify(error.value)}`);
+        });
+      }
+      
       if (result.success) {
+        console.log('JSON Import - Success:', result.message);
         res.json(result);
       } else {
+        console.log('JSON Import - Failed:', result.message);
         res.status(400).json(result);
       }
     } catch (error) {
