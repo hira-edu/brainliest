@@ -65,7 +65,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
         description: "Check your email for the verification code",
       });
     } catch (error) {
-      console.error("Send code error:", error);
+
       toast({
         title: "Error",
         description: "Failed to send verification code. Please try again.",
@@ -131,7 +131,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
         });
       }
     } catch (error) {
-      console.error("Verify code error:", error);
+
       toast({
         title: "Error",
         description: "Failed to verify code. Please try again.",
@@ -155,7 +155,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
         description: "Signed in successfully! Continue practicing unlimited questions.",
       });
     } catch (error) {
-      console.error('Google sign-in failed:', error);
+
       toast({
         title: "Google Sign-in Failed",
         description: "Failed to authenticate with Google. Please try again.",

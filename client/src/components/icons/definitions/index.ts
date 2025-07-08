@@ -32,7 +32,7 @@ export async function registerAllIcons(): Promise<void> {
       ...generalIcons.icons
     ]);
 
-    console.log(`Icon system initialized with ${iconRegistry.getAllIconIds().length} icons`);
+
   } catch (error) {
     console.error('Failed to register icons:', error);
     throw error;
