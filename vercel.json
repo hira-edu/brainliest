@@ -78,11 +78,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "functions": {
-    "server/index.ts": {
-      "maxDuration": 30
-    }
-  },
   "buildCommand": "npm run build",
   "installCommand": "npm install"
 }
