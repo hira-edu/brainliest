@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import UnifiedAuthModal from "../../auth/components/unified-auth-modal";
+import UnifiedAuthModal from "../../auth/unified-auth-modal";
 import { useState } from "react";
 import { 
   ChevronDown, 

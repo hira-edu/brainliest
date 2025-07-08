@@ -3,8 +3,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "../../auth/AuthContext";
-import { Header } from "../../shared";
+import { useAuth } from "../auth/AuthContext";
+import { Header } from "../shared";
 import {
   Card,
   CardContent,

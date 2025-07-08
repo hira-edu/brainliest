@@ -4,7 +4,7 @@
                 import { apiRequest, queryClient } from "@/services/queryClient";
                 import { useToast } from "@/features/shared/hooks/use-toast";
                 import { useAuth } from "@/features/auth/AuthContext";
-                import AuthModal from "@/features/auth/components/unified-auth-modal";
+                import AuthModal from "@/features/auth/unified-auth-modal";
 
                 interface FeedbackCardProps {
                   question: Question;

@@ -10,7 +10,7 @@ import { Header } from "../../shared";
 import ProgressBar from "../components/progress-bar";
 import QuestionCard from "../components/question-card";
 import FeedbackCard from "../components/feedback-card";
-import UnifiedAuthModal from "../../auth/components/unified-auth-modal";
+import UnifiedAuthModal from "../../auth/unified-auth-modal";
 import { SEOHead } from "../../shared";
 import DynamicFAQ from "../../shared/components/dynamic-faq";
 import { ArrowLeft } from "lucide-react";
