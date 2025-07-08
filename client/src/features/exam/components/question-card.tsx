@@ -119,7 +119,7 @@ export default function QuestionCard({
               value={index}
               checked={localSelectedAnswer === index}
               onChange={() => handleAnswerSelect(index)}
-              className="mt-1 mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" 
+              className="mt-1 mr-3 w-4 h-4 text-blue-600 bg-white border-gray-300 rounded-full focus:ring-blue-500 focus:ring-2 appearance-none border-2 checked:bg-blue-600 checked:border-blue-600 relative before:content-[''] before:w-2 before:h-2 before:rounded-full before:bg-white before:absolute before:top-0.5 before:left-0.5 before:opacity-0 checked:before:opacity-100" 
             />
             <div className="flex-1">
               <div className="flex items-center">
