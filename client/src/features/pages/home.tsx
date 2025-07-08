@@ -17,24 +17,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Search, Filter, TrendingUp, Users, Award, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
-import { 
-  PMPIcon, 
-  AWSIcon, 
-  CompTIAIcon, 
-  AzureIcon,
-  CiscoIcon,
-  GoogleCloudIcon,
-  OracleIcon,
-  VMwareIcon,
-  KubernetesIcon,
-  DockerIcon,
-  MathIcon,
-  StatisticsIcon,
-  ScienceIcon,
-  EngineeringIcon,
-  BusinessIcon,
-  MedicalIcon
-} from "@/utils/certification-icons";
+import { Icon } from "@/components/icons";
 
 // Category configuration for better organization
 const categoryConfig = {
@@ -309,10 +292,10 @@ export default function Home() {
               // Get appropriate icon based on subject name
               const getIconForSubject = (name: string) => {
                 const nameLower = name.toLowerCase();
-                if (nameLower.includes('pmp')) return PMPIcon;
-                if (nameLower.includes('aws')) return AWSIcon;
-                if (nameLower.includes('comptia')) return CompTIAIcon;
-                if (nameLower.includes('azure') || nameLower.includes('microsoft')) return AzureIcon;
+                if (nameLower.includes('pmp')) return () => <Icon name="pmp" size="lg" />;
+                if (nameLower.includes('aws')) return () => <Icon name="aws" size="lg" />;
+                if (nameLower.includes('comptia')) return () => <Icon name="comptia" size="lg" />;
+                if (nameLower.includes('azure') || nameLower.includes('microsoft')) return () => <Icon name="azure" size="lg" />;
                 return BookOpen; // Default icon
               };
               

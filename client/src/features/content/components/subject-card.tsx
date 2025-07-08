@@ -1,5 +1,5 @@
 import { Subject } from "@shared/schema";
-import { getIconComponent } from "@/utils/certification-icons";
+import { Icon } from "@/components/icons";
 
 interface SubjectCardProps {
   subject: Subject;
@@ -16,8 +16,8 @@ export default function SubjectCard({ subject, onClick }: SubjectCardProps) {
     }
   };
 
-  // Try to get official certification icon first
-  const IconComponent = subject.name ? getIconComponent(subject.name) : null;
+  // Try to get icon from the new icon system
+  const iconName = subject.icon || 'certification';
 
   return (
     <div 
@@ -26,8 +26,8 @@ export default function SubjectCard({ subject, onClick }: SubjectCardProps) {
     >
       <div className="p-6">
         <div className="flex items-center justify-center w-16 h-16 rounded-lg mb-4 transition-colors">
-          {IconComponent ? (
-            <IconComponent className="w-12 h-12" />
+          {iconName ? (
+            <Icon name={iconName} size="lg" className="w-12 h-12" />
           ) : (
             <div className={`flex items-center justify-center w-full h-full rounded-lg ${getIconClass()}`}>
               <i className={`${subject.icon} text-2xl`}></i>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { CertificationIcons } from "@/utils/certification-icons";
+import { Icon } from "@/components/icons";
 import { ChevronDown } from "lucide-react";
 
 interface IconSelectorProps {
@@ -14,8 +14,9 @@ interface IconSelectorProps {
 export default function IconSelector({ selectedIcon, onSelect, className }: IconSelectorProps) {
   const [open, setOpen] = useState(false);
 
-  const iconEntries = Object.entries(CertificationIcons);
-  const selectedIconComponent = CertificationIcons[selectedIcon.toLowerCase()];
+  // Using new icon system - simplified for now
+  const iconEntries = [['pmp', 'PMP'], ['aws', 'AWS'], ['comptia', 'CompTIA']];
+  const selectedIconComponent = selectedIcon;
 
   return (
     <div className={className}>
