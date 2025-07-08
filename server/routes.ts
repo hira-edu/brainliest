@@ -262,9 +262,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Exam routes
   app.get("/api/exams", async (req, res) => {
     try {
-      const subjectId = parseOptionalId(req.query.subjectId as string);
-      const exams = subjectId 
-        ? await storage.getExamsBySubject(subjectId)
+      const subjectSlug = req.query.subjectSlug as string;
+      const exams = subjectSlug 
+        ? await storage.getExamsBySubject(subjectSlug)
         : await storage.getExams();
       res.json(exams);
     } catch (error) {
