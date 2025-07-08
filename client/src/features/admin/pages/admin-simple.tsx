@@ -83,146 +83,11 @@ import {
   Eye,
   Settings,
   LogOut,
-  FileJson,
-  CheckSquare,
-  Square,
-  MinusSquare
+  FileJson
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "../AdminContext";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-
-// Bulk Selection Hook
-function useBulkSelection<T extends { id: number }>(items: T[] = []) {
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-  const isSelected = (id: number) => selectedIds.includes(id);
-  const isAllSelected = items.length > 0 && selectedIds.length === items.length;
-  const isPartiallySelected = selectedIds.length > 0 && selectedIds.length < items.length;
-
-  const toggleSelection = (id: number) => {
-    setSelectedIds(prev => 
-      prev.includes(id) 
-        ? prev.filter(selectedId => selectedId !== id)
-        : [...prev, id]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(items.map(item => item.id));
-    }
-  };
-
-  const clearSelection = () => setSelectedIds([]);
-
-  return {
-    selectedIds,
-    isSelected,
-    isAllSelected,
-    isPartiallySelected,
-    toggleSelection,
-    toggleSelectAll,
-    clearSelection,
-    selectedCount: selectedIds.length
-  };
-}
-
-// Bulk Selection Header Component
-interface BulkSelectionHeaderProps {
-  isAllSelected: boolean;
-  isPartiallySelected: boolean;
-  onToggleSelectAll: () => void;
-  selectedCount: number;
-  totalCount: number;
-  onBulkDelete: () => void;
-  entityName: string;
-}
-
-function BulkSelectionHeader({
-  isAllSelected,
-  isPartiallySelected,
-  onToggleSelectAll,
-  selectedCount,
-  totalCount,
-  onBulkDelete,
-  entityName
-}: BulkSelectionHeaderProps) {
-  return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-      <div className="flex items-center space-x-3">
-        <button
-          type="button"
-          onClick={onToggleSelectAll}
-          className="flex items-center space-x-2"
-        >
-          {isAllSelected ? (
-            <CheckSquare className="w-5 h-5 text-blue-600" />
-          ) : isPartiallySelected ? (
-            <MinusSquare className="w-5 h-5 text-blue-600" />
-          ) : (
-            <Square className="w-5 h-5 text-gray-400" />
-          )}
-          <span className="text-sm font-medium">
-            {selectedCount > 0 ? `${selectedCount} selected` : `Select all ${totalCount}`}
-          </span>
-        </button>
-      </div>
-      
-      {selectedCount > 0 && (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete {selectedCount} {selectedCount === 1 ? entityName : `${entityName}s`}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete {selectedCount} {selectedCount === 1 ? entityName : `${entityName}s`}? 
-                This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onBulkDelete} className="bg-red-600 hover:bg-red-700">
-                Delete {selectedCount} {selectedCount === 1 ? entityName : `${entityName}s`}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-    </div>
-  );
-}
-
-// Individual Item Selection Component
-interface ItemSelectionProps {
-  isSelected: boolean;
-  onToggle: () => void;
-}
-
-function ItemSelection({ isSelected, onToggle }: ItemSelectionProps) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex items-center justify-center w-8 h-8"
-    >
-      {isSelected ? (
-        <CheckSquare className="w-5 h-5 text-blue-600" />
-      ) : (
-        <Square className="w-5 h-5 text-gray-400" />
-      )}
-    </button>
-  );
-}
 
 // Pagination component
 function PaginationControls({ 
@@ -643,13 +508,6 @@ export default function AdminSimple() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-    const { data: categories } = useQuery({
-      queryKey: ["/api/categories"],
-    });
-
-    // Bulk selection functionality
-    const categoryBulkSelection = useBulkSelection(categories || []);
     
     const categoryForm = useForm<z.infer<typeof insertCategorySchema>>({
       resolver: zodResolver(insertCategorySchema),
@@ -700,20 +558,6 @@ export default function AdminSimple() {
       onError: (error) => {
         toast({ title: "Failed to delete category", variant: "destructive" });
         console.error("Error deleting category:", error);
-      },
-    });
-
-    const bulkDeleteCategoriesMutation = useMutation({
-      mutationFn: (ids: number[]) => 
-        apiRequest("POST", "/api/categories/bulk-delete", { ids }),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
-        categoryBulkSelection.clearSelection();
-        toast({ title: "Categories deleted successfully!" });
-      },
-      onError: (error) => {
-        toast({ title: "Failed to delete categories", variant: "destructive" });
-        console.error("Error deleting categories:", error);
       },
     });
 
@@ -829,25 +673,10 @@ export default function AdminSimple() {
             <CardTitle>Categories ({categories?.length || 0})</CardTitle>
           </CardHeader>
           <CardContent>
-            {categoryBulkSelection.selectedItems.length > 0 && (
-              <BulkSelectionHeader
-                isAllSelected={categoryBulkSelection.isAllSelected}
-                isPartiallySelected={categoryBulkSelection.isPartiallySelected}
-                onToggleSelectAll={categoryBulkSelection.toggleSelectAll}
-                selectedCount={categoryBulkSelection.selectedItems.length}
-                totalCount={categories?.length || 0}
-                onBulkDelete={() => bulkDeleteCategoriesMutation.mutate(categoryBulkSelection.selectedItems.map(item => item.id))}
-                entityName="categories"
-              />
-            )}
             <div className="space-y-4">
               {categories?.map((category) => (
                 <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
-                    <ItemSelection
-                      isSelected={categoryBulkSelection.isSelected(category)}
-                      onToggle={() => categoryBulkSelection.toggleItem(category)}
-                    />
                     {category.icon && <span className={category.icon}></span>}
                     <div>
                       <h3 className="font-medium">{category.name}</h3>
@@ -954,13 +783,6 @@ export default function AdminSimple() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-    const { data: subcategories } = useQuery({
-      queryKey: ["/api/subcategories"],
-    });
-
-    // Bulk selection functionality
-    const subcategoryBulkSelection = useBulkSelection(subcategories || []);
     
     const subcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
       resolver: zodResolver(insertSubcategorySchema),
@@ -1013,20 +835,6 @@ export default function AdminSimple() {
       onError: (error) => {
         toast({ title: "Failed to delete subcategory", variant: "destructive" });
         console.error("Error deleting subcategory:", error);
-      },
-    });
-
-    const bulkDeleteSubcategoriesMutation = useMutation({
-      mutationFn: (ids: number[]) => 
-        apiRequest("POST", "/api/subcategories/bulk-delete", { ids }),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
-        subcategoryBulkSelection.clearSelection();
-        toast({ title: "Subcategories deleted successfully!" });
-      },
-      onError: (error) => {
-        toast({ title: "Failed to delete subcategories", variant: "destructive" });
-        console.error("Error deleting subcategories:", error);
       },
     });
 
@@ -1169,27 +977,12 @@ export default function AdminSimple() {
             <CardTitle>Subcategories ({subcategories?.length || 0})</CardTitle>
           </CardHeader>
           <CardContent>
-            {subcategoryBulkSelection.selectedItems.length > 0 && (
-              <BulkSelectionHeader
-                isAllSelected={subcategoryBulkSelection.isAllSelected}
-                isPartiallySelected={subcategoryBulkSelection.isPartiallySelected}
-                onToggleSelectAll={subcategoryBulkSelection.toggleSelectAll}
-                selectedCount={subcategoryBulkSelection.selectedItems.length}
-                totalCount={subcategories?.length || 0}
-                onBulkDelete={() => bulkDeleteSubcategoriesMutation.mutate(subcategoryBulkSelection.selectedItems.map(item => item.id))}
-                entityName="subcategories"
-              />
-            )}
             <div className="space-y-4">
               {subcategories?.map((subcategory) => {
                 const parentCategory = categories?.find(cat => cat.id === subcategory.categoryId);
                 return (
                   <div key={subcategory.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <ItemSelection
-                        isSelected={subcategoryBulkSelection.isSelected(subcategory)}
-                        onToggle={() => subcategoryBulkSelection.toggleItem(subcategory)}
-                      />
                       {subcategory.icon && <span className={subcategory.icon}></span>}
                       <div>
                         <h3 className="font-medium">{subcategory.name}</h3>
@@ -2353,7 +2146,6 @@ export default function AdminSimple() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
 
     // Filter questions based on search and selections - use filter states for hierarchical linking
     const filteredQuestions = questions?.filter(question => {
@@ -2440,18 +2232,6 @@ export default function AdminSimple() {
       },
     });
 
-    const bulkDeleteQuestionsMutation = useMutation({
-      mutationFn: async (ids: number[]) => {
-        await apiRequest("DELETE", "/api/admin/bulk/questions", { ids });
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-        setSelectedQuestions([]);
-        toast({ title: `${selectedQuestions.length} questions deleted successfully!` });
-      },
-    });
-
     const onSubmit = (data: QuestionFormData) => {
       createQuestionMutation.mutate(data);
     };
@@ -2478,58 +2258,24 @@ export default function AdminSimple() {
       setIsEditDialogOpen(true);
     };
 
-    const handleSelectQuestion = (questionId: number, checked: boolean) => {
-      setSelectedQuestions(prev => 
-        checked 
-          ? [...prev, questionId]
-          : prev.filter(id => id !== questionId)
-      );
-    };
-
-    const handleSelectAll = (checked: boolean) => {
-      setSelectedQuestions(checked ? filteredQuestions.map(q => q.id) : []);
-    };
-
-    const handleBulkDelete = () => {
-      if (selectedQuestions.length > 0) {
-        bulkDeleteQuestionsMutation.mutate(selectedQuestions);
-      }
-    };
-
     return (
       <div className="space-y-6">
         <div className="space-y-4">
-          {selectedQuestions.length > 0 ? (
-            <BulkSelectionHeader
-              isAllSelected={selectedQuestions.length === filteredQuestions.length && filteredQuestions.length > 0}
-              isPartiallySelected={selectedQuestions.length > 0 && selectedQuestions.length < filteredQuestions.length}
-              onToggleSelectAll={handleSelectAll}
-              selectedCount={selectedQuestions.length}
-              totalCount={filteredQuestions.length}
-              onBulkDelete={handleBulkDelete}
-              entityName="questions"
-            />
-          ) : (
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold">Manage Questions</h2>
-                <p className="text-gray-600">Create and organize exam questions</p>
-              </div>
-              <div className="flex gap-2">
-              <Button 
-                variant="destructive"
-                onClick={() => deleteAllQuestions.mutate()}
-                disabled={deleteAllQuestions.isPending}
-              >
-                <Database className="w-4 h-4 mr-2" />
-                Clear All
-              </Button>
-              </div>
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Manage Questions</h2>
+              <p className="text-gray-600">Create and organize exam questions</p>
             </div>
-          )}
-        </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <div className="flex gap-2">
+            <Button 
+              variant="destructive"
+              onClick={() => deleteAllQuestions.mutate()}
+              disabled={deleteAllQuestions.isPending}
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Clear All
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -2870,9 +2616,10 @@ export default function AdminSimple() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </div>
+          </div>
 
-          <div>
-            {/* Search and Filter Controls */}
+          {/* Search and Filter Controls */}
           <div className="flex gap-4 items-center">
             <div className="flex-1">
               <div className="relative">
@@ -2959,6 +2706,8 @@ export default function AdminSimple() {
             </AlertDescription>
           </Alert>
         )}
+        
+
 
         <div className="space-y-4">
           {filteredQuestions.slice((questionsPage - 1) * questionsPerPage, questionsPage * questionsPerPage).map((question) => {
@@ -2969,11 +2718,7 @@ export default function AdminSimple() {
               <Card key={question.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <ItemSelection
-                      isSelected={selectedQuestions.includes(question.id)}
-                      onToggle={() => handleSelectQuestion(question.id, !selectedQuestions.includes(question.id))}
-                    />
-                    <div className="flex-1 ml-3">
+                    <div className="flex-1">
                       <CardTitle className="text-base mb-2">{question.text}</CardTitle>
                       <p className="text-sm text-gray-600">{subject?.name} - {exam?.title}</p>
                     </div>
