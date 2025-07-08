@@ -83,11 +83,146 @@ import {
   Eye,
   Settings,
   LogOut,
-  FileJson
+  FileJson,
+  CheckSquare,
+  Square,
+  MinusSquare
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useAdmin } from "../AdminContext";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+// Bulk Selection Hook
+function useBulkSelection<T extends { id: number }>(items: T[] = []) {
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+  const isSelected = (id: number) => selectedIds.includes(id);
+  const isAllSelected = items.length > 0 && selectedIds.length === items.length;
+  const isPartiallySelected = selectedIds.length > 0 && selectedIds.length < items.length;
+
+  const toggleSelection = (id: number) => {
+    setSelectedIds(prev => 
+      prev.includes(id) 
+        ? prev.filter(selectedId => selectedId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(items.map(item => item.id));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
+  return {
+    selectedIds,
+    isSelected,
+    isAllSelected,
+    isPartiallySelected,
+    toggleSelection,
+    toggleSelectAll,
+    clearSelection,
+    selectedCount: selectedIds.length
+  };
+}
+
+// Bulk Selection Header Component
+interface BulkSelectionHeaderProps {
+  isAllSelected: boolean;
+  isPartiallySelected: boolean;
+  onToggleSelectAll: () => void;
+  selectedCount: number;
+  totalCount: number;
+  onBulkDelete: () => void;
+  entityName: string;
+}
+
+function BulkSelectionHeader({
+  isAllSelected,
+  isPartiallySelected,
+  onToggleSelectAll,
+  selectedCount,
+  totalCount,
+  onBulkDelete,
+  entityName
+}: BulkSelectionHeaderProps) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+      <div className="flex items-center space-x-3">
+        <button
+          type="button"
+          onClick={onToggleSelectAll}
+          className="flex items-center space-x-2"
+        >
+          {isAllSelected ? (
+            <CheckSquare className="w-5 h-5 text-blue-600" />
+          ) : isPartiallySelected ? (
+            <MinusSquare className="w-5 h-5 text-blue-600" />
+          ) : (
+            <Square className="w-5 h-5 text-gray-400" />
+          )}
+          <span className="text-sm font-medium">
+            {selectedCount > 0 ? `${selectedCount} selected` : `Select all ${totalCount}`}
+          </span>
+        </button>
+      </div>
+      
+      {selectedCount > 0 && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete {selectedCount} {selectedCount === 1 ? entityName : `${entityName}s`}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Bulk Deletion</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {selectedCount} {selectedCount === 1 ? entityName : `${entityName}s`}? 
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onBulkDelete} className="bg-red-600 hover:bg-red-700">
+                Delete {selectedCount} {selectedCount === 1 ? entityName : `${entityName}s`}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </div>
+  );
+}
+
+// Individual Item Selection Component
+interface ItemSelectionProps {
+  isSelected: boolean;
+  onToggle: () => void;
+}
+
+function ItemSelection({ isSelected, onToggle }: ItemSelectionProps) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="flex items-center justify-center w-8 h-8"
+    >
+      {isSelected ? (
+        <CheckSquare className="w-5 h-5 text-blue-600" />
+      ) : (
+        <Square className="w-5 h-5 text-gray-400" />
+      )}
+    </button>
+  );
+}
 
 // Pagination component
 function PaginationControls({ 

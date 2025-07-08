@@ -6,6 +6,8 @@ import {
   comments,
   users,
   auditLogs,
+  categories,
+  subcategories,
   type Subject,
   type InsertSubject,
   type Exam,
@@ -20,9 +22,13 @@ import {
   type InsertUser,
   type AuditLog,
   type InsertAuditLog,
+  type Category,
+  type InsertCategory,
+  type Subcategory,
+  type InsertSubcategory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, or, desc, sql } from "drizzle-orm";
+import { eq, like, and, or, desc, sql, inArray } from "drizzle-orm";
 
 // Lazy import to avoid circular dependencies
 let sitemapService: any = null;
@@ -142,6 +148,13 @@ export interface IStorage {
   getAuditLogs(): Promise<AuditLog[]>;
   getAuditLog(id: number): Promise<AuditLog | undefined>;
   createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
+
+  // Bulk Operations
+  bulkDeleteSubjects(ids: number[]): Promise<{ deletedCount: number; errors: string[] }>;
+  bulkDeleteExams(ids: number[]): Promise<{ deletedCount: number; errors: string[] }>;
+  bulkDeleteQuestions(ids: number[]): Promise<{ deletedCount: number; errors: string[] }>;
+  bulkDeleteCategories(ids: number[]): Promise<{ deletedCount: number; errors: string[] }>;
+  bulkDeleteSubcategories(ids: number[]): Promise<{ deletedCount: number; errors: string[] }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1063,6 +1076,119 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { subjectsUpdated, examsUpdated };
+  }
+
+  // Bulk Delete Operations
+  async bulkDeleteSubjects(ids: number[]): Promise<{ deletedCount: number; errors: string[] }> {
+    const errors: string[] = [];
+    let deletedCount = 0;
+
+    try {
+      if (ids.length === 0) {
+        return { deletedCount: 0, errors: [] };
+      }
+
+      // Delete using Drizzle ORM's delete with inArray
+      const result = await db.delete(subjects).where(inArray(subjects.id, ids));
+      deletedCount = result.rowCount || 0;
+
+      // Auto-invalidate sitemap cache
+      try {
+        const { sitemapService } = await import('./sitemap-service.js');
+        await sitemapService.invalidateCache();
+      } catch (sitemapError) {
+        console.log('Note: Sitemap cache invalidation skipped -', sitemapError instanceof Error ? sitemapError.message : 'service unavailable');
+      }
+
+      return { deletedCount, errors };
+    } catch (error) {
+      errors.push(`Failed to delete subjects: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { deletedCount, errors };
+    }
+  }
+
+  async bulkDeleteExams(ids: number[]): Promise<{ deletedCount: number; errors: string[] }> {
+    const errors: string[] = [];
+    let deletedCount = 0;
+
+    try {
+      if (ids.length === 0) {
+        return { deletedCount: 0, errors: [] };
+      }
+
+      const result = await db.delete(exams).where(inArray(exams.id, ids));
+      deletedCount = result.rowCount || 0;
+
+      // Auto-invalidate sitemap cache
+      try {
+        const { sitemapService } = await import('./sitemap-service.js');
+        await sitemapService.invalidateCache();
+      } catch (sitemapError) {
+        console.log('Note: Sitemap cache invalidation skipped -', sitemapError instanceof Error ? sitemapError.message : 'service unavailable');
+      }
+
+      return { deletedCount, errors };
+    } catch (error) {
+      errors.push(`Failed to delete exams: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { deletedCount, errors };
+    }
+  }
+
+  async bulkDeleteQuestions(ids: number[]): Promise<{ deletedCount: number; errors: string[] }> {
+    const errors: string[] = [];
+    let deletedCount = 0;
+
+    try {
+      if (ids.length === 0) {
+        return { deletedCount: 0, errors: [] };
+      }
+
+      const result = await db.delete(questions).where(inArray(questions.id, ids));
+      deletedCount = result.rowCount || 0;
+
+      return { deletedCount, errors };
+    } catch (error) {
+      errors.push(`Failed to delete questions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { deletedCount, errors };
+    }
+  }
+
+  async bulkDeleteCategories(ids: number[]): Promise<{ deletedCount: number; errors: string[] }> {
+    const errors: string[] = [];
+    let deletedCount = 0;
+
+    try {
+      if (ids.length === 0) {
+        return { deletedCount: 0, errors: [] };
+      }
+
+      const result = await db.delete(categories).where(inArray(categories.id, ids));
+      deletedCount = result.rowCount || 0;
+
+      return { deletedCount, errors };
+    } catch (error) {
+      errors.push(`Failed to delete categories: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { deletedCount, errors };
+    }
+  }
+
+  async bulkDeleteSubcategories(ids: number[]): Promise<{ deletedCount: number; errors: string[] }> {
+    const errors: string[] = [];
+    let deletedCount = 0;
+
+    try {
+      if (ids.length === 0) {
+        return { deletedCount: 0, errors: [] };
+      }
+
+      const result = await db.delete(subcategories).where(inArray(subcategories.id, ids));
+      deletedCount = result.rowCount || 0;
+
+      return { deletedCount, errors };
+    } catch (error) {
+      errors.push(`Failed to delete subcategories: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      return { deletedCount, errors };
+    }
   }
 }
 

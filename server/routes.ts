@@ -2028,6 +2028,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== END TOKEN-ONLY ADMIN AUTHENTICATION ====================
   
+  // ==================== BULK DELETE OPERATIONS ====================
+
+  // Bulk delete subjects
+  app.post("/api/subjects/bulk-delete", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid IDs array. Please provide an array of subject IDs." 
+        });
+      }
+
+      // Validate all IDs are numbers
+      const validIds = ids.map(id => parseId(id, 'subject ID')).filter(id => !isNaN(id));
+      if (validIds.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No valid subject IDs provided." 
+        });
+      }
+
+      const result = await storage.bulkDeleteSubjects(validIds);
+      
+      res.json({
+        success: true,
+        message: `Successfully deleted ${result.deletedCount} subjects`,
+        deletedCount: result.deletedCount,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Bulk delete subjects error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete subjects",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Bulk delete exams
+  app.post("/api/exams/bulk-delete", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid IDs array. Please provide an array of exam IDs." 
+        });
+      }
+
+      // Validate all IDs are numbers
+      const validIds = ids.map(id => parseId(id, 'exam ID')).filter(id => !isNaN(id));
+      if (validIds.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No valid exam IDs provided." 
+        });
+      }
+
+      const result = await storage.bulkDeleteExams(validIds);
+      
+      res.json({
+        success: true,
+        message: `Successfully deleted ${result.deletedCount} exams`,
+        deletedCount: result.deletedCount,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Bulk delete exams error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete exams",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Bulk delete questions
+  app.post("/api/questions/bulk-delete", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid IDs array. Please provide an array of question IDs." 
+        });
+      }
+
+      // Validate all IDs are numbers
+      const validIds = ids.map(id => parseId(id, 'question ID')).filter(id => !isNaN(id));
+      if (validIds.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No valid question IDs provided." 
+        });
+      }
+
+      const result = await storage.bulkDeleteQuestions(validIds);
+      
+      res.json({
+        success: true,
+        message: `Successfully deleted ${result.deletedCount} questions`,
+        deletedCount: result.deletedCount,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Bulk delete questions error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete questions",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Bulk delete categories
+  app.post("/api/categories/bulk-delete", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid IDs array. Please provide an array of category IDs." 
+        });
+      }
+
+      // Validate all IDs are numbers
+      const validIds = ids.map(id => parseId(id, 'category ID')).filter(id => !isNaN(id));
+      if (validIds.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No valid category IDs provided." 
+        });
+      }
+
+      const result = await storage.bulkDeleteCategories(validIds);
+      
+      res.json({
+        success: true,
+        message: `Successfully deleted ${result.deletedCount} categories`,
+        deletedCount: result.deletedCount,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Bulk delete categories error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete categories",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Bulk delete subcategories
+  app.post("/api/subcategories/bulk-delete", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid IDs array. Please provide an array of subcategory IDs." 
+        });
+      }
+
+      // Validate all IDs are numbers
+      const validIds = ids.map(id => parseId(id, 'subcategory ID')).filter(id => !isNaN(id));
+      if (validIds.length === 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "No valid subcategory IDs provided." 
+        });
+      }
+
+      const result = await storage.bulkDeleteSubcategories(validIds);
+      
+      res.json({
+        success: true,
+        message: `Successfully deleted ${result.deletedCount} subcategories`,
+        deletedCount: result.deletedCount,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Bulk delete subcategories error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete subcategories",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // ==================== END BULK DELETE OPERATIONS ====================
+  
   // ==================== END ADMIN AUTHENTICATION ====================
 
   // Email service test endpoint
