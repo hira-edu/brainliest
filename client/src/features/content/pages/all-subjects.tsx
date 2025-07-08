@@ -126,7 +126,7 @@ export default function AllSubjects() {
 
   const handleSelectSubject = (subject: Subject) => {
     // Use slug-based navigation if available, otherwise fallback to ID
-    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.slug}`;
+    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.id}`;
     setLocation(path);
   };
 
@@ -410,7 +410,7 @@ export default function AllSubjects() {
                   const IconComponent = categoryData?.icon || BookOpen;
                   
                   return (
-                    <TableRow key={subject.slug} className="hover:bg-gray-50">
+                    <TableRow key={subject.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-3">
                           <IconComponent className="w-5 h-5 text-primary" />

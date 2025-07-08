@@ -86,7 +86,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
 
   const handleSelectSubject = (subject: Subject) => {
     // Use slug-based navigation if available, otherwise fallback to ID
-    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.slug}`;
+    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.id}`;
     setLocation(path);
   };
 
@@ -238,7 +238,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSubjects.map((subject) => (
               <SubjectCard 
-                key={subject.slug} 
+                key={subject.id} 
                 subject={subject} 
                 onClick={() => handleSelectSubject(subject)}
               />

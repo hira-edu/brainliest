@@ -1,39 +1,29 @@
-import {
-  IconRegistryEntry,
-  IconComponent,
-  IconMetadata,
-  IconCategory,
-  SubjectIconMapping,
-} from './types';
+/**
+ * Icon Registry - Centralized Icon Management System
+ * Implements registry pattern for scalable icon management
+ */
+
+import { IconRegistryEntry, IconComponent, IconMetadata, IconCategory, SubjectIconMapping } from './types';
 
 class IconRegistry {
   private icons = new Map<string, IconRegistryEntry>();
   private searchIndex = new Map<string, Set<string>>();
   private categoryIndex = new Map<IconCategory, Set<string>>();
 
-  /** Normalize IDs for case- and whitespace-insensitive lookup */
-  private normalizeId(id: string): string {
-    return id.trim().toLowerCase();
-  }
-
   /**
    * Register a new icon in the registry
    */
   registerIcon(entry: IconRegistryEntry): void {
     const { metadata } = entry;
-    const key = this.normalizeId(metadata.id);
-
-    // Warn if overwriting an existing icon
-    if (this.icons.has(key)) {
-      console.warn(`IconRegistry: Overwriting icon with id '${metadata.id}'`);
-    }
-
-    // Store the icon under normalized key
-    this.icons.set(key, entry);
-
-    // Update indexes
-    this.buildSearchIndex(metadata, key);
-    this.buildCategoryIndex(metadata, key);
+    
+    // Store the icon
+    this.icons.set(metadata.id, entry);
+    
+    // Build search index
+    this.buildSearchIndex(metadata);
+    
+    // Build category index
+    this.buildCategoryIndex(metadata);
   }
 
   /**
@@ -44,83 +34,76 @@ class IconRegistry {
   }
 
   /**
-   * Get icon component by ID (null if not found)
+   * Get icon component by ID
    */
   getIcon(id: string): IconComponent | null {
-    const key = this.normalizeId(id);
-    return this.icons.get(key)?.component ?? null;
+    return this.icons.get(id)?.component || null;
   }
 
   /**
-   * Get icon metadata by ID (null if not found)
+   * Get icon metadata by ID
    */
   getIconMetadata(id: string): IconMetadata | null {
-    const key = this.normalizeId(id);
-    return this.icons.get(key)?.metadata ?? null;
+    return this.icons.get(id)?.metadata || null;
   }
 
   /**
    * Check if icon exists
    */
   hasIcon(id: string): boolean {
-    return this.icons.has(this.normalizeId(id));
+    return this.icons.has(id);
   }
 
   /**
-   * Get all registered icon IDs (original metadata IDs)
+   * Get all available icon IDs
    */
   getAllIconIds(): string[] {
-    return Array.from(this.icons.values()).map(entry => entry.metadata.id);
+    return Array.from(this.icons.keys());
   }
 
   /**
-   * Search icons by multi-term query, optionally filtering by category
+   * Search icons by query string
    */
   searchIcons(query: string, category?: IconCategory): IconRegistryEntry[] {
-    const trimmed = query.trim().toLowerCase();
-    if (!trimmed) {
-      // No query: return by category or empty
+    if (!query.trim()) {
       return category ? this.getIconsByCategory(category) : [];
     }
 
-    // Split into tokens and intersect result sets
-    const tokens = trimmed.split(/\s+/);
-    let resultIds: Set<string> | null = null;
-    for (const token of tokens) {
-      const ids = this.searchIndex.get(token) ?? new Set();
-      if (resultIds === null) {
-        resultIds = new Set(ids);
-      } else {
-        // intersection
-        for (const id of Array.from(resultIds)) {
-          if (!ids.has(id)) resultIds.delete(id);
-        }
+    const normalizedQuery = query.toLowerCase();
+    const matchingIds = new Set<string>();
+
+    // Search in indexed terms
+    for (const [term, iconIds] of this.searchIndex) {
+      if (term.includes(normalizedQuery)) {
+        iconIds.forEach(id => matchingIds.add(id));
       }
-      if (resultIds.size === 0) break;
     }
-    const matches = resultIds
-      ? Array.from(resultIds)
-          .map(k => this.icons.get(k))
-          .filter((e): e is IconRegistryEntry => !!e)
-      : [];
 
-    // Filter by category if requested
-    const filtered = category
-      ? matches.filter(e => e.metadata.category === category)
-      : matches;
+    // Get matching entries
+    let results = Array.from(matchingIds)
+      .map(id => this.icons.get(id))
+      .filter((entry): entry is IconRegistryEntry => entry !== undefined);
 
-    // Sort by relevance: exact name > prefix > alphabetical
-    const cq = trimmed;
-    return filtered.sort((a, b) => {
-      const aName = a.metadata.name.toLowerCase();
-      const bName = b.metadata.name.toLowerCase();
-      const aExact = aName === cq;
-      const bExact = bName === cq;
-      if (aExact !== bExact) return aExact ? -1 : 1;
-      const aStarts = aName.startsWith(cq);
-      const bStarts = bName.startsWith(cq);
-      if (aStarts !== bStarts) return aStarts ? -1 : 1;
-      return aName.localeCompare(bName);
+    // Filter by category if specified
+    if (category) {
+      results = results.filter(entry => entry.metadata.category === category);
+    }
+
+    // Sort by relevance (exact matches first, then partial matches)
+    return results.sort((a, b) => {
+      const aExact = a.metadata.name.toLowerCase() === normalizedQuery;
+      const bExact = b.metadata.name.toLowerCase() === normalizedQuery;
+      
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      
+      const aStarts = a.metadata.name.toLowerCase().startsWith(normalizedQuery);
+      const bStarts = b.metadata.name.toLowerCase().startsWith(normalizedQuery);
+      
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      
+      return a.metadata.name.localeCompare(b.metadata.name);
     });
   }
 
@@ -128,50 +111,63 @@ class IconRegistry {
    * Get all icons in a specific category
    */
   getIconsByCategory(category: IconCategory): IconRegistryEntry[] {
-    const ids = this.categoryIndex.get(category) ?? new Set();
-    return Array.from(ids)
-      .map(k => this.icons.get(k))
-      .filter((e): e is IconRegistryEntry => !!e)
+    const iconIds = this.categoryIndex.get(category) || new Set();
+    return Array.from(iconIds)
+      .map(id => this.icons.get(id))
+      .filter((entry): entry is IconRegistryEntry => entry !== undefined)
       .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
   }
 
   /**
-   * Get icons by multiple categories (union)
+   * Get icons by multiple categories
    */
   getIconsByCategories(categories: IconCategory[]): IconRegistryEntry[] {
-    const unique = new Map<string, IconRegistryEntry>();
-    categories.forEach(cat => {
-      this.getIconsByCategory(cat).forEach(e => unique.set(e.metadata.id, e));
+    const results = new Map<string, IconRegistryEntry>();
+    
+    categories.forEach(category => {
+      this.getIconsByCategory(category).forEach(entry => {
+        results.set(entry.metadata.id, entry);
+      });
     });
-    return Array.from(unique.values()).sort((a, b) =>
-      a.metadata.name.localeCompare(b.metadata.name),
-    );
+    
+    return Array.from(results.values())
+      .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
   }
 
   /**
-   * Get suggested icon component based on subject name
+   * Get suggested icons based on subject name
    */
   getIconForSubject(subjectName: string): IconComponent | null {
-    // 1) Exact mapping
-    const exact = this.getExactSubjectMapping(subjectName);
-    if (exact && this.hasIcon(exact)) {
-      return this.getIcon(exact);
+    // Try exact mapping first
+    const exactMapping = this.getExactSubjectMapping(subjectName);
+    if (exactMapping) {
+      return this.getIcon(exactMapping);
     }
 
-    // 2) Fuzzy search
-    const fuzzy = this.searchIcons(subjectName);
-    if (fuzzy.length > 0) {
-      return fuzzy[0].component;
+    // Try fuzzy search
+    const searchResults = this.searchIcons(subjectName);
+    if (searchResults.length > 0) {
+      return searchResults[0].component;
     }
 
-    // 3) Category inference fallback
+    // Try category-based fallback
     const category = this.inferCategoryFromSubject(subjectName);
-    const byCategory = this.getIconsByCategory(category);
-    return byCategory.length > 0 ? byCategory[0].component : null;
+    const categoryIcons = this.getIconsByCategory(category);
+    
+    return categoryIcons.length > 0 ? categoryIcons[0].component : null;
   }
 
   /**
-   * Clear registry and indexes
+   * Get usage statistics for icons
+   */
+  getIconStats(): Record<string, { usageCount: number; lastUsed: Date }> {
+    // Implementation would track usage statistics
+    // For now, return empty object
+    return {};
+  }
+
+  /**
+   * Clear the registry
    */
   clear(): void {
     this.icons.clear();
@@ -180,83 +176,194 @@ class IconRegistry {
   }
 
   /**
-   * Export registry snapshot
+   * Export registry data for persistence
    */
   export(): { icons: IconRegistryEntry[]; timestamp: string } {
     return {
       icons: Array.from(this.icons.values()),
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
   }
 
-  // ——— Private helpers ———
+  // Private helper methods
 
-  private buildSearchIndex(meta: IconMetadata, idKey: string): void {
-    const terms = new Set<string>([
-      ...meta.name.toLowerCase().split(/\W+/),
-      ...meta.description.toLowerCase().split(/\W+/),
-      ...meta.keywords.map(k => k.toLowerCase()),
-      ...meta.tags.map(t => t.toLowerCase()),
-      meta.category.toLowerCase(),
-    ]);
+  private buildSearchIndex(metadata: IconMetadata): void {
+    const terms = [
+      metadata.name.toLowerCase(),
+      metadata.description.toLowerCase(),
+      ...metadata.keywords.map(k => k.toLowerCase()),
+      ...metadata.tags.map(t => t.toLowerCase()),
+      metadata.category.toLowerCase()
+    ];
 
-    for (const term of terms) {
-      if (!term) continue;
-      if (!this.searchIndex.has(term)) this.searchIndex.set(term, new Set());
-      this.searchIndex.get(term)!.add(idKey);
-    }
+    terms.forEach(term => {
+      // Index whole term
+      if (!this.searchIndex.has(term)) {
+        this.searchIndex.set(term, new Set());
+      }
+      this.searchIndex.get(term)!.add(metadata.id);
+
+      // Index partial terms (for substring matching)
+      for (let i = 1; i <= term.length; i++) {
+        const partial = term.substring(0, i);
+        if (!this.searchIndex.has(partial)) {
+          this.searchIndex.set(partial, new Set());
+        }
+        this.searchIndex.get(partial)!.add(metadata.id);
+      }
+    });
   }
 
-  private buildCategoryIndex(meta: IconMetadata, idKey: string): void {
-    const cat = meta.category;
-    if (!this.categoryIndex.has(cat)) {
-      this.categoryIndex.set(cat, new Set());
+  private buildCategoryIndex(metadata: IconMetadata): void {
+    if (!this.categoryIndex.has(metadata.category)) {
+      this.categoryIndex.set(metadata.category, new Set());
     }
-    this.categoryIndex.get(cat)!.add(idKey);
+    this.categoryIndex.get(metadata.category)!.add(metadata.id);
   }
 
   private getExactSubjectMapping(subjectName: string): string | null {
-    const m: SubjectIconMapping = {
-      // ... your mapping entries ...
+    // Comprehensive subject to icon mapping
+    const subjectMappings: Record<string, string> = {
+      // Professional Certifications
       'PMP Certification': 'pmp',
       'AWS Cloud Practitioner': 'aws',
-      // etc.
+      'AWS Solutions Architect': 'aws',
+      'AWS Developer': 'aws',
+      'AWS SysOps Administrator': 'aws',
+      'CompTIA Security+': 'comptia',
+      'CompTIA Network+': 'comptia',
+      'CompTIA A+': 'comptia',
+      'Cisco CCNA': 'cisco',
+      'Cisco CCNP': 'cisco',
+      'Azure Fundamentals': 'azure',
+      'Azure Administrator': 'azure',
+      'Google Cloud Professional': 'google-cloud',
+      'Oracle Database': 'oracle',
+      'VMware vSphere': 'vmware',
+      'Kubernetes Administrator': 'kubernetes',
+      'Docker Certified Associate': 'docker',
+      
+      // Computer Science & Technology
+      'Programming': 'code',
+      'Data Structures': 'algorithm',
+      'Algorithms': 'algorithm',
+      'Computer Science': 'computer-science',
+      'Web Development': 'web-dev',
+      'Database Design': 'database',
+      'Computer Science Fundamentals': 'computer-science',
+      
+      // Mathematics & Statistics
+      'Mathematics': 'mathematics',
+      'Calculus': 'calculus',
+      'Linear Algebra': 'linear-algebra',
+      'Discrete Mathematics': 'discrete-math',
+      'Geometry': 'geometry',
+      'Pre-Calculus': 'pre-calculus',
+      'Statistics': 'statistics',
+      'AP Statistics': 'statistics',
+      'Biostatistics': 'biostatistics',
+      'Business Statistics': 'business-statistics',
+      'Elementary Statistics': 'statistics',
+      'Intro to Statistics': 'statistics',
+      
+      // Natural Sciences
+      'Physics': 'physics',
+      'Chemistry': 'chemistry',
+      'Biology': 'biology',
+      'Astronomy': 'astronomy',
+      'Earth Science': 'earth-science',
+      
+      // Engineering
+      'Engineering': 'engineering',
+      'Mechanical Engineering': 'mechanical-engineering',
+      'Electrical Engineering': 'electrical-engineering',
+      
+      // Business & Economics
+      'Business': 'business',
+      'Accounting': 'accounting',
+      'Economics': 'economics',
+      'Finance': 'finance',
+      'Business Administration': 'business-admin',
+      
+      // Medical & Health Sciences
+      'Nursing': 'nursing',
+      'Pharmacology': 'pharmacology',
+      'Medical Sciences': 'medical',
+      'Health Sciences': 'health-sciences',
+      'Anatomy': 'anatomy',
+      'HESI': 'medical-test',
+      'TEAS': 'medical-test',
+      
+      // Social Sciences & Liberal Arts
+      'Psychology': 'psychology',
+      'History': 'history',
+      'Philosophy': 'philosophy',
+      'Sociology': 'sociology',
+      'Political Science': 'political-science',
+      'English': 'literature',
+      'Writing': 'writing',
+      
+      // Test Preparation
+      'GRE': 'test-prep',
+      'LSAT': 'law-test',
+      'TOEFL': 'language-test',
+      'GED': 'test-prep'
     };
-    return m[subjectName] ?? null;
+
+    return subjectMappings[subjectName] || null;
   }
 
   private inferCategoryFromSubject(subjectName: string): IconCategory {
-    const n = subjectName.toLowerCase();
-    if (/(aws|azure|cloud|comptia|cisco|certification)/.test(n)) {
+    const name = subjectName.toLowerCase();
+    
+    if (name.includes('aws') || name.includes('azure') || name.includes('cloud') || 
+        name.includes('comptia') || name.includes('cisco') || name.includes('certification')) {
       return 'certification';
     }
-    if (/(math|calculus|algebra|statistics|geometry)/.test(n)) {
+    
+    if (name.includes('math') || name.includes('calculus') || name.includes('algebra') || 
+        name.includes('statistics') || name.includes('geometry')) {
       return 'mathematics';
     }
-    if (/(programming|computer|web|database|data structures)/.test(n)) {
+    
+    if (name.includes('programming') || name.includes('computer') || name.includes('data structures') ||
+        name.includes('web') || name.includes('database')) {
       return 'technology';
     }
-    if (/(business|economics|finance|accounting)/.test(n)) {
+    
+    if (name.includes('business') || name.includes('economics') || name.includes('finance') ||
+        name.includes('accounting')) {
       return 'business';
     }
-    if (/(medical|nursing|health|pharmacology|hesi|teas)/.test(n)) {
+    
+    if (name.includes('medical') || name.includes('nursing') || name.includes('health') ||
+        name.includes('anatomy') || name.includes('hesi') || name.includes('teas')) {
       return 'medical';
     }
-    if (/(physics|chemistry|biology|science|astronomy)/.test(n)) {
+    
+    if (name.includes('physics') || name.includes('chemistry') || name.includes('biology') ||
+        name.includes('science') || name.includes('astronomy')) {
       return 'science';
     }
-    if (/(engineering|mechanical|electrical)/.test(n)) {
+    
+    if (name.includes('engineering') || name.includes('mechanical') || name.includes('electrical')) {
       return 'engineering';
     }
-    if (/(psychology|history|philosophy|sociology|political)/.test(n)) {
+    
+    if (name.includes('psychology') || name.includes('history') || name.includes('philosophy') ||
+        name.includes('sociology') || name.includes('political')) {
       return 'social';
     }
-    if (/(english|writing|language|toefl)/.test(n)) {
+    
+    if (name.includes('english') || name.includes('writing') || name.includes('language') ||
+        name.includes('toefl')) {
       return 'language';
     }
-    if (/(gre|lsat|ged|test)/.test(n)) {
+    
+    if (name.includes('gre') || name.includes('lsat') || name.includes('ged') || name.includes('test')) {
       return 'test-prep';
     }
+    
     return 'academic';
   }
 }
