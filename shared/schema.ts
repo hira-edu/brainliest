@@ -26,9 +26,8 @@ export const subcategories = pgTable("subcategories", {
 });
 
 export const subjects = pgTable("subjects", {
-  id: serial("id").primaryKey(),
+  slug: text("slug").primaryKey(),
   name: text("name").notNull(),
-  slug: text("slug").notNull().unique(),
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
@@ -39,10 +38,9 @@ export const subjects = pgTable("subjects", {
 });
 
 export const exams = pgTable("exams", {
-  id: serial("id").primaryKey(),
-  subjectId: integer("subject_id").notNull(),
+  slug: text("slug").primaryKey(),
+  subjectSlug: text("subject_slug").notNull(),
   title: text("title").notNull(),
-  slug: text("slug").notNull().unique(),
   description: text("description"),
   questionCount: integer("question_count").notNull(),
   duration: integer("duration"), // in minutes
@@ -52,8 +50,8 @@ export const exams = pgTable("exams", {
 
 export const questions = pgTable("questions", {
   id: serial("id").primaryKey(),
-  examId: integer("exam_id").notNull(),
-  subjectId: integer("subject_id").notNull(),
+  examSlug: text("exam_slug").notNull(),
+  subjectSlug: text("subject_slug").notNull(),
   text: text("text").notNull(),
   options: text("options").array().notNull(), // Array of option texts
   correctAnswer: integer("correct_answer").notNull(), // Index of correct option (0-based) or multiple if multipleCorrect is true
@@ -67,7 +65,7 @@ export const questions = pgTable("questions", {
 
 export const examSessions = pgTable("user_sessions", {
   id: serial("id").primaryKey(),
-  examId: integer("exam_id").notNull(),
+  examSlug: text("exam_slug").notNull(),
   userName: text("user_name"), // Add userName field for compatibility
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
@@ -184,7 +182,7 @@ export const detailedAnswers = pgTable("detailed_answers", {
 export const examAnalytics = pgTable("exam_analytics", {
   id: serial("id").primaryKey(),
   sessionId: integer("session_id").notNull(),
-  examId: integer("exam_id").notNull(),
+  examSlug: text("exam_slug").notNull(),
   userName: text("user_name").notNull(),
   totalQuestions: integer("total_questions").notNull(),
   correctAnswers: integer("correct_answers").notNull(),
@@ -200,7 +198,7 @@ export const examAnalytics = pgTable("exam_analytics", {
 export const performanceTrends = pgTable("performance_trends", {
   id: serial("id").primaryKey(),
   userName: text("user_name").notNull(),
-  subjectId: integer("subject_id").notNull(),
+  subjectSlug: text("subject_slug").notNull(),
   week: text("week").notNull(), // Start of week (YYYY-MM-DD format)
   examsTaken: integer("exams_taken").default(0),
   questionsAnswered: integer("questions_answered").default(0),
@@ -215,7 +213,7 @@ export const performanceTrends = pgTable("performance_trends", {
 export const studyRecommendations = pgTable("study_recommendations", {
   id: serial("id").primaryKey(),
   userName: text("user_name").notNull(),
-  subjectId: integer("subject_id").notNull(),
+  subjectSlug: text("subject_slug").notNull(),
   recommendationType: text("recommendation_type").notNull(), // "focus_area", "review", "strength"
   content: text("content").notNull(),
   priority: integer("priority").default(1), // 1-5 scale
@@ -259,7 +257,7 @@ export const authSessions = pgTable("auth_sessions", {
 export const userSubjectInteractions = pgTable("user_subject_interactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"), // nullable for anonymous users
-  subjectId: integer("subject_id").notNull(),
+  subjectSlug: text("subject_slug").notNull(),
   sessionId: text("session_id"), // for anonymous tracking
   interactionType: text("interaction_type").notNull(), // 'view', 'search', 'click', 'exam_start', 'exam_complete'
   ipAddress: text("ip_address"),
@@ -269,7 +267,7 @@ export const userSubjectInteractions = pgTable("user_subject_interactions", {
 
 export const subjectTrendingStats = pgTable("subject_trending_stats", {
   id: serial("id").primaryKey(),
-  subjectId: integer("subject_id").notNull(),
+  subjectSlug: text("subject_slug").notNull(),
   date: timestamp("date").notNull(),
   viewCount: integer("view_count").default(0),
   searchCount: integer("search_count").default(0),
@@ -299,14 +297,11 @@ export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
 });
 
 export const insertSubjectSchema = createInsertSchema(subjects).omit({
-  id: true,
   examCount: true,
   questionCount: true,
 });
 
-export const insertExamSchema = createInsertSchema(exams).omit({
-  id: true,
-});
+export const insertExamSchema = createInsertSchema(exams);
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({
   id: true,
