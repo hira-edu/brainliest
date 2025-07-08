@@ -6,6 +6,8 @@ import {
   comments,
   users,
   auditLogs,
+  userRoles,
+  anonQuestionSessions,
   type Subject,
   type InsertSubject,
   type Exam,

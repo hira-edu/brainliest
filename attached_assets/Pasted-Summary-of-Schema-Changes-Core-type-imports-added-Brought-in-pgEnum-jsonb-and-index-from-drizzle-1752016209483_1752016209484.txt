@@ -1,0 +1,97 @@
+Summary of Schema Changes
+
+Core-type imports added
+
+Brought in pgEnum, jsonb, and index from drizzle-orm/pg-core.
+
+Strongly-typed role
+
+Introduced a PostgreSQL enum user_roles (user, admin, moderator) and switched users.role to use it.
+
+JSONB metadata
+
+Changed users.metadata from plain text to native jsonb with a {} default.
+
+Non-nullable defaults
+
+Ensured text fields (firstName, userAgentHash, etc.) default to "" so your application never sees null.
+
+Time-zone-aware audit columns
+
+Kept createdAt/updatedAt/lastReset as timestamptz with .onUpdateNow() on updatedAt.
+
+New indexes
+
+Composite index on (ip_address, user_agent_hash) for fast freemium lookups.
+
+Index on users.role to speed role-based queries.
+
+Step-by-Step Updates for Related Code
+Imports in your DAO/repository modules
+
+ts
+Copy
+Edit
+// Before
+import { users, anonQuestionSessions } from "./databaseSchema";
+// After (add enum and index exports if needed)
+import {
+  users,
+  anonQuestionSessions,
+  userRoles,              // for type-safe role references
+  anonSessionsIpUaIdx,    // if you ever need to inspect or drop this index
+  usersByRoleIdx
+} from "./databaseSchema";
+Insert/Update queries
+
+Roles: when creating/updating a user, pass a value of type keyof typeof userRoles.enumValues (e.g. "admin") instead of a raw string.
+
+Metadata: give your code/ORM a JSON object, not a string:
+
+ts
+Copy
+Edit
+// Before (text metadata)
+await db.insert(users).values({ ..., metadata: JSON.stringify(myObj) });
+// After (jsonb)
+await db.insert(users).values({ ..., metadata: myObj });
+Sessions: you can now omit userAgentHash if you want the default "".
+
+TypeScript types
+
+Regenerate or update your generated types so that:
+
+ts
+Copy
+Edit
+type User = InferModel<typeof users, "select">;
+// Now `User["role"]` is the union "user" | "admin" | "moderator"
+// And `User["metadata"]` is `any` or your defined JSON shape
+Migrations
+
+Add a migration to create the user_roles enum before the users table.
+
+Change metadata column from TEXT to JSONB (with a USING metadata::jsonb clause if you have existing data).
+
+Drop the old anon_question_sessions_ip_address_key unique constraint and add the composite index.
+
+Adjust any raw SQL
+
+Anywhere you reference role = 'admin' in raw SQL, it now matches the enum—no change to literal, but your SQL linter might require role = user_roles_admin syntax depending on your setup.
+
+If you ever do SELECT metadata::text, remove that cast since it’s now a JSONB column.
+
+How to Instruct Your Other AI
+Prompt fragment:
+“I’ve updated the database schema to use a PostgreSQL enum user_roles, native JSONB for metadata, and added composite/index definitions. Please update all import statements in routes.ts, storage.ts, and any repository modules to:
+
+Import userRoles alongside users and anonQuestionSessions.
+
+Change metadata handling from string to object.
+
+Pass enums for role values.
+
+Remove unique constraint on ip_address, rely on index instead.
+
+Ensure migrations create the enum before table, alter metadata to JSONB, and drop/add indexes accordingly.
+Generate diff hunks for each file and outline steps to run the new migrations.”

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, index, pgEnum, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -87,56 +87,47 @@ export const comments = pgTable("comments", {
   editedAt: timestamp("edited_at"),
 });
 
+// Define user roles as an enum for type safety and constraint enforcement
+export const userRoles = pgEnum("user_roles", ["user", "admin", "moderator"]);
+
 // IP-based freemium session tracking table
 export const anonQuestionSessions = pgTable("anon_question_sessions", {
   id: serial("id").primaryKey(),
-  ipAddress: text("ip_address").unique().notNull(), // Normalized IP (supports IPv4/IPv6)
-  questionsAnswered: integer("questions_answered").default(0).notNull(),
-  lastReset: timestamp("last_reset").defaultNow().notNull(),
-  userAgentHash: text("user_agent_hash"), // Optional: hashed UA for better granularity
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  // Store normalized IP addresses; allow multiple entries per IP for different UAs
+  ipAddress: text("ip_address").notNull(),
+  questionsAnswered: integer("questions_answered").notNull().default(0),
+  // Time-zone aware timestamp for last reset of question count
+  lastReset: timestamp("last_reset", { mode: "tz" }).notNull().defaultNow(),
+  userAgentHash: text("user_agent_hash").notNull().default(""),
+  createdAt: timestamp("created_at", { mode: "tz" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "tz" }).notNull().defaultNow(),
 });
 
+
+
+// Users table with audit fields, role enum, and JSONB metadata
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  email: text("email").unique().notNull(),
-  username: text("username").unique(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  profileImage: text("profile_image"),
-  isActive: boolean("is_active").default(true),
-  isBanned: boolean("is_banned").default(false),
-  banReason: text("ban_reason"),
-  role: text("role").default("user"), // user, admin, moderator
-  lastLoginAt: timestamp("last_login_at"),
-  lastLoginIp: text("last_login_ip"),
-  registrationIp: text("registration_ip"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  metadata: text("metadata"), // JSON string for additional data
-  
-  // Authentication fields
-  passwordHash: text("password_hash"), // bcrypt hash
-  emailVerified: boolean("email_verified").default(false),
-  emailVerificationToken: text("email_verification_token"),
-  emailVerificationExpires: timestamp("email_verification_expires"),
-  passwordResetToken: text("password_reset_token"),
-  passwordResetExpires: timestamp("password_reset_expires"),
-  
-  // OAuth fields
-  googleId: text("google_id").unique(),
-  oauthProvider: text("oauth_provider"), // 'google', 'facebook', etc.
-  
-  // Security fields
-  failedLoginAttempts: integer("failed_login_attempts").default(0),
-  lockedUntil: timestamp("locked_until"),
-  twoFactorEnabled: boolean("two_factor_enabled").default(false),
-  twoFactorSecret: text("two_factor_secret"),
-  
-  // Login tracking
-  loginCount: integer("login_count").default(0),
+  email: text("email").notNull().unique(),
+  username: text("username").notNull().unique(),
+  firstName: text("first_name").notNull().default(""),
+  lastName: text("last_name").notNull().default(""),
+  profileImage: text("profile_image").notNull().default(""),
+  isActive: boolean("is_active").notNull().default(true),
+  isBanned: boolean("is_banned").notNull().default(false),
+  banReason: text("ban_reason").notNull().default(""),
+  // Enforced enum for roles prevents typos and invalid roles
+  role: userRoles("role").notNull().default("user"),
+  lastLoginAt: timestamp("last_login_at", { mode: "tz" }),
+  lastLoginIp: text("last_login_ip").notNull().default(""),
+  registrationIp: text("registration_ip").notNull().default(""),
+  createdAt: timestamp("created_at", { mode: "tz" }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { mode: "tz" }).notNull().defaultNow(),
+  // Store arbitrary JSON metadata in a native JSONB column
+  metadata: jsonb("metadata").notNull().default("{}"),
 });
+
+
 
 // Audit logging table for enterprise compliance
 export const auditLogs = pgTable("audit_logs", {
