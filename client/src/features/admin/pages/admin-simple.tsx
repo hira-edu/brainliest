@@ -2837,7 +2837,22 @@ export default function AdminSimple() {
                 />
               </div>
             </div>
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <Select 
+              value={selectedSubject} 
+              onValueChange={(value) => {
+                setSelectedSubject(value);
+                // Reset exam selection when subject changes
+                if (value === "all") {
+                  setSelectedExam("all");
+                } else {
+                  // Check if current exam belongs to selected subject
+                  const currentExam = exams?.find(e => e.id.toString() === selectedExam);
+                  if (!currentExam || currentExam.subjectId.toString() !== value) {
+                    setSelectedExam("all");
+                  }
+                }
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filter by subject" />
               </SelectTrigger>
@@ -2850,17 +2865,38 @@ export default function AdminSimple() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={selectedExam} onValueChange={setSelectedExam}>
+            <Select 
+              value={selectedExam} 
+              onValueChange={setSelectedExam}
+              disabled={selectedSubject === "all"}
+            >
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by exam" />
+                <SelectValue 
+                  placeholder={
+                    selectedSubject === "all" 
+                      ? "Select subject first" 
+                      : "Filter by exam"
+                  } 
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Exams</SelectItem>
-                {exams?.map((exam) => (
-                  <SelectItem key={exam.id} value={exam.id.toString()}>
-                    {exam.title}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">
+                  {selectedSubject === "all" ? "All Exams" : "All Exams in Subject"}
+                </SelectItem>
+                {selectedSubject === "all" 
+                  ? exams?.map((exam) => (
+                      <SelectItem key={exam.id} value={exam.id.toString()}>
+                        {exam.title}
+                      </SelectItem>
+                    ))
+                  : exams
+                      ?.filter(exam => exam.subjectId.toString() === selectedSubject)
+                      ?.map((exam) => (
+                        <SelectItem key={exam.id} value={exam.id.toString()}>
+                          {exam.title}
+                        </SelectItem>
+                      ))
+                }
               </SelectContent>
             </Select>
             <Badge variant="outline">{filteredQuestions.length} questions</Badge>
