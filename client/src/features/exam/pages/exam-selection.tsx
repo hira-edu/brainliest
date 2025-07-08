@@ -26,13 +26,13 @@ export default function ExamSelection() {
   });
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
-    queryKey: ["/api/exams", subject?.id],
+    queryKey: ["/api/exams", subject?.slug],
     queryFn: async () => {
-      const response = await fetch(`/api/exams?subjectId=${subject?.id}`);
+      const response = await fetch(`/api/exams?subjectSlug=${subject?.slug}`);
       if (!response.ok) throw new Error('Failed to fetch exams');
       return response.json();
     },
-    enabled: !!subject?.id,
+    enabled: !!subject?.slug,
   });
 
   const handleStartExam = (exam: Exam) => {
@@ -136,7 +136,7 @@ export default function ExamSelection() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {exams.map((exam) => (
               <ExamCard 
-                key={exam.id} 
+                key={exam.slug} 
                 exam={exam} 
                 onStart={() => handleStartExam(exam)}
                 // Completion tracking implemented via user sessions and analytics

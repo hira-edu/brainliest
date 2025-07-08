@@ -1641,7 +1641,7 @@ export default function AdminSimple() {
 
         <div className="grid gap-4">
           {subjects?.slice((subjectsPage - 1) * subjectsPerPage, subjectsPage * subjectsPerPage).map((subject) => (
-            <Card key={subject.id} className="hover:shadow-md transition-shadow">
+            <Card key={subject.slug} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center justify-between flex-1 mr-4">
@@ -2067,7 +2067,7 @@ export default function AdminSimple() {
             const questionCount = questions?.filter(q => q.examId === exam.id).length || 0;
 
             return (
-              <Card key={exam.id} className="hover:shadow-md transition-shadow">
+              <Card key={exam.slug} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
@@ -2654,7 +2654,7 @@ export default function AdminSimple() {
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
                 {subjects?.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id.toString()}>
+                  <SelectItem key={subject.slug} value={subject.slug}>
                     {subject.name}
                   </SelectItem>
                 ))}
@@ -2680,14 +2680,14 @@ export default function AdminSimple() {
                 </SelectItem>
                 {selectedSubject === "all" 
                   ? exams?.map((exam) => (
-                      <SelectItem key={exam.id} value={exam.id.toString()}>
+                      <SelectItem key={exam.slug} value={exam.slug}>
                         {exam.title}
                       </SelectItem>
                     ))
                   : exams
-                      ?.filter(exam => exam.subjectId.toString() === selectedSubject)
+                      ?.filter(exam => exam.subjectSlug === selectedSubject)
                       ?.map((exam) => (
-                        <SelectItem key={exam.id} value={exam.id.toString()}>
+                        <SelectItem key={exam.slug} value={exam.slug}>
                           {exam.title}
                         </SelectItem>
                       ))

@@ -6,33 +6,43 @@ import { Header } from "../../shared";
 
 export default function Results() {
   const [, setLocation] = useLocation();
-  const [match, params] = useRoute("/results/:id");
-  const sessionId = params?.id ? parseInt(params.id) : null;
+  
+  // Try slug-based route first, then fall back to ID-based route
+  const [slugMatch, slugParams] = useRoute("/results/:slug");
+  const [idMatch, idParams] = useRoute("/results/id/:id");
+  
+  const isSlugRoute = slugMatch && slugParams?.slug;
+  const isIdRoute = idMatch && idParams?.id;
+  
+  const sessionSlug = isSlugRoute ? slugParams.slug : null;
+  const sessionId = isIdRoute ? parseInt(idParams.id) : null;
 
   const { data: session } = useQuery<UserSession>({
-    queryKey: [`/api/sessions/${sessionId}`],
-    enabled: !!sessionId,
+    queryKey: isSlugRoute ? [`/api/sessions/by-slug/${sessionSlug}`] : [`/api/sessions/${sessionId}`],
+    enabled: !!(sessionSlug || sessionId),
   });
 
   const { data: exam } = useQuery<Exam>({
-    queryKey: [`/api/exams/${session?.examId}`],
-    enabled: !!session?.examId,
+    queryKey: session?.examSlug ? [`/api/exams/by-slug/${session.examSlug}`] : [`/api/exams/${session?.examId}`],
+    enabled: !!(session?.examSlug || session?.examId),
   });
 
   const { data: questions } = useQuery<Question[]>({
-    queryKey: ["/api/questions", session?.examId],
+    queryKey: ["/api/questions", session?.examSlug || session?.examId],
     queryFn: async () => {
-      const response = await fetch(`/api/questions?examId=${session?.examId}`);
+      const examIdentifier = session?.examSlug || session?.examId;
+      const queryParam = session?.examSlug ? `examSlug=${session.examSlug}` : `examId=${session?.examId}`;
+      const response = await fetch(`/api/questions?${queryParam}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: !!session?.examId,
+    enabled: !!(session?.examSlug || session?.examId),
   });
 
   // Fetch subject data for navigation
   const { data: subject } = useQuery({
-    queryKey: [`/api/subjects/${exam?.subjectId}`],
-    enabled: !!exam?.subjectId,
+    queryKey: exam?.subjectSlug ? [`/api/subjects/by-slug/${exam.subjectSlug}`] : [`/api/subjects/${exam?.subjectId}`],
+    enabled: !!(exam?.subjectSlug || exam?.subjectId),
   });
 
   const calculateResults = (): ExamResult | null => {
@@ -94,14 +104,18 @@ export default function Results() {
   };
 
   const handleRetakeExam = () => {
-    if (session?.examId) {
-      setLocation(`/exam/${session.examId}`);
+    if (exam?.slug) {
+      setLocation(`/exam/${exam.slug}`);
+    } else if (session?.examId) {
+      setLocation(`/exam/id/${session.examId}`);
     }
   };
 
   const handleGoToExams = () => {
     if (subject?.slug) {
       setLocation(`/subject/${subject.slug}`);
+    } else if (exam?.subjectSlug) {
+      setLocation(`/subject/${exam.subjectSlug}`);
     } else if (exam?.subjectId) {
       setLocation(`/subject/id/${exam.subjectId}`);
     } else {
