@@ -332,6 +332,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/exams/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'exam ID');
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid exam ID" });
+      }
+      const validation = insertExamSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid exam data", errors: validation.error.errors });
+      }
+      const exam = await storage.updateExam(id, validation.data);
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.json(exam);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update exam" });
+    }
+  });
+
+  app.delete("/api/exams/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'exam ID');
+      if (isNaN(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid exam ID" });
+      }
+      const deleted = await storage.deleteExam(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete exam" });
+    }
+  });
+
   // Question routes
   app.get("/api/questions", checkFreemiumStatus(), async (req, res) => {
     try {
