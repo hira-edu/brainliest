@@ -142,6 +142,9 @@ export interface IStorage {
   getAuditLogs(): Promise<AuditLog[]>;
   getAuditLog(id: number): Promise<AuditLog | undefined>;
   createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
+
+  // Slug management
+  backfillSlugsForExistingRecords(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1031,6 +1034,36 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  // Backfill slugs for existing records that don't have them
+  async backfillSlugsForExistingRecords(): Promise<void> {
+    try {
+      // Check for subjects without slugs
+      const subjectsWithoutSlugs = await db.select().from(subjects).where(or(eq(subjects.slug, ''), eq(subjects.slug, null)));
+      
+      for (const subject of subjectsWithoutSlugs) {
+        const baseSlug = slugify(subject.name);
+        const uniqueSlug = await generateUniqueSlug(baseSlug, 'subjects');
+        await db.update(subjects)
+          .set({ slug: uniqueSlug })
+          .where(eq(subjects.slug, subject.slug));
+      }
+
+      // Check for exams without slugs
+      const examsWithoutSlugs = await db.select().from(exams).where(or(eq(exams.slug, ''), eq(exams.slug, null)));
+      
+      for (const exam of examsWithoutSlugs) {
+        const baseSlug = slugify(exam.title);
+        const uniqueSlug = await generateUniqueSlug(baseSlug, 'exams');
+        await db.update(exams)
+          .set({ slug: uniqueSlug })
+          .where(eq(exams.slug, exam.slug));
+      }
+
+      console.log(`✓ Backfilled slugs for ${subjectsWithoutSlugs.length} subjects and ${examsWithoutSlugs.length} exams`);
+    } catch (error) {
+      console.error('Error backfilling slugs:', error);
+    }
+  }
 
 }
 
