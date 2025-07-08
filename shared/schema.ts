@@ -83,6 +83,8 @@ export const comments = pgTable("comments", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   parentId: integer("parent_id"), // For nested replies
+  isEdited: boolean("is_edited").default(false),
+  editedAt: timestamp("edited_at"),
 });
 
 // IP-based freemium session tracking table
