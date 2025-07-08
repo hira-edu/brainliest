@@ -22,7 +22,7 @@ import {
   type InsertUser,
   type AuditLog,
   type InsertAuditLog,
-} from "@shared/schema";
+} from "../../shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
 

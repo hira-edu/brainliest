@@ -4,7 +4,7 @@
     "paths": {
       "@/*": ["client/src/*"],
       "@shared/*": ["shared/*"],
-      "@server/*": ["server/*"],
+      "@server/*": ["server/src/*"],
       "@assets/*": ["attached_assets/*"],
       "@features/*": ["client/src/features/*"],
       "@components/*": ["client/src/components/*"],

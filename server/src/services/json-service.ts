@@ -1,4 +1,4 @@
-import { DatabaseStorage } from './storage';
+import { DatabaseStorage } from '../storage';
 import { 
   InsertSubject, 
   InsertExam, 
@@ -6,7 +6,7 @@ import {
   Subject,
   Exam,
   Question
-} from '@shared/schema';
+} from '../../../shared/schema';
 
 export interface JSONQuestionData {
   // Question fields

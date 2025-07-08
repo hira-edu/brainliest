@@ -4,8 +4,8 @@
  * Based on industry best practices for freemium models and session management
  */
 
-import { db } from "./db";
-import { anonQuestionSessions } from "../shared/schema";
+import { db } from "../db";
+import { anonQuestionSessions } from "../../../shared/schema";
 import { eq, and, lte } from "drizzle-orm";
 import * as ipaddr from 'ipaddr.js';
 import * as crypto from 'crypto';

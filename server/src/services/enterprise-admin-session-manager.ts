@@ -17,8 +17,8 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
-import { db } from './db';
-import { users, authLogs } from '@shared/schema';
+import { db } from '../db';
+import { users, authLogs } from '../../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 // Enterprise Security Configuration

@@ -3,9 +3,9 @@ import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
-import { registerRoutes } from "./src/routes";
-import { setupVite, serveStatic, log } from "./src/vite";
-import { validateSecurityConfig } from './src/config/security';
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
+import { validateSecurityConfig } from './config/security';
 
 const app = express();
 

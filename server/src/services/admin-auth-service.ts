@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { db } from './db';
-import { users, authLogs } from '@shared/schema';
+import { db } from '../db';
+import { users, authLogs } from '../../../shared/schema';
 import { eq, and } from 'drizzle-orm';
 
 // Secure JWT secret generation for admin authentication

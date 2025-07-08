@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { db } from './db';
-import { users, authLogs, authSessions } from '@shared/schema';
+import { db } from '../db';
+import { users, authLogs, authSessions } from '../../../shared/schema';
 import { eq, and, or, lt, gt } from 'drizzle-orm';
 import { emailService } from './email-service';
 

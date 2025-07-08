@@ -1,0 +1,112 @@
+brainliest/
+├── 📁 config/                           # Configuration and setup files
+│   ├── drizzle.config.ts               # ORM database configuration
+│   ├── tsconfig.json                   # TypeScript configuration
+│   └── vite.config.ts                  # Vite build configuration
+│
+├── 📁 docs/                             # All documentation files
+│   ├── ARCHITECTURE_GUIDE.md
+│   ├── DEVELOPER_GUIDE.md
+│   ├── DEPLOYMENT_GUIDE.md
+│   ├── DEPLOYMENT_INSTRUCTIONS.md
+│   ├── ENTERPRISE_MIGRATION_REPORT.md
+│   ├── ENVIRONMENT_CONFIGURATION.md
+│   ├── PERFORMANCE_AUDIT_REPORT.md
+│   ├── SECURITY_AUDIT_REPORT.md
+│   ├── COMPREHENSIVE_QA_AUDIT_REPORT.md
+│   ├── VERCEL_DEPLOYMENT_GUIDE.md
+│   ├── README.md
+│   └── replit.md
+│
+├── 📁 client/                          # Frontend - React/TypeScript
+│   ├── public/
+│   │   └── index.html                  # Main HTML template
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   ├── components/
+│   │   │   ├── ui/
+│   │   │   ├── icons/
+│   │   │   └── modals/
+│   │   │       └── question-limit-modal.tsx
+│   │   ├── features/
+│   │   │   ├── admin/
+│   │   │   ├── analytics/
+│   │   │   ├── auth/
+│   │   │   ├── content/
+│   │   │   ├── exam/
+│   │   │   ├── pages/
+│   │   │   └── shared/
+│   │   ├── services/
+│   │   │   └── queryClient.ts
+│   │   ├── styles/
+│   │   │   ├── base/
+│   │   │   ├── components/
+│   │   │   ├── index.css
+│   │   │   └── main.css
+│   │   └── utils/
+│   │       ├── cookie-utils.ts
+│   │       ├── industrial-cookie-manager.ts
+│   │       └── utils.ts
+│   └── components.json
+│
+├── 📁 server/                           # Backend - Node.js/Express/TypeScript
+│   ├── src/
+│   │   ├── index.ts
+│   │   ├── routes.ts
+│   │   ├── db.ts
+│   │   ├── storage.ts
+│   │   ├── vite.ts
+│   │   ├── services/
+│   │   │   ├── admin-auth-service.ts
+│   │   │   ├── admin-user-management.ts
+│   │   │   ├── ai.ts
+│   │   │   ├── analytics.ts
+│   │   │   ├── auth-service.ts
+│   │   │   ├── cookie-service.ts
+│   │   │   ├── csv-service.ts
+│   │   │   ├── csv-templates.ts
+│   │   │   ├── email-service.ts
+│   │   │   ├── enterprise-admin-session-manager.ts
+│   │   │   ├── freemium-service.ts
+│   │   │   ├── geolocation-service.ts
+│   │   │   ├── json-service.ts
+│   │   │   ├── recaptcha-service.ts
+│   │   │   ├── seo-service.ts
+│   │   │   ├── sitemap-service.ts
+│   │   │   ├── token-admin-auth.ts
+│   │   │   └── trending-service.ts
+│   │   ├── middleware/
+│   │   │   ├── admin-auth.ts
+│   │   │   ├── auth.ts
+│   │   │   └── freemium.ts
+│   │   ├── security/
+│   │   │   ├── admin-audit.ts
+│   │   │   └── input-sanitizer.ts
+│   │   ├── utils/
+│   │   │   └── response-helpers.ts
+│   │   └── config/
+│   │       └── security.ts
+│   ├── Dockerfile
+│   └── docker-compose.yml
+│
+├── 📁 api/                              # Serverless deployment
+│   └── index.js
+│
+├── 📁 migrations/                       # Database migrations
+│   ├── 001_add_foreign_keys.sql
+│   ├── 002_add_timestamps.sql
+│   ├── 003_add_performance_indexes.sql
+│   ├── 004_data_type_optimization.sql
+│   ├── 005_advanced_features.sql
+│   ├── 006_security_compliance.sql
+│   ├── migrate-to-slug-only.sql
+│   └── rollback/
+│       └── ROLLBACK_004_data_type_optimization.sql
+│
+├── 📁 shared/                           # Shared resources
+│   ├── schema.ts
+│   └── constants.ts
+│
+├── package.json                         # Project dependencies and scripts
+└── README.md                            # Root-level project documentation

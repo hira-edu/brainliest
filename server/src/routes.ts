@@ -1,22 +1,22 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { analyticsService } from "./analytics";
-import { getQuestionHelp, explainAnswer } from "./ai";
-import { emailService } from "./email-service";
-import { authService } from "./auth-service";
-import { adminAuthService } from "./admin-auth-service";
-import { adminUserService } from './admin-user-management';
-import { tokenAdminAuth } from './token-admin-auth';
+import { analyticsService } from "./services/analytics";
+import { getQuestionHelp, explainAnswer } from "./services/ai";
+import { emailService } from "./services/email-service";
+import { authService } from "./services/auth-service";
+import { adminAuthService } from "./services/admin-auth-service";
+import { adminUserService } from './services/admin-user-management';
+import { tokenAdminAuth } from './services/token-admin-auth';
 import { extractClientInfo } from "./middleware/admin-auth";
 import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
-import { seoService } from "./seo-service";
-import { recaptchaService } from "./recaptcha-service";
-import { trendingService } from "./trending-service";
-import { sitemapService } from "./sitemap-service";
-import { geolocationService } from "./geolocation-service";
+import { seoService } from "./services/seo-service";
+import { recaptchaService } from "./services/recaptcha-service";
+import { trendingService } from "./services/trending-service";
+import { sitemapService } from "./services/sitemap-service";
+import { geolocationService } from "./services/geolocation-service";
 import { parseId, parseOptionalId, sanitizeInput, sanitizeRequestBody, checkRateLimit, validatePassword } from './security/input-sanitizer';
-import { validateEmail } from './auth-service';
+import { validateEmail } from './services/auth-service';
 import { logAdminAction } from './middleware/auth';
 import { 
   insertSubjectSchema, 
@@ -27,7 +27,7 @@ import {
   insertDetailedAnswerSchema,
   insertExamAnalyticsSchema,
   insertUserSchema
-} from "@shared/schema";
+} from "../../shared/schema";
 
 // Store verification codes temporarily (in production, use Redis)
 const verificationCodes = new Map<string, { code: string; expires: number }>();

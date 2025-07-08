@@ -1,5 +1,5 @@
-import { db } from "./db";
-import { subjects, userSubjectInteractions, subjectTrendingStats, dailyTrendingSnapshot } from "@shared/schema";
+import { db } from "../db";
+import { subjects, userSubjectInteractions, subjectTrendingStats, dailyTrendingSnapshot } from "../../../shared/schema";
 import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
 
 export interface TrendingCertification {

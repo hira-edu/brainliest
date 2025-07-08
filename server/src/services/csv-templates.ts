@@ -1,4 +1,4 @@
-import { Subject, Exam, Question, Category, Subcategory, User } from '@shared/schema';
+import { Subject, Exam, Question, Category, Subcategory, User } from '../../../shared/schema';
 
 // CSV Template Definitions - Matching Admin Form Fields Exactly
 export interface CSVTemplateField {

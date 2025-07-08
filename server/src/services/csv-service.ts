@@ -1,7 +1,7 @@
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { CSV_TEMPLATES, CSVTemplate, CSVEntityType } from './csv-templates';
-import { DatabaseStorage } from './storage';
+import { DatabaseStorage } from '../storage';
 
 export interface CSVValidationError {
   row: number;

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
-import { db } from './db';
-import { users, auditLogs, authLogs } from '@shared/schema';
+import { db } from '../db';
+import { users, auditLogs, authLogs } from '../../../shared/schema';
 import { eq, and, ilike, or } from 'drizzle-orm';
 import crypto from 'crypto';
 

@@ -9,7 +9,7 @@ import {
   InsertExamAnalytics,
   InsertPerformanceTrends,
   InsertStudyRecommendations
-} from "@shared/schema";
+} from "../../../shared/schema";
 
 export interface IAnalyticsService {
   // User Profile Analytics
