@@ -3,15 +3,15 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["client/src/*"],
-      "@shared/*": ["src/shared/*"],
-      "@server/*": ["src/server/*"],
+      "@shared/*": ["shared/*"],
+      "@server/*": ["server/*"],
       "@assets/*": ["attached_assets/*"],
       "@features/*": ["client/src/features/*"],
       "@components/*": ["client/src/components/*"],
       "@utils/*": ["client/src/utils/*"],
       "@services/*": ["client/src/services/*"],
-      "@types/*": ["src/shared/types/*"],
-      "@config/*": ["src/server/config/*"]
+      "@types/*": ["shared/*"],
+      "@config/*": ["server/config/*"]
     }
   }
 }
