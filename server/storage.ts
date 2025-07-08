@@ -24,6 +24,15 @@ import {
 import { db } from "./db";
 import { eq, like, and, or, desc, sql } from "drizzle-orm";
 
+// Lazy import to avoid circular dependencies
+let sitemapService: any = null;
+function getSitemapService() {
+  if (!sitemapService) {
+    sitemapService = require("./sitemap-service").sitemapService;
+  }
+  return sitemapService;
+}
+
 // Robust slugify function for generating URL-safe slugs
 function slugify(text: string): string {
   return text
@@ -191,6 +200,14 @@ export class DatabaseStorage implements IStorage {
     }
     
     const [newSubject] = await db.insert(subjects).values(subject).returning();
+    
+    // Invalidate sitemap cache after creating subject
+    try {
+      getSitemapService().invalidateSitemapCache();
+    } catch (error) {
+      console.warn('Failed to invalidate sitemap cache:', error);
+    }
+    
     return newSubject;
   }
 
@@ -206,6 +223,16 @@ export class DatabaseStorage implements IStorage {
       .set(subject)
       .where(eq(subjects.id, id))
       .returning();
+    
+    // Invalidate sitemap cache after updating subject
+    if (updatedSubject) {
+      try {
+        getSitemapService().invalidateSitemapCache();
+      } catch (error) {
+        console.warn('Failed to invalidate sitemap cache:', error);
+      }
+    }
+    
     return updatedSubject;
   }
 
@@ -298,6 +325,13 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(subjects.id, exam.subjectId));
     
+    // Invalidate sitemap cache after creating exam
+    try {
+      getSitemapService().invalidateSitemapCache();
+    } catch (error) {
+      console.warn('Failed to invalidate sitemap cache:', error);
+    }
+    
     return newExam;
   }
 
@@ -313,6 +347,16 @@ export class DatabaseStorage implements IStorage {
       .set(exam)
       .where(eq(exams.id, id))
       .returning();
+    
+    // Invalidate sitemap cache after updating exam
+    if (updatedExam) {
+      try {
+        getSitemapService().invalidateSitemapCache();
+      } catch (error) {
+        console.warn('Failed to invalidate sitemap cache:', error);
+      }
+    }
+    
     return updatedExam;
   }
 
