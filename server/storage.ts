@@ -22,7 +22,7 @@ import {
   type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, like, and, or, desc, sql } from "drizzle-orm";
+import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
 
 // Lazy import to avoid circular dependencies
 let sitemapService: any = null;
@@ -368,8 +368,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExamCount(): Promise<number> {
-    const result = await db.select().from(exams);
-    return result.length;
+    const [result] = await db.select({ count: sql<number>`count(*)` }).from(exams);
+    return result.count;
   }
 
   // Questions - OPTIMIZED: Specify required columns and add pagination support
@@ -443,11 +443,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined> {
+    // FIXED: Handle subject/exam slug changes by updating counts
+    const originalQuestion = await this.getQuestion(id);
+    
     const [updatedQuestion] = await db
       .update(questions)
       .set(question)
       .where(eq(questions.id, id))
       .returning();
+    
+    // If subject or exam changed, update counts
+    if (updatedQuestion && originalQuestion && 
+        (question.subjectSlug !== originalQuestion.subjectSlug || 
+         question.examSlug !== originalQuestion.examSlug)) {
+      
+      // Decrement old counts
+      if (originalQuestion.subjectSlug) {
+        await db.update(subjects)
+          .set({ questionCount: sql`${subjects.questionCount} - 1` })
+          .where(eq(subjects.slug, originalQuestion.subjectSlug));
+      }
+      if (originalQuestion.examSlug) {
+        await db.update(exams)
+          .set({ questionCount: sql`${exams.questionCount} - 1` })
+          .where(eq(exams.slug, originalQuestion.examSlug));
+      }
+      
+      // Increment new counts
+      if (updatedQuestion.subjectSlug) {
+        await db.update(subjects)
+          .set({ questionCount: sql`${subjects.questionCount} + 1` })
+          .where(eq(subjects.slug, updatedQuestion.subjectSlug));
+      }
+      if (updatedQuestion.examSlug) {
+        await db.update(exams)
+          .set({ questionCount: sql`${exams.questionCount} + 1` })
+          .where(eq(exams.slug, updatedQuestion.examSlug));
+      }
+    }
+    
     return updatedQuestion;
   }
 
@@ -811,15 +845,16 @@ export class DatabaseStorage implements IStorage {
     }).from(users);
   }
 
-  // Audit Logs - OPTIMIZED: Specify required columns and add pagination
+  // Audit Logs - FIXED: Match actual table columns
   async getAuditLogs(): Promise<AuditLog[]> {
     return await db.select({
       id: auditLogs.id,
-      userId: auditLogs.userId,
+      adminId: auditLogs.adminId,
+      adminEmail: auditLogs.adminEmail,
       action: auditLogs.action,
       resourceType: auditLogs.resourceType,
       resourceId: auditLogs.resourceId,
-      details: auditLogs.details,
+      changes: auditLogs.changes,
       timestamp: auditLogs.timestamp,
       ipAddress: auditLogs.ipAddress,
       userAgent: auditLogs.userAgent
@@ -829,11 +864,12 @@ export class DatabaseStorage implements IStorage {
   async getAuditLog(id: number): Promise<AuditLog | undefined> {
     const [result] = await db.select({
       id: auditLogs.id,
-      userId: auditLogs.userId,
+      adminId: auditLogs.adminId,
+      adminEmail: auditLogs.adminEmail,
       action: auditLogs.action,
       resourceType: auditLogs.resourceType,
       resourceId: auditLogs.resourceId,
-      details: auditLogs.details,
+      changes: auditLogs.changes,
       timestamp: auditLogs.timestamp,
       ipAddress: auditLogs.ipAddress,
       userAgent: auditLogs.userAgent
@@ -857,7 +893,8 @@ export class DatabaseStorage implements IStorage {
 
     const conditions = [];
     if (search) {
-      conditions.push(sql`${subjects.searchVector} @@ plainto_tsquery('english', ${search})`);
+      // FIXED: searchVector column doesn't exist, use ILIKE search instead
+      conditions.push(ilike(subjects.name, `%${search}%`));
     }
     if (categoryId) {
       conditions.push(eq(subjects.categoryId, categoryId));
@@ -931,7 +968,8 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(questions.difficulty, filters.difficulty));
     }
     if (filters?.search) {
-      conditions.push(sql`${questions.searchVector} @@ plainto_tsquery('english', ${filters.search})`);
+      // FIXED: searchVector column doesn't exist, use ILIKE search instead
+      conditions.push(ilike(questions.text, `%${filters.search}%`));
     }
 
     if (conditions.length > 0) {
@@ -1003,6 +1041,8 @@ async function seedDatabase() {
     const existingSubjects = await db.select().from(subjects);
     if (existingSubjects.length > 0) {
       console.log("Database already seeded, checking for missing slugs...");
+      // FIXED: Actually check and backfill missing slugs
+      await databaseStorage.backfillSlugsForExistingRecords();
       console.log("✓ All records already have slugs - system is now slug-only");
       return;
     }
