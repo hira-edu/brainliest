@@ -279,6 +279,16 @@ The application uses four main entities:
 - **Removed duplicate bottom pagination**: Eliminated redundant pagination controls at bottom of each category, keeping only the controls after category headers
 - **Set default pagination to 10 cards**: Changed default cards per page from 12 to 10 for better user experience and consistent display
 
+### July 08, 2025 - Database Connection Optimization for Vercel + Neon Deployment (COMPLETED)
+- **Identified root cause**: Resolved overly aggressive connection pool settings incompatible with Neon's free tier limits
+- **Connection pool optimization**: Reduced from max: 20, min: 5 to max: 3, min: 0 connections for serverless compatibility
+- **Serverless configuration**: Enhanced settings with shorter idle timeouts (10s), longer connection timeouts (5s), and disabled keepAlive
+- **Enhanced error handling**: Added comprehensive database connection logging and debugging in server/db.ts and api/index.js
+- **Health check improvements**: Enhanced /api/health endpoint with actual database connectivity testing and detailed status reporting
+- **Environment documentation**: Updated .env.example with Vercel deployment instructions and proper SSL configuration requirements
+- **Troubleshooting tools**: Created comprehensive test-database-connection.js script for connection diagnostics
+- **Production-ready optimization**: Database configuration now optimized for Neon's connection limits and Vercel's serverless architecture
+
 ### July 08, 2025 - Automatic Sitemap Cache Invalidation Integration (COMPLETED)
 - **Complete sitemap cache invalidation system**: Successfully integrated automatic sitemap cache invalidation with storage operations
 - **Database integration**: Added sitemap invalidation calls to createSubject, updateSubject, createExam, and updateExam methods in storage.ts

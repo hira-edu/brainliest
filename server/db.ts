@@ -11,17 +11,16 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// PERFORMANCE OPTIMIZED: Enhanced connection pool configuration
+// VERCEL + NEON OPTIMIZED: Conservative connection pool for serverless deployment
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 20,                    // Maximum connections
-  min: 5,                     // Minimum connections  
-  idleTimeoutMillis: 30000,   // 30s idle timeout
-  connectionTimeoutMillis: 2000, // 2s connection timeout
+  max: 3,                     // Conservative for Neon free tier (100 max total)
+  min: 0,                     // No minimum connections for serverless
+  idleTimeoutMillis: 10000,   // Shorter idle timeout for serverless
+  connectionTimeoutMillis: 5000, // Longer timeout for cold starts
   maxUses: 7500,             // Connection recycling
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 10000,
-  allowExitOnIdle: true
+  keepAlive: false,          // Disabled for serverless functions
+  allowExitOnIdle: true      // Allow process exit when idle
 });
 
 // Connection health monitoring
