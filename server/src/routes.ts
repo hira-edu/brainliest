@@ -134,6 +134,27 @@ function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+/**
+ * API Routes Configuration for Brainliest Platform
+ * 
+ * Route Structure:
+ * - /api/auth/* - Authentication endpoints (login, register, OAuth)
+ * - /api/admin/* - Admin panel endpoints with token verification
+ * - /api/subjects/* - Subject management (slug-based routing)
+ * - /api/exams/* - Exam management (slug-based routing)  
+ * - /api/questions/* - Question management (ID-based routing for cards)
+ * - /api/categories/* - Category management (slug-based routing)
+ * - /api/subcategories/* - Subcategory management (slug-based routing)
+ * - /api/analytics/* - Analytics and performance tracking
+ * - /api/trending/* - Trending subjects and certifications
+ * - /api/sitemap/* - SEO sitemap generation
+ * - /api/stats/* - Platform statistics
+ * 
+ * Navigation Logic:
+ * - Subjects/Exams/Categories: Use slug-based routing for SEO optimization
+ * - Questions: Use ID-based routing for question cards and navigation
+ * - All admin routes require proper JWT token verification
+ */
 export async function registerRoutes(app: Express): Promise<Server> {
   // Freemium status endpoint - FIXED: Removed duplicate from line 2324
 

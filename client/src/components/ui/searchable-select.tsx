@@ -16,6 +16,8 @@
  * Contact the development team before making changes.
  */
 
+"use client"; // RSC directive for interactive search and selection functionality
+
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Check, ChevronDown, X, Loader2, Search } from "lucide-react";
 import { cn } from "../../utils/utils";

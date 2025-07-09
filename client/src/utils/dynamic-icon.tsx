@@ -1,3 +1,5 @@
+"use client"; // RSC directive for client-side dynamic icon rendering
+
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import { SafeIconWrapper } from '../components/icons/suspense-wrapper';
