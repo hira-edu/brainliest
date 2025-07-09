@@ -186,8 +186,10 @@ export const EXAM_DIFFICULTIES = [
 ] as const;
 
 // Helper function to categorize subjects
-export function getCategoryForSubject(subject: { name: string }): string {
-  const subjectLower = subject.name.toLowerCase();
+export function getCategoryForSubject(subject: { name: string } | string): string {
+  const subjectName = typeof subject === 'string' ? subject : subject?.name;
+  if (!subjectName) return "other";
+  const subjectLower = subjectName.toLowerCase();
   
   for (const [key, config] of Object.entries(categoryConfig)) {
     if (config.keywords.some(keyword => subjectLower.includes(keyword))) {

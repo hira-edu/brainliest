@@ -49,13 +49,18 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     if (!subjects || !categoryData) return [];
     
     let filtered = subjects.filter(subject => {
-      const subjectCategory = getCategoryForSubject(subject.name);
-      if (!subjectCategory) return false;
+      if (!subject?.name) return false;
+      const subjectCategoryId = getCategoryForSubject(subject);
+      if (!subjectCategoryId) return false;
       
+      // If we're in a subcategory view, filter by that subcategory
       if (categoryData.subCategory) {
-        return subjectCategory.subCategory.id === categoryData.subCategory.id;
+        // For now, since we don't have subcategory mapping in getCategoryForSubject,
+        // we'll just check if the subject belongs to the parent category
+        return subjectCategoryId === categoryData.category.id;
       } else {
-        return subjectCategory.category.id === categoryData.category.id;
+        // Filter by main category
+        return subjectCategoryId === categoryData.category.id;
       }
     });
     
