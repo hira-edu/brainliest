@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-// Email service using Gmail SMTP (forever free)
+// Email service using Titan Mail only
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
@@ -10,56 +10,7 @@ class EmailService {
 
   private async initializeTransporter() {
     try {
-      // 1. Resend (Professional, reliable, affordable)
-      const resendApiKey = process.env.RESEND_API_KEY;
-      if (resendApiKey) {
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.resend.com',
-          port: 587,
-          secure: false,
-          auth: {
-            user: 'resend',
-            pass: resendApiKey,
-          },
-        });
-        console.log('Email service initialized with Resend (Professional)');
-        return;
-      }
-
-      // 2. SendGrid (Enterprise-grade alternative)
-      const sendgridApiKey = process.env.SENDGRID_API_KEY;
-      if (sendgridApiKey) {
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.sendgrid.net',
-          port: 587,
-          secure: false,
-          auth: {
-            user: 'apikey',
-            pass: sendgridApiKey,
-          },
-        });
-        console.log('Email service initialized with SendGrid');
-        return;
-      }
-
-      // 3. Mailgun (Another professional option)
-      const mailgunApiKey = process.env.MAILGUN_API_KEY;
-      const mailgunDomain = process.env.MAILGUN_DOMAIN;
-      if (mailgunApiKey && mailgunDomain) {
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.mailgun.org',
-          port: 587,
-          secure: false,
-          auth: {
-            user: `postmaster@${mailgunDomain}`,
-            pass: mailgunApiKey,
-          },
-        });
-        console.log('Email service initialized with Mailgun');
-        return;
-      }
-
-      // 4. Titan Mail (GoDaddy's premium email service)
+      // Titan Mail (Only email service used)
       const titanEmail = process.env.TITAN_EMAIL;
       const titanPassword = process.env.TITAN_PASSWORD;
       if (titanEmail && titanPassword) {
@@ -76,41 +27,9 @@ class EmailService {
         return;
       }
 
-      // 5. GoDaddy Workspace Email (Legacy)
-      const godaddyEmail = process.env.GODADDY_EMAIL;
-      const godaddyPassword = process.env.GODADDY_PASSWORD;
-      if (godaddyEmail && godaddyPassword) {
-        this.transporter = nodemailer.createTransport({
-          host: 'smtpout.secureserver.net',
-          port: 587,
-          secure: false,
-          auth: {
-            user: godaddyEmail,
-            pass: godaddyPassword,
-          },
-        });
-        console.log('Email service initialized with GoDaddy Workspace Email');
-        return;
-      }
-
-      // 6. Generic SMTP (Custom email provider)
-      const smtpHost = process.env.SMTP_HOST;
-      const smtpPort = process.env.SMTP_PORT;
-      const smtpUser = process.env.SMTP_USER;
-      const smtpPassword = process.env.SMTP_PASSWORD;
-      if (smtpHost && smtpUser && smtpPassword) {
-        this.transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: parseInt(smtpPort || '587'),
-          secure: smtpPort === '465',
-          auth: {
-            user: smtpUser,
-            pass: smtpPassword,
-          },
-        });
-        console.log(`Email service initialized with custom SMTP (${smtpHost})`);
-        return;
-      }
+      // Error if Titan credentials not found
+      console.error('TITAN_EMAIL and TITAN_PASSWORD environment variables are required');
+      throw new Error('Titan Email credentials not configured');
 
       // 7. Development/Testing fallback
       this.transporter = nodemailer.createTransport({
@@ -140,24 +59,8 @@ class EmailService {
     const htmlContent = this.generateAuthEmailHTML(code);
     const textContent = this.generateAuthEmailText(code);
 
-    // Determine the sender address based on the email service
-    let senderAddress = 'noreply@brainliest.com'; // Default
-    
-    if (process.env.RESEND_API_KEY) {
-      senderAddress = 'noreply@brainliest.com'; // Use your verified domain
-    } else if (process.env.SENDGRID_API_KEY) {
-      senderAddress = 'noreply@brainliest.com'; // Use your verified domain
-    } else if (process.env.MAILGUN_DOMAIN) {
-      senderAddress = `noreply@${process.env.MAILGUN_DOMAIN}`;
-    } else if (process.env.TITAN_EMAIL) {
-      senderAddress = process.env.TITAN_EMAIL; // Use your Titan email
-    } else if (process.env.GODADDY_EMAIL) {
-      senderAddress = process.env.GODADDY_EMAIL; // Use your GoDaddy email
-    } else if (process.env.SMTP_USER) {
-      senderAddress = process.env.SMTP_USER; // Use your custom SMTP email
-    } else if (process.env.GMAIL_USER) {
-      senderAddress = process.env.GMAIL_USER;
-    }
+    // Use Titan Email address as sender
+    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
 
     const mailOptions = {
       from: {
@@ -173,7 +76,7 @@ class EmailService {
     console.log('🔍 EMAIL DEBUG INFO:');
     console.log(`- Requested recipient: ${email}`);
     console.log(`- Sender address: ${senderAddress}`);
-    console.log(`- Using Resend API: ${!!process.env.RESEND_API_KEY}`);
+    console.log(`- Using Titan Email: ${!!process.env.TITAN_EMAIL}`);
     console.log(`- Mail options TO field: ${mailOptions.to}`);
 
     try {
@@ -372,11 +275,7 @@ Brainliest - Your Ultimate Exam Preparation Platform
     const htmlContent = this.generateVerificationEmailHTML(verificationUrl);
     const textContent = this.generateVerificationEmailText(verificationUrl);
 
-    let senderAddress = 'noreply@brainliest.com';
-    if (process.env.TITAN_EMAIL) senderAddress = process.env.TITAN_EMAIL;
-    else if (process.env.GODADDY_EMAIL) senderAddress = process.env.GODADDY_EMAIL;
-    else if (process.env.SMTP_USER) senderAddress = process.env.SMTP_USER;
-    else if (process.env.GMAIL_USER) senderAddress = process.env.GMAIL_USER;
+    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
 
     const mailOptions = {
       from: { name: 'Brainliest', address: senderAddress },
@@ -415,11 +314,7 @@ Brainliest - Your Ultimate Exam Preparation Platform
     const htmlContent = this.generatePasswordResetHTML(resetUrl);
     const textContent = this.generatePasswordResetText(resetUrl);
 
-    let senderAddress = 'noreply@brainliest.com';
-    if (process.env.TITAN_EMAIL) senderAddress = process.env.TITAN_EMAIL;
-    else if (process.env.GODADDY_EMAIL) senderAddress = process.env.GODADDY_EMAIL;
-    else if (process.env.SMTP_USER) senderAddress = process.env.SMTP_USER;
-    else if (process.env.GMAIL_USER) senderAddress = process.env.GMAIL_USER;
+    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
 
     const mailOptions = {
       from: { name: 'Brainliest', address: senderAddress },
