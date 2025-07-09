@@ -311,7 +311,13 @@ export default function AdminSimple() {
           toast({ title: "JSON Import failed", description: result.message, variant: "destructive" });
         }
       } catch (error) {
-        toast({ title: "JSON Import failed", description: "Invalid JSON format or server error", variant: "destructive" });
+        console.error('JSON import error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        toast({ 
+          title: "Import Failed", 
+          description: `JSON import failed: ${errorMessage}. Please check file format.`,
+          variant: "destructive" 
+        });
       } finally {
         setIsImporting(false);
       }

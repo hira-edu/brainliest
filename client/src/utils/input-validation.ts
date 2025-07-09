@@ -51,7 +51,7 @@ export const useSecureFormValidation = () => {
       const sanitizedValue = preventXSS(value);
       
       if (key === 'email' && !safeParseEmail(sanitizedValue)) {
-        errors[key] = 'Invalid email format';
+        errors[key] = 'Please enter a valid email address';
       }
       
       if (key === 'password' && !safeParsePassword(sanitizedValue)) {
