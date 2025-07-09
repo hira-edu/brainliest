@@ -48,7 +48,12 @@ try {
 
   console.log('\n🎉 Build completed successfully!');
   console.log('📁 Output directory: dist/');
+  console.log('📄 Files created:');
+  console.log('   - dist/index.js (backend server)');
+  console.log('   - dist/public/* (static assets)');
   console.log('🎯 Run with: npm start');
+  console.log('');
+  console.log('💡 To build locally, run: node scripts/build.js');
   
 } catch (error) {
   console.error('\n❌ Build failed:', error.message);
