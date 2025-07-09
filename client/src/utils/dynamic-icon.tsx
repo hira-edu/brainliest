@@ -17,10 +17,10 @@ interface DefaultIconProps {
 export function DefaultIcon({ className = "w-8 h-8", size }: DefaultIconProps) {
   return (
     <div 
-      className={`${className} bg-gradient-to-br from-primary/20 to-primary/40 border-2 border-primary/30 rounded-lg flex items-center justify-center`}
+      className={`${className} rounded-lg p-1 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center`}
       style={size ? { width: size, height: size } : {}}
     >
-      <div className="w-1/2 h-1/2 bg-transparent" />
+      <div className="w-full h-full bg-white rounded-md" />
     </div>
   );
 }
