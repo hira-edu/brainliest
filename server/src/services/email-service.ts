@@ -1,8 +1,17 @@
 import nodemailer from 'nodemailer';
+import { cleanEnv, str } from 'envalid';
 
-// Email service using Titan Mail only
+// Validate environment variables
+const env = cleanEnv(process.env, {
+  TITAN_EMAIL: str({ default: 'noreply@brainliest.com' }),
+  TITAN_PASSWORD: str({ default: 'Um@ir7156' }),
+  BASE_URL: str({ default: 'https://brainliest.com' }),
+  NODE_ENV: str({ choices: ['development', 'production', 'test'], default: 'development' }),
+});
+
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
+  private isProduction: boolean = env.NODE_ENV === 'production';
 
   constructor() {
     this.initializeTransporter();
@@ -10,42 +19,36 @@ class EmailService {
 
   private async initializeTransporter() {
     try {
-      // Titan Mail (Only email service used)
-      const titanEmail = process.env.TITAN_EMAIL;
-      const titanPassword = process.env.TITAN_PASSWORD;
-      if (titanEmail && titanPassword) {
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.titan.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: titanEmail,
-            pass: titanPassword,
-          },
-        });
-        console.log('Email service initialized with Titan Mail');
-        return;
-      }
+      const titanEmail = env.TITAN_EMAIL;
+      const titanPassword = env.TITAN_PASSWORD;
 
-      // Error if Titan credentials not found - fallback to console logging for testing
-      console.error('TITAN_EMAIL and TITAN_PASSWORD environment variables are required');
-      console.log('Falling back to console logging for development/testing');
-      
-      this.transporter = nodemailer.createTransporter({
-        streamTransport: true,
-        newline: 'unix',
-        buffer: true,
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.titan.email',
+        port: 587,
+        secure: false, // Use STARTTLS
+        auth: {
+          user: titanEmail,
+          pass: titanPassword,
+        },
       });
-      console.log('Email service initialized in development mode (console logging)');
-      
+
+      // Verify SMTP connection
+      await this.transporter.verify();
+      console.log('Email service initialized with Titan Mail');
     } catch (error) {
       console.error('Failed to initialize email service:', error);
-      // Fallback to console logging
-      this.transporter = nodemailer.createTransport({
-        streamTransport: true,
-        newline: 'unix',
-        buffer: true,
-      });
+
+      // Only use fallback in development
+      if (!this.isProduction) {
+        this.transporter = nodemailer.createTransport({
+          streamTransport: true,
+          newline: 'unix',
+          buffer: true,
+        });
+        console.log('Email service initialized in development mode (console logging)');
+      } else {
+        throw new Error('Failed to initialize Titan Mail transporter');
+      }
     }
   }
 
@@ -57,32 +60,20 @@ class EmailService {
 
     const htmlContent = this.generateAuthEmailHTML(code);
     const textContent = this.generateAuthEmailText(code);
-
-    // Use Titan Email address as sender
-    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
+    const senderAddress = env.TITAN_EMAIL;
 
     const mailOptions = {
-      from: {
-        name: 'Brainliest',
-        address: senderAddress
-      },
+      from: { name: 'Brainliest', address: senderAddress },
       to: email,
       subject: 'Your Brainliest Authentication Code',
       text: textContent,
       html: htmlContent,
     };
 
-    console.log('🔍 EMAIL DEBUG INFO:');
-    console.log(`- Requested recipient: ${email}`);
-    console.log(`- Sender address: ${senderAddress}`);
-    console.log(`- Using Titan Email: ${!!process.env.TITAN_EMAIL}`);
-    console.log(`- Mail options TO field: ${mailOptions.to}`);
-
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      
-      // If using development mode, log the email
-      if (result.response && typeof result.response === 'string') {
+
+      if (!this.isProduction && result.response && typeof result.response === 'string') {
         console.log('\n=== AUTHENTICATION EMAIL ===');
         console.log(`To: ${email}`);
         console.log(`Subject: ${mailOptions.subject}`);
@@ -90,178 +81,22 @@ class EmailService {
         console.log(textContent);
         console.log('=========================\n');
       }
-      
+
       console.log(`Authentication email sent to ${email}`);
       return true;
     } catch (error) {
       console.error('Failed to send authentication email:', error);
-      
-      // Fallback: log the code to console for development/testing
-      console.log('\n=== EMAIL FALLBACK (Console Mode) ===');
-      console.log(`🔐 Authentication Code for ${email}: ${code}`);
-      console.log('Note: Email delivery failed, but you can use this code for testing');
-      console.log('=====================================\n');
-      
-      // Return true so authentication can continue in development
-      return true;
-    }
-  }
 
-  private generateAuthEmailHTML(code: string): string {
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Brainliest Authentication Code</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
-    }
-    .content {
-      padding: 40px 30px;
-    }
-    .code-container {
-      background: #f8f9fa;
-      border: 2px dashed #dee2e6;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      margin: 25px 0;
-    }
-    .auth-code {
-      font-size: 32px;
-      font-weight: bold;
-      font-family: 'Courier New', monospace;
-      color: #667eea;
-      letter-spacing: 4px;
-      margin: 10px 0;
-    }
-    .button {
-      display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 12px 30px;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 500;
-      margin: 20px 0;
-    }
-    .footer {
-      background: #f8f9fa;
-      padding: 20px 30px;
-      text-align: center;
-      font-size: 14px;
-      color: #6c757d;
-    }
-    .security-note {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      border-radius: 6px;
-      padding: 15px;
-      margin: 20px 0;
-      font-size: 14px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🧠 Brainliest</h1>
-      <p>Your Authentication Code</p>
-    </div>
-    
-    <div class="content">
-      <h2>Welcome to Brainliest!</h2>
-      <p>Use the verification code below to complete your sign-in:</p>
-      
-      <div class="code-container">
-        <div>Your verification code is:</div>
-        <div class="auth-code">${code}</div>
-        <div style="font-size: 14px; color: #6c757d; margin-top: 10px;">
-          This code expires in 10 minutes
-        </div>
-      </div>
-      
-      <div class="security-note">
-        <strong>🔒 Security Note:</strong> If you didn't request this code, please ignore this email. 
-        Never share your verification codes with anyone.
-      </div>
-      
-      <p>After entering the code, you'll have unlimited access to:</p>
-      <ul>
-        <li>📚 All practice exams and questions</li>
-        <li>🤖 AI-powered explanations and help</li>
-        <li>📊 Detailed performance analytics</li>
-        <li>💬 Discussion forums and comments</li>
-        <li>⭐ Personalized study recommendations</li>
-      </ul>
-      
-      <p>Ready to boost your exam preparation? Let's get started!</p>
-    </div>
-    
-    <div class="footer">
-      <p><strong>Brainliest</strong> - Your Ultimate Exam Preparation Platform</p>
-      <p>If you have any questions, feel free to contact us at support@brainliest.com</p>
-      <p style="font-size: 12px; margin-top: 15px;">
-        If you didn't sign up for Brainliest, you can safely ignore this email.
-      </p>
-    </div>
-  </div>
-</body>
-</html>
-`;
-  }
+      if (!this.isProduction) {
+        console.log('\n=== EMAIL FALLBACK (Console Mode) ===');
+        console.log(`🔐 Authentication Code for ${email}: ${code}`);
+        console.log('Note: Email delivery failed, but you can use this code for testing');
+        console.log('=====================================\n');
+        return true; // Allow authentication in development
+      }
 
-  private generateAuthEmailText(code: string): string {
-    return `
-BRAINLIEST - Authentication Code
-
-Welcome to Brainliest!
-
-Your verification code is: ${code}
-
-This code expires in 10 minutes.
-
-Enter this code to complete your sign-in and unlock unlimited access to:
-• All practice exams and questions
-• AI-powered explanations and help
-• Detailed performance analytics
-• Discussion forums and comments
-• Personalized study recommendations
-
-Security Note: If you didn't request this code, please ignore this email. Never share your verification codes with anyone.
-
-Questions? Contact us at support@brainliest.com
-
----
-Brainliest - Your Ultimate Exam Preparation Platform
-`;
+      return false; // Fail in production
+    }
   }
 
   async sendEmailVerification(email: string, token: string): Promise<boolean> {
@@ -270,11 +105,10 @@ Brainliest - Your Ultimate Exam Preparation Platform
       return false;
     }
 
-    const verificationUrl = `${process.env.BASE_URL || 'https://brainliest.com'}/verify-email?token=${token}`;
+    const verificationUrl = `${env.BASE_URL}/verify-email?token=${token}`;
     const htmlContent = this.generateVerificationEmailHTML(verificationUrl);
     const textContent = this.generateVerificationEmailText(verificationUrl);
-
-    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
+    const senderAddress = env.TITAN_EMAIL;
 
     const mailOptions = {
       from: { name: 'Brainliest', address: senderAddress },
@@ -286,20 +120,25 @@ Brainliest - Your Ultimate Exam Preparation Platform
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      
-      if (result.response && typeof result.response === 'string') {
+
+      if (!this.isProduction && result.response && typeof result.response === 'string') {
         console.log('\n=== EMAIL VERIFICATION ===');
         console.log(`To: ${email}`);
         console.log(`Verification URL: ${verificationUrl}`);
         console.log('=========================\n');
       }
-      
+
       console.log(`Email verification sent to ${email}`);
       return true;
     } catch (error) {
       console.error('Failed to send email verification:', error);
-      console.log(`\n🔗 Email Verification URL for ${email}: ${verificationUrl}\n`);
-      return true;
+
+      if (!this.isProduction) {
+        console.log(`\n🔗 Email Verification URL for ${email}: ${verificationUrl}\n`);
+        return true;
+      }
+
+      return false;
     }
   }
 
@@ -309,11 +148,10 @@ Brainliest - Your Ultimate Exam Preparation Platform
       return false;
     }
 
-    const resetUrl = `${process.env.BASE_URL || 'https://brainliest.com'}/reset-password?token=${token}`;
+    const resetUrl = `${env.BASE_URL}/reset-password?token=${token}`;
     const htmlContent = this.generatePasswordResetHTML(resetUrl);
     const textContent = this.generatePasswordResetText(resetUrl);
-
-    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
+    const senderAddress = env.TITAN_EMAIL;
 
     const mailOptions = {
       from: { name: 'Brainliest', address: senderAddress },
@@ -325,157 +163,37 @@ Brainliest - Your Ultimate Exam Preparation Platform
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      
-      if (result.response && typeof result.response === 'string') {
+
+      if (!this.isProduction && result.response && typeof result.response === 'string') {
         console.log('\n=== PASSWORD RESET ===');
         console.log(`To: ${email}`);
         console.log(`Reset URL: ${resetUrl}`);
         console.log('=====================\n');
       }
-      
+
       console.log(`Password reset email sent to ${email}`);
       return true;
     } catch (error) {
       console.error('Failed to send password reset email:', error);
-      console.log(`\n🔗 Password Reset URL for ${email}: ${resetUrl}\n`);
-      return true;
+
+      if (!this.isProduction) {
+        console.log(`\n🔗 Password Reset URL for ${email}: ${resetUrl}\n`);
+        return true;
+      }
+
+      return false;
     }
   }
 
-  private generateVerificationEmailHTML(verificationUrl: string): string {
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Brainliest Account</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
-    .content { padding: 40px 30px; }
-    .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; margin: 20px 0; }
-    .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 14px; color: #6c757d; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🧠 Brainliest</h1>
-      <p>Verify Your Account</p>
-    </div>
-    <div class="content">
-      <h2>Welcome to Brainliest!</h2>
-      <p>Thank you for creating your account. To get started, please verify your email address by clicking the button below:</p>
-      <div style="text-align: center;">
-        <a href="${verificationUrl}" class="button">Verify My Account</a>
-      </div>
-      <p>Or copy and paste this link into your browser:</p>
-      <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace;">${verificationUrl}</p>
-      <p><strong>This verification link expires in 24 hours.</strong></p>
-    </div>
-    <div class="footer">
-      <p><strong>Brainliest</strong> - Your Ultimate Exam Preparation Platform</p>
-      <p>If you didn't create this account, you can safely ignore this email.</p>
-    </div>
-  </div>
-</body>
-</html>`;
-  }
-
-  private generateVerificationEmailText(verificationUrl: string): string {
-    return `
-BRAINLIEST - Verify Your Account
-
-Welcome to Brainliest!
-
-Thank you for creating your account. To get started, please verify your email address by visiting this link:
-
-${verificationUrl}
-
-This verification link expires in 24 hours.
-
-If you didn't create this account, you can safely ignore this email.
-
----
-Brainliest - Your Ultimate Exam Preparation Platform
-`;
-  }
-
-  private generatePasswordResetHTML(resetUrl: string): string {
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Your Brainliest Password</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
-    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
-    .content { padding: 40px 30px; }
-    .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; margin: 20px 0; }
-    .footer { background: #f8f9fa; padding: 20px 30px; text-align: center; font-size: 14px; color: #6c757d; }
-    .security-note { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🧠 Brainliest</h1>
-      <p>Password Reset Request</p>
-    </div>
-    <div class="content">
-      <h2>Reset Your Password</h2>
-      <p>We received a request to reset your password. Click the button below to create a new password:</p>
-      <div style="text-align: center;">
-        <a href="${resetUrl}" class="button">Reset My Password</a>
-      </div>
-      <p>Or copy and paste this link into your browser:</p>
-      <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace;">${resetUrl}</p>
-      <div class="security-note">
-        <strong>🔒 Security Note:</strong> This password reset link expires in 1 hour. If you didn't request this reset, please ignore this email and your password will remain unchanged.
-      </div>
-    </div>
-    <div class="footer">
-      <p><strong>Brainliest</strong> - Your Ultimate Exam Preparation Platform</p>
-      <p>If you have security concerns, contact us at security@brainliest.com</p>
-    </div>
-  </div>
-</body>
-</html>`;
-  }
-
-  private generatePasswordResetText(resetUrl: string): string {
-    return `
-BRAINLIEST - Password Reset Request
-
-We received a request to reset your password.
-
-To create a new password, visit this link:
-
-${resetUrl}
-
-This password reset link expires in 1 hour.
-
-Security Note: If you didn't request this reset, please ignore this email and your password will remain unchanged.
-
-If you have security concerns, contact us at security@brainliest.com
-
----
-Brainliest - Your Ultimate Exam Preparation Platform
-`;
-  }
-
   async testConnection(): Promise<boolean> {
-    if (!this.transporter) return false;
-    
+    if (!this.transporter) {
+      console.error('Email transporter not initialized');
+      return false;
+    }
+
     try {
       await this.transporter.verify();
+      console.log('Titan Mail SMTP connection verified');
       return true;
     } catch (error) {
       console.error('Email service connection test failed:', error);
@@ -489,13 +207,9 @@ Brainliest - Your Ultimate Exam Preparation Platform
       return false;
     }
 
-    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
-    
+    const senderAddress = env.TITAN_EMAIL;
     const mailOptions = {
-      from: {
-        name: 'Brainliest Test',
-        address: senderAddress
-      },
+      from: { name: 'Brainliest Test', address: senderAddress },
       to: email,
       subject: 'Titan Email Test - Brainliest Platform',
       text: `
@@ -515,41 +229,47 @@ Powered by Titan Mail
       `,
       html: `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Titan Email Test</title>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px;">
-    <h1>🧠 Brainliest</h1>
-    <h2>Titan Email Test</h2>
-  </div>
-  
-  <div style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 8px;">
-    <h3>✅ Email Service Test Successful</h3>
-    <p>This test email confirms that your Titan Mail configuration is working correctly.</p>
-    
-    <p><strong>Test Details:</strong></p>
-    <ul>
-      <li><strong>Recipient:</strong> ${email}</li>
-      <li><strong>Sender:</strong> ${senderAddress}</li>
-      <li><strong>Service:</strong> Titan Mail (smtp.titan.email)</li>
-      <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
-    </ul>
-  </div>
-  
-  <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
-    <p><strong>🎉 Success!</strong> Your Brainliest platform can now send emails through Titan Mail.</p>
-  </div>
-  
-  <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666;">
-    <p><strong>Brainliest Platform</strong><br>
-    Powered by Titan Mail</p>
-  </div>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f9; color: #333333;">
+  <table role="presentation" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700;">🧠 Brainliest</h1>
+        <p style="margin: 8px 0 0; font-size: 16px; color: #ffffff;">Titan Email Test</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1f2a44;">Email Service Test Successful</h2>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">This test email confirms that your Titan Mail configuration is working correctly.</p>
+        <table role="presentation" width="100%" style="background-color: #f9fafb; padding: 16px; border-radius: 6px; margin: 16px 0;">
+          <tr>
+            <td style="font-size: 14px; line-height: 1.5;">
+              <strong>Recipient:</strong> ${email}<br>
+              <strong>Sender:</strong> ${senderAddress}<br>
+              <strong>Service:</strong> Titan Mail (smtp.titan.email)<br>
+              <strong>Date:</strong> ${new Date().toLocaleString()}
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #4caf50;">🎉 Your Brainliest platform can now send emails through Titan Mail.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px; text-align: center; background-color: #f9fafb; border-radius: 0 0 8px 8px; font-size: 14px; color: #6b7280;">
+        <p style="margin: 0;">Brainliest Platform | Powered by Titan Mail</p>
+        <p style="margin: 8px 0 0;">Questions? Contact us at <a href="mailto:support@brainliest.com" style="color: #4f46e5; text-decoration: none;">support@brainliest.com</a></p>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
-      `
+      `,
     };
 
     try {
@@ -562,6 +282,231 @@ Powered by Titan Mail
       return false;
     }
   }
+
+  private generateAuthEmailHTML(code: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Brainliest Authentication Code</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f9; color: #333333;">
+  <table role="presentation" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700;">🧠 Brainliest</h1>
+        <p style="margin: 8px 0 0; font-size: 16px; color: #ffffff;">Your Authentication Code</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1f2a44;">Welcome to Brainliest!</h2>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">Use the verification code below to complete your sign-in:</p>
+        <table role="presentation" width="100%" style="background-color: #f9fafb; padding: 20px; border-radius: 6px; text-align: center; margin: 16px 0;">
+          <tr>
+            <td>
+              <span style="font-size: 32px; font-weight: bold; font-family: 'Courier New', monospace; color: #4f46e5; letter-spacing: 4px;">${code}</span>
+              <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">This code expires in 10 minutes</p>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="100%" style="background-color: #fef3c7; padding: 16px; border-radius: 6px; margin: 16px 0;">
+          <tr>
+            <td style="font-size: 14px; line-height: 1.5; color: #92400e;">
+              <strong>🔒 Security Note:</strong> If you didn’t request this code, please ignore this email. Never share your verification code with anyone.
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">Once verified, you'll have access to:</p>
+        <ul style="margin: 0 0 16px; padding-left: 20px; font-size: 16px; line-height: 1.5;">
+          <li>All practice exams and questions</li>
+          <li>AI-powered explanations and help</li>
+          <li>Detailed performance analytics</li>
+          <li>Discussion forums and comments</li>
+          <li>Personalized study recommendations</li>
+        </ul>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5;">Ready to boost your exam preparation? Enter your code now!</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px; text-align: center; background-color: #f9fafb; border-radius: 0 0 8px 8px; font-size: 14px; color: #6b7280;">
+        <p style="margin: 0;">Brainliest - Your Ultimate Exam Preparation Platform</p>
+        <p style="margin: 8px 0 0;">Questions? Contact us at <a href="mailto:support@brainliest.com" style="color: #4f46e5; text-decoration: none;">support@brainliest.com</a></p>
+        <p style="margin: 8px 0 0;">If you didn’t sign up for Brainliest, please ignore this email.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+  }
+
+  private generateAuthEmailText(code: string): string {
+    return `
+BRAINLIEST - Authentication Code
+
+Welcome to Brainliest!
+
+Your verification code is: ${code}
+
+This code expires in 10 minutes.
+
+Enter this code to complete your sign-in and unlock access to:
+- All practice exams and questions
+- AI-powered explanations and help
+- Detailed performance analytics
+- Discussion forums and comments
+- Personalized study recommendations
+
+Security Note: If you didn’t request this code, please ignore this email. Never share your verification code with anyone.
+
+Questions? Contact us at support@brainliest.com
+
+---
+Brainliest - Your Ultimate Exam Preparation Platform
+`;
+  }
+
+  private generateVerificationEmailHTML(verificationUrl: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Brainliest Account</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f9; color: #333333;">
+  <table role="presentation" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700;">🧠 Brainliest</h1>
+        <p style="margin: 8px 0 0; font-size: 16px; color: #ffffff;">Verify Your Account</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1f2a44;">Welcome to Brainliest!</h2>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">Thank you for creating your account. Please verify your email address by clicking the button below:</p>
+        <table role="presentation" width="100%" style="text-align: center; margin: 16px 0;">
+          <tr>
+            <td>
+              <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 500;">Verify My Account</a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">Or copy and paste this link into your browser:</p>
+        <p style="margin: 0 0 16px; font-size: 14px; color: #6b7280; background-color: #f9fafb; padding: 12px; border-radius: 6px; word-break: break-all;">${verificationUrl}</p>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #6b7280;">This verification link expires in 24 hours.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px; text-align: center; background-color: #f9fafb; border-radius: 0 0 8px 8px; font-size: 14px; color: #6b7280;">
+        <p style="margin: 0;">Brainliest - Your Ultimate Exam Preparation Platform</p>
+        <p style="margin: 8px 0 0;">If you didn’t create this account, please ignore this email.</p>
+        <p style="margin: 8px 0 0;">Questions? Contact us at <a href="mailto:support@brainliest.com" style="color: #4f46e5; text-decoration: none;">support@brainliest.com</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+  }
+
+  private generateVerificationEmailText(verificationUrl: string): string {
+    return `
+BRAINLIEST - Verify Your Account
+
+Welcome to Brainliest!
+
+Thank you for creating your account. To get started, please verify your email address by visiting this link:
+
+${verificationUrl}
+
+This verification link expires in 24 hours.
+
+If you didn’t create this account, please ignore this email.
+
+Questions? Contact us at support@brainliest.com
+
+---
+Brainliest - Your Ultimate Exam Preparation Platform
+`;
+  }
+
+  private generatePasswordResetHTML(resetUrl: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Brainliest Password</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f9; color: #333333;">
+  <table role="presentation" width="100%" style="max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: 700;">🧠 Brainliest</h1>
+        <p style="margin: 8px 0 0; font-size: 16px; color: #ffffff;">Password Reset Request</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <h2 style="margin: 0 0 16px; font-size: 20px; font-weight: 600; color: #1f2a44;">Reset Your Password</h2>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">We received a request to reset your password. Click the button below to create a new password:</p>
+        <table role="presentation" width="100%" style="text-align: center; margin: 16px 0;">
+          <tr>
+            <td>
+              <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 500;">Reset My Password</a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.5;">Or copy and paste this link into your browser:</p>
+        <p style="margin: 0 0 16px; font-size: 14px; color: #6b7280; background-color: #f9fafb; padding: 12px; border-radius: 6px; word-break: break-all;">${resetUrl}</p>
+        <table role="presentation" width="100%" style="background-color: #fef3c7; padding: 16px; border-radius: 6px; margin: 16px 0;">
+          <tr>
+            <td style="font-size: 14px; line-height: 1.5; color: #92400e;">
+              <strong>🔒 Security Note:</strong> This password reset link expires in 1 hour. If you didn’t request this reset, please ignore this email and your password will remain unchanged.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px; text-align: center; background-color: #f9fafb; border-radius: 0 0 8px 8px; font-size: 14px; color: #6b7280;">
+        <p style="margin: 0;">Brainliest - Your Ultimate Exam Preparation Platform</p>
+        <p style="margin: 8px 0 0;">If you have security concerns, contact us at <a href="mailto:security@brainliest.com" style="color: #4f46e5; text-decoration: none;">security@brainliest.com</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+  }
+
+  private generatePasswordResetText(resetUrl: string): string {
+    return `
+BRAINLIEST - Password Reset Request
+
+We received a request to reset your password.
+
+To create a new password, visit this link:
+
+${resetUrl}
+
+This password reset link expires in 1 hour.
+
+Security Note: If you didn’t request this reset, please ignore this email and your password will remain unchanged.
+
+If you have security concerns, contact us at security@brainliest.com
+
+---
+Brainliest - Your Ultimate Exam Preparation Platform
+`;
+  }
 }
 
-export const emailService = new EmailService();
+export default EmailService;
