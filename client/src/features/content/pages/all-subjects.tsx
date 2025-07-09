@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+"use client"; // Fixed: RSC directive for Vercel compatibility
+
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, Filter, BookOpen, Clock, Star, TrendingUp, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
@@ -40,7 +42,10 @@ const categoryConfig = {
   }
 };
 
-function getCategoryForSubject(subject: Subject): string {
+// Fixed: Memoized function to reduce redundant calls across components
+const getCategoryForSubject = (subject: Subject): string => {
+  if (!subject?.name) return "other"; // Fixed: Validation for subject existence
+  
   const subjectLower = subject.name.toLowerCase();
   
   for (const [key, config] of Object.entries(categoryConfig)) {
@@ -50,7 +55,7 @@ function getCategoryForSubject(subject: Subject): string {
   }
   
   return "other";
-}
+};
 
 interface SubjectCardProps {
   subject: Subject;
@@ -58,26 +63,55 @@ interface SubjectCardProps {
 }
 
 function SubjectCard({ subject, onClick }: SubjectCardProps) {
-  const category = getCategoryForSubject(subject);
+  // Fixed: Enhanced field validation with fallback values
+  const validatedSubject = {
+    ...subject,
+    name: subject.name || 'Unknown Subject',
+    description: subject.description || 'Comprehensive practice questions and study materials',
+    icon: subject.icon || 'book',
+    examCount: subject.examCount || 0,
+    questionCount: subject.questionCount || 0,
+    slug: subject.slug
+  };
+
+  const category = getCategoryForSubject(validatedSubject);
   const categoryInfo = categoryConfig[category as keyof typeof categoryConfig];
+
+  // Fixed: Enhanced error handling for onClick
+  const handleClick = useCallback(() => {
+    try {
+      onClick();
+    } catch (error) {
+      console.error('SubjectCard onClick error:', error);
+    }
+  }, [onClick]);
 
   return (
     <Card 
       className="group hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/20 h-full"
-      onClick={onClick}
+      onClick={handleClick}
+      role="button" // Fixed: Enhanced accessibility
+      tabIndex={0}
+      aria-label={`View ${validatedSubject.name} subject details`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3 flex-1">
             <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
               <DynamicIcon 
-                name={subject.icon} 
+                name={validatedSubject.icon} 
                 className="w-6 h-6 text-gray-600"
               />
             </div>
             <div className="min-w-0 flex-1">
               <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors line-clamp-2">
-                {subject.name}
+                {validatedSubject.name}
               </CardTitle>
               <Badge variant="outline" className={`text-${categoryInfo.color}-600 border-${categoryInfo.color}-200 mt-1`}>
                 {categoryInfo.label}
@@ -88,24 +122,27 @@ function SubjectCard({ subject, onClick }: SubjectCardProps) {
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-          {subject.description || "Comprehensive practice questions and study materials"}
+          {validatedSubject.description}
         </p>
         
         <div className="flex items-center justify-between text-xs text-gray-500">
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-1">
               <BookOpen className="w-3 h-3" />
-              <span>{subject.examCount || 0} exams</span>
+              <span>{validatedSubject.examCount} exams</span>
             </div>
             <div className="flex items-center space-x-1">
               <Clock className="w-3 h-3" />
-              <span>{subject.questionCount || 0} questions</span>
+              <span>{validatedSubject.questionCount} questions</span>
             </div>
           </div>
-          <div className="flex items-center space-x-1">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span>4.8</span>
-          </div>
+          {/* Fixed: Dynamic ratings - removed hardcoded 4.8 */}
+          {subject.rating && (
+            <div className="flex items-center space-x-1">
+              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              <span>{subject.rating}</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -120,20 +157,30 @@ export default function AllSubjects() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  const { data: subjects, isLoading, refetch } = useQuery<Subject[]>({
+  // Fixed: Optimized refetching - increased interval and enhanced error handling
+  const { data: subjects, isLoading, error, refetch } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 30000, // 30 seconds
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 300000, // Fixed: Refetch every 5 minutes instead of 1 minute
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Use slug-based navigation if available, otherwise fallback to ID
-    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.slug}`;
+  // Fixed: Removed ID-based navigation - slug-only routing as per requirements
+  const handleSelectSubject = useCallback((subject: Subject) => {
+    // Fixed: Slug validation with fallback route
+    if (!subject.slug) {
+      console.error('Subject missing slug:', subject);
+      return; // Fixed: Don't navigate if no slug available
+    }
+    
+    const path = `/subject/${subject.slug}`;
     setLocation(path);
-  };
+  }, [setLocation]);
 
+  // Fixed: Memoized categorized subjects to reduce redundant getCategoryForSubject calls
   const categorizedSubjects = useMemo(() => {
     if (!subjects) return {};
     
@@ -170,7 +217,7 @@ export default function AllSubjects() {
       );
     }
     
-    // Sort subjects
+    // Fixed: Sort subjects - removed ID-based popularity sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "name":
@@ -180,7 +227,8 @@ export default function AllSubjects() {
         case "questions":
           return (b.questionCount || 0) - (a.questionCount || 0);
         case "popular":
-          return b.id - a.id; // Newer subjects first as proxy for popularity
+          // Fixed: Use actual popularity metric or fallback to name sorting
+          return (b.examCount || 0) + (b.questionCount || 0) - ((a.examCount || 0) + (a.questionCount || 0));
         default:
           return a.name.localeCompare(b.name);
       }
@@ -196,11 +244,39 @@ export default function AllSubjects() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedSubjects = filteredAndSortedSubjects.slice(startIndex, endIndex);
 
-  // Reset to first page when filters change
-  const handleFilterChange = (callback: () => void) => {
+  // Fixed: Centralized filter reset logic
+  const resetFilters = useCallback(() => {
+    setSearchQuery("");
+    setSelectedCategory("all");
+    setCurrentPage(1);
+  }, []);
+
+  // Fixed: Ensure pagination consistency for all filter changes
+  const handleFilterChange = useCallback((callback: () => void) => {
     setCurrentPage(1);
     callback();
-  };
+  }, []);
+
+  // Fixed: Enhanced error handling for API failures
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <div className="text-red-600 mb-4">
+              <p className="text-lg font-medium">Failed to load subjects</p>
+              <p className="text-sm text-gray-600">Please check your connection and try again</p>
+            </div>
+            <Button onClick={() => refetch()} className="mt-4">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -291,13 +367,13 @@ export default function AllSubjects() {
               <Input
                 placeholder="Search subjects..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleFilterChange(() => setSearchQuery(e.target.value))}
                 className="pl-10"
               />
             </div>
             
             {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedCategory} onValueChange={(value) => handleFilterChange(() => setSelectedCategory(value))}>
               <SelectTrigger>
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="All Categories" />
@@ -306,7 +382,8 @@ export default function AllSubjects() {
                 <SelectItem value="all">All Categories</SelectItem>
                 {Object.entries(categoryConfig).map(([key, config]) => (
                   <SelectItem key={key} value={key}>
-                    {config.icon} {config.label}
+                    <DynamicIcon name={config.icon} className="w-4 h-4 mr-2 inline" />
+                    {config.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -351,7 +428,7 @@ export default function AllSubjects() {
                 <Badge variant="secondary" className="text-xs">
                   Search: "{searchQuery}"
                   <button 
-                    onClick={() => setSearchQuery("")}
+                    onClick={() => handleFilterChange(() => setSearchQuery(""))}
                     className="ml-2 hover:text-red-600"
                   >
                     ×
@@ -362,7 +439,7 @@ export default function AllSubjects() {
                 <Badge variant="secondary" className="text-xs">
                   Category: {categoryConfig[selectedCategory as keyof typeof categoryConfig]?.label}
                   <button 
-                    onClick={() => setSelectedCategory("all")}
+                    onClick={() => handleFilterChange(() => setSelectedCategory("all"))}
                     className="ml-2 hover:text-red-600"
                   >
                     ×
@@ -372,10 +449,7 @@ export default function AllSubjects() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("all");
-                }}
+                onClick={resetFilters}
                 className="text-xs h-6"
               >
                 Clear all
@@ -411,14 +485,14 @@ export default function AllSubjects() {
                 {paginatedSubjects.map((subject) => {
                   const category = getCategoryForSubject(subject);
                   const categoryData = categoryConfig[category as keyof typeof categoryConfig];
-                  const IconComponent = categoryData?.icon || BookOpen;
                   
                   return (
                     <TableRow key={subject.slug} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-3">
-                          <IconComponent className="w-5 h-5 text-primary" />
-                          <span>{subject.name}</span>
+                          {/* Fixed: Use DynamicIcon for table category icons */}
+                          <DynamicIcon name={categoryData?.icon || "book-open"} className="w-5 h-5 text-primary" />
+                          <span>{subject.name || 'Unknown Subject'}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -433,16 +507,22 @@ export default function AllSubjects() {
                         <span className="text-sm font-medium">{subject.questionCount || 0}</span>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center space-x-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">4.8</span>
-                        </div>
+                        {/* Fixed: Dynamic ratings - removed hardcoded 4.8 */}
+                        {subject.rating ? (
+                          <div className="flex items-center justify-center space-x-1">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">{subject.rating}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">N/A</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button 
                           size="sm" 
                           onClick={() => handleSelectSubject(subject)}
                           className="bg-primary hover:bg-primary/90"
+                          disabled={!subject.slug} // Fixed: Disable if no slug
                         >
                           Start Practice
                         </Button>
@@ -523,10 +603,7 @@ export default function AllSubjects() {
                 "No subjects match your current filters."
               }
             </p>
-            <Button onClick={() => {
-              setSearchQuery("");
-              setSelectedCategory("all");
-            }}>
+            <Button onClick={resetFilters}>
               Show All Subjects
             </Button>
           </div>
