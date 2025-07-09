@@ -207,7 +207,10 @@ export class AuthService {
       const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Generate username from email if not provided
-      const generatedUsername = email.split('@')[0] + Math.random().toString(36).substr(2, 4);
+      // Remove special characters and ensure it matches the database constraint ^[A-Za-z0-9_-]+$
+      const emailPrefix = email.split('@')[0].replace(/[^A-Za-z0-9_-]/g, '');
+      const randomSuffix = Math.random().toString(36).substr(2, 4);
+      const generatedUsername = emailPrefix + randomSuffix;
       
       // Create user and log registration in a transaction
       const [newUser] = await db.transaction(async (trx) => {
