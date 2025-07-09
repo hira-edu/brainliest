@@ -18,7 +18,9 @@ import { geolocationService } from "./services/geolocation-service";
 import { parseId, parseOptionalId, sanitizeString, validatePassword } from './security/input-sanitizer';
 import { z } from 'zod';
 import { validateEmail } from './services/auth-service';
-
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
 import { logAdminAction } from './middleware/auth';
 import { 
   insertSubjectSchema, 
@@ -30,7 +32,8 @@ import {
   insertExamAnalyticsSchema,
   insertUserSchema,
   insertCategorySchema,
-  insertSubcategorySchema
+  insertSubcategorySchema,
+  insertUploadSchema
 } from "../../shared/schema";
 
 // Store verification codes temporarily (in production, use Redis)
@@ -2903,7 +2906,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== ICON ASSIGNMENT ROUTES ====================
 
+  // Update subject icon
+  app.patch("/api/admin/subjects/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
 
+      const subject = await storage.updateSubject(slug, { icon });
+      
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+
+      res.json({ message: "Subject icon updated successfully", subject });
+    } catch (error) {
+      console.error("Update subject icon error:", error);
+      res.status(500).json({ message: "Failed to update subject icon" });
+    }
+  });
+
+  // Update exam icon
+  app.patch("/api/admin/exams/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const exam = await storage.updateExam(slug, { icon });
+      
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+
+      res.json({ message: "Exam icon updated successfully", exam });
+    } catch (error) {
+      console.error("Update exam icon error:", error);
+      res.status(500).json({ message: "Failed to update exam icon" });
+    }
+  });
+
+  // Update category icon
+  app.patch("/api/admin/categories/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const category = await storage.updateCategory(slug, { icon });
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+
+      res.json({ message: "Category icon updated successfully", category });
+    } catch (error) {
+      console.error("Update category icon error:", error);
+      res.status(500).json({ message: "Failed to update category icon" });
+    }
+  });
+
+  // Update subcategory icon
+  app.patch("/api/admin/subcategories/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const subcategory = await storage.updateSubcategory(slug, { icon });
+      
+      if (!subcategory) {
+        return res.status(404).json({ message: "Subcategory not found" });
+      }
+
+      res.json({ message: "Subcategory icon updated successfully", subcategory });
+    } catch (error) {
+      console.error("Update subcategory icon error:", error);
+      res.status(500).json({ message: "Failed to update subcategory icon" });
+    }
+  });
 
   // ==================== END UPLOAD MANAGEMENT ====================
 
