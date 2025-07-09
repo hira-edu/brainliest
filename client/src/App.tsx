@@ -72,7 +72,7 @@ function Router() {
       </Route>
       <Route path="/icon-performance">
         {() => {
-          const IconPerformanceTestPage = lazy(() => import("./pages/icon-performance-test"));
+          const IconPerformanceTestPage = lazy(() => import("./pages/icon-performance-test").then(m => ({ default: m.default })));
           return <IconPerformanceTestPage />;
         }}
       </Route>

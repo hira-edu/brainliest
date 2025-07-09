@@ -6,6 +6,12 @@
 import { useState, useEffect } from 'react';
 import { OptimizedSubjectIcon, IconPreloader, useIconPerformance } from '../components/ui/optimized-subject-icon';
 import { optimizedIconService } from '../services/optimized-icon-service';
+import { 
+  iconPerformanceTester, 
+  PerformanceTestResult, 
+  ConflictTestResult, 
+  ConsistencyTestResult 
+} from '../services/icon-performance-tester';
 
 // Test subjects covering different categories
 const TEST_SUBJECTS = [
@@ -133,6 +139,10 @@ function LoadTestControls() {
     totalTime: number;
     averageTime: number;
   } | null>(null);
+  const [performanceResults, setPerformanceResults] = useState<PerformanceTestResult[]>([]);
+  const [conflictResults, setConflictResults] = useState<ConflictTestResult[]>([]);
+  const [consistencyResults, setConsistencyResults] = useState<ConsistencyTestResult[]>([]);
+  const [isRunningQA, setIsRunningQA] = useState(false);
 
   const runLoadTest = async () => {
     setIsLoadTesting(true);
@@ -173,6 +183,29 @@ function LoadTestControls() {
     window.location.reload();
   };
 
+  const runQATests = async () => {
+    setIsRunningQA(true);
+    try {
+      console.log('🔬 Running comprehensive QA tests...');
+      
+      const [perfResults, conflictResults, consistencyResults] = await Promise.all([
+        iconPerformanceTester.runPerformanceTests(),
+        iconPerformanceTester.detectConflicts(),
+        iconPerformanceTester.analyzeConsistency()
+      ]);
+      
+      setPerformanceResults(perfResults);
+      setConflictResults(conflictResults);
+      setConsistencyResults(consistencyResults);
+      
+      console.log('✅ QA tests completed');
+    } catch (error) {
+      console.error('❌ QA tests failed:', error);
+    } finally {
+      setIsRunningQA(false);
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">Load Testing Controls</h2>
@@ -192,6 +225,14 @@ function LoadTestControls() {
         >
           Clear Cache & Reload
         </button>
+        
+        <button
+          onClick={runQATests}
+          disabled={isRunningQA}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          {isRunningQA ? 'Running QA Tests...' : 'Run QA Tests'}
+        </button>
       </div>
       
       {loadTestResults && (
@@ -204,6 +245,82 @@ function LoadTestControls() {
             <p>Icons per Iteration: {TEST_SUBJECTS.length}</p>
             <p>Average per Icon: {(loadTestResults.averageTime / TEST_SUBJECTS.length).toFixed(2)}ms</p>
           </div>
+        </div>
+      )}
+      
+      {/* QA Test Results */}
+      {(performanceResults.length > 0 || conflictResults.length > 0 || consistencyResults.length > 0) && (
+        <div className="mt-6 space-y-6">
+          {/* Performance Test Results */}
+          {performanceResults.length > 0 && (
+            <div className="bg-blue-50 p-4 rounded">
+              <h3 className="font-semibold mb-2 text-blue-800">Performance Test Results</h3>
+              <div className="space-y-2">
+                {performanceResults.map((result, index) => (
+                  <div key={index} className="flex justify-between items-center text-sm">
+                    <span className={result.success ? 'text-green-700' : 'text-red-700'}>
+                      {result.success ? '✅' : '❌'} {result.testName}
+                    </span>
+                    <span className="text-blue-600">{result.duration.toFixed(2)}ms</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Conflict Test Results */}
+          {conflictResults.length > 0 && (
+            <div className="bg-yellow-50 p-4 rounded">
+              <h3 className="font-semibold mb-2 text-yellow-800">Conflict Detection Results</h3>
+              <div className="space-y-2">
+                {conflictResults.map((result, index) => (
+                  <div key={index} className="text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className={result.detected ? 'text-red-700' : 'text-green-700'}>
+                        {result.detected ? '⚠️' : '✅'} {result.conflictType}
+                      </span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        result.severity === 'high' ? 'bg-red-200 text-red-800' :
+                        result.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                        'bg-green-200 text-green-800'
+                      }`}>
+                        {result.severity}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 text-xs mt-1">{result.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Consistency Test Results */}
+          {consistencyResults.length > 0 && (
+            <div className="bg-purple-50 p-4 rounded">
+              <h3 className="font-semibold mb-2 text-purple-800">Consistency Analysis Results</h3>
+              <div className="space-y-2">
+                {consistencyResults.map((result, index) => (
+                  <div key={index} className="text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-purple-700">{result.category}</span>
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        result.consistencyScore >= 90 ? 'bg-green-200 text-green-800' :
+                        result.consistencyScore >= 70 ? 'bg-yellow-200 text-yellow-800' :
+                        'bg-red-200 text-red-800'
+                      }`}>
+                        {result.consistencyScore.toFixed(1)}%
+                      </span>
+                    </div>
+                    {result.issues.length > 0 && (
+                      <ul className="text-xs text-gray-600 mt-1 list-disc list-inside">
+                        {result.issues.map((issue, i) => <li key={i}>{issue}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
