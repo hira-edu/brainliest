@@ -36,7 +36,7 @@ export async function apiRequest(
   // Create an AbortController for timeout handling
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
-    controller.abort('Request timeout');
+    controller.abort(); // Fixed: Don't pass string argument to avoid raw string rejections
   }, 30000); // 30 second timeout
 
   try {
@@ -73,7 +73,7 @@ export const getQueryFn: <T>(options: {
     // Create an AbortController for timeout handling
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      controller.abort('Query timeout');
+      controller.abort(); // Fixed: Don't pass string argument to avoid raw string rejections
     }, 30000); // 30 second timeout
 
     try {
