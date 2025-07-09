@@ -80,8 +80,8 @@ function normalizeIpAddress(ip: string): string {
     return processedIp;
   } catch (error) {
     console.warn(`Failed to normalize IP address: ${ip}, using safe fallback`, error);
-    // Return a safe fallback that won't cause database issues
-    return `parse_error:${crypto.createHash('md5').update(ip || 'unknown').digest('hex').substring(0, 16)}`;
+    // Return a short, safe fallback that won't cause database issues or error message truncation
+    return `fallback_${crypto.createHash('md5').update(ip || 'unknown').digest('hex').substring(0, 8)}`;
   }
 }
 
@@ -131,10 +131,10 @@ function getClientKey(req: Request): string {
 
   if (!ip) {
     console.warn('Unable to determine client IP address, using fallback');
-    // Use a fallback identifier when IP is not available
+    // Use a short fallback identifier when IP is not available
     const userAgent = req.headers['user-agent'] || 'unknown';
-    const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
-    return `no_ip:${uaHash}`;
+    const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 8);
+    return `no_ip_${uaHash}`;
   }
 
   // Normalize the IP address with safe fallback
@@ -143,8 +143,8 @@ function getClientKey(req: Request): string {
   // Enhanced user-agent hash for better session granularity on shared IPs
   const userAgent = req.headers['user-agent'] || '';
   if (userAgent) {
-    const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
-    return `${normalizedIp}:${uaHash}`;
+    const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 8);
+    return `${normalizedIp}_${uaHash}`;
   }
 
   return normalizedIp;
@@ -158,7 +158,22 @@ function createUserAgentHash(userAgent: string): string {
   if (!userAgent || userAgent.trim() === '') {
     return 'unknown_ua';
   }
-  return crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
+  return crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 8);
+}
+
+/**
+ * Validates and sanitizes client key to prevent database constraint violations
+ */
+function validateClientKey(clientKey: string): string {
+  // Ensure client key is not too long and contains only safe characters
+  const sanitized = clientKey.replace(/[^a-zA-Z0-9_\-\.]/g, '_').substring(0, 50);
+  
+  // Ensure it's not empty after sanitization
+  if (!sanitized || sanitized.trim() === '') {
+    return 'fallback_client';
+  }
+  
+  return sanitized;
 }
 
 export class FreemiumService {
@@ -173,9 +188,10 @@ export class FreemiumService {
    * Fixed: Enhanced question limit check with fail-closed security and proper type safety
    */
   async checkQuestionLimit(req: Request): Promise<FreemiumCheckResult> {
-    const clientKey = getClientKey(req);
+    const rawClientKey = getClientKey(req);
+    const clientKey = validateClientKey(rawClientKey);
     
-    // Since getClientKey now always returns a string (with fallbacks), this check is for safety
+    // Since validateClientKey always returns a safe string, this check is for extra safety
     if (!clientKey || clientKey.trim() === '') {
       return {
         allowed: false,
@@ -218,9 +234,10 @@ export class FreemiumService {
    * Fixed: Enhanced question view recording with comprehensive error handling and database transactions
    */
   async recordQuestionView(req: Request): Promise<FreemiumCheckResult> {
-    const clientKey = getClientKey(req);
+    const rawClientKey = getClientKey(req);
+    const clientKey = validateClientKey(rawClientKey);
     
-    // Since getClientKey now always returns a string (with fallbacks), this check is for safety
+    // Since validateClientKey always returns a safe string, this check is for extra safety
     if (!clientKey || clientKey.trim() === '') {
       return {
         allowed: false,

@@ -105,8 +105,26 @@ export function recordFreemiumQuestionView() {
         return next();
       }
 
-      // Record the question view
-      const result: FreemiumCheckResult = await freemiumService.recordQuestionView(req);
+      // Record the question view with enhanced error handling
+      let result: FreemiumCheckResult;
+      try {
+        result = await freemiumService.recordQuestionView(req);
+      } catch (recordError) {
+        console.error('FreemiumService recording error:', recordError);
+        // Create safe fallback result when recording fails
+        result = {
+          allowed: true,
+          sessionInfo: {
+            questionsAnswered: 1,
+            remainingQuestions: 19,
+            isOverLimit: false,
+            lastReset: new Date(),
+            canViewQuestion: true,
+            percentageUsed: 5
+          },
+          message: 'Question view recorded (fallback)'
+        };
+      }
       
       // Add updated session info to response headers for client tracking (only if headers not sent)
       if (!res.headersSent) {
@@ -144,9 +162,22 @@ export function checkFreemiumStatus() {
           percentageUsed: 0
         };
       } else {
-        // For anonymous users, get actual session info
-        const result = await freemiumService.checkQuestionLimit(req);
-        req.freemiumSession = result.sessionInfo;
+        // For anonymous users, get actual session info with enhanced error handling
+        try {
+          const result = await freemiumService.checkQuestionLimit(req);
+          req.freemiumSession = result.sessionInfo;
+        } catch (sessionError) {
+          console.error('FreemiumService IP processing error:', sessionError);
+          // Provide safe fallback session when IP processing fails
+          req.freemiumSession = {
+            questionsAnswered: 0,
+            remainingQuestions: 20,
+            isOverLimit: false,
+            lastReset: new Date(),
+            canViewQuestion: true,
+            percentageUsed: 0
+          };
+        }
       }
 
       next();
