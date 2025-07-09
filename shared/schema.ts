@@ -118,6 +118,21 @@ export const users = pgTable("users", {
   banReason: text("ban_reason").notNull().default(""),
   // Enforced enum for roles prevents typos and invalid roles
   role: userRoles("role").notNull().default("user"),
+  
+  // Authentication fields
+  passwordHash: text("password_hash"),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationExpires: timestamp("email_verification_expires", { mode: "tz" }),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires", { mode: "tz" }),
+  
+  // Security fields
+  failedLoginAttempts: integer("failed_login_attempts").default(0),
+  lockedUntil: timestamp("locked_until", { mode: "tz" }),
+  loginCount: integer("login_count").default(0),
+  
+  // Tracking fields
   lastLoginAt: timestamp("last_login_at", { mode: "tz" }),
   lastLoginIp: text("last_login_ip").notNull().default(""),
   registrationIp: text("registration_ip").notNull().default(""),
