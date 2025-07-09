@@ -30,7 +30,7 @@ import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
 let sitemapService: any = null;
 async function getSitemapService() {
   if (!sitemapService) {
-    const module = await import("./sitemap-service.js");
+    const module = await import("./services/sitemap-service.js");
     sitemapService = module.sitemapService;
   }
   return sitemapService;
