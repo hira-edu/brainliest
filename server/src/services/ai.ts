@@ -1,8 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSyC2kp4BWMkBwrZWNrYsY6MkdXcrW7-KesA");
+// Initialize with environment variable, fallback to empty string to trigger proper error handling
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function getQuestionHelp(questionText: string, options: string[], subject: string): Promise<string> {
+  // Check if API key is available
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("GEMINI_API_KEY not configured");
+    return "AI help requires a valid API key. Please contact support.";
+  }
+
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -27,10 +34,16 @@ Keep your response concise and educational (maximum 200 words).`;
     const response = await result.response;
     const text = response.text();
 
-    return text || "I'm sorry, I couldn't generate help for this question right now.";
+    return text || "I'm sorry, I couldn't generate help for this question right now. Please try again.";
   } catch (error) {
     console.error("Gemini API error:", error);
-    return "AI help is currently unavailable. Please try again later.";
+    
+    // Provide specific error messages based on error type
+    if (error instanceof Error && error.message.includes("API key not valid")) {
+      return "AI help service is not configured correctly. Please contact support.";
+    }
+    
+    return "AI help is temporarily unavailable. Please try again in a moment.";
   }
 }
 
@@ -41,6 +54,12 @@ export async function explainAnswer(
   userAnswer: number,
   subject: string
 ): Promise<string> {
+  // Check if API key is available
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("GEMINI_API_KEY not configured");
+    return "AI explanation requires a valid API key. Please contact support.";
+  }
+
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -65,9 +84,15 @@ Keep it educational and supportive (maximum 250 words).`;
     const response = await result.response;
     const text = response.text();
 
-    return text || "I couldn't generate an explanation right now.";
+    return text || "I couldn't generate an explanation right now. Please try again.";
   } catch (error) {
     console.error("Gemini API error:", error);
-    return "AI explanation is currently unavailable.";
+    
+    // Provide specific error messages based on error type
+    if (error instanceof Error && error.message.includes("API key not valid")) {
+      return "AI explanation service is not configured correctly. Please contact support.";
+    }
+    
+    return "AI explanation is temporarily unavailable. Please try again in a moment.";
   }
 }
