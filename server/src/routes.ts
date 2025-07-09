@@ -18,9 +18,7 @@ import { geolocationService } from "./services/geolocation-service";
 import { parseId, parseOptionalId, sanitizeString, validatePassword } from './security/input-sanitizer';
 import { z } from 'zod';
 import { validateEmail } from './services/auth-service';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs/promises';
+
 import { logAdminAction } from './middleware/auth';
 import { 
   insertSubjectSchema, 
