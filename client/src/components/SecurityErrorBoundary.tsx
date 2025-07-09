@@ -1,131 +1,420 @@
+/**
+ * Security Error Boundary - Fixed version addressing all audit issues
+ * Catches JavaScript errors, logs them securely, and provides fallback UI
+ */
+
+"use client"; // Fixed: RSC directive for Vercel compatibility
+
 import React, { Component, ReactNode, ErrorInfo } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/secure-logger';
 import { securityLogger } from '../utils/security-logger';
+import { Icon } from './icons/icon';
+import { Button } from './ui/button';
+
+// Fixed: Proper interface definitions for TypeScript
+interface ErrorFallbackProps {
+  error: Error;
+  errorId: string;
+  resetError: () => void;
+}
 
 interface Props {
   children: ReactNode;
-  fallback?: React.ComponentType<{ error: Error; resetError: () => void }>;
+  fallback?: React.ComponentType<ErrorFallbackProps>;
+  enableReporting?: boolean; // Fixed: Configurable reporting for testing
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
   errorId: string | null;
+  errorInfo: ErrorInfo | null;
+}
+
+// Fixed: Comprehensive error information interface
+interface ErrorReportData {
+  errorId: string;
+  message: string;
+  stack?: string;
+  componentStack?: string;
+  timestamp: string;
+  userAgent?: string;
+  url?: string;
+  userId?: string;
+  sessionId?: string;
+  buildVersion?: string;
+}
+
+// Fixed: Centralized timestamp generation
+const getCurrentTimestamp = (): string => new Date().toISOString();
+
+// Fixed: Safe browser environment checks
+const getBrowserInfo = () => {
+  if (typeof window === 'undefined') {
+    return { userAgent: 'SSR', url: 'SSR' };
+  }
+  
+  return {
+    userAgent: navigator?.userAgent || 'Unknown',
+    url: window?.location?.href || 'Unknown'
+  };
+};
+
+// Fixed: Secure UUID generation instead of Math.random
+const generateErrorId = (): string => {
+  try {
+    return uuidv4();
+  } catch {
+    // Fallback if uuid fails
+    return `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+};
+
+// Fixed: Enhanced default fallback with accessibility and proper icon integration
+function DefaultErrorFallback({ error, errorId, resetError }: ErrorFallbackProps) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const showDetails = !isProduction;
+
+  return (
+    <div 
+      className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+      role="alert" // Fixed: ARIA role for accessibility
+      aria-live="assertive"
+    >
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            {/* Fixed: Use proper Icon component instead of inline SVG */}
+            <Icon 
+              name="alert-triangle"
+              size="lg"
+              color="destructive"
+              aria-label="Error occurred"
+            />
+          </div>
+          
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Something went wrong
+          </h1>
+          
+          <p className="text-gray-600 mb-4">
+            We encountered an unexpected error. Our team has been notified.
+          </p>
+          
+          {/* Fixed: Show error ID for user support */}
+          <div className="text-sm text-gray-500 mb-6">
+            <p>Error ID: <code className="bg-gray-100 px-2 py-1 rounded">{errorId}</code></p>
+            <p className="mt-1">Please reference this ID when contacting support.</p>
+          </div>
+          
+          {/* Fixed: Enhanced accessibility for button */}
+          <Button
+            onClick={resetError}
+            className="w-full"
+            variant="default"
+            aria-label="Try to reload the application"
+          >
+            <Icon name="refresh-cw" size="sm" className="mr-2" aria-hidden="true" />
+            Try Again
+          </Button>
+          
+          {/* Fixed: Show error details in development with proper formatting */}
+          {showDetails && error && (
+            <details className="mt-6 text-left">
+              <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900">
+                Technical Details (Development Only)
+              </summary>
+              <div className="mt-2 p-4 bg-gray-100 rounded-md">
+                <div className="text-xs text-gray-800">
+                  <p><strong>Message:</strong> {error.message}</p>
+                  {error.stack && (
+                    <div className="mt-2">
+                      <strong>Stack:</strong>
+                      <pre className="mt-1 overflow-auto whitespace-pre-wrap text-xs">
+                        {error.stack}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </details>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export class SecurityErrorBoundary extends Component<Props, State> {
+  private retryCount = 0;
+  private maxRetries = 3;
+
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, errorId: null };
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorId: null,
+      errorInfo: null
+    };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    const errorId = Math.random().toString(36).substr(2, 9);
+  // Fixed: Proper error typing and enhanced error tracking
+  static getDerivedStateFromError(error: Error): Partial<State> {
+    const errorId = generateErrorId();
+    const timestamp = getCurrentTimestamp();
+    const browserInfo = getBrowserInfo();
     
-    // Log security-relevant errors
-    securityLogger.logError(error, {
-      errorId,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href
-    });
-    
-    return { hasError: true, error, errorId };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Report to error tracking service
-    if (process.env.NODE_ENV === 'production') {
-      // Send to external error tracking (e.g., Sentry)
-      this.reportError(error, errorInfo);
+    // Fixed: Enhanced security logging with proper error handling
+    try {
+      securityLogger.logError(error, {
+        errorId,
+        timestamp,
+        ...browserInfo,
+        severity: 'error',
+        category: 'react_error_boundary'
+      });
+    } catch (loggingError) {
+      // Fallback logging if securityLogger fails
+      console.error('Failed to log to securityLogger:', loggingError);
+      console.error('Original error:', error);
     }
     
-    logger.error('Error caught by boundary:', {
-      error: error.message,
-      stack: error.stack,
-      errorInfo
-    });
+    return { 
+      hasError: true, 
+      error, 
+      errorId
+    };
   }
 
-  private reportError(error: Error, errorInfo: ErrorInfo) {
-    // This would integrate with your error tracking service
-    fetch('/api/errors/report', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+  // Fixed: Enhanced error catching with proper typing and retry logic
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    const { enableReporting = true } = this.props;
+    
+    // Store error info for potential display in development
+    this.setState({ errorInfo });
+    
+    // Fixed: Configurable error reporting for testing
+    if (enableReporting && (process.env.NODE_ENV === 'production' || process.env.ENABLE_ERROR_REPORTING === 'true')) {
+      this.reportError(error, errorInfo).catch(reportingError => {
+        console.error('Failed to report error:', reportingError);
+      });
+    }
+    
+    // Fixed: Consolidated logging with timestamp
+    const timestamp = getCurrentTimestamp();
+    try {
+      logger.error('Error caught by SecurityErrorBoundary:', {
+        errorId: this.state.errorId,
         message: error.message,
         stack: error.stack,
-        errorInfo,
-        timestamp: new Date().toISOString(),
-        url: window.location.href
-      })
-    }).catch(() => {
-      // Silently fail if error reporting fails
-    });
+        componentStack: errorInfo.componentStack,
+        timestamp,
+        retryCount: this.retryCount
+      });
+    } catch (loggingError) {
+      console.error('Failed to log error:', loggingError);
+      console.error('Original error:', error);
+    }
   }
 
-  resetError = () => {
-    this.setState({ hasError: false, error: null, errorId: null });
+  // Fixed: Async error reporting with proper error handling and retry logic
+  private async reportError(error: Error, errorInfo: ErrorInfo): Promise<void> {
+    const { errorId } = this.state;
+    
+    if (!errorId) {
+      console.warn('Cannot report error: errorId is null');
+      return;
+    }
+
+    const browserInfo = getBrowserInfo();
+    
+    const errorData: ErrorReportData = {
+      errorId,
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: getCurrentTimestamp(),
+      ...browserInfo,
+      userId: this.getUserId(),
+      sessionId: this.getSessionId(),
+      buildVersion: process.env.REACT_APP_VERSION || 'unknown'
+    };
+
+    try {
+      const response = await fetch('/api/errors/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(errorData),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error reporting failed: ${response.status} ${response.statusText}`);
+      }
+
+      console.log(`Error ${errorId} reported successfully`);
+    } catch (reportingError) {
+      // Fixed: Log fetch failures for debugging
+      console.error('Failed to report error to server:', reportingError);
+      
+      // Attempt to store locally for later retry
+      try {
+        const pendingErrors = JSON.parse(localStorage.getItem('pendingErrorReports') || '[]');
+        pendingErrors.push(errorData);
+        localStorage.setItem('pendingErrorReports', JSON.stringify(pendingErrors.slice(-10))); // Keep last 10
+      } catch (storageError) {
+        console.error('Failed to store error for later reporting:', storageError);
+      }
+    }
+  }
+
+  // Fixed: Enhanced reset logic with retry handling
+  resetError = (): void => {
+    this.retryCount++;
+    
+    // Fixed: Enhanced retry logic with navigation fallback
+    if (this.retryCount > this.maxRetries) {
+      console.warn('Max retry attempts reached, attempting navigation fallback');
+      
+      // Attempt to navigate to a safe route
+      if (typeof window !== 'undefined') {
+        try {
+          window.location.href = '/';
+          return;
+        } catch (navigationError) {
+          console.error('Navigation fallback failed:', navigationError);
+        }
+      }
+    }
+
+    // Reset state to try rendering children again
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorId: null,
+      errorInfo: null
+    });
   };
 
-  render() {
-    if (this.state.hasError) {
-      const FallbackComponent = this.props.fallback || DefaultErrorFallback;
+  // Fixed: Safe user ID retrieval
+  private getUserId(): string | undefined {
+    try {
+      if (typeof window === 'undefined') return undefined;
+      return localStorage.getItem('userId') || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // Fixed: Safe session ID retrieval
+  private getSessionId(): string | undefined {
+    try {
+      if (typeof window === 'undefined') return undefined;
+      return sessionStorage.getItem('sessionId') || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  render(): ReactNode {
+    const { hasError, error, errorId } = this.state;
+    const { children, fallback: CustomFallback } = this.props;
+
+    if (hasError) {
+      // Fixed: Proper null check for error
+      if (!error || !errorId) {
+        console.error('Error boundary state is corrupted');
+        return (
+          <DefaultErrorFallback 
+            error={new Error('Unknown error occurred')}
+            errorId="unknown"
+            resetError={this.resetError}
+          />
+        );
+      }
+
+      // Use custom fallback if provided, otherwise use default
+      if (CustomFallback) {
+        return (
+          <CustomFallback 
+            error={error}
+            errorId={errorId}
+            resetError={this.resetError}
+          />
+        );
+      }
+
       return (
-        <FallbackComponent 
-          error={this.state.error!} 
+        <DefaultErrorFallback 
+          error={error}
+          errorId={errorId}
           resetError={this.resetError}
         />
       );
     }
 
-    return this.props.children;
+    return children;
   }
 }
 
-// Default error fallback component
-const DefaultErrorFallback: React.FC<{ error: Error; resetError: () => void }> = ({ 
-  error, 
-  resetError 
-}) => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-6">
-      <div className="flex items-center mb-4">
-        <div className="flex-shrink-0">
-          <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-        </div>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-gray-800">
-            Something went wrong
-          </h3>
-        </div>
-      </div>
-      
-      <div className="mt-2 text-sm text-gray-600">
-        We're sorry, but something unexpected happened. Please try again.
-      </div>
-      
-      {process.env.NODE_ENV === 'development' && (
-        <details className="mt-4">
-          <summary className="cursor-pointer text-sm text-gray-500">
-            Error details (development only)
-          </summary>
-          <pre className="mt-2 text-xs text-gray-400 overflow-auto">
-            {error.stack}
-          </pre>
-        </details>
-      )}
-      
-      <div className="mt-4">
-        <button
-          onClick={resetError}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Try again
-        </button>
-      </div>
-    </div>
-  </div>
-);
+// Fixed: Export both the class and a HOC for easier usage
+export default SecurityErrorBoundary;
+
+// Fixed: Higher-order component for easier wrapping
+export function withErrorBoundary<P extends object>(
+  WrappedComponent: React.ComponentType<P>,
+  customFallback?: React.ComponentType<ErrorFallbackProps>
+) {
+  return function WithErrorBoundaryComponent(props: P) {
+    return (
+      <SecurityErrorBoundary fallback={customFallback}>
+        <WrappedComponent {...props} />
+      </SecurityErrorBoundary>
+    );
+  };
+}
+
+// Fixed: Hook for manual error reporting
+export function useErrorReporting() {
+  const reportError = React.useCallback(async (error: Error, context?: Record<string, any>) => {
+    const errorId = generateErrorId();
+    const timestamp = getCurrentTimestamp();
+    const browserInfo = getBrowserInfo();
+    
+    const errorData: ErrorReportData = {
+      errorId,
+      message: error.message,
+      stack: error.stack,
+      componentStack: context?.componentStack || 'Manual report',
+      timestamp,
+      ...browserInfo,
+      buildVersion: process.env.REACT_APP_VERSION || 'unknown'
+    };
+
+    try {
+      const response = await fetch('/api/errors/report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...errorData, ...context }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Manual error reporting failed: ${response.status}`);
+      }
+
+      return { success: true, errorId };
+    } catch (reportingError) {
+      console.error('Manual error reporting failed:', reportingError);
+      return { success: false, error: reportingError };
+    }
+  }, []);
+
+  return { reportError };
+}
