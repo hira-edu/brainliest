@@ -259,10 +259,26 @@ class IconRegistryService {
   }
 
   /**
-   * Check if icon exists in registry
+   * Check if icon exists in registry or as SVG file
    */
   hasIcon(iconId: string): boolean {
-    return this.iconCache.has(iconId);
+    // Check cache first
+    if (this.iconCache.has(iconId)) {
+      return true;
+    }
+    
+    // Check if SVG file exists by assuming common icons
+    const knownSvgIcons = [
+      'academic', 'aws', 'azure', 'gcp', 'cisco', 'comptia', 'docker', 'kubernetes',
+      'javascript', 'python', 'react', 'nodejs', 'mathematics', 'science', 'business',
+      'hesi', 'teas', 'gre', 'lsat', 'toefl', 'ged', 'pmp', 'cissp', 'cisa',
+      'finance', 'accounting', 'economics', 'marketing', 'psychology', 'sociology',
+      'history', 'literature', 'philosophy', 'physics', 'chemistry', 'biology',
+      'astronomy', 'earth-science', 'political-science', 'medical', 'law', 'engineering',
+      'computer-science', 'statistics', 'test', 'certification', 'study'
+    ];
+    
+    return knownSvgIcons.includes(iconId);
   }
 
   /**
