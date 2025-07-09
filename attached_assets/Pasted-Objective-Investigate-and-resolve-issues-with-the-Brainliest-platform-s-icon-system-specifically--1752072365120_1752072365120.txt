@@ -1,0 +1,45 @@
+Objective:
+Investigate and resolve issues with the Brainliest platform’s icon system, specifically addressing:Slow icon loading times.
+Potential conflicts causing incorrect or inconsistent icon rendering.
+Inconsistent icon sets across subjects (e.g., different styles or sources for icons).
+Implement a unified icon pattern to ensure visual consistency and performance.
+Enhance the admin panel to manage icons efficiently and support dynamic mapping.
+
+Context:
+The Brainliest platform uses a custom icon system to display icons for subjects (e.g., "Mathematics", "PMP Certification") and exams. The system includes:React Components: BaseIcon, Icon, SubjectIcon, CategoryIcon, StatusIcon.
+IconProvider: Manages icon state with hooks (useIcon, useSubjectIcon, useIconSearch).
+IndustrialIconRegistry: A thread-safe registry with LRU caching for icon storage and retrieval.
+Database: MongoDB with schemas for Subject, Exam, and Icon.
+Storage: Icons stored in /public/icons or AWS S3 for user-uploaded icons.
+Admin Panel: Manages subjects and exams, including icon assignments.
+
+Issues to Address:Slow Icon Loading:Icons load slowly, impacting user experience.
+Possible causes: Large SVG files, network latency, inefficient registry lookups, or excessive database queries.
+Conflicts:Potential conflicts in IndustrialIconRegistry (e.g., duplicate iconIds, race conditions).
+Incorrect icon rendering due to mismatched subjectName or iconId.
+Inconsistent Icon Sets:Some subjects use different icon styles (e.g., filled vs. outlined, Heroicons vs. custom uploads).
+Lack of a unified visual pattern across subjects and exams.
+Dynamic Mapping:Current useSubjectIconName relies on hardcoded mappings, leading to inconsistencies.
+Need a database-driven approach for scalability.
+Admin Panel:Requires a robust interface for searching, selecting, and uploading icons with a unified pattern.
+Tasks:QA Testing and Root Cause Analysis:Identify causes of slow icon loading (e.g., registry performance, network issues, large SVGs).
+Detect conflicts in icon registration or rendering.
+Analyze inconsistencies in icon styles across subjects and exams.
+Performance Optimization:Optimize icon loading times (e.g., CDN, caching, lazy loading).
+Reduce registry lookup times and database query overhead.
+Unified Icon Pattern:Define and enforce a consistent icon style (e.g., Tabler Icons, outlined, 24x24px).
+Update all subjects and exams to use the unified pattern.
+Dynamic Icon Mapping:Replace hardcoded mappings with a database-driven approach.
+Sync icon mappings with IndustrialIconRegistry on startup.
+Admin Panel Enhancements:Implement a searchable icon selector with style filtering.
+Support user-uploaded icons with validation and style enforcement.
+Provide bulk icon assignment and preview functionality.
+Recommendations:Provide industry-standard recommendations for performance, security, scalability, and maintainability.
+Suggest testing and monitoring strategies.
+Deliverables:A detailed QA report with root causes and fixes for slow loading, conflicts, and inconsistencies.
+A unified set of SVG icons (e.g., Tabler Icons, outlined style) stored in /public/icons or S3.
+Optimized code for icon loading, registry management, and dynamic mapping.
+Updated admin panel with icon selector and bulk assignment features.
+MongoDB schemas and API routes for icon management.
+Comprehensive recommendations and testing plan.
+

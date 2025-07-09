@@ -70,6 +70,12 @@ function Router() {
           return <IconTestPage />;
         }}
       </Route>
+      <Route path="/icon-performance">
+        {() => {
+          const IconPerformanceTestPage = lazy(() => import("./pages/icon-performance-test"));
+          return <IconPerformanceTestPage />;
+        }}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
