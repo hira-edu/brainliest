@@ -50,17 +50,38 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     
     let filtered = subjects.filter(subject => {
       if (!subject?.name) return false;
-      const subjectCategoryId = getCategoryForSubject(subject);
-      if (!subjectCategoryId) return false;
       
-      // If we're in a subcategory view, filter by that subcategory
+      // Map category structure IDs to database slugs
+      const categorySlugMap: Record<string, string> = {
+        'professional': 'professional-certifications',
+        'academic': 'university-college'
+      };
+      
+      const subcategorySlugMap: Record<string, string> = {
+        'it-cloud': 'it-cloud-computing',
+        'project-management': 'project-management',
+        'cybersecurity': 'cybersecurity',
+        'networking': 'networking',
+        'mathematics-statistics': 'mathematics-statistics',
+        'computer-science': 'computer-science',
+        'natural-sciences': 'natural-sciences',
+        'engineering': 'engineering',
+        'business-economics': 'business-economics',
+        'health-medical': 'health-medical-sciences',
+        'social-sciences-humanities': 'social-sciences-humanities',
+        'test-prep': 'standardized-test-prep'
+      };
+      
+      const expectedCategorySlug = categorySlugMap[categoryData.category.id];
+      
+      // If we're in a subcategory view, filter by exact subcategory match
       if (categoryData.subCategory) {
-        // For now, since we don't have subcategory mapping in getCategoryForSubject,
-        // we'll just check if the subject belongs to the parent category
-        return subjectCategoryId === categoryData.category.id;
+        const expectedSubcategorySlug = subcategorySlugMap[categoryData.subCategory.id];
+        return subject.categorySlug === expectedCategorySlug && 
+               subject.subcategorySlug === expectedSubcategorySlug;
       } else {
-        // Filter by main category
-        return subjectCategoryId === categoryData.category.id;
+        // Filter by main category only
+        return subject.categorySlug === expectedCategorySlug;
       }
     });
     
