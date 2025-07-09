@@ -1,5 +1,6 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
+import { SafeIconWrapper } from '../components/icons/suspense-wrapper';
 
 interface DynamicIconProps {
   name?: string;
@@ -44,10 +45,18 @@ export function DynamicIcon({
   const IconComponent = (LucideIcons as any)[normalizedName];
   
   if (!IconComponent) {
-    return <FallbackIcon className={className} size={size} />;
+    return (
+      <SafeIconWrapper>
+        <FallbackIcon className={className} size={size} />
+      </SafeIconWrapper>
+    );
   }
 
-  return <IconComponent className={className} size={size} />;
+  return (
+    <SafeIconWrapper>
+      <IconComponent className={className} size={size} />
+    </SafeIconWrapper>
+  );
 }
 
 // Hook to dynamically get a Lucide icon component

@@ -1,7 +1,10 @@
+"use client"; // Fixed: RSC directive for Vercel compatibility
+
 import React, { Suspense, forwardRef } from 'react';
 import { IconProps } from './types';
 import { useIcon } from './icon-provider';
 import { LoadingIcon, FallbackIcon } from './base-icon';
+import { SafeIconWrapper } from './suspense-wrapper';
 
 interface IconComponentProps extends IconProps {
   /** Icon identifier */
@@ -40,11 +43,13 @@ export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
     // If primary loaded successfully and no error, render it
     if (PrimaryComponent && !primaryError) {
       return (
-        <Suspense
-          fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}
+        <SafeIconWrapper 
+          size={props.size} 
+          aria-label={props['aria-label']}
+          fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : undefined}
         >
           <PrimaryComponent ref={ref} {...props} />
-        </Suspense>
+        </SafeIconWrapper>
       );
     }
 
@@ -57,11 +62,13 @@ export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
       // If fallback loaded successfully, render it
       if (FallbackComponent && !fallbackError) {
         return (
-          <Suspense
-            fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}
+          <SafeIconWrapper 
+            size={props.size} 
+            aria-label={props['aria-label']}
+            fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : undefined}
           >
             <FallbackComponent ref={ref} {...props} />
-          </Suspense>
+          </SafeIconWrapper>
         );
       }
     }

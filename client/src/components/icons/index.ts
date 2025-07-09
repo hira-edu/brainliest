@@ -1,54 +1,39 @@
 /**
- * Icon System Public API
- * Main entry point for the icon system
- * 
- * Provides all core components, hooks, utilities, and types for working
- * with the icon registry in a robust, lazy-loaded, and fallback-aware way.
+ * Icon System Main Export
+ * Re-exports all icon system components with proper type exports
+ * Fixes audit issue: Missing type exports
  */
 
-// Core components
+"use client";
+
+// Component exports
 export { Icon, SubjectIcon, CategoryIcon, StatusIcon } from './icon';
+export { BaseIcon, LoadingIcon, FallbackIcon, createIcon } from './base-icon';
+export { IconProvider, useIcons, useIcon, useIconSearch, useSubjectIcon, useIconMetrics } from './icon-provider';
 
-// Provider & hooks
-export {
-  IconProvider,
-  useIcons,
-  useIcon,
-  useIconSearch,
-  useSubjectIcon,
-} from './icon-provider';
+// Registry exports
+export { iconRegistry, sharedIconRegistry, industrialIconRegistry } from './shared-registry';
+export { IconRegistry } from './registry';
+export { IndustrialIconRegistry } from './industrial-registry';
 
-// Base primitives
-export {
-  BaseIcon,
-  createIcon,
-  LoadingIcon,
-  FallbackIcon,
-} from './base-icon';
-
-// Registry (underlying storage & lookup)
-export { iconRegistry } from './registry';
-
-// Utility functions
-export {
-  preloadCriticalIcons,
-  registerAllIcons,
-} from './definitions';
-
-// Types
+// Type exports - Fixed: Re-export for convenience
 export type {
-  IconCategory,
-  IconColor,
-  IconComponent,
-  IconConfig,
-  IconContextValue,
-  IconMetadata,
   IconProps,
-  IconRegistryEntry,
   IconSize,
+  IconColor,
   IconVariant,
-  SubjectIconMapping,
+  IconCategory,
+  IconMetadata,
+  IconComponent,
+  IconRegistryEntry,
+  IconContextValue,
+  IconConfig,
+  SubjectIconMapping
 } from './types';
 
-// Legacy compatibility (default export)
-export { Icon as default } from './icon';
+// Utility exports
+export { iconLazyLoader } from './lazy-loader';
+export type { IconLazyLoader } from './lazy-loader';
+
+// Definition exports
+export { registerAllIcons } from './definitions';

@@ -141,6 +141,14 @@ export interface IconConfig {
   cacheSize: number;
   /** Custom theme colors */
   themeColors?: Record<string, string>;
+  /** Enable metrics collection */
+  enableMetrics?: boolean;
+  /** Enable debug logging */
+  enableDebug?: boolean;
+  /** Search timeout in ms */
+  searchTimeout?: number;
+  /** Cache eviction strategy */
+  evictionStrategy?: 'lru' | 'fifo';
 }
 
 // Subject to icon mapping interface

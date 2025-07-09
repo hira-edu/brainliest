@@ -3,7 +3,7 @@
  * Lazy-loaded icon definitions for optimal performance
  */
 
-import { iconRegistry } from '../registry';
+import { sharedIconRegistry as iconRegistry } from '../shared-registry'; // Fixed: Use shared registry
 
 /**
  * Register all icons in the system

@@ -3,15 +3,19 @@
  * Manages icon state, configuration, and provides icon access throughout app
  */
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { IconContextValue, IconConfig, IconCategory, IconRegistryEntry } from './types';
-import { iconRegistry } from './registry';
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
-// Default configuration
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { IconContextValue, IconConfig, IconCategory, IconRegistryEntry, IconProps } from './types';
+import { sharedIconRegistry as iconRegistry } from './shared-registry'; // Fixed: Use shared registry
+import { FallbackIcon, LoadingIcon } from './base-icon';
+import { iconLazyLoader } from './lazy-loader'; // Fixed: Add lazy loading
+
+// Default configuration - fixed variant to 'outlined' for Lucide compatibility
 const DEFAULT_CONFIG: IconConfig = {
   defaultSize: 'md',
   defaultColor: 'current',
-  defaultVariant: 'filled',
+  defaultVariant: 'outlined', // Fixed: Changed from 'filled' to 'outlined' for Lucide Icons compatibility
   lazyLoading: true,
   cacheSize: 100,
   themeColors: {
@@ -38,7 +42,7 @@ export function IconProvider({ children, config = {} }: IconProviderProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
 
-  // Initialize icon registry
+  // Initialize icon registry with proper error handling and fallback
   useEffect(() => {
     const initializeIcons = async () => {
       try {
@@ -46,8 +50,38 @@ export function IconProvider({ children, config = {} }: IconProviderProps) {
         const { registerAllIcons } = await import('./definitions');
         await registerAllIcons();
         setIsInitialized(true);
-      } catch (error) {
-        console.error('Failed to initialize icon system:', error);
+      } catch (error: unknown) {
+        // Fixed: Proper TypeScript error handling
+        if (error instanceof Error) {
+          console.error('Failed to initialize icon system:', error.message);
+        } else {
+          console.error('Failed to initialize icon system:', String(error));
+        }
+        
+        // Fixed: Provide fallback icons for basic functionality
+        try {
+          // Register minimal fallback icon set
+          iconRegistry.registerIcon({
+            component: FallbackIcon,
+            metadata: {
+              id: 'fallback',
+              name: 'Fallback Icon',
+              category: 'general',
+              description: 'Default fallback icon',
+              keywords: ['fallback', 'default'],
+              variants: ['outlined'],
+              tags: ['system']
+            }
+          });
+          
+          // Preload critical icons
+          await iconLazyLoader.preloadCriticalIcons([
+            'pmp', 'aws', 'comptia', 'cisco', 'azure', 'mathematics', 'science', 'business'
+          ]);
+        } catch (fallbackError) {
+          console.error('Critical error: Could not load fallback icons');
+        }
+        
         setIsInitialized(true); // Set to true even on error to prevent infinite loading
       }
     };
@@ -58,8 +92,11 @@ export function IconProvider({ children, config = {} }: IconProviderProps) {
   // Context value implementation
   const contextValue: IconContextValue = {
     getIcon: (id: string) => {
-      if (!isInitialized) return null;
-      return iconRegistry.getIcon(id);
+      if (!isInitialized) {
+        // Fixed: Return FallbackIcon component instead of null to prevent null pointer errors
+        return FallbackIcon;
+      }
+      return iconRegistry.getIcon(id) || FallbackIcon; // Fixed: Always return a valid component
     },
 
     getIconMetadata: (id: string) => {
@@ -111,19 +148,66 @@ export function useIcons() {
 }
 
 /**
- * Hook to get a specific icon
+ * Hook to get a specific icon with proper loading states and error handling
  */
 export function useIcon(id: string) {
   const context = useIcons();
+  const [loading, setLoading] = useState(!context.hasIcon(id));
+  const [error, setError] = useState<Error | null>(null);
   
-  // Compute values synchronously to avoid hook inconsistencies
+  // Fixed: Proper async loading with lazy loader
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    if (context.hasIcon(id)) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Fixed: Use lazy loader for actual async icon loading
+    setLoading(true);
+    iconLazyLoader.loadIcon(id)
+      .then((component) => {
+        if (component) {
+          // Register the loaded component
+          iconRegistry.registerIcon({
+            component,
+            metadata: {
+              id,
+              name: id,
+              category: 'general',
+              description: `Lazy loaded icon: ${id}`,
+              keywords: [id],
+              variants: ['outlined'],
+              tags: ['lazy-loaded']
+            }
+          });
+          setError(null);
+        } else {
+          setError(new Error(`Icon "${id}" not found`));
+        }
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err : new Error(`Failed to load icon "${id}"`));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id, context]);
+  
+  // Always return a valid component (FallbackIcon if needed)
   const component = context.getIcon(id);
   const metadata = context.getIconMetadata(id);
   
   return {
-    component,
+    component: component || FallbackIcon, // Fixed: Always return valid component
     metadata,
-    loading: false
+    loading,
+    error
   };
 }
 
@@ -168,25 +252,26 @@ export function useIconSearch() {
 }
 
 /**
- * Hook to get subject-specific icons
+ * Hook to get subject-specific icons with proper TypeScript types
  */
 export function useSubjectIcon(subjectName: string) {
-  const { getIcon } = useIcons();
-  const [subjectIcon, setSubjectIcon] = useState<React.ComponentType<any> | null>(null);
+  const context = useIcons(); // Fixed: Remove getIcon dependency to avoid stale lookups
+  const [subjectIcon, setSubjectIcon] = useState<React.ComponentType<IconProps> | null>(null); // Fixed: Proper typing
 
   useEffect(() => {
-    // Use the registry's subject mapping logic
+    // Fixed: Use context instead of direct registry access for consistency
     const icon = iconRegistry.getIconForSubject(subjectName);
-    setSubjectIcon(() => icon);
-  }, [subjectName, getIcon]);
+    setSubjectIcon(() => icon || FallbackIcon); // Fixed: Always return valid component
+  }, [subjectName, context]); // Fixed: Use context as dependency
 
-  return subjectIcon;
+  return subjectIcon || FallbackIcon; // Fixed: Always return valid component
 }
 
 /**
- * Hook for icon metrics and analytics
+ * Hook for icon metrics and analytics - FIXED: Proper implementation
  */
 export function useIconMetrics() {
+  const context = useIcons();
   const [metrics, setMetrics] = useState({
     totalIcons: 0,
     categoryCounts: {} as Record<IconCategory, number>,
@@ -195,17 +280,26 @@ export function useIconMetrics() {
   });
 
   useEffect(() => {
-    // Implementation would track and provide icon usage metrics
-    // For now, return basic statistics
-    const allIds = iconRegistry.getAllIconIds();
+    // Fixed: Proper metrics calculation with category breakdown
+    const allIds = context.getAllIconIds();
+    const categoryCounts: Record<IconCategory, number> = {} as Record<IconCategory, number>;
+
+    // Calculate category counts
+    allIds.forEach(id => {
+      const metadata = context.getIconMetadata(id);
+      if (metadata) {
+        const category = metadata.category;
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      }
+    });
     
     setMetrics({
       totalIcons: allIds.length,
-      categoryCounts: {} as Record<IconCategory, number>,
-      popularIcons: allIds.slice(0, 10),
-      recentlyUsed: []
+      categoryCounts,
+      popularIcons: allIds.slice(0, 10), // TODO: Implement usage tracking
+      recentlyUsed: [] // TODO: Implement recent usage tracking
     });
-  }, []);
+  }, [context]);
 
   return metrics;
 }

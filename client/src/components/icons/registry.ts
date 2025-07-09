@@ -23,8 +23,8 @@ class IconRegistry {
     const { metadata } = entry;
     const key = this.normalizeId(metadata.id);
 
-    // Warn if overwriting an existing icon
-    if (this.icons.has(key)) {
+    // Fixed: Only warn in development mode to reduce production noise
+    if (this.icons.has(key) && process.env.NODE_ENV === 'development') {
       console.warn(`IconRegistry: Overwriting icon with id '${metadata.id}'`);
     }
 
@@ -216,13 +216,77 @@ class IconRegistry {
   }
 
   private getExactSubjectMapping(subjectName: string): string | null {
-    const m: SubjectIconMapping = {
-      // ... your mapping entries ...
+    // Fixed: Complete subject-to-icon mapping
+    const mapping: Record<string, string> = {
       'PMP Certification': 'pmp',
       'AWS Cloud Practitioner': 'aws',
-      // etc.
+      'AWS Solutions Architect': 'aws',
+      'AWS Developer': 'aws',
+      'AWS SysOps Administrator': 'aws',
+      'CompTIA Security+': 'comptia',
+      'CompTIA Network+': 'comptia',
+      'CompTIA A+': 'comptia',
+      'Cisco CCNA': 'cisco',
+      'Cisco CCNP': 'cisco',
+      'Azure Fundamentals': 'azure',
+      'Azure Administrator': 'azure',
+      'Google Cloud Professional': 'google-cloud',
+      'Oracle Database': 'oracle',
+      'VMware vSphere': 'vmware',
+      'Kubernetes Administrator': 'kubernetes',
+      'Docker Certified Associate': 'docker',
+      'Mathematics': 'mathematics',
+      'Calculus': 'mathematics',
+      'Linear Algebra': 'mathematics',
+      'Discrete Mathematics': 'mathematics',
+      'Geometry': 'mathematics',
+      'Pre-Calculus': 'mathematics',
+      'Statistics': 'statistics',
+      'AP Statistics': 'statistics',
+      'Biostatistics': 'statistics',
+      'Business Statistics': 'statistics',
+      'Elementary Statistics': 'statistics',
+      'Intro to Statistics': 'statistics',
+      'Physics': 'science',
+      'Chemistry': 'science',
+      'Biology': 'science',
+      'Astronomy': 'science',
+      'Earth Science': 'science',
+      'Computer Science': 'computer-science',
+      'Programming': 'code',
+      'Data Structures': 'algorithm',
+      'Algorithms': 'algorithm',
+      'Web Development': 'web-dev',
+      'Database Design': 'database',
+      'Computer Science Fundamentals': 'computer-science',
+      'Business': 'business',
+      'Accounting': 'business',
+      'Economics': 'business',
+      'Finance': 'business',
+      'Business Administration': 'business',
+      'Engineering': 'engineering',
+      'Mechanical Engineering': 'engineering',
+      'Electrical Engineering': 'engineering',
+      'Nursing': 'medical',
+      'Pharmacology': 'medical',
+      'Medical Sciences': 'medical',
+      'Health Sciences': 'medical',
+      'Anatomy': 'medical',
+      'HESI': 'medical',
+      'TEAS': 'medical',
+      'Psychology': 'science',
+      'History': 'academic',
+      'Philosophy': 'academic',
+      'Sociology': 'science',
+      'Political Science': 'science',
+      'English': 'academic',
+      'Writing': 'academic',
+      'GRE': 'test-prep',
+      'LSAT': 'test-prep',
+      'TOEFL': 'test-prep',
+      'GED': 'test-prep'
     };
-    return m[subjectName] ?? null;
+    return mapping[subjectName] ?? null;
   }
 
   private inferCategoryFromSubject(subjectName: string): IconCategory {
@@ -260,6 +324,9 @@ class IconRegistry {
     return 'academic';
   }
 }
+
+// Export the IconRegistry class
+export { IconRegistry };
 
 // Singleton instance
 export const iconRegistry = new IconRegistry();

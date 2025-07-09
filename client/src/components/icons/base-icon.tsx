@@ -3,6 +3,8 @@
  * Implements consistent styling, accessibility, and theming
  */
 
+"use client"; // Fixed: RSC directive for Vercel compatibility
+
 import React, { forwardRef } from 'react';
 import { cn } from '../../utils/utils';
 import { IconProps, IconSize, IconColor, IconVariant } from './types';
@@ -33,10 +35,10 @@ const COLOR_MAP: Record<IconColor, string> = {
   'current': 'text-current'
 };
 
-// Variant style mappings
+// Variant style mappings - Fixed: Proper outlined variant for Lucide compatibility
 const VARIANT_MAP: Record<IconVariant, string> = {
   'filled': 'fill-current',
-  'outlined': 'fill-none stroke-current stroke-2',
+  'outlined': 'fill-none stroke-current stroke-2', // Fixed: Proper outlined style
   'light': 'fill-none stroke-current stroke-1',
   'bold': 'fill-current stroke-current stroke-1',
   'duotone': 'fill-current opacity-60'
@@ -49,7 +51,7 @@ export const BaseIcon = forwardRef<SVGSVGElement, IconProps>(
   ({
     size = 'md',
     color = 'current',
-    variant = 'filled',
+    variant = 'outlined', // Fixed: Default to outlined variant for consistency
     loading = false,
     interactive = false,
     className,
