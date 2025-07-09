@@ -16,6 +16,7 @@ import {
   SelectValue 
 } from "../../../components/ui/select";
 import { Search, ArrowLeft, Filter } from "lucide-react";
+import { DynamicIcon } from "../../../utils/dynamic-icon";
 
 interface CategoryDetailPageProps {
   categoryId?: string;
@@ -159,7 +160,6 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
 
   const { category, subCategory } = categoryData;
   const currentCategory = subCategory || category;
-  const IconComponent = currentCategory.icon;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,7 +179,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
           
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
-              <IconComponent className="w-8 h-8 text-primary" />
+              <DynamicIcon name={currentCategory.icon} className="w-8 h-8 text-primary" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{currentCategory.title}</h1>
@@ -198,22 +198,19 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Sub-categories</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {category.subCategories.map((subCat) => {
-                const SubIconComponent = subCat.icon;
-                return (
-                  <Link key={subCat.id} href={subCat.route}>
-                    <div className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                          <SubIconComponent className="w-4 h-4 text-primary" />
-                        </div>
-                        <h3 className="font-medium text-gray-900">{subCat.title}</h3>
+              {category.subCategories.map((subCat) => (
+                <Link key={subCat.id} href={subCat.route}>
+                  <div className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                        <DynamicIcon name={subCat.icon} className="w-4 h-4 text-primary" />
                       </div>
-                      <p className="text-sm text-gray-600">{subCat.description}</p>
+                      <h3 className="font-medium text-gray-900">{subCat.title}</h3>
                     </div>
-                  </Link>
-                );
-              })}
+                    <p className="text-sm text-gray-600">{subCat.description}</p>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         )}

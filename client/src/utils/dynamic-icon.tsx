@@ -37,8 +37,11 @@ export function DynamicIcon({
     return <FallbackIcon className={className} size={size} />;
   }
 
+  // Normalize the icon name to proper format
+  const normalizedName = normalizeIconName(name);
+  
   // Get the icon component from Lucide
-  const IconComponent = (LucideIcons as any)[name];
+  const IconComponent = (LucideIcons as any)[normalizedName];
   
   if (!IconComponent) {
     return <FallbackIcon className={className} size={size} />;

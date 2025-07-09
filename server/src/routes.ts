@@ -2271,8 +2271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Unified CSV endpoints
   app.get("/api/csv/unified-template", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { UnifiedCSVService } = await import('./unified-csv-service.js');
-      const csvService = new UnifiedCSVService(storage);
+      const { CSVService } = await import('./services/csv-service');
+      const csvService = new CSVService(storage);
       
       const csvContent = await csvService.generateUnifiedTemplate();
       
@@ -2290,8 +2290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/csv/unified-export", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { UnifiedCSVService } = await import('./unified-csv-service.js');
-      const csvService = new UnifiedCSVService(storage);
+      const { CSVService } = await import('./services/csv-service');
+      const csvService = new CSVService(storage);
       
       const csvContent = await csvService.exportUnifiedData();
       
@@ -2309,8 +2309,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/csv/unified-import", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { UnifiedCSVService } = await import('./unified-csv-service.js');
-      const csvService = new UnifiedCSVService(storage);
+      const { CSVService } = await import('./services/csv-service');
+      const csvService = new CSVService(storage);
       
       const csvContent = req.body.csvContent;
       
@@ -2335,7 +2335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CSV Import/Export endpoints
   app.get("/api/csv/template/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { CSVService } = await import('./csv-service');
+      const { CSVService } = await import('./services/csv-service');
       const csvService = new CSVService(storage);
       
       const entityType = req.params.entityType as any;
@@ -2355,7 +2355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/csv/export/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { CSVService } = await import('./csv-service');
+      const { CSVService } = await import('./services/csv-service');
       const csvService = new CSVService(storage);
       
       const entityType = req.params.entityType as any;
@@ -2381,7 +2381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/csv/import/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { CSVService } = await import('./csv-service');
+      const { CSVService } = await import('./services/csv-service');
       const csvService = new CSVService(storage);
       
       const entityType = req.params.entityType as any;
@@ -2419,7 +2419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // JSON Import/Export endpoints
   app.get("/api/json/template", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { JSONService } = await import('./json-service');
+      const { JSONService } = await import('./services/json-service');
       const jsonService = new JSONService(storage);
       
       const templateData = jsonService.generateTemplate();
@@ -2439,7 +2439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/json/export/:subjectSlug", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { JSONService } = await import('./json-service');
+      const { JSONService } = await import('./services/json-service');
       const jsonService = new JSONService(storage);
       
       const subjectSlug = req.params.subjectSlug;
@@ -2471,7 +2471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/json/import", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
-      const { JSONService } = await import('./json-service');
+      const { JSONService } = await import('./services/json-service');
       const jsonService = new JSONService(storage);
       
       let jsonData = req.body;
