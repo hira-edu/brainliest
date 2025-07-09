@@ -18,30 +18,106 @@ export interface CookieConsentData {
   sessionId: string;
 }
 
-export const COOKIE_REGISTRY = {
+export const COOKIE_REGISTRY = [
   // Essential cookies
+  {
+    name: 'brainliest_cookie_consent',
+    category: 'essential',
+    description: 'Stores your cookie consent preferences',
+    duration: '1 year'
+  },
+  {
+    name: 'brainliest_session',
+    category: 'essential',
+    description: 'Maintains your login session and security',
+    duration: 'Session'
+  },
+  {
+    name: 'brainliest_csrf_token',
+    category: 'essential',
+    description: 'Prevents cross-site request forgery attacks',
+    duration: 'Session'
+  },
+  
+  // Functional cookies  
+  {
+    name: 'brainliest_user_prefs',
+    category: 'functional',
+    description: 'Remembers your preferences and settings',
+    duration: '6 months'
+  },
+  {
+    name: 'brainliest_theme',
+    category: 'functional',
+    description: 'Saves your theme preference (light/dark mode)',
+    duration: '1 year'
+  },
+  {
+    name: 'brainliest_lang',
+    category: 'functional',
+    description: 'Stores your language preference',
+    duration: '1 year'
+  },
+  
+  // Analytics cookies
+  {
+    name: 'brainliest_analytics_id',
+    category: 'analytics',
+    description: 'Anonymous identifier for analytics tracking',
+    duration: '2 years'
+  },
+  {
+    name: 'brainliest_session_start',
+    category: 'analytics',
+    description: 'Tracks when your session started for analytics',
+    duration: 'Session'
+  },
+  {
+    name: 'brainliest_page_views',
+    category: 'analytics',
+    description: 'Counts page views for website analytics',
+    duration: '30 days'
+  },
+  
+  // Marketing cookies
+  {
+    name: 'brainliest_marketing_id',
+    category: 'marketing',
+    description: 'Tracks user behavior for marketing purposes',
+    duration: '2 years'
+  },
+  {
+    name: 'brainliest_utm_source',
+    category: 'marketing',
+    description: 'Remembers how you found our website',
+    duration: '30 days'
+  },
+  {
+    name: 'brainliest_referrer',
+    category: 'marketing',
+    description: 'Tracks referring website for attribution',
+    duration: '30 days'
+  }
+] as const;
+
+// Helper to get cookie names
+export const COOKIE_NAMES = {
   CONSENT: 'brainliest_cookie_consent',
   SESSION: 'brainliest_session',
   CSRF: 'brainliest_csrf_token',
-  
-  // Functional cookies  
   PREFERENCES: 'brainliest_user_prefs',
   THEME: 'brainliest_theme',
   LANGUAGE: 'brainliest_lang',
-  
-  // Analytics cookies
   ANALYTICS_ID: 'brainliest_analytics_id',
   SESSION_START: 'brainliest_session_start',
   PAGE_VIEWS: 'brainliest_page_views',
-  
-  // Marketing cookies
   MARKETING_ID: 'brainliest_marketing_id',
   UTM_SOURCE: 'brainliest_utm_source',
   REFERRER: 'brainliest_referrer'
 } as const;
 
 export class CookieManager {
-  private static readonly CONSENT_COOKIE = COOKIE_REGISTRY.CONSENT;
+  private static readonly CONSENT_COOKIE = COOKIE_NAMES.CONSENT;
   private static readonly DEFAULT_PREFERENCES: CookieConsentPreferences = {
     essential: true,
     functional: false,
@@ -125,21 +201,21 @@ export class CookieManager {
    */
   static enforceConsentPreferences(preferences: CookieConsentPreferences): void {
     if (!preferences.functional) {
-      this.deleteCookie(COOKIE_REGISTRY.PREFERENCES);
-      this.deleteCookie(COOKIE_REGISTRY.THEME);
-      this.deleteCookie(COOKIE_REGISTRY.LANGUAGE);
+      this.deleteCookie(COOKIE_NAMES.PREFERENCES);
+      this.deleteCookie(COOKIE_NAMES.THEME);
+      this.deleteCookie(COOKIE_NAMES.LANGUAGE);
     }
 
     if (!preferences.analytics) {
-      this.deleteCookie(COOKIE_REGISTRY.ANALYTICS_ID);
-      this.deleteCookie(COOKIE_REGISTRY.SESSION_START);
-      this.deleteCookie(COOKIE_REGISTRY.PAGE_VIEWS);
+      this.deleteCookie(COOKIE_NAMES.ANALYTICS_ID);
+      this.deleteCookie(COOKIE_NAMES.SESSION_START);
+      this.deleteCookie(COOKIE_NAMES.PAGE_VIEWS);
     }
 
     if (!preferences.marketing) {
-      this.deleteCookie(COOKIE_REGISTRY.MARKETING_ID);
-      this.deleteCookie(COOKIE_REGISTRY.UTM_SOURCE);
-      this.deleteCookie(COOKIE_REGISTRY.REFERRER);
+      this.deleteCookie(COOKIE_NAMES.MARKETING_ID);
+      this.deleteCookie(COOKIE_NAMES.UTM_SOURCE);
+      this.deleteCookie(COOKIE_NAMES.REFERRER);
     }
   }
 
