@@ -1,5 +1,6 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
+import { sql } from 'drizzle-orm';
 import ws from "ws";
 import * as schema from "../../shared/schema";
 
@@ -34,7 +35,7 @@ export const pool = new Pool({
   max: 3,                       // Conservative for Neon free tier (100 max total)
   min: 0,                       // No minimum connections for serverless
   idleTimeoutMillis: 10000,     // Shorter idle timeout for serverless
-  connectionTimeoutMillis: 10000, // Fixed: Increased timeout for Vercel cold starts
+  connectionTimeoutMillis: 30000, // Fixed: Increased timeout for Vercel cold starts and slow connections
   maxUses: 1000,               // Fixed: Reduced for Neon free tier compatibility
   keepAlive: false,            // Disabled for serverless functions
   allowExitOnIdle: true,       // Allow process exit when idle
@@ -98,29 +99,33 @@ export const db = drizzle({
   }
 });
 
-// Fixed: Export health check function for API routes
-export async function checkDatabaseHealth(): Promise<{ status: string; details?: any }> {
+// Fixed: Enhanced database health check function for API routes
+export async function checkDatabaseHealth(): Promise<{ healthy: boolean; error?: string; latency?: number }> {
+  const startTime = Date.now();
+  
   try {
-    // Test basic connectivity
-    const result = await db.select().from(schema.subjects).limit(1);
+    // Simple health check query with timeout
+    const result = await Promise.race([
+      db.execute(sql`SELECT 1 as health_check`),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database health check timeout')), 5000);
+      })
+    ]);
     
-    return {
-      status: 'healthy',
-      details: {
-        connected: true,
-        tablesAccessible: true,
-        timestamp: new Date().toISOString()
-      }
-    };
+    const latency = Date.now() - startTime;
+    console.log(`💚 Database health check passed (${latency}ms)`);
+    
+    return { healthy: true, latency };
   } catch (error) {
-    return {
-      status: 'unhealthy',
-      details: {
-        connected: false,
-        error: error.message,
-        code: error.code,
-        timestamp: new Date().toISOString()
-      }
+    const latency = Date.now() - startTime;
+    console.error(`💔 Database health check failed (${latency}ms):`, error);
+    
+    return { 
+      healthy: false, 
+      error: error instanceof Error ? error.message : 'Unknown database error',
+      latency 
     };
   }
 }
+
+

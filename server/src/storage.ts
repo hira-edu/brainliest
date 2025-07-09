@@ -356,10 +356,21 @@ export class DatabaseStorage implements IStorage {
 
   // PERFORMANCE OPTIMIZED: Use SQL COUNT instead of fetching all records
   async getSubjectCount(): Promise<number> {
-    const [result] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(subjects);
-    return result.count;
+    try {
+      const [result] = await Promise.race([
+        db.select({ count: sql<number>`COUNT(*)` }).from(subjects),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database query timeout')), 20000);
+        })
+      ]) as [{ count: number }];
+      return result.count;
+    } catch (error) {
+      console.error('Error getting subject count:', error);
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new Error('Database connection timeout - please try again');
+      }
+      throw error;
+    }
   }
 
   // Exams - OPTIMIZED: Specify required columns and add pagination support
@@ -516,8 +527,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExamCount(): Promise<number> {
-    const [result] = await db.select({ count: sql<number>`count(*)` }).from(exams);
-    return result.count;
+    try {
+      const [result] = await Promise.race([
+        db.select({ count: sql<number>`count(*)` }).from(exams),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database query timeout')), 20000);
+        })
+      ]) as [{ count: number }];
+      return result.count;
+    } catch (error) {
+      console.error('Error getting exam count:', error);
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new Error('Database connection timeout - please try again');
+      }
+      throw error;
+    }
   }
 
   // Questions - OPTIMIZED: Specify required columns and add pagination support
@@ -658,10 +682,21 @@ export class DatabaseStorage implements IStorage {
 
   // PERFORMANCE OPTIMIZED: Use SQL COUNT instead of fetching all records
   async getQuestionCount(): Promise<number> {
-    const [result] = await db
-      .select({ count: sql<number>`COUNT(*)` })
-      .from(questions);
-    return result.count;
+    try {
+      const [result] = await Promise.race([
+        db.select({ count: sql<number>`COUNT(*)` }).from(questions),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database query timeout')), 20000);
+        })
+      ]) as [{ count: number }];
+      return result.count;
+    } catch (error) {
+      console.error('Error getting question count:', error);
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new Error('Database connection timeout - please try again');
+      }
+      throw error;
+    }
   }
 
   // Exam Sessions - OPTIMIZED: Specify required columns and add ordering

@@ -84,12 +84,14 @@ function ErrorHandler() {
       const isTimeoutError = event.reason === 'Timeout' || 
                            (event.reason && event.reason.message === 'Timeout') ||
                            (typeof event.reason === 'string' && event.reason.includes('timeout')) ||
-                           (typeof event.reason === 'string' && event.reason.includes('Timeout'));
+                           (typeof event.reason === 'string' && event.reason.includes('Timeout')) ||
+                           (typeof event.reason === 'string' && event.reason.includes('Request timeout'));
       
       const isNetworkError = event.reason && typeof event.reason === 'object' && 
                            (event.reason.name === 'AbortError' || 
                             event.reason.name === 'NetworkError' ||
-                            event.reason.name === 'TimeoutError');
+                            event.reason.name === 'TimeoutError' ||
+                            event.reason.code === 'TIMEOUT');
       
       // Only show toast for actual errors, not for cancelled operations, timeouts, or network issues
       if (!isTimeoutError && !isNetworkError && event.reason && typeof event.reason === 'object') {
