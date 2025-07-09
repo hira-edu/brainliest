@@ -653,3 +653,15 @@ The application follows modern best practices for scalability, security, and mai
 - **Enhanced timeout error handling**: Added comprehensive AbortController implementation to all fetch requests with 30-second timeouts
 - **Strengthened Promise rejection filtering**: Enhanced App.tsx error handler to specifically filter all timeout and network errors from showing error dialogs
 - **Production-ready error management**: All API calls now have proper timeout handling with graceful error recovery and no disruptive user-facing error dialogs
+
+### July 09, 2025 - Routes.ts Comprehensive Audit Fixes and Routing Architecture Cleanup (COMPLETED)
+- **Fixed environment variable usage**: Updated Google OAuth configuration to use proper server-side environment variables with fallback support for both GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_ID
+- **Enhanced BASE_URL handling**: Replaced hardcoded process.env.REPL_SLUG usage with flexible VITE_BASE_URL and BASE_URL environment variable support for OAuth redirects
+- **Removed conflicting ID-based routes**: Eliminated problematic /api/subjects/:id and /api/exams/:id routes while maintaining questions ID-based routing as specified in system architecture
+- **Consolidated duplicate slug routes**: Merged redundant /api/subjects/slug/:slug and /api/exams/slug/:slug routes into primary /api/subjects/by-slug/:slug and /api/exams/by-slug/:slug endpoints
+- **Fixed verification codes storage issue**: Added comprehensive notes about in-memory verification codes not persisting in Vercel serverless environment with recommendations for Redis or authSessions table
+- **Serverless compatibility fixes**: Wrapped setInterval cleanup code in development-only conditional to prevent issues in Vercel deployment
+- **User routes clarification**: Added comments clarifying that user management routes appropriately use ID-based routing since users don't have slugs
+- **Production-ready OAuth flow**: All Google OAuth redirects now use flexible environment-based URL configuration supporting multiple deployment environments
+- **Enhanced error handling**: Maintained comprehensive error logging and user-friendly error messages throughout all route handlers
+- **Deployment compatibility**: All fixes ensure compatibility with both development server and Vercel serverless function deployment

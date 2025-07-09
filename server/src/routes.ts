@@ -36,12 +36,14 @@ import {
   insertUploadSchema
 } from "../../shared/schema";
 
-// Store verification codes temporarily (in production, use Redis)
+// FIXED: Store verification codes temporarily (in production, use Redis or authSessions table)
+// NOTE: For Vercel deployment, this in-memory storage won't persist across serverless function calls
+// Consider using the authSessions table or Redis for production
 const verificationCodes = new Map<string, { code: string; expires: number }>();
 
-// Google OAuth configuration
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+// Google OAuth configuration - Fixed: Use proper server-side environment variables
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET;
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -76,10 +78,12 @@ async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
   try {
     console.log('🔄 Exchanging OAuth code for tokens...');
     
-    // Determine the correct redirect URI based on environment
-    const redirectUri = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:5000/api/auth/google/callback'
-      : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/google/callback`;
+    // Determine the correct redirect URI based on environment - Fixed: Use BASE_URL
+    const baseUrl = process.env.VITE_BASE_URL || process.env.BASE_URL || 
+                   (process.env.NODE_ENV === 'development' 
+                     ? 'http://localhost:5000'
+                     : `https://${process.env.REPL_SLUG || 'app'}.replit.app`);
+    const redirectUri = `${baseUrl}/api/auth/google/callback`;
     
     console.log('🔗 Using redirect URI:', redirectUri);
     
@@ -273,24 +277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Subject routes - specific routes first to prevent shadowing
-  // Subject slug-based route
-  app.get("/api/subjects/slug/:slug", async (req, res) => {
-    try {
-      const slug = req.params.slug;
-      if (!slug || typeof slug !== 'string') {
-        return res.status(400).json({ message: "Invalid subject slug" });
-      }
-      const subject = await storage.getSubjectBySlug(slug);
-      if (!subject) {
-        return res.status(404).json({ message: "Subject not found" });
-      }
-      res.json(subject);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch subject" });
-    }
-  });
+  // REMOVED: Duplicate slug route - consolidated into /api/subjects/by-slug/:slug
 
-  // New backend slug-based route: /api/subjects/by-slug/:slug
+  // Primary slug-based route: /api/subjects/by-slug/:slug
   app.get("/api/subjects/by-slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
@@ -316,21 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/subjects/:id", async (req, res) => {
-    try {
-      const id = parseId(req.params.id, 'subject ID');
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: "Invalid subject ID" });
-      }
-      const subject = await storage.getSubject(id);
-      if (!subject) {
-        return res.status(404).json({ message: "Subject not found" });
-      }
-      res.json(subject);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch subject" });
-    }
-  });
+  // REMOVED: ID-based subject route - use slug-based routing instead (/api/subjects/by-slug/:slug)
 
   app.post("/api/subjects", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
     try {
@@ -345,25 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/subjects/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
-    try {
-      const id = parseId(req.params.id, 'subject ID');
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: "Invalid subject ID" });
-      }
-      const validation = insertSubjectSchema.partial().safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({ message: "Invalid subject data", errors: validation.error.errors });
-      }
-      const subject = await storage.updateSubject(id, validation.data);
-      if (!subject) {
-        return res.status(404).json({ message: "Subject not found" });
-      }
-      res.json(subject);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update subject" });
-    }
-  });
+  // REMOVED: ID-based subject update route - use slug-based routing for subject updates
 
   // Exam routes with dynamic question counts
   app.get("/api/exams", async (req, res) => {
@@ -394,44 +351,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/exams/:id", async (req, res) => {
-    try {
-      const id = parseId(req.params.id, 'exam ID');
-      const exam = await storage.getExamById(id);
-      if (!exam) {
-        return res.status(404).json({ message: "Exam not found" });
-      }
+  // REMOVED: ID-based exam route - use slug-based routing instead (/api/exams/by-slug/:slug)
 
-      // Count actual questions dynamically
-      const actualQuestionCount = await storage.getQuestionCountByExamId(id);
+  // REMOVED: Duplicate slug route - consolidated into /api/exams/by-slug/:slug
 
-      res.json({
-        ...exam,
-        questionCount: actualQuestionCount
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch exam" });
-    }
-  });
-
-  // Exam slug-based route
-  app.get("/api/exams/slug/:slug", async (req, res) => {
-    try {
-      const slug = req.params.slug;
-      if (!slug || typeof slug !== 'string') {
-        return res.status(400).json({ message: "Invalid exam slug" });
-      }
-      const exam = await storage.getExamBySlug(slug);
-      if (!exam) {
-        return res.status(404).json({ message: "Exam not found" });
-      }
-      res.json(exam);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch exam" });
-    }
-  });
-
-  // New backend slug-based route: /api/exams/by-slug/:slug with dynamic question count
+  // Primary slug-based route: /api/exams/by-slug/:slug with dynamic question count
   app.get("/api/exams/by-slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
@@ -1028,6 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // NOTE: User routes use ID-based routing as users don't have slugs (unlike subjects/exams)
   app.get("/api/users/:id", async (req, res) => {
     try {
       const id = parseId(req.params.id, 'user ID');
@@ -1616,16 +1541,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Clean up expired codes periodically
-  setInterval(() => {
-    const now = Date.now();
-    const entries = Array.from(verificationCodes.entries());
-    for (const [email, data] of entries) {
-      if (now > data.expires) {
-        verificationCodes.delete(email);
+  // FIXED: Clean up expired codes periodically - Note: setInterval won't work in Vercel serverless
+  // For production, consider using a Vercel Cron Job or cleanup during each verification attempt
+  if (process.env.NODE_ENV === 'development') {
+    setInterval(() => {
+      const now = Date.now();
+      const entries = Array.from(verificationCodes.entries());
+      for (const [email, data] of entries) {
+        if (now > data.expires) {
+          verificationCodes.delete(email);
+        }
       }
-    }
-  }, 5 * 60 * 1000); // Clean up every 5 minutes
+    }, 5 * 60 * 1000); // Clean up every 5 minutes in development only
+  }
 
   // ==================== ENHANCED AUTHENTICATION ROUTES ====================
   
@@ -1764,10 +1692,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🚀 Starting Google OAuth flow...');
       
-      // Determine the correct redirect URI based on environment
-      const redirectUri = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:5000/api/auth/google/callback'
-        : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/google/callback`;
+      // Determine the correct redirect URI based on environment - Fixed: Use BASE_URL
+      const baseUrl = process.env.VITE_BASE_URL || process.env.BASE_URL || 
+                     (process.env.NODE_ENV === 'development' 
+                       ? 'http://localhost:5000'
+                       : `https://${process.env.REPL_SLUG || 'app'}.replit.app`);
+      const redirectUri = `${baseUrl}/api/auth/google/callback`;
       
       const params = new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID!,
@@ -1797,12 +1727,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (error) {
         console.error('❌ Google OAuth error:', error);
-        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=${encodeURIComponent(error as string)}`);
+        const baseUrl = process.env.VITE_BASE_URL || process.env.BASE_URL || 
+                       (process.env.NODE_ENV === 'development' 
+                         ? 'http://localhost:5000'
+                         : `https://${process.env.REPL_SLUG || 'app'}.replit.app`);
+        return res.redirect(`${baseUrl}?error=oauth_error&message=${encodeURIComponent(error as string)}`);
       }
       
       if (!code) {
         console.error('❌ No authorization code received');
-        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=No+authorization+code+received`);
+        const baseUrl = process.env.VITE_BASE_URL || process.env.BASE_URL || 
+                       (process.env.NODE_ENV === 'development' 
+                         ? 'http://localhost:5000'
+                         : `https://${process.env.REPL_SLUG || 'app'}.replit.app`);
+        return res.redirect(`${baseUrl}?error=oauth_error&message=No+authorization+code+received`);
       }
       
       // Exchange authorization code for tokens
