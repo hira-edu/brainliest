@@ -1,6 +1,3 @@
-Here's an improved `SearchableSelect` React component, which automatically clears the input when clicked and includes enhanced scrolling behavior for better usability:
-
-```tsx
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Check, ChevronDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/utils/utils";
@@ -102,91 +99,138 @@ export const SearchableSelect = React.forwardRef<
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
+        if (!open) {
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            setOpen(true);
+          }
+          return;
+        }
+
         switch (e.key) {
-          case "ArrowDown":
+          case "Escape":
             e.preventDefault();
-            setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length);
-            break;
-          case "ArrowUp":
-            e.preventDefault();
-            setHighlightedIndex(
-              (prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length
-            );
+            setOpen(false);
+            setSearchQuery("");
+            setHighlightedIndex(-1);
             break;
           case "Enter":
             e.preventDefault();
             if (highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
               handleSelect(filteredOptions[highlightedIndex].value);
-            } else if (allowCustomValue && searchQuery) {
-              handleSelect(searchQuery);
+            } else if (allowCustomValue && searchQuery.trim()) {
+              handleSelect(searchQuery.trim());
             }
             break;
-          case "Escape":
-            setOpen(false);
+          case "ArrowDown":
+            e.preventDefault();
+            setHighlightedIndex((prev) => 
+              prev < filteredOptions.length - 1 ? prev + 1 : 0
+            );
+            break;
+          case "ArrowUp":
+            e.preventDefault();
+            setHighlightedIndex((prev) => 
+              prev > 0 ? prev - 1 : filteredOptions.length - 1
+            );
             break;
         }
       },
-      [filteredOptions, highlightedIndex, handleSelect, allowCustomValue, searchQuery]
+      [open, highlightedIndex, filteredOptions, handleSelect, allowCustomValue, searchQuery]
     );
 
     useEffect(() => {
-      if (highlightedIndex >= 0) {
-        optionRefs.current[highlightedIndex]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (highlightedIndex >= 0 && optionRefs.current[highlightedIndex]) {
+        optionRefs.current[highlightedIndex]?.scrollIntoView({
+          block: "nearest",
+          behavior: "smooth",
+        });
       }
     }, [highlightedIndex]);
+
+    const displayValue = searchQuery || selectedOption?.label || "";
 
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <div className="relative">
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between",
+              !value && "text-muted-foreground",
+              className
+            )}
+            disabled={disabled}
+          >
             <Input
               ref={inputRef}
-              value={searchQuery || selectedOption?.label || ""}
+              value={displayValue}
               onChange={handleInputChange}
               onClick={handleInputClick}
-              onBlur={handleBlur}
               onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
               placeholder={placeholder}
+              className="border-0 p-0 h-auto bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={disabled}
-              className={cn("pr-10", className)}
             />
-            <div className="absolute inset-y-0 right-2 flex items-center">
+            <div className="flex items-center gap-1">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {clearable && value && (
-                <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={handleClear}>
-                  <X className="h-4 w-4" />
-                </Button>
+                <X
+                  className="h-4 w-4 opacity-50 hover:opacity-80 cursor-pointer"
+                  onClick={handleClear}
+                />
               )}
               <ChevronDown className="h-4 w-4 opacity-50" />
             </div>
-          </div>
+          </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-1 max-h-60 overflow-auto">
-          {loading ? (
-            <div className="p-4 flex items-center justify-center text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading...
-            </div>
-          ) : filteredOptions.length ? (
-            filteredOptions.map((option, index) => (
-              <div
-                key={option.value}
-                ref={(el) => (optionRefs.current[index] = el)}
-                className={cn(
-                  "flex items-center px-3 py-2 cursor-pointer rounded-sm",
-                  highlightedIndex === index && "bg-accent",
-                  option.disabled && "opacity-50 cursor-not-allowed"
-                )}
-                onMouseDown={() => !option.disabled && handleSelect(option.value)}
-                onMouseEnter={() => setHighlightedIndex(index)}
-              >
-                <Check className={cn("mr-2 h-4 w-4", value === option.value ? "opacity-100" : "opacity-0")} />
-                {option.label}
+        <PopoverContent className="w-full p-0" align="start">
+          <div className="max-h-60 overflow-auto">
+            {filteredOptions.length === 0 ? (
+              <div className="p-4 text-sm text-muted-foreground text-center">
+                {loading ? "Loading..." : emptyText}
               </div>
-            ))
-          ) : (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              {allowCustomValue && searchQuery ? `Create \"${searchQuery}\"` : emptyText}
-            </div>
-          )}
+            ) : (
+              filteredOptions.map((option, index) => (
+                <div
+                  key={option.value}
+                  ref={(el) => (optionRefs.current[index] = el)}
+                  className={cn(
+                    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
+                    option.disabled
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                    highlightedIndex === index && "bg-accent text-accent-foreground",
+                    value === option.value && "bg-accent text-accent-foreground"
+                  )}
+                  onClick={() => !option.disabled && handleSelect(option.value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </div>
+              ))
+            )}
+            {allowCustomValue && searchQuery.trim() && !filteredOptions.some(opt => opt.value === searchQuery.trim()) && (
+              <div
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                  highlightedIndex === filteredOptions.length && "bg-accent text-accent-foreground"
+                )}
+                onClick={() => handleSelect(searchQuery.trim())}
+              >
+                <Check className="mr-2 h-4 w-4 opacity-0" />
+                Create "{searchQuery.trim()}"
+              </div>
+            )}
+          </div>
         </PopoverContent>
       </Popover>
     );
