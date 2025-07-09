@@ -1,6 +1,7 @@
 /**
  * Auto-generated Icon Registry
- * Generated on 2025-07-09T14:04:13.086Z
+ * Generated on 2025-07-09T14:23:00.000Z
+ * Includes all SVG icons in public/icons directory
  */
 
 export interface IconMetadata {
@@ -12,314 +13,550 @@ export interface IconMetadata {
   filename: string;
   size: number;
   downloaded: string;
+  isOfficial: boolean;
+  brandColors?: Record<string, string>;
 }
 
 export const DOWNLOADED_ICONS: IconMetadata[] = [
+  // Test Prep Icons (PRIORITY)
   {
-    "id": "gcp",
-    "name": "Google Cloud",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/googlecloud.svg",
-    "category": "cloud",
-    "filename": "gcp.svg",
-    "filepath": "public/icons/gcp.svg",
-    "size": 683,
-    "downloaded": "2025-07-09T14:04:06.654Z"
+    id: "hesi",
+    name: "HESI",
+    category: "test-prep",
+    keywords: ["hesi", "health education", "nursing exam"],
+    tags: ["nursing", "healthcare", "exam"],
+    filename: "hesi.svg",
+    size: 562,
+    downloaded: "2025-07-09T14:18:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#dc2626" }
   },
   {
-    "id": "cisco",
-    "name": "Cisco",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/cisco.svg",
-    "category": "networking",
-    "filename": "cisco.svg",
-    "filepath": "public/icons/cisco.svg",
-    "size": 2596,
-    "downloaded": "2025-07-09T14:04:06.673Z"
+    id: "teas",
+    name: "TEAS",
+    category: "test-prep",
+    keywords: ["teas", "test of essential academic skills", "nursing"],
+    tags: ["nursing", "academic", "exam"],
+    filename: "teas.svg",
+    size: 533,
+    downloaded: "2025-07-09T14:18:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#16a34a" }
   },
   {
-    "id": "aws",
-    "name": "AWS",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/amazonaws.svg",
-    "category": "cloud",
-    "filename": "aws.svg",
-    "filepath": "public/icons/aws.svg",
-    "size": 3156,
-    "downloaded": "2025-07-09T14:04:06.754Z"
+    id: "gre",
+    name: "GRE",
+    category: "test-prep",
+    keywords: ["gre", "graduate record examination", "graduate"],
+    tags: ["graduate", "university", "exam"],
+    filename: "gre.svg",
+    size: 439,
+    downloaded: "2025-07-09T14:18:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#2563eb" }
   },
   {
-    "id": "comptia",
-    "name": "CompTIA",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/comptia.svg",
-    "category": "security",
-    "filename": "comptia.svg",
-    "filepath": "public/icons/comptia.svg",
-    "size": 1948,
-    "downloaded": "2025-07-09T14:04:06.760Z"
+    id: "lsat",
+    name: "LSAT",
+    category: "test-prep",
+    keywords: ["lsat", "law school admission test", "law"],
+    tags: ["law", "legal", "exam"],
+    filename: "lsat.svg",
+    size: 486,
+    downloaded: "2025-07-09T14:18:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#92400e" }
   },
   {
-    "id": "azure",
-    "name": "Microsoft Azure",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/microsoftazure.svg",
-    "category": "cloud",
-    "filename": "azure.svg",
-    "filepath": "public/icons/azure.svg",
-    "size": 593,
-    "downloaded": "2025-07-09T14:04:06.766Z"
+    id: "toefl",
+    name: "TOEFL",
+    category: "test-prep",
+    keywords: ["toefl", "test of english", "english proficiency"],
+    tags: ["english", "language", "exam"],
+    filename: "toefl.svg",
+    size: 547,
+    downloaded: "2025-07-09T14:18:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#7c3aed" }
   },
   {
-    "id": "mathematics",
-    "name": "Mathematics",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/academic-cap.svg",
-    "category": "mathematics",
-    "filename": "mathematics.svg",
-    "filepath": "public/icons/mathematics.svg",
-    "size": 717,
-    "downloaded": "2025-07-09T14:04:07.786Z"
+    id: "ged",
+    name: "GED",
+    category: "test-prep",
+    keywords: ["ged", "general educational development"],
+    tags: ["education", "diploma", "exam"],
+    filename: "ged.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:18:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#059669" }
+  },
+  
+  // Cloud Certifications
+  {
+    id: "aws",
+    name: "AWS",
+    category: "cloud",
+    keywords: ["aws", "amazon web services", "cloud"],
+    tags: ["cloud", "certification", "aws"],
+    filename: "aws.svg",
+    size: 3156,
+    downloaded: "2025-07-09T14:04:06.754Z",
+    isOfficial: true,
+    brandColors: { primary: "#ff9900" }
   },
   {
-    "id": "science",
-    "name": "Science",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/beaker.svg",
-    "category": "science",
-    "filename": "science.svg",
-    "filepath": "public/icons/science.svg",
-    "size": 689,
-    "downloaded": "2025-07-09T14:04:07.891Z"
+    id: "azure",
+    name: "Microsoft Azure",
+    category: "cloud",
+    keywords: ["azure", "microsoft", "cloud"],
+    tags: ["cloud", "certification", "microsoft"],
+    filename: "azure.svg",
+    size: 593,
+    downloaded: "2025-07-09T14:04:06.766Z",
+    isOfficial: true,
+    brandColors: { primary: "#0078d4" }
   },
   {
-    "id": "docker",
-    "name": "Docker",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/docker.svg",
-    "category": "devops",
-    "filename": "docker.svg",
-    "filepath": "public/icons/docker.svg",
-    "size": 1765,
-    "downloaded": "2025-07-09T14:04:07.985Z"
+    id: "gcp",
+    name: "Google Cloud",
+    category: "cloud",
+    keywords: ["gcp", "google cloud", "cloud"],
+    tags: ["cloud", "certification", "google"],
+    filename: "gcp.svg",
+    size: 683,
+    downloaded: "2025-07-09T14:04:06.654Z",
+    isOfficial: true,
+    brandColors: { primary: "#4285f4" }
+  },
+  
+  // Security & Networking
+  {
+    id: "comptia",
+    name: "CompTIA",
+    category: "security",
+    keywords: ["comptia", "security+", "network+", "a+"],
+    tags: ["security", "certification", "it"],
+    filename: "comptia.svg",
+    size: 1948,
+    downloaded: "2025-07-09T14:04:06.760Z",
+    isOfficial: true,
+    brandColors: { primary: "#e63946" }
   },
   {
-    "id": "kubernetes",
-    "name": "Kubernetes",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/kubernetes.svg",
-    "category": "devops",
-    "filename": "kubernetes.svg",
-    "filepath": "public/icons/kubernetes.svg",
-    "size": 3565,
-    "downloaded": "2025-07-09T14:04:08.101Z"
+    id: "cisco",
+    name: "Cisco",
+    category: "networking",
+    keywords: ["cisco", "ccna", "networking"],
+    tags: ["networking", "certification", "cisco"],
+    filename: "cisco.svg",
+    size: 2596,
+    downloaded: "2025-07-09T14:04:06.673Z",
+    isOfficial: true,
+    brandColors: { primary: "#1ba0d7" }
   },
   {
-    "id": "terraform",
-    "name": "Terraform",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/terraform.svg",
-    "category": "devops",
-    "filename": "terraform.svg",
-    "filepath": "public/icons/terraform.svg",
-    "size": 253,
-    "downloaded": "2025-07-09T14:04:08.185Z"
+    id: "cissp",
+    name: "CISSP",
+    category: "security",
+    keywords: ["cissp", "information security"],
+    tags: ["security", "certification"],
+    filename: "cissp.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#003366" }
   },
   {
-    "id": "business",
-    "name": "Business",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/briefcase.svg",
-    "category": "business",
-    "filename": "business.svg",
-    "filepath": "public/icons/business.svg",
-    "size": 841,
-    "downloaded": "2025-07-09T14:04:09.207Z"
+    id: "cisa",
+    name: "CISA",
+    category: "security",
+    keywords: ["cisa", "information systems auditor"],
+    tags: ["security", "audit", "certification"],
+    filename: "cisa.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#004080" }
+  },
+  
+  // Project Management
+  {
+    id: "pmp",
+    name: "PMP",
+    category: "management",
+    keywords: ["pmp", "project management", "certification"],
+    tags: ["management", "certification", "project"],
+    filename: "pmp.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#006633" }
+  },
+  
+  // DevOps & Development
+  {
+    id: "docker",
+    name: "Docker",
+    category: "devops",
+    keywords: ["docker", "container", "devops"],
+    tags: ["devops", "container", "development"],
+    filename: "docker.svg",
+    size: 1765,
+    downloaded: "2025-07-09T14:04:07.985Z",
+    isOfficial: true,
+    brandColors: { primary: "#2496ed" }
   },
   {
-    "id": "medical",
-    "name": "Medical",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/heart.svg",
-    "category": "medical",
-    "filename": "medical.svg",
-    "filepath": "public/icons/medical.svg",
-    "size": 423,
-    "downloaded": "2025-07-09T14:04:09.207Z"
+    id: "kubernetes",
+    name: "Kubernetes",
+    category: "devops",
+    keywords: ["kubernetes", "k8s", "container orchestration"],
+    tags: ["devops", "container", "orchestration"],
+    filename: "kubernetes.svg",
+    size: 3565,
+    downloaded: "2025-07-09T14:04:08.101Z",
+    isOfficial: true,
+    brandColors: { primary: "#326ce5" }
+  },
+  
+  // Programming Languages
+  {
+    id: "javascript",
+    name: "JavaScript",
+    category: "programming",
+    keywords: ["javascript", "js", "programming"],
+    tags: ["programming", "language", "web"],
+    filename: "javascript.svg",
+    size: 974,
+    downloaded: "2025-07-09T14:04:10.450Z",
+    isOfficial: true,
+    brandColors: { primary: "#f7df1e" }
   },
   {
-    "id": "engineering",
-    "name": "Engineering",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/cog-8-tooth.svg",
-    "category": "engineering",
-    "filename": "engineering.svg",
-    "filepath": "public/icons/engineering.svg",
-    "size": 1431,
-    "downloaded": "2025-07-09T14:04:09.309Z"
+    id: "python",
+    name: "Python",
+    category: "programming",
+    keywords: ["python", "programming"],
+    tags: ["programming", "language"],
+    filename: "python.svg",
+    size: 1518,
+    downloaded: "2025-07-09T14:04:10.641Z",
+    isOfficial: true,
+    brandColors: { primary: "#3776ab" }
   },
   {
-    "id": "law",
-    "name": "Law",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/scale.svg",
-    "category": "legal",
-    "filename": "law.svg",
-    "filepath": "public/icons/law.svg",
-    "size": 760,
-    "downloaded": "2025-07-09T14:04:09.416Z"
+    id: "react",
+    name: "React",
+    category: "frontend",
+    keywords: ["react", "frontend", "javascript"],
+    tags: ["frontend", "framework", "javascript"],
+    filename: "react.svg",
+    size: 2926,
+    downloaded: "2025-07-09T14:04:10.451Z",
+    isOfficial: true,
+    brandColors: { primary: "#61dafb" }
   },
   {
-    "id": "computer-science",
-    "name": "Computer Science",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/computer-desktop.svg",
-    "category": "technology",
-    "filename": "computer-science.svg",
-    "filepath": "public/icons/computer-science.svg",
-    "size": 533,
-    "downloaded": "2025-07-09T14:04:09.417Z"
+    id: "nodejs",
+    name: "Node.js",
+    category: "backend",
+    keywords: ["nodejs", "node", "javascript", "backend"],
+    tags: ["backend", "runtime", "javascript"],
+    filename: "nodejs.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: true,
+    brandColors: { primary: "#339933" }
+  },
+  
+  // Academic Subjects
+  {
+    id: "mathematics",
+    name: "Mathematics",
+    category: "academic",
+    keywords: ["mathematics", "math", "calculus", "algebra"],
+    tags: ["academic", "math", "subject"],
+    filename: "mathematics.svg",
+    size: 717,
+    downloaded: "2025-07-09T14:04:07.786Z",
+    isOfficial: false,
+    brandColors: { primary: "#4f46e5" }
   },
   {
-    "id": "javascript",
-    "name": "JavaScript",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/javascript.svg",
-    "category": "programming",
-    "filename": "javascript.svg",
-    "filepath": "public/icons/javascript.svg",
-    "size": 974,
-    "downloaded": "2025-07-09T14:04:10.450Z"
+    id: "statistics",
+    name: "Statistics",
+    category: "academic",
+    keywords: ["statistics", "stats", "data", "probability"],
+    tags: ["academic", "math", "data"],
+    filename: "statistics.svg",
+    size: 717,
+    downloaded: "2025-07-09T14:04:10.450Z",
+    isOfficial: false,
+    brandColors: { primary: "#059669" }
   },
   {
-    "id": "statistics",
-    "name": "Statistics",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/chart-bar.svg",
-    "category": "mathematics",
-    "filename": "statistics.svg",
-    "filepath": "public/icons/statistics.svg",
-    "size": 717,
-    "downloaded": "2025-07-09T14:04:10.450Z"
+    id: "physics",
+    name: "Physics",
+    category: "science",
+    keywords: ["physics", "science"],
+    tags: ["academic", "science", "physics"],
+    filename: "physics.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#dc2626" }
   },
   {
-    "id": "react",
-    "name": "React",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/react.svg",
-    "category": "frontend",
-    "filename": "react.svg",
-    "filepath": "public/icons/react.svg",
-    "size": 2926,
-    "downloaded": "2025-07-09T14:04:10.451Z"
+    id: "chemistry",
+    name: "Chemistry",
+    category: "science",
+    keywords: ["chemistry", "science"],
+    tags: ["academic", "science", "chemistry"],
+    filename: "chemistry.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#16a34a" }
   },
   {
-    "id": "java",
-    "name": "Java",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/oracle.svg",
-    "category": "programming",
-    "filename": "java.svg",
-    "filepath": "public/icons/java.svg",
-    "size": 271,
-    "downloaded": "2025-07-09T14:04:10.542Z"
+    id: "biology",
+    name: "Biology",
+    category: "science",
+    keywords: ["biology", "science"],
+    tags: ["academic", "science", "biology"],
+    filename: "biology.svg",
+    size: 449,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#059669" }
   },
   {
-    "id": "python",
-    "name": "Python",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/python.svg",
-    "category": "programming",
-    "filename": "python.svg",
-    "filepath": "public/icons/python.svg",
-    "size": 1518,
-    "downloaded": "2025-07-09T14:04:10.641Z"
+    id: "engineering",
+    name: "Engineering",
+    category: "engineering",
+    keywords: ["engineering", "mechanical", "electrical"],
+    tags: ["academic", "engineering", "technical"],
+    filename: "engineering.svg",
+    size: 1431,
+    downloaded: "2025-07-09T14:04:09.309Z",
+    isOfficial: false,
+    brandColors: { primary: "#9333ea" }
+  },
+  
+  // Business & Finance
+  {
+    id: "business",
+    name: "Business",
+    category: "business",
+    keywords: ["business", "management", "administration"],
+    tags: ["business", "management", "academic"],
+    filename: "business.svg",
+    size: 841,
+    downloaded: "2025-07-09T14:04:09.207Z",
+    isOfficial: false,
+    brandColors: { primary: "#dc2626" }
   },
   {
-    "id": "test",
-    "name": "Test",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/document-text.svg",
-    "category": "general",
-    "filename": "test.svg",
-    "filepath": "public/icons/test.svg",
-    "size": 540,
-    "downloaded": "2025-07-09T14:04:11.667Z"
+    id: "finance",
+    name: "Finance",
+    category: "business",
+    keywords: ["finance", "financial", "money"],
+    tags: ["business", "finance", "academic"],
+    filename: "finance.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#059669" }
   },
   {
-    "id": "certification",
-    "name": "Certification",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/trophy.svg",
-    "category": "general",
-    "filename": "certification.svg",
-    "filepath": "public/icons/certification.svg",
-    "size": 901,
-    "downloaded": "2025-07-09T14:04:11.667Z"
+    id: "accounting",
+    name: "Accounting",
+    category: "business",
+    keywords: ["accounting", "cpa", "bookkeeping"],
+    tags: ["business", "accounting", "finance"],
+    filename: "accounting.svg",
+    size: 661,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#dc2626" }
   },
   {
-    "id": "academic",
-    "name": "Academic",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/academic-cap.svg",
-    "category": "general",
-    "filename": "academic.svg",
-    "filepath": "public/icons/academic.svg",
-    "size": 710,
-    "downloaded": "2025-07-09T14:04:11.667Z"
+    id: "economics",
+    name: "Economics",
+    category: "business",
+    keywords: ["economics", "economic", "market"],
+    tags: ["business", "economics", "academic"],
+    filename: "economics.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#2563eb" }
   },
   {
-    "id": "nodejs",
-    "name": "Node.js",
-    "url": "https://cdn.jsdelivr.net/npm/simple-icons@v10/icons/nodedotjs.svg",
-    "category": "backend",
-    "filename": "nodejs.svg",
-    "filepath": "public/icons/nodejs.svg",
-    "size": 1608,
-    "downloaded": "2025-07-09T14:04:11.860Z"
+    id: "marketing",
+    name: "Marketing",
+    category: "business",
+    keywords: ["marketing", "advertising", "promotion"],
+    tags: ["business", "marketing", "communication"],
+    filename: "marketing.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#ec4899" }
+  },
+  
+  // Social Sciences
+  {
+    id: "psychology",
+    name: "Psychology",
+    category: "social-science",
+    keywords: ["psychology", "behavioral", "mental"],
+    tags: ["academic", "psychology", "social"],
+    filename: "psychology.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#7c3aed" }
   },
   {
-    "id": "database",
-    "name": "Database",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/circle-stack.svg",
-    "category": "database",
-    "filename": "database.svg",
-    "filepath": "public/icons/database.svg",
-    "size": 625,
-    "downloaded": "2025-07-09T14:04:11.868Z"
+    id: "sociology",
+    name: "Sociology",
+    category: "social-science",
+    keywords: ["sociology", "social", "society"],
+    tags: ["academic", "sociology", "social"],
+    filename: "sociology.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#059669" }
   },
   {
-    "id": "practice",
-    "name": "Practice",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/arrow-path.svg",
-    "category": "general",
-    "filename": "practice.svg",
-    "filepath": "public/icons/practice.svg",
-    "size": 430,
-    "downloaded": "2025-07-09T14:04:12.887Z"
+    id: "history",
+    name: "History",
+    category: "humanities",
+    keywords: ["history", "historical", "past"],
+    tags: ["academic", "history", "humanities"],
+    filename: "history.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#92400e" }
   },
   {
-    "id": "study",
-    "name": "Study",
-    "url": "https://cdn.jsdelivr.net/npm/heroicons@2.0.18/24/outline/book-open.svg",
-    "category": "general",
-    "filename": "study.svg",
-    "filepath": "public/icons/study.svg",
-    "size": 497,
-    "downloaded": "2025-07-09T14:04:13.085Z"
+    id: "literature",
+    name: "Literature",
+    category: "humanities",
+    keywords: ["literature", "english", "writing"],
+    tags: ["academic", "literature", "humanities"],
+    filename: "literature.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#dc2626" }
+  },
+  {
+    id: "philosophy",
+    name: "Philosophy",
+    category: "humanities",
+    keywords: ["philosophy", "ethics", "logic"],
+    tags: ["academic", "philosophy", "humanities"],
+    filename: "philosophy.svg",
+    size: 400,
+    downloaded: "2025-07-09T14:16:00.000Z",
+    isOfficial: false,
+    brandColors: { primary: "#7c3aed" }
+  },
+  
+  // Health & Medical
+  {
+    id: "medical",
+    name: "Medical",
+    category: "medical",
+    keywords: ["medical", "health", "medicine", "nursing"],
+    tags: ["medical", "health", "academic"],
+    filename: "medical.svg",
+    size: 423,
+    downloaded: "2025-07-09T14:04:09.207Z",
+    isOfficial: false,
+    brandColors: { primary: "#dc2626" }
+  },
+  
+  // Legal
+  {
+    id: "law",
+    name: "Law",
+    category: "legal",
+    keywords: ["law", "legal", "attorney", "paralegal"],
+    tags: ["legal", "law", "academic"],
+    filename: "law.svg",
+    size: 760,
+    downloaded: "2025-07-09T14:04:09.416Z",
+    isOfficial: false,
+    brandColors: { primary: "#1f2937" }
+  },
+  
+  // Computer Science
+  {
+    id: "computer-science",
+    name: "Computer Science",
+    category: "technology",
+    keywords: ["computer science", "cs", "computing"],
+    tags: ["technology", "computer", "academic"],
+    filename: "computer-science.svg",
+    size: 533,
+    downloaded: "2025-07-09T14:04:09.417Z",
+    isOfficial: false,
+    brandColors: { primary: "#059669" }
+  },
+  
+  // Generic Icons
+  {
+    id: "academic",
+    name: "Academic",
+    category: "general",
+    keywords: ["academic", "education", "learning"],
+    tags: ["general", "academic", "fallback"],
+    filename: "academic.svg",
+    size: 710,
+    downloaded: "2025-07-09T14:04:11.667Z",
+    isOfficial: false,
+    brandColors: { primary: "#4f46e5" }
+  },
+  {
+    id: "certification",
+    name: "Certification",
+    category: "general",
+    keywords: ["certification", "certificate", "award"],
+    tags: ["general", "certification"],
+    filename: "certification.svg",
+    size: 901,
+    downloaded: "2025-07-09T14:04:11.667Z",
+    isOfficial: false,
+    brandColors: { primary: "#f59e0b" }
+  },
+  {
+    id: "test",
+    name: "Test",
+    category: "general",
+    keywords: ["test", "exam", "assessment"],
+    tags: ["general", "test", "exam"],
+    filename: "test.svg",
+    size: 540,
+    downloaded: "2025-07-09T14:04:11.667Z",
+    isOfficial: false,
+    brandColors: { primary: "#6b7280" }
+  },
+  {
+    id: "science",
+    name: "Science",
+    category: "science",
+    keywords: ["science", "scientific", "research"],
+    tags: ["academic", "science", "general"],
+    filename: "science.svg",
+    size: 689,
+    downloaded: "2025-07-09T14:04:07.891Z",
+    isOfficial: false,
+    brandColors: { primary: "#059669" }
   }
 ];
-
-export const ICON_CATEGORIES = [
-  'cloud',
-  'networking',
-  'security',
-  'mathematics',
-  'science',
-  'devops',
-  'business',
-  'medical',
-  'engineering',
-  'legal',
-  'technology',
-  'programming',
-  'frontend',
-  'general',
-  'backend',
-  'database'
-];
-
-export function getIconByCategory(category: string): IconMetadata[] {
-  return DOWNLOADED_ICONS.filter(icon => icon.category === category);
-}
-
-export function searchIcons(query: string): IconMetadata[] {
-  const searchTerm = query.toLowerCase();
-  return DOWNLOADED_ICONS.filter(icon => 
-    icon.name.toLowerCase().includes(searchTerm) ||
-    icon.id.toLowerCase().includes(searchTerm) ||
-    icon.category.toLowerCase().includes(searchTerm)
-  );
-}
-
-export function getIconPath(iconId: string): string {
-  const icon = DOWNLOADED_ICONS.find(icon => icon.id === iconId);
-  return icon ? `/icons/${icon.filename}` : '/icons/academic.svg';
-}

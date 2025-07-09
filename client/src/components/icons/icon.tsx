@@ -101,16 +101,21 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
           
           console.log(`🎨 Icon resolved: "${subjectName}" -> "${result.iconId}" (${result.source})`);
           
-          // If we got a specific icon (not fallback), use the SVG path directly
-          if (result.iconId !== 'academic' && result.iconId !== 'fallback') {
-            const iconPath = `/icons/${result.iconId}.svg`;
-            setResolvedIconPath(iconPath);
-            console.log(`📁 Using downloaded SVG: ${iconPath} for "${subjectName}"`);
-          } else {
-            // Fall back to component-based icons
+          // Always use SVG path for any resolved icon, including fallbacks
+          const iconPath = `/icons/${result.iconId}.svg`;
+          setResolvedIconPath(iconPath);
+          console.log(`📁 Using SVG icon: ${iconPath} for "${subjectName}" (${result.source})`);
+          
+          // Test if the icon file actually exists
+          const testImg = new Image();
+          testImg.onload = () => {
+            console.log(`✅ Icon file exists: ${iconPath}`);
+          };
+          testImg.onerror = () => {
+            console.warn(`❌ Icon file missing: ${iconPath}, falling back to component`);
             setResolvedIconPath(null);
-            console.log(`⚠️ No specific icon found for "${subjectName}", using fallback component`);
-          }
+          };
+          testImg.src = iconPath;
           
         } catch (error) {
           console.warn(`⚠️ Icon resolution failed for "${subjectName}":`, error);
