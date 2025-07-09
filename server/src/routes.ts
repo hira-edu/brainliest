@@ -752,13 +752,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/explain-answer", async (req, res) => {
     try {
       const { questionId, userAnswer } = req.body;
+      console.log(`AI explanation request for question ${questionId}, user answer: ${userAnswer}`);
+      
       const question = await storage.getQuestion(questionId);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
       }
 
-      const subject = await storage.getSubject(question.subjectId);
+      // Get subject by slug (not ID)
+      const subject = await storage.getSubjectBySlug(question.subjectSlug);
       const subjectName = subject?.name || "certification";
+      
+      console.log(`Generating explanation for ${subjectName} question`);
 
       const explanation = await explainAnswer(
         question.text, 
@@ -767,8 +772,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAnswer, 
         subjectName
       );
+      
+      console.log(`Generated explanation: ${explanation.substring(0, 100)}...`);
       res.json({ explanation });
     } catch (error) {
+      console.error("AI explanation error:", error);
       res.status(500).json({ message: "Failed to get AI explanation" });
     }
   });
