@@ -1,0 +1,131 @@
+name: Security Audit & Quality Check
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  security-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Security audit
+      run: npm audit --audit-level=high
+    
+    - name: TypeScript check
+      run: npx tsc --noEmit --skipLibCheck
+    
+    - name: ESLint security rules
+      run: npx eslint . --ext .ts,.tsx --config eslint.config.js
+    
+    - name: Run comprehensive QA validation
+      run: npx tsx scripts/comprehensive-qa-validation.ts
+    
+    - name: Run security audit fixes
+      run: npx tsx scripts/security-audit-fixes.ts
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Upload QA reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: qa-reports
+        path: |
+          COMPREHENSIVE_QA_REPORT.md
+          SECURITY_FIXES_REPORT.json
+          ENTERPRISE_QA_AUDIT_REPORT.md
+    
+    - name: Comment PR with results
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          try {
+            const qaReport = fs.readFileSync('COMPREHENSIVE_QA_REPORT.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## QA Audit Results\n\n${qaReport}`
+            });
+          } catch (error) {
+            console.log('QA report not found');
+          }
+
+  dependency-security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Snyk security scan
+      uses: snyk/actions/node@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        command: test
+        args: --severity-threshold=high
+    
+    - name: Upload Snyk results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: snyk.sarif
+
+  performance-audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Bundle size analysis
+      run: |
+        npm install -g bundlewatch
+        bundlewatch --config .bundlewatch.json
+    
+    - name: Lighthouse CI
+      run: |
+        npm install -g @lhci/cli
+        lhci autorun
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
