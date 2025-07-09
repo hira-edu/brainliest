@@ -20,6 +20,9 @@ export default function ExamCard({
   const duration = exam.duration ?? 0;
   const difficulty = exam.difficulty ?? "";
 
+  // Check if exam has no questions - critical for UX
+  const hasNoQuestions = questionCount === 0;
+
   // Map difficulty to a consistent color class
   const getDifficultyColor = (d: string) => {
     switch (d.toLowerCase()) {
@@ -36,27 +39,46 @@ export default function ExamCard({
   };
   const difficultyColorClass = getDifficultyColor(difficulty);
 
-  // Status badge
-  const statusText = done ? "Completed" : "New";
-  const statusClasses = done
+  // Status badge - show "Unavailable" for empty exams
+  const statusText = hasNoQuestions ? "Unavailable" : done ? "Completed" : "New";
+  const statusClasses = hasNoQuestions
+    ? "px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full"
+    : done
     ? "px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full"
     : "px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full";
 
-  // Button at bottom
-  const buttonText = done ? "Retake Exam" : "Start Exam";
-  const buttonClasses = done
+  // Button at bottom - disable for empty exams
+  const buttonText = hasNoQuestions ? "Unavailable" : done ? "Retake Exam" : "Start Exam";
+  const buttonClasses = hasNoQuestions
+    ? "w-full mt-4 py-2 px-4 rounded-lg text-center font-medium transition-colors bg-gray-100 text-gray-400 cursor-not-allowed"
+    : done
     ? "w-full mt-4 py-2 px-4 rounded-lg text-center font-medium transition-colors bg-gray-100 text-gray-700 group-hover:bg-gray-200"
     : "w-full mt-4 py-2 px-4 rounded-lg text-center font-medium transition-colors bg-primary text-white group-hover:bg-blue-700";
 
+  // Handle click - prevent navigation for empty exams
+  const handleClick = () => {
+    if (!hasNoQuestions) {
+      onStart();
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if ((e.key === "Enter" || e.key === " ") && !hasNoQuestions) {
+      onStart();
+    }
+  };
+
   return (
     <div
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02]"
-      onClick={onStart}
+      className={`bg-white rounded-xl shadow-md transition-all duration-300 group ${
+        hasNoQuestions 
+          ? "opacity-75 cursor-not-allowed" 
+          : "cursor-pointer hover:shadow-lg hover:scale-[1.02]"
+      }`}
+      onClick={handleClick}
       role="button"
-      tabIndex={0}
-      onKeyPress={(e) => {
-        if (e.key === "Enter" || e.key === " ") onStart();
-      }}
+      tabIndex={hasNoQuestions ? -1 : 0}
+      onKeyPress={handleKeyPress}
     >
       <div className="p-6">
         {/* Title & status */}
@@ -76,7 +98,9 @@ export default function ExamCard({
         <div className="space-y-2 text-sm text-gray-500">
           <div className="flex justify-between">
             <span>Questions:</span>
-            <span className="font-medium">{questionCount}</span>
+            <span className={`font-medium ${hasNoQuestions ? 'text-gray-400' : ''}`}>
+              {hasNoQuestions ? "No questions available" : `${questionCount} question${questionCount > 1 ? 's' : ''}`}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Duration:</span>
@@ -101,7 +125,13 @@ export default function ExamCard({
         </div>
 
         {/* Action button */}
-        <div className={buttonClasses}>{buttonText}</div>
+        <button 
+          className={buttonClasses}
+          disabled={hasNoQuestions}
+          onClick={hasNoQuestions ? undefined : handleClick}
+        >
+          {buttonText}
+        </button>
       </div>
     </div>
   );

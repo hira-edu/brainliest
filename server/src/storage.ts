@@ -92,10 +92,13 @@ export interface IStorage {
   getExamsBySubject(subjectSlug: string): Promise<Exam[]>;
   getExam(slug: string): Promise<Exam | undefined>;
   getExamBySlug(slug: string): Promise<Exam | undefined>;
+  getExamById(id: number): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
   updateExam(slug: string, exam: Partial<InsertExam>): Promise<Exam | undefined>;
   deleteExam(slug: string): Promise<boolean>;
   getExamCount(): Promise<number>;
+  getQuestionCountByExam(examSlug: string): Promise<number>;
+  getQuestionCountByExamId(examId: number): Promise<number>;
 
   // Questions
   getQuestions(): Promise<Question[]>;
@@ -292,6 +295,35 @@ export class DatabaseStorage implements IStorage {
   async getExamBySlug(slug: string): Promise<Exam | undefined> {
     // This method is now redundant with getExam
     return this.getExam(slug);
+  }
+
+  async getExamById(id: number): Promise<Exam | undefined> {
+    const [exam] = await db.select({
+      slug: exams.slug,
+      subjectSlug: exams.subjectSlug,
+      title: exams.title,
+      description: exams.description,
+      questionCount: exams.questionCount,
+      duration: exams.duration,
+      difficulty: exams.difficulty,
+      isActive: exams.isActive
+    }).from(exams).where(eq(exams.id, id));
+    return exam;
+  }
+
+  // Dynamic question counting methods
+  async getQuestionCountByExam(examSlug: string): Promise<number> {
+    const [result] = await db.select({ 
+      count: sql<number>`COUNT(*)` 
+    }).from(questions).where(eq(questions.examSlug, examSlug));
+    return Number(result.count);
+  }
+
+  async getQuestionCountByExamId(examId: number): Promise<number> {
+    // First get the exam slug by ID
+    const exam = await this.getExamById(examId);
+    if (!exam) return 0;
+    return this.getQuestionCountByExam(exam.slug);
   }
 
   async createExam(exam: InsertExam): Promise<Exam> {

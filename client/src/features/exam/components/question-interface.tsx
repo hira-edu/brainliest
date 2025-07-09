@@ -103,6 +103,39 @@ export default function QuestionInterface() {
     return <LoadingState message={isCreatingSession ? "Starting your exam session..." : "Loading exam content..."} />;
   }
 
+  // Industrial-grade empty state protection - prevent users from starting empty exams
+  if (exam && questions.length === 0 && !isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center bg-white rounded-xl shadow-lg p-8">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Questions Available</h1>
+          <p className="text-gray-600 mb-6">
+            This exam doesn't have any questions yet. Please check back later or contact support if you believe this is an error.
+          </p>
+          <div className="space-y-3">
+            <button 
+              onClick={() => setLocation(`/subject/${exam.subjectSlug}`)}
+              className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Back to {subject?.name || 'Subject'} Exams
+            </button>
+            <button 
+              onClick={() => setLocation("/")}
+              className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Browse All Subjects
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // No questions available
   if (questions.length === 0) {
     return (

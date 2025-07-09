@@ -249,14 +249,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Exam routes
+  // Exam routes with dynamic question counts
   app.get("/api/exams", async (req, res) => {
     try {
       const subjectSlug = req.query.subjectSlug as string;
       const exams = subjectSlug 
         ? await storage.getExamsBySubject(subjectSlug)
         : await storage.getExams();
-      res.json(exams);
+
+      // Add dynamic question counts to all exams
+      const examsWithCounts = await Promise.all(
+        exams.map(async (exam) => {
+          const actualQuestionCount = await storage.getQuestionCountByExam(exam.slug);
+          return {
+            ...exam,
+            questionCount: actualQuestionCount
+          };
+        })
+      );
+
+      res.json(examsWithCounts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exams" });
     }
@@ -265,11 +277,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exams/:id", async (req, res) => {
     try {
       const id = parseId(req.params.id, 'exam ID');
-      const exam = await storage.getExam(id);
+      const exam = await storage.getExamById(id);
       if (!exam) {
         return res.status(404).json({ message: "Exam not found" });
       }
-      res.json(exam);
+
+      // Count actual questions dynamically
+      const actualQuestionCount = await storage.getQuestionCountByExamId(id);
+
+      res.json({
+        ...exam,
+        questionCount: actualQuestionCount
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exam" });
     }
@@ -292,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New backend slug-based route: /api/exams/by-slug/:slug
+  // New backend slug-based route: /api/exams/by-slug/:slug with dynamic question count
   app.get("/api/exams/by-slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
@@ -303,7 +322,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!exam) {
         return res.status(404).json({ message: "Exam not found" });
       }
-      res.json(exam);
+
+      // Count actual questions dynamically
+      const actualQuestionCount = await storage.getQuestionCountByExam(slug);
+
+      res.json({
+        ...exam,
+        questionCount: actualQuestionCount
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exam" });
     }
