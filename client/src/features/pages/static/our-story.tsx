@@ -1,7 +1,7 @@
-import Header from "@/features/shared/components/header";
-import Footer from "@/features/shared/components/footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import Header from "../../shared/components/header";
+import Footer from "../../shared/components/footer";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Badge } from "../../../components/ui/badge";
 import { Users, Target, Lightbulb, Award, Globe, BookOpen } from "lucide-react";
 
 export default function OurStory() {

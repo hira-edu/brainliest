@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '../../components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Switch } from '../../components/ui/switch';
+import { Label } from '../../components/ui/label';
+import { Separator } from '../../components/ui/separator';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 import { 
   Cookie, Shield, Settings, BarChart, Target, 
   AlertTriangle, CheckCircle, Trash2, Download, 
   RefreshCw, Info 
 } from 'lucide-react';
-import { CookieManager, COOKIE_REGISTRY } from '@/utils/cookie-utils';
-import { useToast } from '@/features/shared/hooks/use-toast';
+import { CookieManager, COOKIE_REGISTRY } from '../../utils/cookie-utils';
+import { useToast } from '../shared/hooks/use-toast';
 
 export default function CookieSettings() {
   const [preferences, setPreferences] = useState({

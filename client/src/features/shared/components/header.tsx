@@ -1,6 +1,6 @@
 import { useAuth } from "../../auth/AuthContext";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../../components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,8 +8,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+} from "../../../components/ui/dropdown-menu";
+import { Badge } from "../../../components/ui/badge";
 import UnifiedAuthModal from "../../auth/unified-auth-modal";
 import { useState } from "react";
 import { 

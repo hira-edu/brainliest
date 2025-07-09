@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from './AdminContext';
 import { useLocation } from 'wouter';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Shield, ArrowLeft, Lock } from 'lucide-react';
 import { AdminLoginModal } from './AdminLoginModal';
 

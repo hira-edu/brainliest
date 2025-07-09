@@ -18,14 +18,14 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Check, ChevronDown, X, Loader2, Search } from "lucide-react";
-import { cn } from "@/utils/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { cn } from "../../utils/utils";
+import { Button } from "./button";
+import { Input } from "./input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "./popover";
 
 export interface SearchableSelectOption {
   value: string;

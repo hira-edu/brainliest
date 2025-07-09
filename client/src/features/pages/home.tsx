@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
-import { Subject } from "@shared/schema";
+import { Subject } from "../../../../../shared/schema";
 import SubjectCard from "../content/components/subject-card";
 import Header from "../shared/components/header";
 import Footer from "../shared/components/footer";

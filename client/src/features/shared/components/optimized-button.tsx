@@ -1,9 +1,9 @@
 /**
  * Optimized button component - DRY solution for repeated button patterns
  */
-import { Button } from "@/components/ui/button";
+import { Button } from "../../../components/ui/button";
 import { Loader2 } from "lucide-react";
-import { ButtonProps } from "@/components/ui/button";
+import { ButtonProps } from "../../../components/ui/button";
 
 export interface LoadingButtonProps extends ButtonProps {
   isLoading?: boolean;

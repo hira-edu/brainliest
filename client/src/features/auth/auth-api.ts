@@ -1,5 +1,5 @@
 // Authentication API utilities for secure communication with backend
-import { apiRequest } from "@/services/queryClient";
+import { apiRequest } from "../../services/queryClient";
 
 export interface AuthUser {
   id: number;

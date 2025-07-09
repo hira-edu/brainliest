@@ -1,4 +1,4 @@
-import { TimerState } from "@/lib/types";
+import { TimerState } from "../../../lib/types";
 
 interface ProgressBarProps {
   currentQuestion: number;

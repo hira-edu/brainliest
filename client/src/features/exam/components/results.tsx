@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { UserSession, Question, Exam, Subject } from "@shared/schema";
-import { ExamResult, DomainResult } from "../../../shared/types";
+import { UserSession, Question, Exam, Subject } from "../../../../../shared/schema";
+import { ExamResult, DomainResult } from "../../../../../shared/types";
 import { Header } from "../../shared";
 
 export default function Results() {

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../../../components/ui/button';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from '../../../components/ui/collapsible';
 
 interface FAQItem {
   question: string;

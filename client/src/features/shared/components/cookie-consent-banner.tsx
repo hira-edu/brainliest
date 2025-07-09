@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '../../../components/ui/button';
+import { Card } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog';
+import { Switch } from '../../../components/ui/switch';
+import { Label } from '../../../components/ui/label';
+import { Separator } from '../../../components/ui/separator';
 import { Cookie, Settings, Shield, BarChart, Target, X } from 'lucide-react';
-import { IndustrialCookieManager, type CookieConsentPreferences } from '@/utils/industrial-cookie-manager';
-import { COOKIE_REGISTRY } from '@/utils/cookie-utils';
+import { IndustrialCookieManager, type CookieConsentPreferences } from '../../../utils/industrial-cookie-manager';
+import { COOKIE_REGISTRY } from '../../../utils/cookie-utils';
 
 interface CookieConsentBannerProps {
   onConsentChange?: (preferences: CookieConsentPreferences) => void;

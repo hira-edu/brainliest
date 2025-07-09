@@ -3,7 +3,7 @@
  */
 import { useCallback } from 'react';
 import { useMutation, UseMutationResult, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/services/queryClient';
+import { apiRequest } from '../../../services/queryClient';
 import { useToast } from './use-toast';
 
 export interface ApiMutationOptions<TData = any, TVariables = any> {

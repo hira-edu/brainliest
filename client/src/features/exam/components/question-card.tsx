@@ -1,8 +1,8 @@
-import { Question } from "@shared/schema";
+import { Question } from "../../../../../shared/schema";
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/services/queryClient";
-import { useToast } from "@/features/shared/hooks/use-toast";
+import { apiRequest } from "../../../services/queryClient";
+import { useToast } from "../../shared/hooks/use-toast";
 
 interface QuestionCardProps {
   question: Question | undefined;

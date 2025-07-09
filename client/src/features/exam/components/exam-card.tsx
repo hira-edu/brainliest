@@ -1,4 +1,4 @@
-import { Exam } from "@shared/schema";
+import { Exam } from "../../../../../shared/schema";
 
 interface ExamCardProps {
   exam: Exam;

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { Question, ExamSession, Exam, Subject } from "@shared/schema";
-import { TimerState } from "../../../shared/types";
+import { Question, ExamSession, Exam, Subject } from "../../../../../shared/schema";
+import { TimerState } from "../../../../../shared/types";
 import { apiRequest, queryClient } from "../../../services/queryClient";
 import { useAuth } from "../../auth/AuthContext";
 import { useQuestionLimit } from "../../shared/QuestionLimitContext";
@@ -14,7 +14,7 @@ import UnifiedAuthModal from "../../auth/unified-auth-modal";
 import { SEOHead } from "../../shared";
 import DynamicFAQ from "../../shared/components/dynamic-faq";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../../components/ui/button";
 
 export default function QuestionInterface() {
   const [, setLocation] = useLocation();

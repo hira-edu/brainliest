@@ -1,5 +1,5 @@
-import { Subject } from "@shared/schema";
-import { Icon } from "@/components/icons";
+import { Subject } from "../../../../../shared/schema";
+import { Icon } from "../../../components/icons";
 
 interface SubjectCardProps {
   subject: Subject;

@@ -1,20 +1,20 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
-import { Subject } from "@shared/schema";
-import { categoryStructure, getCategoryForSubject } from "@shared/constants";
+import { Subject } from "../../../../../shared/schema";
+import { categoryStructure, getCategoryForSubject } from "../../../../../shared/constants";
 import SubjectCard from "../components/subject-card";
 import { Header, Footer } from "../../shared";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "../../../components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Badge } from "../../../components/ui/badge";
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from "@/components/ui/select";
+} from "../../../components/ui/select";
 import { Search, ArrowLeft, Filter } from "lucide-react";
 
 interface CategoryDetailPageProps {

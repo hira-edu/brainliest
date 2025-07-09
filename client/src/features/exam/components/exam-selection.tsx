@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
-import { Subject, Exam } from "@shared/schema";
+import { Subject, Exam } from "../../../../../shared/schema";
 import ExamCard from "../components/exam-card";
 import { Header } from "../../shared";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../../../components/ui/button";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();

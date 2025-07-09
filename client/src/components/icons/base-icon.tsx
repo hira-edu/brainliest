@@ -4,7 +4,7 @@
  */
 
 import React, { forwardRef } from 'react';
-import { cn } from '@/utils/utils';
+import { cn } from '../../utils/utils';
 import { IconProps, IconSize, IconColor, IconVariant } from './types';
 
 // Size mappings following design system

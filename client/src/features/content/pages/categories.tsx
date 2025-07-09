@@ -1,8 +1,8 @@
 import { Link } from "wouter";
-import { categoryStructure, type Category } from "@shared/constants";
+import { categoryStructure, type Category } from "../../../../../shared/constants";
 import { Header, Footer } from "../../shared";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Badge } from "../../../components/ui/badge";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 export default function CategoriesPage() {

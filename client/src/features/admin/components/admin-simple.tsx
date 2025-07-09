@@ -39,26 +39,26 @@ const COMMON_ICONS = [
   { value: "🔒", label: "Lock Emoji (🔒)" }
 ];
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "@shared/schema";
+import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "../../../../../shared/schema";
 import { apiRequest, queryClient } from "../../../services/queryClient";
 import { useToast } from "../../shared/hooks/use-toast";
 
 import AdminUsers from "./admin-users";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "../../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../../components/ui/dialog";
 import { Header } from "../../shared";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../../../components/ui/form";
+import { Switch } from "../../../components/ui/switch";
+import { Input } from "../../../components/ui/input";
+import { Textarea } from "../../../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
+import { SearchableSelect } from "../../../components/ui/searchable-select";
+import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCategorySchema, insertSubcategorySchema, insertQuestionSchema, insertExamSchema, insertSubjectSchema } from "@shared/schema";
+import { insertCategorySchema, insertSubcategorySchema, insertQuestionSchema, insertExamSchema, insertSubjectSchema } from "../../../../../shared/schema";
 import { z } from "zod";
 import { 
   Plus, 
@@ -85,8 +85,8 @@ import {
   LogOut,
   FileJson
 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { Badge } from "../../../components/ui/badge";
 import { useAdmin } from "./AdminContext";
 
 // Pagination component
