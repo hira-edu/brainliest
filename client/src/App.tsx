@@ -80,15 +80,27 @@ function ErrorHandler() {
       // Prevent the default behavior for managed errors
       event.preventDefault();
       
-      // Only show toast for actual errors, not for cancelled operations
-      if (event.reason && typeof event.reason === 'object' && event.reason.name !== 'AbortError') {
+      // Enhanced filtering for all types of timeout and network errors
+      const isTimeoutError = event.reason === 'Timeout' || 
+                           (event.reason && event.reason.message === 'Timeout') ||
+                           (typeof event.reason === 'string' && event.reason.includes('timeout')) ||
+                           (typeof event.reason === 'string' && event.reason.includes('Timeout'));
+      
+      const isNetworkError = event.reason && typeof event.reason === 'object' && 
+                           (event.reason.name === 'AbortError' || 
+                            event.reason.name === 'NetworkError' ||
+                            event.reason.name === 'TimeoutError');
+      
+      // Only show toast for actual errors, not for cancelled operations, timeouts, or network issues
+      if (!isTimeoutError && !isNetworkError && event.reason && typeof event.reason === 'object') {
         const errorMessage = event.reason.message || 'An unexpected error occurred';
-        // Don't show error toasts for common network issues or timeouts
+        // Don't show error toasts for common network issues
         if (!errorMessage.includes('fetch') && 
             !errorMessage.includes('Failed to fetch') && 
             !errorMessage.includes('timeout') &&
             !errorMessage.includes('Timeout') &&
-            !errorMessage.includes('abort')) {
+            !errorMessage.includes('abort') &&
+            !errorMessage.includes('network')) {
           toast({
             title: "Error",
             description: "An unexpected error occurred. Please try again.",
