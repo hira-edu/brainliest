@@ -38,7 +38,12 @@
     "tsBuildInfoFile": "./.cache/tsbuildinfo",
     "skipDefaultLibCheck": true,
     "importsNotUsedAsValues": "remove",
-    "removeComments": true
+    "removeComments": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipDefaultLibCheck": true
   },
   "include": [
     "client/src/**/*",
