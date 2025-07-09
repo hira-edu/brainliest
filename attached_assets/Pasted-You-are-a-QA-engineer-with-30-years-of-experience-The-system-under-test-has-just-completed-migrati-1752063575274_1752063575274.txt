@@ -1,0 +1,118 @@
+You are a QA engineer with 30+ years of experience. The system under test has just completed migration from ID-based to slug-based routing for categories and subcategories. All API endpoints, database schema, and admin UI have been updated to use stable, human-readable slugs. Your goal is to exhaustively verify that creating, reading, updating, and deleting categories and subcategories works flawlessly via slugs, with proper UI feedback, API contract adherence, data integrity, and security controls.
+
+1. Preparatory Checks
+Access & Permissions
+
+Log in as an Admin user—verify access to category/subcategory sections.
+
+Attempt same actions as a Non-Admin (e.g., Editor)—ensure operations are forbidden (403).
+
+Baseline Data
+
+Fetch /api/categories?slug= and /api/subcategories?slug= to confirm existing slugs and no regressions.
+
+2. “Create” Workflows
+Valid Category Creation
+
+Use the admin “New Category” form to create “Project Management Training” with slug project-management-training.
+
+Verify:
+
+UI shows success toast and lists new item under categories.
+
+API POST /api/categories request payload includes slug and returns 201 with correct id, slug, name.
+
+DB record has correct primary key (slug) and no auto-generated numeric ID collision.
+
+Duplicate-Slug Handling
+
+Attempt to create another category with the same slug.
+
+Expect: form validation error “Slug already exists” (409), no API crash.
+
+Invalid Slug Format
+
+Try slugs with spaces, special chars (e.g. Project!Mgmt).
+
+Expect: client-side sanitization or server reject with clear error (422).
+
+3. “Read” / Listing
+List Rendering
+
+Navigate to Categories and Subcategories pages.
+
+Confirm each row/card shows: name, slug, parent category (for subcategories), and question count badge.
+
+Deep Linking by Slug
+
+Hit /admin/categories/project-management-training directly—ensure details page loads by slug, not ID.
+
+4. “Update” / Editing
+Rename Category
+
+Edit project-management-training → change name to “PM Training Essentials”.
+
+New slug auto-updates to pm-training-essentials (if configured), or allow manual edit.
+
+Verify:
+
+UI updates list and breadcrumbs reflect new slug.
+
+API PUT /api/categories/pm-training-essentials returns updated object.
+
+Old slug /admin/categories/project-management-training 404s, new slug route works.
+
+Slug-Only Change
+
+Edit only the slug field (e.g. append -2025).
+
+Confirm proper redirects or UI updates and no orphan data.
+
+Parent Reassignment (Subcategory)
+
+For an existing subcategory, change its parent to another category.
+
+Verify UI hierarchy updates and API payload includes correct parent slug.
+
+5. “Delete” Flows
+Safe Delete Category
+
+Delete a category with no subcategories.
+
+Confirm:
+
+Confirmation dialog warns “Deleting this category cannot be undone.”
+
+API DELETE /api/categories/pm-training-essentials returns 204.
+
+Category disappears from UI and GET /api/categories?slug= returns 404.
+
+Cascade vs. Block Delete
+
+Attempt to delete a category that has child subcategories.
+
+Expect either:
+
+Block deletion with error “Please delete or reassign subcategories first.”
+
+Or cascade delete (per spec), removing children—verify DB cleanup.
+
+Orphaned Subcategory Prevention
+
+Ensure no subcategory can exist without a valid parent slug—attempt direct DELETE on parent and check referential integrity.
+
+6. Edge & Regression Tests
+Bulk Operations: Create/edit/delete 50 categories/subcategories; ensure UI performance remains under 2 s per operation.
+
+Network Failure: Simulate 500 ms latency, drop packets—verify loading spinners, retry options, and no duplicate creates.
+
+Security:
+
+Verify CSRF tokens are sent on each POST/PUT/DELETE.
+
+Confirm CORS policies allow only approved admin origins.
+
+7. Logging & Audit Trail
+Perform each CRUD operation and then inspect application logs or audit tables:
+
+Confirm entries include action, user, timestamp, oldSlug, newSlug.
