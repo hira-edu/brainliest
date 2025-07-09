@@ -1,9 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation, useRoute } from "wouter";
-import { Question, ExamSession, Exam, Subject } from "../../../../../shared/schema";
-import { TimerState } from "../../../../../shared/types";
-import { apiRequest, queryClient } from "../../../services/queryClient";
+import { useRoute, useLocation } from "wouter";
 import { useAuth } from "../../auth/AuthContext";
 import { useQuestionLimit } from "../../shared/QuestionLimitContext";
 import { Header } from "../../shared";
@@ -15,307 +10,97 @@ import { SEOHead } from "../../shared";
 import DynamicFAQ from "../../shared/components/dynamic-faq";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../../../components/ui/button";
+import { useExamLoader } from "../hooks/useExamLoader";
+import { useExamSession } from "../hooks/useExamSession";
+import { useQuestionNavigation } from "../hooks/useQuestionNavigation";
+import { ErrorMessage } from "./ErrorMessage";
+import { LoadingState } from "./LoadingState";
 
 export default function QuestionInterface() {
-  const [, setLocation] = useLocation();
-
-  // Routing: prefer slug, fallback to ID
+  // Routing: prefer slug, fallback to ID with proper validation
   const [slugMatch, slugParams] = useRoute("/exam/:slug");
   const [idMatch, idParams] = useRoute("/exam/id/:id");
-  const isSlugRoute = slugMatch && !!slugParams?.slug;
-  const isIdRoute = idMatch && !!idParams?.id;
-  const examSlug = isSlugRoute ? slugParams.slug : null;
-  const examId = isIdRoute ? parseInt(idParams.id, 10) : null;
+  
+  const slugOrId = slugMatch && slugParams?.slug 
+    ? slugParams.slug 
+    : idMatch && idParams?.id 
+    ? parseInt(idParams.id, 10) 
+    : null;
 
-  const { isSignedIn } = useAuth();
+  // Industrial-grade data loading with error handling
+  const { exam, subject, questions, isLoading, isError, error, refetch } = useExamLoader(slugOrId);
+
+  // Session management with proper error handling
   const {
-    canViewMoreQuestions,
-    addViewedQuestion,
-    isQuestionViewed,
+    sessionId,
+    session,
+    timer,
+    isCreatingSession,
+    sessionError,
+    updateSession,
+    finishExam
+  } = useExamSession({ exam, questions });
+
+  // Question navigation with preview limits
+  const {
+    currentQuestionIndex,
+    currentQuestion,
+    selectedAnswer,
+    showFeedback,
+    shouldBlurQuestion,
+    canGoPrevious,
+    isLastQuestion,
     showAuthModal,
     setShowAuthModal,
-    getRemainingQuestions
-  } = useQuestionLimit();
-
-  const [sessionId, setSessionId] = useState<number | null>(null);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>();
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [timer, setTimer] = useState<TimerState>({ minutes: 60, seconds: 0, totalSeconds: 3600 });
-
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isActiveRef = useRef(true);
-
-  // Fetch exam
-  const {
-    data: exam,
-    isLoading: isExamLoading
-  } = useQuery<Exam>({
-    queryKey: ["exam", isSlugRoute ? examSlug : examId],
-    queryFn: async () => {
-      const url = isSlugRoute
-        ? `/api/exams/by-slug/${examSlug}`
-        : `/api/exams/${examId}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch exam");
-      return res.json();
-    },
-    enabled: !!(examSlug || examId)
+    handleAnswer,
+    handleSubmitAnswer,
+    handleNextQuestion,
+    handlePreviousQuestion
+  } = useQuestionNavigation({
+    questions,
+    session,
+    updateSession,
+    onFinishExam: finishExam
   });
 
-  // Fetch subject
-  const {
-    data: subject,
-    isLoading: isSubjectLoading
-  } = useQuery<Subject>({
-    queryKey: ["subject", exam?.subjectSlug, exam?.subjectId],
-    queryFn: async () => {
-      const url = exam?.subjectSlug
-        ? `/api/subjects/by-slug/${exam.subjectSlug}`
-        : `/api/subjects/${exam.subjectId}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch subject");
-      return res.json();
-    },
-    enabled: !!(exam?.subjectSlug || exam?.subjectId)
-  });
+  const { isSignedIn } = useAuth();
+  const { getRemainingQuestions } = useQuestionLimit();
 
-  // Fetch questions
-  const {
-    data: questionsData,
-    isLoading: isQuestionsLoading
-  } = useQuery<{ questions: Question[]; freemiumSession?: any }>({
-    queryKey: ["questions", isSlugRoute ? examSlug : examId],
-    queryFn: async () => {
-      const url = isSlugRoute
-        ? `/api/questions?examSlug=${examSlug}`
-        : `/api/questions?examId=${examId}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch questions");
-      return res.json();
-    },
-    enabled: !!(examSlug || examId)
-  });
-
-  const questions = questionsData?.questions || [];
-
-  // Fetch or create session
-  const {
-    data: session,
-    isLoading: isSessionLoading
-  } = useQuery<ExamSession>({
-    queryKey: ["session", sessionId],
-    queryFn: async () => {
-      const res = await fetch(`/api/sessions/${sessionId}`);
-      if (!res.ok) throw new Error("Failed to fetch session");
-      return res.json();
-    },
-    enabled: !!sessionId
-  });
-
-  const createSessionMutation = useMutation({
-    mutationFn: (id: number) => apiRequest("POST", "/api/sessions", { examId: id }),
-    onSuccess: (newSession: ExamSession) => {
-      setSessionId(newSession.id);
-      if (exam?.duration) {
-        setTimer({
-          minutes: exam.duration,
-          seconds: 0,
-          totalSeconds: exam.duration * 60
-        });
-      }
-    }
-  });
-
-  const updateSessionMutation = useMutation({
-    mutationFn: (data: { sessionId: number; updates: Partial<ExamSession> }) =>
-      apiRequest("PUT", `/api/sessions/${data.sessionId}`, data.updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
-    }
-  });
-
-  // Start or fetch session when exam loads
-  useEffect(() => {
-    if (exam?.id && !sessionId) {
-      createSessionMutation.mutate(exam.id);
-    }
-  }, [exam?.id, sessionId]);
-
-  // Unified finish handler
-  const handleFinishExam = useCallback(() => {
-    if (!sessionId || !session) return;
-
-    // Calculate score and timeSpent locally
-    let correctCount = 0;
-    session.answers?.forEach((ans, idx) => {
-      const q = questions[idx];
-      if (q && parseInt(ans) === q.correctAnswer) {
-        correctCount++;
-      }
-    });
-    const score = Math.round((correctCount / questions.length) * 100);
-    const timeSpent = (exam?.duration || 60) * 60 - timer.totalSeconds;
-
-    updateSessionMutation.mutate({
-      sessionId,
-      updates: {
-        isCompleted: true,
-        completedAt: new Date().toISOString(),
-        score,
-        timeSpent
-      }
-    });
-
-    setLocation(`/results/${sessionId}`);
-  }, [sessionId, session, questions, exam?.duration, timer.totalSeconds]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    if (timer.totalSeconds > 0 && sessionId && !showFeedback && isActiveRef.current) {
-      timerRef.current = setInterval(() => {
-        setTimer(prev => {
-          if (!isActiveRef.current) return prev;
-          const newTotal = prev.totalSeconds - 1;
-          if (newTotal <= 0) {
-            clearInterval(timerRef.current!);
-            handleFinishExam();
-            return prev;
-          }
-          return {
-            minutes: Math.floor(newTotal / 60),
-            seconds: newTotal % 60,
-            totalSeconds: newTotal
-          };
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [timer.totalSeconds, sessionId, showFeedback, handleFinishExam]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    isActiveRef.current = true;
-    return () => {
-      isActiveRef.current = false;
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
-
-  const currentQuestion = questions[currentQuestionIndex];
-
-  // Track free-preview views
-  useEffect(() => {
-    if (!isSignedIn && currentQuestion && !isQuestionViewed(currentQuestion.id)) {
-      if (canViewMoreQuestions) {
-        addViewedQuestion(currentQuestion.id);
-      }
-    }
-  }, [
-    currentQuestion,
-    isSignedIn,
-    canViewMoreQuestions,
-    addViewedQuestion,
-    isQuestionViewed
-  ]);
+  // Session management is now handled by useExamSession hook
 
   const remaining = getRemainingQuestions();
-  const shouldBlurQuestion =
-    !isSignedIn &&
-    currentQuestion &&
-    !isQuestionViewed(currentQuestion.id) &&
-    !canViewMoreQuestions;
+  const [, setLocation] = useLocation();
 
-  const handleAnswer = (idx: number) => {
-    if (shouldBlurQuestion) {
-      setShowAuthModal(true);
-      return;
-    }
-    setSelectedAnswer(idx);
-  };
-
-  const handleSubmitAnswer = () => {
-    if (shouldBlurQuestion) {
-      setShowAuthModal(true);
-      return;
-    }
-    if (selectedAnswer == null) {
-      return;
-    }
-
-    // Show feedback immediately for better UX
-    setShowFeedback(true);
-
-    // Update session if we have one
-    if (sessionId && session) {
-      const updatedAnswers = [...(session?.answers || [])];
-      updatedAnswers[currentQuestionIndex] = selectedAnswer.toString();
-
-      updateSessionMutation.mutate({
-        sessionId,
-        updates: { answers: updatedAnswers, currentQuestionIndex }
-      });
-    }
-  };
-
-  const handleNextQuestion = () => {
-    setShowFeedback(false);
-    setSelectedAnswer(undefined);
-
-    if (currentQuestionIndex < questions.length - 1) {
-      const next = currentQuestionIndex + 1;
-      setCurrentQuestionIndex(next);
-
-      const prevAns = session?.answers?.[next];
-      setSelectedAnswer(prevAns ? parseInt(prevAns) : undefined);
-
-      // If next question is over preview limit, prompt sign-in
-      if (
-        !isSignedIn &&
-        questions[next] &&
-        !isQuestionViewed(questions[next].id) &&
-        !canViewMoreQuestions
-      ) {
-        setShowAuthModal(true);
-      }
-    } else {
-      handleFinishExam();
-    }
-  };
-
-  const handlePreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      const prev = currentQuestionIndex - 1;
-      setCurrentQuestionIndex(prev);
-      setShowFeedback(false);
-
-      const prevAns = session?.answers?.[prev];
-      setSelectedAnswer(prevAns ? parseInt(prevAns) : undefined);
-    }
-  };
-
-  // Consolidated loading state
-  if (isExamLoading || isSubjectLoading || isQuestionsLoading || !questionsData) {
+  // Error handling with user-friendly interface
+  if (isError) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        {/* ...loading UI identical to original... */}
-      </div>
+      <ErrorMessage
+        title="Failed to load exam"
+        message={error?.message || "We couldn't load this exam. Please check your connection and try again."}
+        onRetry={refetch}
+      />
     );
+  }
+
+  // Loading state with proper messaging
+  if (isLoading) {
+    return <LoadingState message="Loading exam content..." />;
+  }
+
+  // Session creation error handling
+  if (sessionError) {
+    return (
+      <ErrorMessage
+        title="Session Error"
+        message="Failed to start your exam session. Please try again."
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  // Enhanced loading state with proper feedback
+  if (isLoading || isCreatingSession) {
+    return <LoadingState message={isCreatingSession ? "Starting your exam session..." : "Loading exam content..."} />;
   }
 
   // No questions available
@@ -416,9 +201,9 @@ export default function QuestionInterface() {
                 size="sm"
                 onClick={() =>
                   setLocation(
-                    subject.slug
+                    subject?.slug
                       ? `/subject/${subject.slug}`
-                      : `/subject/id/${exam.subjectId}`
+                      : `/subject/id/${exam?.subjectId}`
                   )
                 }
                 className="text-gray-600 hover:text-gray-900"
@@ -472,7 +257,7 @@ export default function QuestionInterface() {
             onPrevious={handlePreviousQuestion}
             onSubmit={handleSubmitAnswer}
             selectedAnswer={selectedAnswer}
-            canGoPrevious={currentQuestionIndex > 0}
+            canGoPrevious={canGoPrevious}
           />
 
           {shouldBlurQuestion && (
@@ -503,7 +288,7 @@ export default function QuestionInterface() {
               question={currentQuestion}
               userAnswer={selectedAnswer!}
               onNext={handleNextQuestion}
-              isLastQuestion={currentQuestionIndex === questions.length - 1}
+              isLastQuestion={isLastQuestion}
             />
           )}
         </div>
