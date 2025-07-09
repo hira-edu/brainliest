@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import UploadsManager from './uploads-manager';
 import IconAssignment from './icon-assignment';
+import { DynamicIcon } from "../../../utils/dynamic-icon";
 
 // Icon selection component for uploaded images
 interface UploadedIcon {
@@ -1745,9 +1746,12 @@ export default function AdminSimple() {
                       <CardTitle className="text-base font-semibold">{subject.name}</CardTitle>
                       <p className="text-sm text-gray-600">{subject.description}</p>
                     </div>
-                    <span className="text-xs text-gray-500 ml-4" title={subject.icon || "📚"}>
-                      {subject.icon || "📚"}
-                    </span>
+                    <div className="w-8 h-8 ml-4 flex items-center justify-center" title={subject.icon || "Default icon"}>
+                      <DynamicIcon 
+                        name={subject.icon} 
+                        className="w-6 h-6 text-gray-500"
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     <Badge variant="outline">

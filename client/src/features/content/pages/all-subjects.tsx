@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Header, Footer, SEOHead } from "../../shared";
 import { Subject } from "../../../../../shared/schema";
+import { DynamicIcon } from "../../../utils/dynamic-icon";
 
 // Category configuration
 const categoryConfig = {
@@ -17,25 +18,25 @@ const categoryConfig = {
     label: "Professional Certifications",
     keywords: ["pmp", "aws", "azure", "google cloud", "comptia", "cisco", "vmware", "oracle", "microsoft", "salesforce", "kubernetes", "docker", "devops"],
     color: "blue",
-    icon: "💼"
+    icon: "briefcase"
   },
   academic: {
     label: "University & College",
     keywords: ["mathematics", "statistics", "calculus", "algebra", "physics", "chemistry", "biology", "computer science", "engineering", "nursing", "medical", "business", "economics", "accounting", "psychology", "history", "english", "writing"],
     color: "green",
-    icon: "🎓"
+    icon: "graduation-cap"
   },
   test_prep: {
     label: "Test Preparation",
     keywords: ["gre", "lsat", "toefl", "ged", "hesi", "teas", "sat", "act"],
     color: "purple",
-    icon: "📝"
+    icon: "pencil"
   },
   other: {
     label: "Other Subjects",
     keywords: [],
     color: "gray",
-    icon: "📚"
+    icon: "book-open"
   }
 };
 
@@ -68,8 +69,11 @@ function SubjectCard({ subject, onClick }: SubjectCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3 flex-1">
-            <div className={`w-12 h-12 rounded-xl bg-${categoryInfo.color}-100 flex items-center justify-center flex-shrink-0`}>
-              <span className="text-xl">{subject.icon || categoryInfo.icon}</span>
+            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <DynamicIcon 
+                name={subject.icon} 
+                className="w-6 h-6 text-gray-600"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors line-clamp-2">

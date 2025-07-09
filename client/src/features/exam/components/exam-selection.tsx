@@ -5,6 +5,7 @@ import ExamCard from "../components/exam-card";
 import { Header } from "../../shared";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "../../../components/ui/button";
+import { DynamicIcon } from "../../../utils/dynamic-icon";
 
 export default function ExamSelection() {
   const [, setLocation] = useLocation();
@@ -87,7 +88,12 @@ export default function ExamSelection() {
                   </Button>
                   <div className="h-6 w-px bg-gray-300"></div>
                   <div className="flex items-center">
-                    <i className={`${subject.icon} text-2xl text-primary mr-3`}></i>
+                    <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                      <DynamicIcon 
+                        name={subject.icon} 
+                        className="w-6 h-6 text-primary"
+                      />
+                    </div>
                     <div>
                       <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
                       <p className="text-sm text-gray-600">{subject.description}</p>
@@ -134,7 +140,12 @@ export default function ExamSelection() {
                 </Button>
                 <div className="h-6 w-px bg-gray-300"></div>
                 <div className="flex items-center">
-                  <i className={`${subject.icon} text-2xl text-primary mr-3`}></i>
+                  <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                    <DynamicIcon 
+                      name={subject.icon} 
+                      className="w-6 h-6 text-primary"
+                    />
+                  </div>
                   <div>
                     <h1 className="text-xl font-semibold text-gray-900">{subject.name}</h1>
                     <p className="text-sm text-gray-600">{subject.description}</p>

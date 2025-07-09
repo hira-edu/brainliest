@@ -4,6 +4,7 @@ import { Header, Footer } from "../../shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { ArrowRight, BookOpen } from "lucide-react";
+import { DynamicIcon, DefaultIcon } from "../../../utils/dynamic-icon";
 
 export default function CategoriesPage() {
   return (
@@ -34,14 +35,15 @@ export default function CategoriesPage() {
 }
 
 function CategoryCard({ category }: { category: Category }) {
-  const IconComponent = category.icon;
-  
   return (
     <Card className="hover:shadow-lg transition-shadow h-full">
       <CardHeader>
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-            <IconComponent className="w-6 h-6 text-primary" />
+            <DynamicIcon 
+              name={category.icon} 
+              className="w-6 h-6 text-primary"
+            />
           </div>
           <div>
             <CardTitle className="text-xl">{category.title}</CardTitle>
@@ -53,13 +55,15 @@ function CategoryCard({ category }: { category: Category }) {
       <CardContent>
         <div className="space-y-3 mb-6">
           {category.subCategories.map((subCategory) => {
-            const SubIconComponent = subCategory.icon;
             return (
               <Link key={subCategory.id} href={subCategory.route}>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                      <SubIconComponent className="w-4 h-4 text-gray-600" />
+                      <DynamicIcon 
+                        name={subCategory.icon} 
+                        className="w-4 h-4 text-gray-600"
+                      />
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900 group-hover:text-primary transition-colors">
