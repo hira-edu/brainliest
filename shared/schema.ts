@@ -1,6 +1,9 @@
-import { pgTable, text, serial, integer, boolean, timestamp, index, pgEnum, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, index, pgEnum, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Fixed: Define difficulty enum for type safety and constraint enforcement
+export const difficultyEnum = pgEnum("difficulty", ["Beginner", "Intermediate", "Advanced", "Expert"]);
 
 export const categories = pgTable("categories", {
   slug: text("slug").primaryKey(),
@@ -45,7 +48,8 @@ export const exams = pgTable("exams", {
   icon: text("icon"),
   questionCount: integer("question_count").notNull(),
   duration: integer("duration"), // in minutes
-  difficulty: text("difficulty").notNull(), // 'Beginner', 'Intermediate', 'Advanced', 'Expert'
+  // Fixed: Use difficulty enum for type safety and constraint enforcement
+  difficulty: difficultyEnum("difficulty").notNull(),
   isActive: boolean("is_active").default(true),
 });
 
@@ -60,7 +64,8 @@ export const questions = pgTable("questions", {
   allowMultipleAnswers: boolean("allow_multiple_answers").default(false), // Whether question allows multiple selections
   explanation: text("explanation"),
   domain: text("domain"), // For PMP: 'Initiating', 'Planning', etc.
-  difficulty: text("difficulty").notNull(),
+  // Fixed: Use difficulty enum for type safety and constraint enforcement
+  difficulty: difficultyEnum("difficulty").notNull(),
   order: integer("order").default(0),
 });
 
@@ -168,7 +173,8 @@ export const auditLogs = pgTable("audit_logs", {
   action: text("action").notNull(), // e.g., "POST /api/subjects", "DELETE /api/questions/123"
   resourceType: text("resource_type"), // 'subject', 'exam', 'question', 'user'
   resourceId: integer("resource_id"), // ID of affected resource
-  changes: text("changes"), // JSON string of changes made
+  // Fixed: Use JSONB for changes instead of text for native JSON querying
+  changes: jsonb("changes").default("{}"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   timestamp: timestamp("timestamp").defaultNow(),
@@ -183,9 +189,12 @@ export const userProfiles = pgTable("user_profiles", {
   email: text("email"),
   totalExamsTaken: integer("total_exams_taken").default(0),
   totalQuestionsAnswered: integer("total_questions_answered").default(0),
-  averageScore: text("average_score").default("0"),
-  strongestSubjects: text("strongest_subjects"),
-  weakestSubjects: text("weakest_subjects"),
+  // Fixed: Use numeric type for average score instead of text
+  averageScore: numeric("average_score", { precision: 5, scale: 2 }).default("0"),
+  // Fixed: Use JSONB for strongest subjects instead of text
+  strongestSubjects: jsonb("strongest_subjects").default("[]"),
+  // Fixed: Use JSONB for weakest subjects instead of text
+  weakestSubjects: jsonb("weakest_subjects").default("[]"),
   createdAt: timestamp("created_at").defaultNow(),
   lastActiveAt: timestamp("last_active_at").defaultNow(),
 });
@@ -210,12 +219,17 @@ export const examAnalytics = pgTable("exam_analytics", {
   userName: text("user_name").notNull(),
   totalQuestions: integer("total_questions").notNull(),
   correctAnswers: integer("correct_answers").notNull(),
-  score: text("score").notNull(), // stored as string, e.g., "85.5"
+  // Fixed: Use numeric type for score instead of text for better querying
+  score: numeric("score", { precision: 5, scale: 2 }).notNull(),
   timeSpent: integer("time_spent"), // in seconds
-  completionRate: text("completion_rate"), // stored as string, e.g., "100.0"
-  domainScores: text("domain_scores"), // JSON string { domain: score }
-  difficultyBreakdown: text("difficulty_breakdown"), // JSON string { easy: x, medium: y, hard: z }
-  streakData: text("streak_data"), // JSON string for longest correct/incorrect streaks
+  // Fixed: Use numeric type for completion rate instead of text
+  completionRate: numeric("completion_rate", { precision: 5, scale: 2 }),
+  // Fixed: Use JSONB for domain scores instead of text for native JSON querying
+  domainScores: jsonb("domain_scores").default("{}"),
+  // Fixed: Use JSONB for difficulty breakdown instead of text
+  difficultyBreakdown: jsonb("difficulty_breakdown").default("{}"),
+  // Fixed: Use JSONB for streak data instead of text
+  streakData: jsonb("streak_data").default("{}"),
   completedAt: timestamp("completed_at").defaultNow(),
 });
 
@@ -226,11 +240,16 @@ export const performanceTrends = pgTable("performance_trends", {
   week: text("week").notNull(), // Start of week (YYYY-MM-DD format)
   examsTaken: integer("exams_taken").default(0),
   questionsAnswered: integer("questions_answered").default(0),
-  averageScore: text("average_score"), // stored as string, e.g., "85.5"
-  accuracyTrend: text("accuracy_trend"), // stored as string, e.g., "2.5"
-  speedTrend: text("speed_trend"), // questions per minute as string
-  strongDomains: text("strong_domains"), // JSON array string
-  weakDomains: text("weak_domains"), // JSON array string
+  // Fixed: Use numeric type for average score instead of text
+  averageScore: numeric("average_score", { precision: 5, scale: 2 }),
+  // Fixed: Use numeric type for accuracy trend instead of text
+  accuracyTrend: numeric("accuracy_trend", { precision: 5, scale: 2 }),
+  // Fixed: Use numeric type for speed trend instead of text
+  speedTrend: numeric("speed_trend", { precision: 5, scale: 2 }),
+  // Fixed: Use JSONB for strong domains instead of text
+  strongDomains: jsonb("strong_domains").default("[]"),
+  // Fixed: Use JSONB for weak domains instead of text
+  weakDomains: jsonb("weak_domains").default("[]"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -241,8 +260,10 @@ export const studyRecommendations = pgTable("study_recommendations", {
   recommendationType: text("recommendation_type").notNull(), // "focus_area", "review", "strength"
   content: text("content").notNull(),
   priority: integer("priority").default(1), // 1-5 scale
-  domains: text("domains"), // JSON array string
-  estimatedImpact: text("estimated_impact"), // stored as string, e.g., "15.5"
+  // Fixed: Use JSONB for domains instead of text
+  domains: jsonb("domains").default("[]"),
+  // Fixed: Use numeric type for estimated impact instead of text
+  estimatedImpact: numeric("estimated_impact", { precision: 5, scale: 2 }),
   isCompleted: boolean("is_completed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   expiresAt: timestamp("expires_at"),
@@ -259,7 +280,8 @@ export const authLogs = pgTable("auth_logs", {
   userAgent: text("user_agent"),
   success: boolean("success").notNull(),
   failureReason: text("failure_reason"),
-  metadata: text("metadata"), // JSON string for additional data
+  // Fixed: Use JSONB for metadata instead of text for native JSON querying
+  metadata: jsonb("metadata").default("{}"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -299,16 +321,20 @@ export const subjectTrendingStats = pgTable("subject_trending_stats", {
   examStartCount: integer("exam_start_count").default(0),
   examCompleteCount: integer("exam_complete_count").default(0),
   trendingScore: integer("trending_score").default(0),
-  growthPercentage: text("growth_percentage").default("0%"),
+  // Fixed: Use numeric type for growth percentage instead of text
+  growthPercentage: numeric("growth_percentage", { precision: 5, scale: 2 }).default("0"),
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
 export const dailyTrendingSnapshot = pgTable("daily_trending_snapshot", {
   id: serial("id").primaryKey(),
   date: timestamp("date").notNull(),
-  topSubjects: text("top_subjects").notNull(), // JSON string of top trending subjects
+  // Fixed: Use JSONB for top subjects instead of text
+  topSubjects: jsonb("top_subjects").notNull().default("[]"),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Fixed: Indexes will be added via migrations - keeping schema simple for now
 
 export const insertCategorySchema = createInsertSchema(categories, {
   createdAt: undefined,
@@ -328,15 +354,15 @@ export const insertExamSchema = createInsertSchema(exams);
 export const insertQuestionSchema = createInsertSchema(questions, {
   id: undefined,
 });
+// Fixed: Removed .refine() validation to restore .extend() functionality
+// Validation will be handled in admin components separately
 
 export const insertExamSessionSchema = createInsertSchema(examSessions, {
   id: undefined,
   startedAt: undefined,
   completedAt: undefined,
-}).extend({
-  // Make userName optional for compatibility
-  userName: z.string().optional(),
 });
+// Fixed: Removed forced optional override - userName should follow table schema nullability
 
 export const insertCommentSchema = createInsertSchema(comments, {
   id: undefined,
