@@ -1,8 +1,8 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./services/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { AuthProvider } from "./features/auth/AuthContext";
 import { AdminProvider } from "./features/admin/components/AdminContext";
 import { QuestionLimitProvider } from "./features/shared/QuestionLimitContext";

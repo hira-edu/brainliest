@@ -2,22 +2,22 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { Subject } from "@shared/schema";
-import SubjectCard from "@/features/content/components/subject-card";
-import Header from "@/features/shared/components/header";
-import Footer from "@/features/shared/components/footer";
-import SEOHead from "@/features/shared/components/seo-head";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import SubjectCard from "../content/components/subject-card";
+import Header from "../shared/components/header";
+import Footer from "../shared/components/footer";
+import SEOHead from "../shared/components/seo-head";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { 
   Select, 
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
   SelectValue 
-} from "@/components/ui/select";
+} from "../../components/ui/select";
 import { Search, Filter, TrendingUp, Users, Award, BookOpen, ChevronLeft, ChevronRight } from "lucide-react";
-import { Icon } from "@/components/icons";
+import { Icon } from "../../components/icons";
 
 // Category configuration for better organization
 const categoryConfig = {

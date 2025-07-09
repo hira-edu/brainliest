@@ -1,0 +1,78 @@
+[07:35:12.975] Running build in Washington, D.C., USA (East) – iad1
+[07:35:12.976] Build machine configuration: 2 cores, 8 GB
+[07:35:13.046] Cloning github.com/hira-edu/brainliest (Branch: main, Commit: dfe8882)
+[07:35:14.280] Cloning completed: 1.233s
+[07:35:14.788] Restored build cache from previous deployment (3BwHsPozWXfnL5zrNxmFhPMtgvWj)
+[07:35:15.358] Running "vercel build"
+[07:35:15.799] Vercel CLI 44.2.13
+[07:35:16.575] Installing dependencies...
+[07:35:18.107] 
+[07:35:18.107] up to date in 1s
+[07:35:18.107] 
+[07:35:18.107] 84 packages are looking for funding
+[07:35:18.107]   run `npm fund` for details
+[07:35:18.143] Running "npm run build"
+[07:35:18.254] 
+[07:35:18.254] > rest-express@1.0.0 build
+[07:35:18.254] > esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.mjs || true
+[07:35:18.254] 
+[07:35:18.307] 
+[07:35:18.308]   dist/index.mjs  266.1kb
+[07:35:18.308] 
+[07:35:18.311] ⚡ Done in 27ms
+[07:35:18.576] Using TypeScript 5.6.3 (local user-provided)
+[07:35:26.377] shared/schema.ts(298,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.377] shared/schema.ts(299,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.377] shared/schema.ts(303,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.377] shared/schema.ts(304,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.377] shared/schema.ts(308,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.377] shared/schema.ts(309,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(315,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(319,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(320,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(321,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(328,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(329,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(333,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(334,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(335,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(336,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(337,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(338,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.378] shared/schema.ts(339,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(340,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(341,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(342,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(343,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(347,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(348,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(349,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(353,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(354,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(358,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(359,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(363,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.379] shared/schema.ts(364,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(368,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(369,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(373,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(374,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(378,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(379,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.380] shared/schema.ts(380,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(384,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(385,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(389,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(390,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(394,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(395,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(399,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] shared/schema.ts(400,3): error TS2322: Type 'boolean' is not assignable to type 'never'.
+[07:35:26.381] 
+[07:35:28.496] Build Completed in /vercel/output [12s]
+[07:35:28.632] Deploying outputs...
+[07:35:34.643] 
+[07:35:34.777] Deployment completed
+[07:35:58.923] Uploading build cache [105.96 MB]...
+[07:36:00.581] Build cache uploaded: 1.657s
+[07:36:02.850] Exiting build container

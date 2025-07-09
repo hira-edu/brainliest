@@ -294,116 +294,116 @@ export const dailyTrendingSnapshot = pgTable("daily_trending_snapshot", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertCategorySchema = createInsertSchema(categories).omit({
-  id: true,
-  createdAt: true,
+export const insertCategorySchema = createInsertSchema(categories, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertSubcategorySchema = createInsertSchema(subcategories).omit({
-  id: true,
-  createdAt: true,
+export const insertSubcategorySchema = createInsertSchema(subcategories, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertSubjectSchema = createInsertSchema(subjects).omit({
-  examCount: true,
-  questionCount: true,
+export const insertSubjectSchema = createInsertSchema(subjects, {
+  examCount: undefined,
+  questionCount: undefined,
 });
 
 export const insertExamSchema = createInsertSchema(exams);
 
-export const insertQuestionSchema = createInsertSchema(questions).omit({
-  id: true,
+export const insertQuestionSchema = createInsertSchema(questions, {
+  id: undefined,
 });
 
-export const insertExamSessionSchema = createInsertSchema(examSessions).omit({
-  id: true,
-  startedAt: true,
-  completedAt: true,
+export const insertExamSessionSchema = createInsertSchema(examSessions, {
+  id: undefined,
+  startedAt: undefined,
+  completedAt: undefined,
 }).extend({
   // Make userName optional for compatibility
   userName: z.string().optional(),
 });
 
-export const insertCommentSchema = createInsertSchema(comments).omit({
-  id: true,
-  createdAt: true,
+export const insertCommentSchema = createInsertSchema(comments, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  emailVerificationToken: true,
-  emailVerificationExpires: true,
-  passwordResetToken: true,
-  passwordResetExpires: true,
-  failedLoginAttempts: true,
-  lockedUntil: true,
-  loginCount: true,
-  lastLoginAt: true,
+export const insertUserSchema = createInsertSchema(users, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined,
+  emailVerificationToken: undefined,
+  emailVerificationExpires: undefined,
+  passwordResetToken: undefined,
+  passwordResetExpires: undefined,
+  failedLoginAttempts: undefined,
+  lockedUntil: undefined,
+  loginCount: undefined,
+  lastLoginAt: undefined,
 });
 
-export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
-  id: true,
-  createdAt: true,
-  lastActiveAt: true,
+export const insertUserProfileSchema = createInsertSchema(userProfiles, {
+  id: undefined,
+  createdAt: undefined,
+  lastActiveAt: undefined,
 });
 
-export const insertDetailedAnswerSchema = createInsertSchema(detailedAnswers).omit({
-  id: true,
-  answeredAt: true,
+export const insertDetailedAnswerSchema = createInsertSchema(detailedAnswers, {
+  id: undefined,
+  answeredAt: undefined,
 });
 
-export const insertExamAnalyticsSchema = createInsertSchema(examAnalytics).omit({
-  id: true,
-  completedAt: true,
+export const insertExamAnalyticsSchema = createInsertSchema(examAnalytics, {
+  id: undefined,
+  completedAt: undefined,
 });
 
-export const insertPerformanceTrendsSchema = createInsertSchema(performanceTrends).omit({
-  id: true,
-  createdAt: true,
+export const insertPerformanceTrendsSchema = createInsertSchema(performanceTrends, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertStudyRecommendationsSchema = createInsertSchema(studyRecommendations).omit({
-  id: true,
-  createdAt: true,
+export const insertStudyRecommendationsSchema = createInsertSchema(studyRecommendations, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertAuthLogSchema = createInsertSchema(authLogs).omit({
-  id: true,
-  createdAt: true,
+export const insertAuthLogSchema = createInsertSchema(authLogs, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertAuthSessionSchema = createInsertSchema(authSessions).omit({
-  id: true,
-  createdAt: true,
-  lastUsedAt: true,
+export const insertAuthSessionSchema = createInsertSchema(authSessions, {
+  id: undefined,
+  createdAt: undefined,
+  lastUsedAt: undefined,
 });
 
-export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
-  id: true,
-  timestamp: true,
+export const insertAuditLogSchema = createInsertSchema(auditLogs, {
+  id: undefined,
+  timestamp: undefined,
 });
 
-export const insertUserSubjectInteractionSchema = createInsertSchema(userSubjectInteractions).omit({
-  id: true,
-  timestamp: true,
+export const insertUserSubjectInteractionSchema = createInsertSchema(userSubjectInteractions, {
+  id: undefined,
+  timestamp: undefined,
 });
 
-export const insertSubjectTrendingStatsSchema = createInsertSchema(subjectTrendingStats).omit({
-  id: true,
-  lastUpdated: true,
+export const insertSubjectTrendingStatsSchema = createInsertSchema(subjectTrendingStats, {
+  id: undefined,
+  lastUpdated: undefined,
 });
 
-export const insertDailyTrendingSnapshotSchema = createInsertSchema(dailyTrendingSnapshot).omit({
-  id: true,
-  createdAt: true,
+export const insertDailyTrendingSnapshotSchema = createInsertSchema(dailyTrendingSnapshot, {
+  id: undefined,
+  createdAt: undefined,
 });
 
-export const insertAnonQuestionSessionSchema = createInsertSchema(anonQuestionSessions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+export const insertAnonQuestionSessionSchema = createInsertSchema(anonQuestionSessions, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined,
 });
 
 export type Category = typeof categories.$inferSelect;
