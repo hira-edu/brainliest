@@ -257,10 +257,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await storage.getExamsBySubject(subjectSlug)
         : await storage.getExams();
 
-      // Add dynamic question counts to all exams
+      // CRITICAL FIX: Add dynamic question counts to all exams
+      console.log(`Fetching question counts for ${exams.length} exams...`);
       const examsWithCounts = await Promise.all(
         exams.map(async (exam) => {
           const actualQuestionCount = await storage.getQuestionCountByExam(exam.slug);
+          console.log(`Exam ${exam.slug}: ${actualQuestionCount} questions`);
           return {
             ...exam,
             questionCount: actualQuestionCount
@@ -268,8 +270,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      console.log(`Returning ${examsWithCounts.length} exams with updated question counts`);
       res.json(examsWithCounts);
     } catch (error) {
+      console.error("Failed to fetch exams:", error);
       res.status(500).json({ message: "Failed to fetch exams" });
     }
   });
