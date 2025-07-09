@@ -68,11 +68,9 @@ class IconRegistryService {
    */
   async loadSubjectMappings(): Promise<void> {
     try {
-      const mappings = await apiRequest('/api/icons/mappings');
-      mappings.forEach((mapping: any) => {
-        this.subjectMappings.set(mapping.subjectSlug, mapping.iconId);
-      });
-      console.log(`📋 Loaded ${mappings.length} subject icon mappings`);
+      // For now, skip database mappings since we don't have the API endpoint
+      // The pattern matching system provides excellent coverage
+      console.log('🗂️ Using pattern-based icon resolution (database mappings not implemented)');
     } catch (error) {
       console.warn('⚠️ Failed to load subject mappings:', error);
     }
@@ -120,8 +118,10 @@ class IconRegistryService {
    */
   async getDatabaseIconForSubject(subjectName: string): Promise<string | null> {
     try {
-      // Find subject slug from name
-      const subjects = await apiRequest('/api/subjects');
+      // Use proper fetch instead of apiRequest for GET requests
+      const response = await fetch('/api/subjects');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const subjects = await response.json();
       const subject = subjects.find((s: any) => s.name === subjectName);
       
       if (subject) {
