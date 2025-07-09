@@ -351,11 +351,15 @@ export class FreemiumService {
    */
   async getSessionInfo(clientKey: string, resetThreshold: Date): Promise<FreemiumSessionInfo> {
     try {
-      const sessions = await db
-        .select()
-        .from(anonQuestionSessions)
-        .where(eq(anonQuestionSessions.ipAddress, clientKey))
-        .limit(1);
+      const sessions = await Promise.race([
+        db.select()
+          .from(anonQuestionSessions)
+          .where(eq(anonQuestionSessions.ipAddress, clientKey))
+          .limit(1),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database query timeout')), 20000);
+        })
+      ]) as typeof anonQuestionSessions.$inferSelect[];
 
       const session = sessions[0];
 
