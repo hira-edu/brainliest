@@ -87,6 +87,21 @@ export const comments = pgTable("comments", {
   editedAt: timestamp("edited_at"),
 });
 
+// Admin uploads table for managing icon files and assets
+export const uploads = pgTable("uploads", {
+  id: serial("id").primaryKey(),
+  fileName: text("file_name").notNull(),
+  originalName: text("original_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: text("mime_type").notNull(),
+  fileType: text("file_type").notNull(), // 'icon', 'image', 'document'
+  uploadPath: text("upload_path").notNull(),
+  uploadedBy: integer("uploaded_by").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Define user roles as an enum for type safety and constraint enforcement
 export const userRoles = pgEnum("user_roles", ["user", "admin", "moderator"]);
 
@@ -404,6 +419,12 @@ export const insertAnonQuestionSessionSchema = createInsertSchema(anonQuestionSe
   updatedAt: undefined,
 });
 
+export const insertUploadSchema = createInsertSchema(uploads, {
+  id: undefined,
+  createdAt: undefined,
+  updatedAt: undefined,
+});
+
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Subcategory = typeof subcategories.$inferSelect;
@@ -453,3 +474,7 @@ export type DailyTrendingSnapshot = typeof dailyTrendingSnapshot.$inferSelect;
 export type InsertDailyTrendingSnapshot = z.infer<typeof insertDailyTrendingSnapshotSchema>;
 export type AnonQuestionSession = typeof anonQuestionSessions.$inferSelect;
 export type InsertAnonQuestionSession = z.infer<typeof insertAnonQuestionSessionSchema>;
+
+// Upload Types
+export type Upload = typeof uploads.$inferSelect;
+export type InsertUpload = z.infer<typeof insertUploadSchema>;

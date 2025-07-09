@@ -18,6 +18,9 @@ import { geolocationService } from "./services/geolocation-service";
 import { parseId, parseOptionalId, sanitizeString, validatePassword } from './security/input-sanitizer';
 import { z } from 'zod';
 import { validateEmail } from './services/auth-service';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs/promises';
 import { logAdminAction } from './middleware/auth';
 import { 
   insertSubjectSchema, 
@@ -29,7 +32,8 @@ import {
   insertExamAnalyticsSchema,
   insertUserSchema,
   insertCategorySchema,
-  insertSubcategorySchema
+  insertSubcategorySchema,
+  insertUploadSchema
 } from "../../shared/schema";
 
 // Store verification codes temporarily (in production, use Redis)
@@ -2728,6 +2732,273 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('Error generating robots.txt');
     }
   });
+
+  // ==================== UPLOAD MANAGEMENT ROUTES ====================
+  
+  // Configure multer for file uploads
+  const storage_config = multer.diskStorage({
+    destination: async (req, file, cb) => {
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      try {
+        await fs.mkdir(uploadsDir, { recursive: true });
+        cb(null, uploadsDir);
+      } catch (error) {
+        cb(error, uploadsDir);
+      }
+    },
+    filename: (req, file, cb) => {
+      // Generate unique filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const basename = path.basename(file.originalname, ext);
+      cb(null, `${basename}-${uniqueSuffix}${ext}`);
+    }
+  });
+
+  // File filter for image uploads
+  const fileFilter = (req: any, file: any, cb: any) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  };
+
+  const upload = multer({
+    storage: storage_config,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter
+  });
+
+  // Upload a new file
+  app.post("/api/admin/uploads", tokenAdminAuth.createAuthMiddleware(), upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const user = req.user as { id: number; email: string };
+      
+      const uploadData = {
+        fileName: req.file.filename,
+        originalName: req.file.originalname,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        fileType: req.file.mimetype.split('/')[0], // 'image', 'video', etc.
+        uploadPath: `/uploads/${req.file.filename}`,
+        uploadedBy: user.id,
+        isActive: true
+      };
+
+      const upload = await storage.createUpload(uploadData);
+      
+      res.json({
+        success: true,
+        upload: {
+          id: upload.id,
+          fileName: upload.fileName,
+          originalName: upload.originalName,
+          uploadPath: upload.uploadPath,
+          fileType: upload.fileType,
+          fileSize: upload.fileSize,
+          createdAt: upload.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ message: "Upload failed" });
+    }
+  });
+
+  // Get all uploads with pagination
+  app.get("/api/admin/uploads", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const fileType = req.query.fileType as string;
+      const offset = (page - 1) * limit;
+
+      const result = await storage.getUploadsPaginated(offset, limit, fileType);
+      
+      res.json({
+        uploads: result.uploads,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          pages: Math.ceil(result.total / limit)
+        }
+      });
+    } catch (error) {
+      console.error("Get uploads error:", error);
+      res.status(500).json({ message: "Failed to retrieve uploads" });
+    }
+  });
+
+  // Get specific upload
+  app.get("/api/admin/uploads/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const id = parseId(req.params.id);
+      const upload = await storage.getUpload(id);
+      
+      if (!upload) {
+        return res.status(404).json({ message: "Upload not found" });
+      }
+
+      res.json(upload);
+    } catch (error) {
+      console.error("Get upload error:", error);
+      res.status(500).json({ message: "Failed to retrieve upload" });
+    }
+  });
+
+  // Update upload (mainly for activation/deactivation)
+  app.patch("/api/admin/uploads/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const id = parseId(req.params.id);
+      const { isActive } = req.body;
+      
+      const upload = await storage.updateUpload(id, { isActive });
+      
+      if (!upload) {
+        return res.status(404).json({ message: "Upload not found" });
+      }
+
+      res.json(upload);
+    } catch (error) {
+      console.error("Update upload error:", error);
+      res.status(500).json({ message: "Failed to update upload" });
+    }
+  });
+
+  // Delete upload
+  app.delete("/api/admin/uploads/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const id = parseId(req.params.id);
+      const upload = await storage.getUpload(id);
+      
+      if (!upload) {
+        return res.status(404).json({ message: "Upload not found" });
+      }
+
+      // Delete file from disk
+      const filePath = path.join(process.cwd(), 'public', upload.uploadPath);
+      try {
+        await fs.unlink(filePath);
+      } catch (error) {
+        console.warn("Failed to delete file:", error);
+      }
+
+      const success = await storage.deleteUpload(id);
+      
+      if (success) {
+        res.json({ message: "Upload deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete upload" });
+      }
+    } catch (error) {
+      console.error("Delete upload error:", error);
+      res.status(500).json({ message: "Failed to delete upload" });
+    }
+  });
+
+  // ==================== ICON ASSIGNMENT ROUTES ====================
+
+  // Update subject icon
+  app.patch("/api/admin/subjects/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const subject = await storage.updateSubject(slug, { icon });
+      
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+
+      res.json({ message: "Subject icon updated successfully", subject });
+    } catch (error) {
+      console.error("Update subject icon error:", error);
+      res.status(500).json({ message: "Failed to update subject icon" });
+    }
+  });
+
+  // Update exam icon
+  app.patch("/api/admin/exams/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const exam = await storage.updateExam(slug, { icon });
+      
+      if (!exam) {
+        return res.status(404).json({ message: "Exam not found" });
+      }
+
+      res.json({ message: "Exam icon updated successfully", exam });
+    } catch (error) {
+      console.error("Update exam icon error:", error);
+      res.status(500).json({ message: "Failed to update exam icon" });
+    }
+  });
+
+  // Update category icon
+  app.patch("/api/admin/categories/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const category = await storage.updateCategory(slug, { icon });
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+
+      res.json({ message: "Category icon updated successfully", category });
+    } catch (error) {
+      console.error("Update category icon error:", error);
+      res.status(500).json({ message: "Failed to update category icon" });
+    }
+  });
+
+  // Update subcategory icon
+  app.patch("/api/admin/subcategories/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+    try {
+      const slug = sanitizeString(req.params.slug);
+      const { icon } = req.body;
+      
+      if (!icon) {
+        return res.status(400).json({ message: "Icon is required" });
+      }
+
+      const subcategory = await storage.updateSubcategory(slug, { icon });
+      
+      if (!subcategory) {
+        return res.status(404).json({ message: "Subcategory not found" });
+      }
+
+      res.json({ message: "Subcategory icon updated successfully", subcategory });
+    } catch (error) {
+      console.error("Update subcategory icon error:", error);
+      res.status(500).json({ message: "Failed to update subcategory icon" });
+    }
+  });
+
+  // ==================== END UPLOAD MANAGEMENT ====================
 
   // Test Email route for Titan Email testing
   app.post("/api/test-email", async (req, res) => {

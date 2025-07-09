@@ -1,4 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from "react";
+import UploadsManager from './uploads-manager';
+import IconAssignment from './icon-assignment';
 
 // Common certification and academic icons
 const COMMON_ICONS = [
@@ -2962,9 +2964,11 @@ export default function AdminSimple() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-4 h-12 p-1">
+          <TabsList className="grid w-full grid-cols-6 h-12 p-1">
             <TabsTrigger value="dashboard" className="text-sm font-medium py-3 px-6">Dashboard</TabsTrigger>
             <TabsTrigger value="users" className="text-sm font-medium py-3 px-6">Users</TabsTrigger>
+            <TabsTrigger value="uploads" className="text-sm font-medium py-3 px-6">Uploads</TabsTrigger>
+            <TabsTrigger value="icons" className="text-sm font-medium py-3 px-6">Icons</TabsTrigger>
             <TabsTrigger value="analytics" className="text-sm font-medium py-3 px-6">Analytics</TabsTrigger>
             <TabsTrigger value="csv" className="text-sm font-medium py-3 px-6">Import/Export</TabsTrigger>
           </TabsList>
@@ -3010,6 +3014,14 @@ export default function AdminSimple() {
 
           <TabsContent value="users">
             <AdminUsers />
+          </TabsContent>
+          
+          <TabsContent value="uploads">
+            <UploadsManager />
+          </TabsContent>
+          
+          <TabsContent value="icons">
+            <IconAssignment />
           </TabsContent>
 
           <TabsContent value="csv" className="space-y-8">

@@ -10,6 +10,7 @@ import {
   anonQuestionSessions,
   categories,
   subcategories,
+  uploads,
   type Subject,
   type InsertSubject,
   type Exam,
@@ -28,6 +29,8 @@ import {
   type InsertCategory,
   type Subcategory,
   type InsertSubcategory,
+  type Upload,
+  type InsertUpload,
 } from "../../shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
@@ -171,6 +174,16 @@ export interface IStorage {
   getAuditLogs(): Promise<AuditLog[]>;
   getAuditLog(id: number): Promise<AuditLog | undefined>;
   createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
+
+  // Upload management
+  getUploads(): Promise<Upload[]>;
+  getUploadsPaginated(offset: number, limit: number, fileType?: string): Promise<{ uploads: Upload[], total: number }>;
+  getUpload(id: number): Promise<Upload | undefined>;
+  createUpload(upload: InsertUpload): Promise<Upload>;
+  updateUpload(id: number, upload: Partial<InsertUpload>): Promise<Upload | undefined>;
+  deleteUpload(id: number): Promise<boolean>;
+  getUploadsByType(fileType: string): Promise<Upload[]>;
+  getUploadsByUser(userId: number): Promise<Upload[]>;
 
   // Slug management
   backfillSlugsForExistingRecords(): Promise<void>;
@@ -1152,6 +1165,66 @@ export class DatabaseStorage implements IStorage {
   async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
     const result = await db.insert(auditLogs).values(auditLog).returning();
     return result[0];
+  }
+
+  // Upload management methods
+  async getUploads(): Promise<Upload[]> {
+    return await db.select().from(uploads).orderBy(desc(uploads.createdAt));
+  }
+
+  async getUploadsPaginated(offset: number, limit: number, fileType?: string): Promise<{ uploads: Upload[], total: number }> {
+    let query = db.select().from(uploads);
+    
+    if (fileType) {
+      query = query.where(eq(uploads.fileType, fileType));
+    }
+
+    const [uploadsResult, totalResult] = await Promise.all([
+      query.limit(limit).offset(offset).orderBy(desc(uploads.createdAt)),
+      db.select({ count: sql<number>`COUNT(*)` }).from(uploads)
+        .where(fileType ? eq(uploads.fileType, fileType) : sql`TRUE`)
+    ]);
+
+    return {
+      uploads: uploadsResult,
+      total: totalResult[0].count
+    };
+  }
+
+  async getUpload(id: number): Promise<Upload | undefined> {
+    const [upload] = await db.select().from(uploads).where(eq(uploads.id, id));
+    return upload;
+  }
+
+  async createUpload(upload: InsertUpload): Promise<Upload> {
+    const [newUpload] = await db.insert(uploads).values(upload).returning();
+    return newUpload;
+  }
+
+  async updateUpload(id: number, upload: Partial<InsertUpload>): Promise<Upload | undefined> {
+    const [updatedUpload] = await db
+      .update(uploads)
+      .set({ ...upload, updatedAt: new Date() })
+      .where(eq(uploads.id, id))
+      .returning();
+    return updatedUpload;
+  }
+
+  async deleteUpload(id: number): Promise<boolean> {
+    const result = await db.delete(uploads).where(eq(uploads.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getUploadsByType(fileType: string): Promise<Upload[]> {
+    return await db.select().from(uploads)
+      .where(eq(uploads.fileType, fileType))
+      .orderBy(desc(uploads.createdAt));
+  }
+
+  async getUploadsByUser(userId: number): Promise<Upload[]> {
+    return await db.select().from(uploads)
+      .where(eq(uploads.uploadedBy, userId))
+      .orderBy(desc(uploads.createdAt));
   }
 
   // Backfill slugs for existing records that don't have them
