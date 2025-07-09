@@ -15,7 +15,7 @@ import { recaptchaService } from "./services/recaptcha-service";
 import { trendingService } from "./services/trending-service";
 import { sitemapService } from "./services/sitemap-service";
 import { geolocationService } from "./services/geolocation-service";
-import { parseId, parseOptionalId, sanitizeInput, sanitizeRequestBody, checkRateLimit, validatePassword } from './security/input-sanitizer';
+import { parseId, parseOptionalId, sanitizeString, validatePassword } from './security/input-sanitizer';
 import { validateEmail } from './services/auth-service';
 import { logAdminAction } from './middleware/auth';
 import { 
@@ -325,9 +325,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/questions", checkFreemiumStatus(), async (req, res) => {
     try {
       const examId = parseOptionalId(req.query.examId as string);
-      const questions = examId 
-        ? await storage.getQuestionsByExam(examId)
-        : await storage.getQuestions();
+      const examSlug = sanitizeString(req.query.examSlug as string);
+      
+      let questions;
+      if (examSlug) {
+        // Use examSlug (slug-based filtering) - FIXED: This was the bug!
+        questions = await storage.getQuestionsByExam(examSlug);
+      } else if (examId) {
+        // Legacy support for examId (ID-based filtering)
+        questions = await storage.getQuestionsByExam(examId);
+      } else {
+        // No filter, return all questions
+        questions = await storage.getQuestions();
+      }
       
       // Add freemium session info to response for frontend
       const responseData = {
