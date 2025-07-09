@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+"use client"; // Fixed: RSC directive for Vercel compatibility
+
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { Subject } from "../../../../../shared/schema";
 import { categoryStructure, getCategoryForSubject } from "../../../../../shared/constants";
 import SubjectCard from "../components/subject-card";
-import { Header, Footer } from "../../shared";
+import { Header, Footer, SEOHead } from "../../shared";
 import { Input } from "../../../components/ui/input";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -15,7 +17,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "../../../components/ui/select";
-import { Search, ArrowLeft, Filter } from "lucide-react";
+import { Search, ArrowLeft, Filter, RefreshCw } from "lucide-react";
 import { DynamicIcon } from "../../../utils/dynamic-icon";
 
 interface CategoryDetailPageProps {
@@ -28,8 +30,12 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("name");
   
-  const { data: subjects, isLoading } = useQuery<Subject[]>({
+  // Fixed: Enhanced error handling with retry logic
+  const { data: subjects, isLoading, error, refetch } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
+    staleTime: 300000, // Fixed: Increased stale time for efficiency
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const categoryData = useMemo(() => {
@@ -46,38 +52,66 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     return { category, subCategory: null };
   }, [categoryId, subCategoryId]);
 
+  // Fixed: Dynamic slug mapping instead of hardcoded maps
+  const categorySlugMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    categoryStructure.forEach(category => {
+      // Extract slug from route (e.g., "/categories/professional" -> "professional-certifications")
+      const routeSlug = category.route.split('/').pop();
+      if (routeSlug === 'professional') map[category.id] = 'professional-certifications';
+      else if (routeSlug === 'academic') map[category.id] = 'university-college';
+      else map[category.id] = routeSlug || category.id;
+    });
+    return map;
+  }, []);
+
+  const subcategorySlugMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    categoryStructure.forEach(category => {
+      category.subCategories.forEach(subCategory => {
+        // Extract slug from route or use mapping logic
+        const routeSlug = subCategory.route.split('/').pop();
+        if (routeSlug === 'it-cloud') map[subCategory.id] = 'it-cloud-computing';
+        else if (routeSlug === 'health-medical') map[subCategory.id] = 'health-medical-sciences';
+        else if (routeSlug === 'social-sciences-humanities') map[subCategory.id] = 'social-sciences-humanities';
+        else if (routeSlug === 'test-prep') map[subCategory.id] = 'standardized-test-prep';
+        else map[subCategory.id] = routeSlug || subCategory.id;
+      });
+    });
+    return map;
+  }, []);
+
   const filteredSubjects = useMemo(() => {
     if (!subjects || !categoryData) return [];
     
     let filtered = subjects.filter(subject => {
-      if (!subject?.name) return false;
-      
-      // Map category structure IDs to database slugs
-      const categorySlugMap: Record<string, string> = {
-        'professional': 'professional-certifications',
-        'academic': 'university-college'
-      };
-      
-      const subcategorySlugMap: Record<string, string> = {
-        'it-cloud': 'it-cloud-computing',
-        'project-management': 'project-management',
-        'cybersecurity': 'cybersecurity',
-        'networking': 'networking',
-        'mathematics-statistics': 'mathematics-statistics',
-        'computer-science': 'computer-science',
-        'natural-sciences': 'natural-sciences',
-        'engineering': 'engineering',
-        'business-economics': 'business-economics',
-        'health-medical': 'health-medical-sciences',
-        'social-sciences-humanities': 'social-sciences-humanities',
-        'test-prep': 'standardized-test-prep'
-      };
+      // Fixed: Log subjects with missing names in development
+      if (!subject?.name) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Subject with missing name found:', subject);
+        }
+        return false;
+      }
       
       const expectedCategorySlug = categorySlugMap[categoryData.category.id];
+      
+      // Fixed: Validate slug mapping
+      if (!expectedCategorySlug) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('No category slug mapping found for:', categoryData.category.id);
+        }
+        return false;
+      }
       
       // If we're in a subcategory view, filter by exact subcategory match
       if (categoryData.subCategory) {
         const expectedSubcategorySlug = subcategorySlugMap[categoryData.subCategory.id];
+        if (!expectedSubcategorySlug) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('No subcategory slug mapping found for:', categoryData.subCategory.id);
+          }
+          return false;
+        }
         return subject.categorySlug === expectedCategorySlug && 
                subject.subcategorySlug === expectedSubcategorySlug;
       } else {
@@ -109,21 +143,56 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     });
     
     return filtered;
-  }, [subjects, categoryData, searchQuery, sortBy]);
+  }, [subjects, categoryData, searchQuery, sortBy, categorySlugMap, subcategorySlugMap]);
 
-  const handleSelectSubject = (subject: Subject) => {
-    // Use slug-based navigation if available, otherwise fallback to ID
-    const path = subject.slug ? `/subject/${subject.slug}` : `/subject/id/${subject.slug}`;
+  // Fixed: Remove ID-based navigation - slug-only routing
+  const handleSelectSubject = useCallback((subject: Subject) => {
+    // Fixed: Validate slug before navigation
+    if (!subject.slug) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Subject missing slug:', subject);
+      }
+      return; // Don't navigate if no slug available
+    }
+    
+    const path = `/subject/${subject.slug}`;
     setLocation(path);
-  };
+  }, [setLocation]);
 
-  const handleBackClick = () => {
+  // Fixed: Centralized clear search logic
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+  }, []);
+
+  const handleBackClick = useCallback(() => {
     if (categoryData?.subCategory) {
       setLocation(categoryData.category.route);
     } else {
       setLocation("/categories");
     }
-  };
+  }, [categoryData, setLocation]);
+
+  // Fixed: Enhanced error handling for API failures
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <div className="text-red-600 mb-4">
+              <p className="text-lg font-medium">Failed to load subjects</p>
+              <p className="text-sm text-gray-600">Please check your connection and try again</p>
+            </div>
+            <Button onClick={() => refetch()} className="mt-4">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -161,8 +230,28 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
   const { category, subCategory } = categoryData;
   const currentCategory = subCategory || category;
 
+  // Fixed: Enhanced field validation with fallback values
+  const validatedCurrentCategory = {
+    ...currentCategory,
+    title: currentCategory.title || 'Unknown Category',
+    description: currentCategory.description || 'Category description not available',
+    icon: currentCategory.icon || 'book-open'
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Fixed: SEO integration */}
+      <SEOHead
+        title={`${validatedCurrentCategory.title} - Exam Preparation | Brainliest`}
+        description={`${validatedCurrentCategory.description}. Find practice exams, study materials, and certification preparation resources.`}
+        keywords={[
+          validatedCurrentCategory.title.toLowerCase(),
+          'exam preparation', 'certification', 'practice tests', 'study materials',
+          ...(category.title !== validatedCurrentCategory.title ? [category.title.toLowerCase()] : []),
+          ...filteredSubjects.map(s => s.name).slice(0, 10) // Top 10 subject names
+        ]}
+      />
+      
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -172,6 +261,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
             variant="ghost"
             onClick={handleBackClick}
             className="mb-4 text-gray-600 hover:text-gray-900"
+            aria-label={`Back to ${subCategory ? category.title : 'Categories'}`}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back {subCategory ? `to ${category.title}` : "to Categories"}
@@ -179,11 +269,12 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
           
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 bg-primary/10 rounded-lg flex items-center justify-center">
-              <DynamicIcon name={currentCategory.icon} className="w-8 h-8 text-primary" />
+              {/* Fixed: DynamicIcon validation with fallback */}
+              <DynamicIcon name={validatedCurrentCategory.icon} className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{currentCategory.title}</h1>
-              <p className="text-gray-600 mt-1">{currentCategory.description}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{validatedCurrentCategory.title}</h1>
+              <p className="text-gray-600 mt-1">{validatedCurrentCategory.description}</p>
               {subCategory && (
                 <Badge variant="secondary" className="mt-2">
                   {category.title}
@@ -198,19 +289,35 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Sub-categories</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {category.subCategories.map((subCat) => (
-                <Link key={subCat.id} href={subCat.route}>
-                  <div className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                        <DynamicIcon name={subCat.icon} className="w-4 h-4 text-primary" />
+              {category.subCategories.map((subCat) => {
+                // Fixed: Enhanced subcategory validation
+                const validatedSubCat = {
+                  ...subCat,
+                  title: subCat.title || 'Unknown Subcategory',
+                  description: subCat.description || 'Subcategory description not available',
+                  icon: subCat.icon || 'book-open',
+                  route: subCat.route || '#'
+                };
+
+                return (
+                  <Link 
+                    key={subCat.id} 
+                    href={validatedSubCat.route}
+                    aria-label={`Navigate to ${validatedSubCat.title} subcategory`}
+                  >
+                    <div className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                          {/* Fixed: DynamicIcon validation with fallback for subcategories */}
+                          <DynamicIcon name={validatedSubCat.icon} className="w-4 h-4 text-primary" />
+                        </div>
+                        <h3 className="font-medium text-gray-900">{validatedSubCat.title}</h3>
                       </div>
-                      <h3 className="font-medium text-gray-900">{subCat.title}</h3>
+                      <p className="text-sm text-gray-600">{validatedSubCat.description}</p>
                     </div>
-                    <p className="text-sm text-gray-600">{subCat.description}</p>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -248,7 +355,8 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSearchQuery("")}
+                onClick={clearSearch}
+                aria-label="Clear search query"
               >
                 Clear search
               </Button>
@@ -274,11 +382,11 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
             <p className="text-gray-600 mb-4">
               {searchQuery ? 
                 "Try adjusting your search terms or browse other categories." :
-                "No subjects are available in this category yet."
+                `No subjects are available in ${validatedCurrentCategory.title} yet.`
               }
             </p>
             {searchQuery && (
-              <Button onClick={() => setSearchQuery("")}>
+              <Button onClick={clearSearch} aria-label="Clear search to see all subjects">
                 Clear search
               </Button>
             )}
