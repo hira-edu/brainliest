@@ -83,8 +83,12 @@ function ErrorHandler() {
       // Only show toast for actual errors, not for cancelled operations
       if (event.reason && typeof event.reason === 'object' && event.reason.name !== 'AbortError') {
         const errorMessage = event.reason.message || 'An unexpected error occurred';
-        // Don't show error toasts for common network issues
-        if (!errorMessage.includes('fetch') && !errorMessage.includes('Failed to fetch')) {
+        // Don't show error toasts for common network issues or timeouts
+        if (!errorMessage.includes('fetch') && 
+            !errorMessage.includes('Failed to fetch') && 
+            !errorMessage.includes('timeout') &&
+            !errorMessage.includes('Timeout') &&
+            !errorMessage.includes('abort')) {
           toast({
             title: "Error",
             description: "An unexpected error occurred. Please try again.",

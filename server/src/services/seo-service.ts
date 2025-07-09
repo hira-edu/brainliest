@@ -34,7 +34,7 @@ export interface FAQItem {
 }
 
 export class SEOService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  private model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
   async generatePageSEO(content: {
     type: 'question' | 'category' | 'exam' | 'subject' | 'homepage';

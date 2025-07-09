@@ -81,7 +81,7 @@ function normalizeIpAddress(ip: string): string {
   } catch (error) {
     console.warn(`Failed to normalize IP address: ${ip}, using safe fallback`, error);
     // Return a safe fallback that won't cause database issues
-    return 'parse_error';
+    return `parse_error:${crypto.createHash('md5').update(ip || 'unknown').digest('hex').substring(0, 16)}`;
   }
 }
 
