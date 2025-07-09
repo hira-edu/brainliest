@@ -1,0 +1,32 @@
+Objective:
+Perform a thorough QA investigation to identify and resolve issues with subject icons not appearing in the Brainliest platform's icon system. Implement a solution to download a complete set of predefined icons, store them in a designated folder, and dynamically map these icons to subjects and exams using a database-driven approach. Provide detailed recommendations to ensure the solution meets industry standards for performance, scalability, security, and user experience.Context:
+The Brainliest platform uses a custom icon system to display icons for subjects (e.g., "Mathematics", "PMP Certification") and exams. The system includes:React Components: BaseIcon, Icon, SubjectIcon, CategoryIcon, StatusIcon.
+IconProvider: Manages icon state and provides hooks (useIcon, useSubjectIcon, useIconSearch).
+IndustrialIconRegistry: A thread-safe registry for icon storage and retrieval with LRU caching.
+Database: Assumed to use MongoDB with schemas for Subject, Exam, and Icon.
+Storage: Icons stored locally (/public/icons) or in a cloud service (e.g., AWS S3 for user-uploaded icons).
+Admin Panel: Allows admins to manage subjects and exams, including assigning icons.
+
+Current Issue:
+Subject icons are not appearing, likely due to:Missing icons in the IndustrialIconRegistry (e.g., academic, mathematics not registered).
+Case-sensitive or mismatched subject names in useSubjectIconName.
+Failure in registry initialization (registerAllIcons in definitions.ts).
+Lack of dynamic mapping between subjects and icons in the database.
+Missing or incorrectly configured fallback icons.
+
+Tasks:  QA Testing and Investigation:Verify why subject icons are not rendering in the SubjectIcon component.
+Test the icon system’s components, hooks, and registry for correctness.
+Investigate database and storage integration for icon mappings.
+Identify issues in routes, schemas, and admin panel functionality.
+Download and Store Icons:Download a complete set of predefined SVG icons (e.g., from an icon library like Heroicons, Feather Icons, or FontAwesome).
+Store icons in a designated folder (e.g., /public/icons or S3 bucket).
+Register icons in the IndustrialIconRegistry.
+Dynamic Icon Mapping:Replace hardcoded subjectIconMap with a database-driven approach.
+Sync subject-to-icon mappings with the registry on application startup.
+Support user-uploaded icons with validation and storage.
+Admin Panel Enhancements:Implement a searchable icon selector in the admin panel for subjects and exams.
+Allow admins to assign predefined or user-uploaded icons.
+Provide icon previews and bulk assignment options.
+Recommendations:Provide industry-standard recommendations for performance, security, scalability, and maintainability.
+Suggest testing strategies and monitoring tools.
+

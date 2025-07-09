@@ -85,12 +85,63 @@ interface SubjectIconProps extends IconProps {
 
 export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
   ({ subjectName, fallback = 'academic', ...props }, ref) => {
-    // Always call hook
-    const iconName = useSubjectIconName(subjectName);
+    // Enhanced icon resolution with database support
+    const [resolvedIcon, setResolvedIcon] = React.useState<string>(fallback);
+    const [isLoading, setIsLoading] = React.useState(false);
+    
+    React.useEffect(() => {
+      async function resolveIcon() {
+        if (!subjectName) return;
+        
+        setIsLoading(true);
+        try {
+          // First try database lookup using subject name to find slug
+          const { apiRequest } = await import('../../services/queryClient');
+          const subjects = await apiRequest('/api/subjects');
+          const subject = subjects.find((s: any) => s.name === subjectName);
+          
+          if (subject) {
+            // Try database-driven icon
+            const { iconService } = await import('../../services/icon-service');
+            const dbIcon = await iconService.getIconForSubject(subject.slug);
+            
+            if (dbIcon) {
+              console.log(`✅ Database icon resolved: "${subjectName}" -> "${dbIcon.id}"`);
+              setResolvedIcon(dbIcon.id);
+              return;
+            }
+          }
+          
+          // Fallback to hardcoded mapping
+          const hardcodedIcon = useSubjectIconName(subjectName);
+          console.log(`⚡ Fallback icon resolved: "${subjectName}" -> "${hardcodedIcon}"`);
+          setResolvedIcon(hardcodedIcon);
+          
+        } catch (error) {
+          console.warn(`⚠️ Icon resolution failed for "${subjectName}":`, error);
+          setResolvedIcon(fallback);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      
+      resolveIcon();
+    }, [subjectName, fallback]);
+    
+    if (isLoading) {
+      return (
+        <div 
+          ref={ref} 
+          className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${props.className || 'w-6 h-6'}`}
+          style={props.style}
+        />
+      );
+    }
+    
     return (
       <Icon
         ref={ref}
-        name={iconName || fallback}
+        name={resolvedIcon}
         fallback={fallback}
         {...props}
       />
@@ -169,6 +220,35 @@ export const StatusIcon = forwardRef<SVGSVGElement, StatusIconProps>(
 StatusIcon.displayName = 'StatusIcon';
 
 // Helper hook to get subject icon name - always returns a string
+// Database-driven icon resolution hook
+function useSubjectIconFromDatabase(subjectSlug: string): string | null {
+  const [databaseIcon, setDatabaseIcon] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  
+  React.useEffect(() => {
+    async function fetchIcon() {
+      if (!subjectSlug) return;
+      
+      setIsLoading(true);
+      try {
+        const { iconService } = await import('../../services/icon-service');
+        const icon = await iconService.getIconForSubject(subjectSlug);
+        setDatabaseIcon(icon?.id || null);
+      } catch (error) {
+        console.warn('Failed to fetch database icon:', error);
+        setDatabaseIcon(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchIcon();
+  }, [subjectSlug]);
+  
+  return databaseIcon;
+}
+
+// Fallback to hardcoded mapping if database lookup fails
 function useSubjectIconName(subjectName: string): string {
   // Enhanced mapping with exact database names and pattern matching
   const subjectIconMap: Record<string, string> = {
