@@ -33,35 +33,15 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  // Create an AbortController for timeout handling
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort(); // Fixed: Don't pass string argument to avoid raw string rejections
-  }, 30000); // 30 second timeout
+  const res = await fetch(url, {
+    method,
+    headers,
+    body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
+  });
 
-  try {
-    const res = await fetch(url, {
-      method,
-      headers,
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-    await throwIfResNotOk(res);
-    return res;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    
-    // Handle timeout errors gracefully without showing error dialogs
-    if (error.name === 'AbortError') {
-      console.warn('Request timed out:', url);
-      throw new Error('Request timeout - please try again');
-    }
-    
-    throw error;
-  }
+  await throwIfResNotOk(res);
+  return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -70,37 +50,16 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Create an AbortController for timeout handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort(); // Fixed: Don't pass string argument to avoid raw string rejections
-    }, 30000); // 30 second timeout
+    const res = await fetch(queryKey[0] as string, {
+      credentials: "include",
+    });
 
-    try {
-      const res = await fetch(queryKey[0] as string, {
-        credentials: "include",
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-        return null;
-      }
-
-      await throwIfResNotOk(res);
-      return await res.json();
-    } catch (error) {
-      clearTimeout(timeoutId);
-      
-      // Handle timeout errors gracefully without showing error dialogs
-      if (error.name === 'AbortError') {
-        console.warn('Query timed out:', queryKey[0]);
-        throw new Error('Request timeout - please try again');
-      }
-      
-      throw error;
+    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+      return null;
     }
+
+    await throwIfResNotOk(res);
+    return await res.json();
   };
 
 export const queryClient = new QueryClient({

@@ -26,8 +26,6 @@ import AuthCallback from "./features/auth/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
-import { useEffect } from "react";
-import { useToast } from "./features/shared/hooks/use-toast";
 
 function Router() {
   return (
@@ -70,73 +68,6 @@ function Router() {
   );
 }
 
-function ErrorHandler() {
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled Promise rejection:', event.reason);
-      
-      // Prevent the default behavior for managed errors
-      event.preventDefault();
-      
-      // Enhanced filtering for all types of timeout and network errors
-      const isTimeoutError = event.reason === 'Timeout' || 
-                           (event.reason && event.reason.message === 'Timeout') ||
-                           (typeof event.reason === 'string' && event.reason.includes('timeout')) ||
-                           (typeof event.reason === 'string' && event.reason.includes('Timeout')) ||
-                           (typeof event.reason === 'string' && event.reason.includes('Request timeout'));
-      
-      const isNetworkError = event.reason && typeof event.reason === 'object' && 
-                           (event.reason.name === 'AbortError' || 
-                            event.reason.name === 'NetworkError' ||
-                            event.reason.name === 'TimeoutError' ||
-                            event.reason.code === 'TIMEOUT');
-      
-      // Only show toast for actual errors, not for cancelled operations, timeouts, or network issues
-      if (!isTimeoutError && !isNetworkError && event.reason && typeof event.reason === 'object') {
-        const errorMessage = event.reason.message || 'An unexpected error occurred';
-        // Don't show error toasts for common network issues
-        if (!errorMessage.includes('fetch') && 
-            !errorMessage.includes('Failed to fetch') && 
-            !errorMessage.includes('timeout') &&
-            !errorMessage.includes('Timeout') &&
-            !errorMessage.includes('abort') &&
-            !errorMessage.includes('network')) {
-          toast({
-            title: "Error",
-            description: "An unexpected error occurred. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }
-    };
-
-    const handleError = (event: ErrorEvent) => {
-      console.error('Global error:', event.error);
-      
-      // Only show toast for critical errors, filter out common harmless errors
-      if (event.error && !event.error.message?.includes('ResizeObserver') && !event.error.message?.includes('Non-Error promise rejection')) {
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred. Please refresh the page.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    window.addEventListener('error', handleError);
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.removeEventListener('error', handleError);
-    };
-  }, [toast]);
-
-  return null;
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -146,7 +77,6 @@ function App() {
             <QuestionLimitProvider>
               <TooltipProvider>
                 <Toaster />
-                <ErrorHandler />
                 <Router />
                 <CookieConsentBanner />
               </TooltipProvider>

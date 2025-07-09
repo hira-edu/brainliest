@@ -139,7 +139,7 @@ export async function getQuestionHelp(questionText: string, options: string[], s
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Fixed: Enhanced prompt with better structure and validation
     const prompt = `You are an expert tutor helping students prepare for ${subject.trim()} certification exams. 
@@ -205,7 +205,7 @@ export async function explainAnswer(
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Fixed: Enhanced prompt with better structure and validation
     const prompt = `You are an expert ${subject.trim()} instructor explaining why an answer is correct or incorrect.

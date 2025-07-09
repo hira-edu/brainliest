@@ -95,16 +95,12 @@ export class TrendingService {
       // Fixed: Use UTC date for consistent timezone handling
       const today = this.getUTCDate();
 
-      const snapshot = await Promise.race([
-        db.select()
-          .from(dailyTrendingSnapshot)
-          .where(gte(dailyTrendingSnapshot.date, today))
-          .orderBy(desc(dailyTrendingSnapshot.createdAt))
-          .limit(1),
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Database query timeout')), 20000);
-        })
-      ]) as typeof dailyTrendingSnapshot.$inferSelect[];
+      const snapshot = await db
+        .select()
+        .from(dailyTrendingSnapshot)
+        .where(gte(dailyTrendingSnapshot.date, today))
+        .orderBy(desc(dailyTrendingSnapshot.createdAt))
+        .limit(1);
 
       if (snapshot.length > 0) {
         // Fixed: Safe JSON parsing with try-catch to handle malformed data
@@ -228,44 +224,32 @@ export class TrendingService {
    * Fixed: Enhanced fallback trending using exam and question counts for better popularity metrics
    */
   private static async getFallbackTrending(limit: number): Promise<TrendingCertification[]> {
-    try {
-      // Fixed: Use examCount and questionCount for better popularity scoring with timeout handling
-      const certificationSubjects = await Promise.race([
-        db.select()
-          .from(subjects)
-          .where(sql`name ILIKE ANY(ARRAY['%pmp%', '%aws%', '%comptia%', '%azure%', '%cisco%', '%google cloud%', '%certified%', '%certification%'])`)
-          .orderBy(desc(sql`(exam_count + question_count)`)) // Order by actual content volume
-          .limit(limit * 2),
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Database query timeout')), 20000);
-        })
-      ]) as typeof subjects.$inferSelect[];
+    // Fixed: Use examCount and questionCount for better popularity scoring
+    const certificationSubjects = await db
+      .select()
+      .from(subjects)
+      .where(sql`name ILIKE ANY(ARRAY['%pmp%', '%aws%', '%comptia%', '%azure%', '%cisco%', '%google cloud%', '%certified%', '%certification%'])`)
+      .orderBy(desc(sql`(exam_count + question_count)`)) // Order by actual content volume
+      .limit(limit * 2);
 
-      // Fixed: Use actual metrics instead of random values for trending data
-      return certificationSubjects.slice(0, limit).map((subject, index) => {
-        // Base trending score on actual content metrics
-        const contentScore = (subject.examCount || 0) + (subject.questionCount || 0);
-        const normalizedScore = Math.max(10, Math.min(100, contentScore * 2));
-        
-        // Generate realistic but deterministic growth based on content
-        const growth = Math.max(5, Math.min(25, 20 - (index * 2) + (contentScore % 8)));
-        
-        return {
-          slug: subject.slug,
-          name: subject.name,
-          trend: `+${growth}%`,
-          searchTerm: subject.name.toLowerCase().replace(/\s+/g, ' '),
-          trendingScore: normalizedScore,
-          weeklyGrowth: growth,
-        };
-      });
-    } catch (error) {
-      console.error('Error in getFallbackTrending:', error);
-      this.logError(error, 'getFallbackTrending');
+    // Fixed: Use actual metrics instead of random values for trending data
+    return certificationSubjects.slice(0, limit).map((subject, index) => {
+      // Base trending score on actual content metrics
+      const contentScore = (subject.examCount || 0) + (subject.questionCount || 0);
+      const normalizedScore = Math.max(10, Math.min(100, contentScore * 2));
       
-      // Return empty array on database timeout to prevent unhandled Promise rejections
-      return [];
-    }
+      // Generate realistic but deterministic growth based on content
+      const growth = Math.max(5, Math.min(25, 20 - (index * 2) + (contentScore % 8)));
+      
+      return {
+        slug: subject.slug,
+        name: subject.name,
+        trend: `+${growth}%`,
+        searchTerm: subject.name.toLowerCase().replace(/\s+/g, ' '),
+        trendingScore: normalizedScore,
+        weeklyGrowth: growth,
+      };
+    });
   }
 
   /**
