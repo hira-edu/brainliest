@@ -4,15 +4,24 @@
 
 The error you're getting is because you need to build the project first on your local machine. Here's exactly what to do:
 
-### Step 1: Build the project
+### Step 1: Navigate to your project directory
 ```bash
-# In your brainliest directory, run:
+cd /Users/umairliaquat/Documents/GitHub/brainliest
+```
+
+### Step 2: Build the project
+```bash
+# This will create the missing dist/index.js file
 node scripts/build.js
 ```
 
-This will create the `dist/index.js` file that's missing.
+### Step 3: Verify the build worked
+```bash
+# Optional: Check if everything is set up correctly
+node scripts/verify-build.js
+```
 
-### Step 2: Run the production server
+### Step 4: Run the production server
 ```bash
 npm start
 ```
@@ -53,8 +62,31 @@ SESSION_SECRET=dev-session-secret-min-32-chars
 If you still get errors:
 
 1. **Clean build**: Delete `dist/` folder and rebuild
+   ```bash
+   rm -rf dist/
+   node scripts/build.js
+   ```
+
 2. **Dependencies**: Run `npm install` to ensure all packages are installed
+   ```bash
+   npm install
+   ```
+
 3. **Node version**: Ensure you're using Node.js 18+ with ES modules support
+   ```bash
+   node --version  # Should be 18.0.0 or higher
+   ```
+
+4. **Permissions**: Make sure scripts are executable
+   ```bash
+   chmod +x scripts/build.js scripts/verify-build.js
+   ```
+
+5. **Path issues**: Make sure you're in the right directory
+   ```bash
+   pwd  # Should show your brainliest project directory
+   ls   # Should show package.json, server/, client/, etc.
+   ```
 
 ## Production Deployment
 
