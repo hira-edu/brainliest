@@ -163,7 +163,7 @@ export default function ExamSelection() {
         <SEOHead
           title={`${subject.name} Exams - Brainliest`}
           description={`Practice exams for ${subject.name}. ${subject.description}`}
-          keywords={`${subject.name}, exams, practice tests, certification`}
+          keywords={[subject.name, 'exams', 'practice tests', 'certification']}
         />
         <SubjectHeader 
           subject={subject} 
@@ -218,7 +218,7 @@ export default function ExamSelection() {
         <SEOHead
           title={`${subject.name} Exams - Brainliest`}
           description={`Practice exams for ${subject.name}. ${subject.description || 'Comprehensive practice tests and certification preparation.'}`}
-          keywords={`${subject.name}, exams, practice tests, certification, ${exams?.map(e => e.title).join(', ') || ''}`}
+          keywords={[subject.name, 'exams', 'practice tests', 'certification', ...(exams?.map(e => e.title) || [])]}
         />
       )}
 

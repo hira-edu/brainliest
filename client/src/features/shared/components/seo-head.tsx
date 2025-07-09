@@ -142,7 +142,7 @@ export default function SEOHead({
 
     // Update meta tags
     updateMetaTag('description', seoData.description);
-    updateMetaTag('keywords', seoData.keywords.join(', '));
+    updateMetaTag('keywords', Array.isArray(seoData.keywords) ? seoData.keywords.join(', ') : '');
     
     // Update canonical link
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
