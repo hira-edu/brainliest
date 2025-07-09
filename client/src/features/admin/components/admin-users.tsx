@@ -34,6 +34,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 // Services and hooks
 import { useToast } from "../../shared/hooks/use-toast";
 import { apiRequest, queryClient } from "../../../services/queryClient";
+import { useAdmin } from "./AdminContext";
 
 // Types
 import type { User } from "../../../../../shared/schema";
@@ -68,15 +69,8 @@ interface ModalState {
 // Fixed: Safe browser environment check utility
 const isBrowser = (): boolean => typeof window !== 'undefined';
 
-// Fixed: Safe localStorage access
-const getAdminToken = (): string | null => {
-  if (!isBrowser()) return null;
-  try {
-    return localStorage.getItem('adminToken') || localStorage.getItem('admin_token');
-  } catch {
-    return null;
-  }
-};
+// Fixed: Use AdminContext for token access instead of direct localStorage
+// Removed getAdminToken function - now using useAdmin hook
 
 // Fixed: Enhanced form schemas with proper validation
 const createUserSchema = z.object({
@@ -468,6 +462,7 @@ function PaginationControls({
 export default function AdminUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { getToken } = useAdmin(); // Fixed: Use AdminContext for token access
   
   // Fixed: Consolidated state management
   const [filters, setFilters] = useState<UserFilters>({
@@ -606,7 +601,7 @@ export default function AdminUsers() {
   // Fixed: Enhanced create user mutation with proper error handling
   const createUserMutation = useMutation({
     mutationFn: async (userData: CreateUserFormData): Promise<User> => {
-      const adminToken = getAdminToken();
+      const adminToken = getToken();
       if (!adminToken) {
         throw new Error('Admin authentication required');
       }
@@ -637,7 +632,7 @@ export default function AdminUsers() {
   // Fixed: Enhanced update user mutation
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, userData }: { userId: number; userData: UpdateUserFormData }): Promise<User> => {
-      const adminToken = getAdminToken();
+      const adminToken = getToken();
       if (!adminToken) {
         throw new Error('Admin authentication required');
       }
@@ -667,7 +662,7 @@ export default function AdminUsers() {
   // Fixed: Enhanced ban user mutation
   const banUserMutation = useMutation({
     mutationFn: async ({ userId, reason }: { userId: number; reason: string }): Promise<void> => {
-      const adminToken = getAdminToken();
+      const adminToken = getToken();
       if (!adminToken) {
         throw new Error('Admin authentication required');
       }
@@ -695,7 +690,7 @@ export default function AdminUsers() {
   // Fixed: Enhanced unban user mutation
   const unbanUserMutation = useMutation({
     mutationFn: async (userId: number): Promise<void> => {
-      const adminToken = getAdminToken();
+      const adminToken = getToken();
       if (!adminToken) {
         throw new Error('Admin authentication required');
       }
@@ -722,7 +717,7 @@ export default function AdminUsers() {
   // Fixed: Enhanced delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number): Promise<void> => {
-      const adminToken = getAdminToken();
+      const adminToken = getToken();
       if (!adminToken) {
         throw new Error('Admin authentication required');
       }
@@ -750,7 +745,7 @@ export default function AdminUsers() {
   // Fixed: Enhanced CSV export with proper error handling
   const handleCsvExport = useCallback(async () => {
     try {
-      const adminToken = getAdminToken();
+      const adminToken = getToken();
       if (!adminToken) {
         throw new Error('Admin authentication required');
       }
@@ -788,7 +783,7 @@ export default function AdminUsers() {
     } catch (error) {
       handleMutationError(error, toast, "Failed to export users");
     }
-  }, [filters, toast]);
+  }, [filters, toast, getToken]);
 
   // Fixed: Form submission handlers with proper null checks
   const handleCreateUser = useCallback(async (data: CreateUserFormData) => {
