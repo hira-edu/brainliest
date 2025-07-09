@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const categories = pgTable("categories", {
-  id: serial("id").primaryKey(),
+  slug: text("slug").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
@@ -14,8 +14,8 @@ export const categories = pgTable("categories", {
 });
 
 export const subcategories = pgTable("subcategories", {
-  id: serial("id").primaryKey(),
-  categoryId: integer("category_id").notNull(),
+  slug: text("slug").primaryKey(),
+  categorySlug: text("category_slug").notNull(),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
@@ -31,8 +31,8 @@ export const subjects = pgTable("subjects", {
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
-  categoryId: integer("category_id"),
-  subcategoryId: integer("subcategory_id"),
+  categorySlug: text("category_slug"),
+  subcategorySlug: text("subcategory_slug"),
   examCount: integer("exam_count").default(0),
   questionCount: integer("question_count").default(0),
 });
@@ -295,12 +295,10 @@ export const dailyTrendingSnapshot = pgTable("daily_trending_snapshot", {
 });
 
 export const insertCategorySchema = createInsertSchema(categories, {
-  id: undefined,
   createdAt: undefined,
 });
 
 export const insertSubcategorySchema = createInsertSchema(subcategories, {
-  id: undefined,
   createdAt: undefined,
 });
 

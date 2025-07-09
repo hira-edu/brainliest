@@ -543,8 +543,8 @@ export default function AdminSimple() {
     });
 
     const updateCategoryMutation = useMutation({
-      mutationFn: ({ id, data }: { id: number; data: z.infer<typeof insertCategorySchema> }) => 
-        apiRequest("PUT", `/api/categories/${id}`, data),
+      mutationFn: ({ slug, data }: { slug: string; data: z.infer<typeof insertCategorySchema> }) => 
+        apiRequest("PUT", `/api/categories/${slug}`, data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
         editCategoryForm.reset();
@@ -559,7 +559,7 @@ export default function AdminSimple() {
     });
 
     const deleteCategoryMutation = useMutation({
-      mutationFn: (id: number) => apiRequest("DELETE", `/api/categories/${id}`),
+      mutationFn: (slug: string) => apiRequest("DELETE", `/api/categories/${slug}`),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
         toast({ title: "Category deleted successfully!" });
@@ -576,7 +576,7 @@ export default function AdminSimple() {
 
     const onEditSubmit = (data: z.infer<typeof insertCategorySchema>) => {
       if (editingCategory) {
-        updateCategoryMutation.mutate({ id: editingCategory.id, data });
+        updateCategoryMutation.mutate({ slug: editingCategory.slug, data });
       }
     };
 
@@ -704,7 +704,7 @@ export default function AdminSimple() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => deleteCategoryMutation.mutate(category.id)}
+                      onClick={() => deleteCategoryMutation.mutate(category.slug)}
                       disabled={deleteCategoryMutation.isPending}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -796,7 +796,7 @@ export default function AdminSimple() {
     const subcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
       resolver: zodResolver(insertSubcategorySchema),
       defaultValues: {
-        categoryId: 0,
+        categorySlug: "",
         name: "",
         description: "",
         icon: "",
@@ -809,7 +809,7 @@ export default function AdminSimple() {
     const editSubcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
       resolver: zodResolver(insertSubcategorySchema),
       defaultValues: {
-        categoryId: 0,
+        categorySlug: "",
         name: "",
         description: "",
         icon: "",
@@ -820,8 +820,8 @@ export default function AdminSimple() {
     });
 
     const updateSubcategoryMutation = useMutation({
-      mutationFn: ({ id, data }: { id: number; data: z.infer<typeof insertSubcategorySchema> }) => 
-        apiRequest("PUT", `/api/subcategories/${id}`, data),
+      mutationFn: ({ slug, data }: { slug: string; data: z.infer<typeof insertSubcategorySchema> }) => 
+        apiRequest("PUT", `/api/subcategories/${slug}`, data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
         editSubcategoryForm.reset();
@@ -836,7 +836,7 @@ export default function AdminSimple() {
     });
 
     const deleteSubcategoryMutation = useMutation({
-      mutationFn: (id: number) => apiRequest("DELETE", `/api/subcategories/${id}`),
+      mutationFn: (slug: string) => apiRequest("DELETE", `/api/subcategories/${slug}`),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subcategories"] });
         toast({ title: "Subcategory deleted successfully!" });
@@ -853,14 +853,14 @@ export default function AdminSimple() {
 
     const onEditSubmit = (data: z.infer<typeof insertSubcategorySchema>) => {
       if (editingSubcategory) {
-        updateSubcategoryMutation.mutate({ id: editingSubcategory.id, data });
+        updateSubcategoryMutation.mutate({ slug: editingSubcategory.slug, data });
       }
     };
 
     const handleEditSubcategory = (subcategory: Subcategory) => {
       setEditingSubcategory(subcategory);
       editSubcategoryForm.reset({
-        categoryId: subcategory.categoryId,
+        categorySlug: subcategory.categorySlug,
         name: subcategory.name,
         description: subcategory.description || "",
         icon: subcategory.icon || "",
@@ -893,19 +893,19 @@ export default function AdminSimple() {
                 <form onSubmit={subcategoryForm.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={subcategoryForm.control}
-                    name="categoryId"
+                    name="categorySlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Parent Category</FormLabel>
                         <FormControl>
                           <SearchableSelect
                             options={categories?.map((category) => ({
-                              value: category.id.toString(),
+                              value: category.slug,
                               label: category.name,
                             })) || []}
-                            value={field.value?.toString() || ""}
+                            value={field.value || ""}
                             onValueChange={(value) => {
-                              field.onChange(value ? parseInt(value) : undefined);
+                              field.onChange(value);
                             }}
                             placeholder="Select a category"
                             searchPlaceholder="Search categories..."
@@ -988,9 +988,9 @@ export default function AdminSimple() {
           <CardContent>
             <div className="space-y-4">
               {subcategories?.map((subcategory) => {
-                const parentCategory = categories?.find(cat => cat.id === subcategory.categoryId);
+                const parentCategory = categories?.find(cat => cat.slug === subcategory.categorySlug);
                 return (
-                  <div key={subcategory.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div key={subcategory.slug} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       {subcategory.icon && <span className={subcategory.icon}></span>}
                       <div>
@@ -1012,7 +1012,7 @@ export default function AdminSimple() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => deleteSubcategoryMutation.mutate(subcategory.id)}
+                        onClick={() => deleteSubcategoryMutation.mutate(subcategory.slug)}
                         disabled={deleteSubcategoryMutation.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1035,18 +1035,18 @@ export default function AdminSimple() {
               <form onSubmit={editSubcategoryForm.handleSubmit(onEditSubmit)} className="space-y-4">
                 <FormField
                   control={editSubcategoryForm.control}
-                  name="categoryId"
+                  name="categorySlug"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Parent Category</FormLabel>
                       <FormControl>
                         <SearchableSelect
                           options={categories?.map((category) => ({
-                            value: category.id.toString(),
+                            value: category.slug,
                             label: category.name,
                           })) || []}
-                          value={field.value?.toString()}
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                          value={field.value || ""}
+                          onValueChange={(value) => field.onChange(value)}
                           placeholder="Select a category"
                           searchPlaceholder="Search categories..."
                           emptyText="No categories found"

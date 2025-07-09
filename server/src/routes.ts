@@ -179,14 +179,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/categories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.put("/api/categories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'category ID');
+      const slug = sanitizeString(req.params.slug as string);
       const validation = insertCategorySchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid category data", errors: validation.error.errors });
       }
-      const category = await storage.updateCategory(id, validation.data);
+      const category = await storage.updateCategory(slug, validation.data);
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }
@@ -197,10 +197,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/categories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.delete("/api/categories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'category ID');
-      const deleted = await storage.deleteCategory(id);
+      const slug = sanitizeString(req.params.slug as string);
+      const deleted = await storage.deleteCategory(slug);
       if (!deleted) {
         return res.status(404).json({ message: "Category not found" });
       }
@@ -236,14 +236,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/subcategories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.put("/api/subcategories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'subcategory ID');
+      const slug = sanitizeString(req.params.slug as string);
       const validation = insertSubcategorySchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ message: "Invalid subcategory data", errors: validation.error.errors });
       }
-      const subcategory = await storage.updateSubcategory(id, validation.data);
+      const subcategory = await storage.updateSubcategory(slug, validation.data);
       if (!subcategory) {
         return res.status(404).json({ message: "Subcategory not found" });
       }
@@ -254,10 +254,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/subcategories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.delete("/api/subcategories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'subcategory ID');
-      const deleted = await storage.deleteSubcategory(id);
+      const slug = sanitizeString(req.params.slug as string);
+      const deleted = await storage.deleteSubcategory(slug);
       if (!deleted) {
         return res.status(404).json({ message: "Subcategory not found" });
       }

@@ -54,7 +54,7 @@ function slugify(text: string): string {
 }
 
 // Generate unique slug by checking for conflicts and appending numbers
-async function generateUniqueSlug(baseSlug: string, table: 'subjects' | 'exams', excludeSlug?: string): Promise<string> {
+async function generateUniqueSlug(baseSlug: string, table: 'subjects' | 'exams' | 'categories' | 'subcategories', excludeSlug?: string): Promise<string> {
   let slug = baseSlug;
   let counter = 1;
   
@@ -63,8 +63,12 @@ async function generateUniqueSlug(baseSlug: string, table: 'subjects' | 'exams',
     let query: any;
     if (table === 'subjects') {
       query = db.select({ slug: subjects.slug }).from(subjects).where(eq(subjects.slug, slug));
-    } else {
+    } else if (table === 'exams') {
       query = db.select({ slug: exams.slug }).from(exams).where(eq(exams.slug, slug));
+    } else if (table === 'categories') {
+      query = db.select({ slug: categories.slug }).from(categories).where(eq(categories.slug, slug));
+    } else {
+      query = db.select({ slug: subcategories.slug }).from(subcategories).where(eq(subcategories.slug, slug));
     }
     
     const existing = await query;
@@ -84,19 +88,21 @@ async function generateUniqueSlug(baseSlug: string, table: 'subjects' | 'exams',
 export interface IStorage {
   // Categories
   getCategories(): Promise<Category[]>;
+  getCategory(slug: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
-  updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined>;
-  deleteCategory(id: number): Promise<boolean>;
+  updateCategory(slug: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(slug: string): Promise<boolean>;
 
   // Subcategories
   getSubcategories(): Promise<Subcategory[]>;
+  getSubcategory(slug: string): Promise<Subcategory | undefined>;
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
-  updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
-  deleteSubcategory(id: number): Promise<boolean>;
+  updateSubcategory(slug: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
+  deleteSubcategory(slug: string): Promise<boolean>;
 
   // Subjects
   getSubjects(): Promise<Subject[]>;
-  getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }>;
+  getSubjectsPaginated(offset: number, limit: number, search?: string, categorySlug?: string): Promise<{ subjects: Subject[], total: number }>;
   getSubject(slug: string): Promise<Subject | undefined>;
   getSubjectBySlug(slug: string): Promise<Subject | undefined>;
   createSubject(subject: InsertSubject): Promise<Subject>;
@@ -176,22 +182,35 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(categories);
   }
 
+  async getCategory(slug: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
+    return category;
+  }
+
   async createCategory(category: InsertCategory): Promise<Category> {
+    // Generate slug if not provided
+    if (!category.slug) {
+      category.slug = await generateUniqueSlug(slugify(category.name), 'categories');
+    }
     const [newCategory] = await db.insert(categories).values(category).returning();
     return newCategory;
   }
 
-  async updateCategory(id: number, category: Partial<InsertCategory>): Promise<Category | undefined> {
+  async updateCategory(slug: string, category: Partial<InsertCategory>): Promise<Category | undefined> {
+    // Generate new slug if name is being updated
+    if (category.name && !category.slug) {
+      category.slug = await generateUniqueSlug(slugify(category.name), 'categories', slug);
+    }
     const [updatedCategory] = await db
       .update(categories)
       .set(category)
-      .where(eq(categories.id, id))
+      .where(eq(categories.slug, slug))
       .returning();
     return updatedCategory;
   }
 
-  async deleteCategory(id: number): Promise<boolean> {
-    const result = await db.delete(categories).where(eq(categories.id, id));
+  async deleteCategory(slug: string): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.slug, slug));
     return (result.rowCount || 0) > 0;
   }
 
@@ -200,22 +219,35 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subcategories);
   }
 
+  async getSubcategory(slug: string): Promise<Subcategory | undefined> {
+    const [subcategory] = await db.select().from(subcategories).where(eq(subcategories.slug, slug));
+    return subcategory;
+  }
+
   async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
+    // Generate slug if not provided
+    if (!subcategory.slug) {
+      subcategory.slug = await generateUniqueSlug(slugify(subcategory.name), 'subcategories');
+    }
     const [newSubcategory] = await db.insert(subcategories).values(subcategory).returning();
     return newSubcategory;
   }
 
-  async updateSubcategory(id: number, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
+  async updateSubcategory(slug: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
+    // Generate new slug if name is being updated
+    if (subcategory.name && !subcategory.slug) {
+      subcategory.slug = await generateUniqueSlug(slugify(subcategory.name), 'subcategories', slug);
+    }
     const [updatedSubcategory] = await db
       .update(subcategories)
       .set(subcategory)
-      .where(eq(subcategories.id, id))
+      .where(eq(subcategories.slug, slug))
       .returning();
     return updatedSubcategory;
   }
 
-  async deleteSubcategory(id: number): Promise<boolean> {
-    const result = await db.delete(subcategories).where(eq(subcategories.id, id));
+  async deleteSubcategory(slug: string): Promise<boolean> {
+    const result = await db.delete(subcategories).where(eq(subcategories.slug, slug));
     return (result.rowCount || 0) > 0;
   }
 
@@ -227,8 +259,8 @@ export class DatabaseStorage implements IStorage {
       description: subjects.description,
       icon: subjects.icon,
       color: subjects.color,
-      categoryId: subjects.categoryId,
-      subcategoryId: subjects.subcategoryId,
+      categorySlug: subjects.categorySlug,
+      subcategorySlug: subjects.subcategorySlug,
       examCount: subjects.examCount,
       questionCount: subjects.questionCount
     }).from(subjects);
@@ -241,8 +273,8 @@ export class DatabaseStorage implements IStorage {
       description: subjects.description,
       icon: subjects.icon,
       color: subjects.color,
-      categoryId: subjects.categoryId,
-      subcategoryId: subjects.subcategoryId,
+      categorySlug: subjects.categorySlug,
+      subcategorySlug: subjects.subcategorySlug,
       examCount: subjects.examCount,
       questionCount: subjects.questionCount
     }).from(subjects).where(eq(subjects.slug, slug));
@@ -969,15 +1001,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // PERFORMANCE OPTIMIZED: Paginated methods with efficient queries
-  async getSubjectsPaginated(offset: number, limit: number, search?: string, categoryId?: number): Promise<{ subjects: Subject[], total: number }> {
+  async getSubjectsPaginated(offset: number, limit: number, search?: string, categorySlug?: string): Promise<{ subjects: Subject[], total: number }> {
     let query = db.select({
       slug: subjects.slug,
       name: subjects.name,
       description: subjects.description,
       icon: subjects.icon,
       color: subjects.color,
-      categoryId: subjects.categoryId,
-      subcategoryId: subjects.subcategoryId,
+      categorySlug: subjects.categorySlug,
+      subcategorySlug: subjects.subcategorySlug,
       examCount: subjects.examCount,
       questionCount: subjects.questionCount
     }).from(subjects);
@@ -987,8 +1019,8 @@ export class DatabaseStorage implements IStorage {
       // FIXED: searchVector column doesn't exist, use ILIKE search instead
       conditions.push(ilike(subjects.name, `%${search}%`));
     }
-    if (categoryId) {
-      conditions.push(eq(subjects.categoryId, categoryId));
+    if (categorySlug) {
+      conditions.push(eq(subjects.categorySlug, categorySlug));
     }
 
     if (conditions.length > 0) {
