@@ -336,12 +336,12 @@ export default function AdminSimple() {
   const [selectedExamFilter, setSelectedExamFilter] = useState<string>("all");
   
   // Category and subcategory filters for subjects
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<number | null>(null);
-  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState<number | null>(null);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
+  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState<string | null>(null);
   
   // Category and subcategory filters for exams
-  const [selectedExamCategoryFilter, setSelectedExamCategoryFilter] = useState<number | null>(null);
-  const [selectedExamSubcategoryFilter, setSelectedExamSubcategoryFilter] = useState<number | null>(null);
+  const [selectedExamCategoryFilter, setSelectedExamCategoryFilter] = useState<string | null>(null);
+  const [selectedExamSubcategoryFilter, setSelectedExamSubcategoryFilter] = useState<string | null>(null);
 
   // PERFORMANCE OPTIMIZATION: Memoized query options
   const subjectsQuery = useQuery<Subject[]>({
@@ -712,7 +712,7 @@ export default function AdminSimple() {
           <CardContent>
             <div className="space-y-4">
               {categories?.map((category) => (
-                <div key={category.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={category.slug} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     {category.icon && <span className={category.icon}></span>}
                     <div>
@@ -1171,8 +1171,8 @@ export default function AdminSimple() {
         name: "",
         description: "",
         icon: "",
-        categoryId: undefined,
-        subcategoryId: undefined,
+        categorySlug: "",
+        subcategorySlug: "",
       }
     });
 
@@ -1195,14 +1195,14 @@ export default function AdminSimple() {
         name: "",
         description: "",
         icon: "",
-        categoryId: undefined,
-        subcategoryId: undefined,
+        categorySlug: "",
+        subcategorySlug: "",
       }
     });
 
     const updateSubjectMutation = useMutation({
-      mutationFn: async ({ id, data }: { id: number; data: InsertSubject }) => {
-        await apiRequest("PUT", `/api/subjects/${id}`, data);
+      mutationFn: async ({ slug, data }: { slug: string; data: InsertSubject }) => {
+        await apiRequest("PUT", `/api/subjects/${slug}`, data);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
@@ -1214,8 +1214,8 @@ export default function AdminSimple() {
     });
 
     const deleteSubjectMutation = useMutation({
-      mutationFn: async (id: number) => {
-        await apiRequest("DELETE", `/api/subjects/${id}`);
+      mutationFn: async (slug: string) => {
+        await apiRequest("DELETE", `/api/subjects/${slug}`);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
@@ -1230,7 +1230,7 @@ export default function AdminSimple() {
 
     const onEditSubmit = (data: InsertSubject) => {
       if (editingSubject) {
-        updateSubjectMutation.mutate({ id: editingSubject.id, data });
+        updateSubjectMutation.mutate({ slug: editingSubject.slug, data });
       }
     };
 
@@ -1240,8 +1240,8 @@ export default function AdminSimple() {
         name: subject.name,
         description: subject.description || "",
         icon: subject.icon || "",
-        categoryId: subject.categoryId || undefined,
-        subcategoryId: subject.subcategoryId || undefined,
+        categorySlug: subject.categorySlug || "",
+        subcategorySlug: subject.subcategorySlug || "",
       });
       setIsEditDialogOpen(true);
     };
@@ -1297,18 +1297,18 @@ export default function AdminSimple() {
                   />
                   <FormField
                     control={subjectForm.control}
-                    name="categoryId"
+                    name="categorySlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category</FormLabel>
                         <div className="flex items-center space-x-2">
                           <SearchableSelect
                             options={categories?.map((category) => ({
-                              value: category.id.toString(),
+                              value: category.slug,
                               label: category.name,
                             })) || []}
-                            value={field.value?.toString() || ""}
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            value={field.value || ""}
+                            onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a category"
                             searchPlaceholder="Search categories..."
                             emptyText="No categories found"
@@ -1356,18 +1356,18 @@ export default function AdminSimple() {
                   />
                   <FormField
                     control={subjectForm.control}
-                    name="subcategoryId"
+                    name="subcategorySlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subcategory</FormLabel>
                         <div className="flex items-center space-x-2">
                           <SearchableSelect
                             options={subcategories?.map((subcategory) => ({
-                              value: subcategory.id.toString(),
+                              value: subcategory.slug,
                               label: subcategory.name,
                             })) || []}
-                            value={field.value?.toString() || ""}
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            value={field.value || ""}
+                            onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subcategory"
                             searchPlaceholder="Search subcategories..."
                             emptyText="No subcategories found"
@@ -1497,25 +1497,24 @@ export default function AdminSimple() {
                   />
                   <FormField
                     control={editSubjectForm.control}
-                    name="categoryId"
+                    name="categorySlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category</FormLabel>
                         <div className="flex items-center space-x-2">
-                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categories?.map((category) => (
-                                <SelectItem key={category.id} value={category.id.toString()}>
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect
+                            options={categories?.map((category) => ({
+                              value: category.slug,
+                              label: category.name,
+                            })) || []}
+                            value={field.value || ""}
+                            onValueChange={(value) => field.onChange(value || "")}
+                            placeholder="Select a category"
+                            searchPlaceholder="Search categories..."
+                            emptyText="No categories found"
+                            clearable
+                            className="flex-1"
+                          />
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" type="button">
@@ -1557,25 +1556,24 @@ export default function AdminSimple() {
                   />
                   <FormField
                     control={editSubjectForm.control}
-                    name="subcategoryId"
+                    name="subcategorySlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subcategory</FormLabel>
                         <div className="flex items-center space-x-2">
-                          <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a subcategory" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {subcategories?.map((subcategory) => (
-                                <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
-                                  {subcategory.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <SearchableSelect
+                            options={subcategories?.map((subcategory) => ({
+                              value: subcategory.slug,
+                              label: subcategory.name,
+                            })) || []}
+                            value={field.value || ""}
+                            onValueChange={(value) => field.onChange(value || "")}
+                            placeholder="Select a subcategory"
+                            searchPlaceholder="Search subcategories..."
+                            emptyText="No subcategories found"
+                            clearable
+                            className="flex-1"
+                          />
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" type="button">
@@ -1674,14 +1672,14 @@ export default function AdminSimple() {
             <SearchableSelect
               options={[
                 { value: "all", label: "All Categories" },
-                ...(categories?.filter(category => category?.id && category?.name).map((category) => ({
-                  value: category.id.toString(),
+                ...(categories?.filter(category => category?.slug && category?.name).map((category) => ({
+                  value: category.slug,
                   label: category.name,
                 })) || [])
               ]}
               value={selectedCategoryFilter || "all"}
               onValueChange={(value) => {
-                setSelectedCategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedCategoryFilter(value === "all" ? null : value);
                 setSelectedSubcategoryFilter(null); // Reset subcategory when category changes
               }}
               placeholder="Filter by category"
@@ -1693,18 +1691,18 @@ export default function AdminSimple() {
                 { value: "all", label: "All Subcategories" },
                 ...(subcategories
                   ?.filter(subcategory => 
-                    subcategory?.id && 
+                    subcategory?.slug && 
                     subcategory?.name && 
-                    (!selectedCategoryFilter || subcategory.categoryId === selectedCategoryFilter)
+                    (!selectedCategoryFilter || subcategory.categorySlug === selectedCategoryFilter)
                   )
                   ?.map((subcategory) => ({
-                    value: subcategory.id.toString(),
+                    value: subcategory.slug,
                     label: subcategory.name,
                   })) || [])
               ]}
-              value={selectedSubcategoryFilter?.toString() || "all"}
+              value={selectedSubcategoryFilter || "all"}
               onValueChange={(value) => {
-                setSelectedSubcategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedSubcategoryFilter(value === "all" ? null : value);
               }}
               placeholder="Filter by subcategory"
               disabled={!selectedCategoryFilter}
@@ -1725,8 +1723,8 @@ export default function AdminSimple() {
             )}
             <Badge variant="outline">
               {subjects?.filter(subject => {
-                const matchesCategory = !selectedCategoryFilter || subject.categoryId === selectedCategoryFilter;
-                const matchesSubcategory = !selectedSubcategoryFilter || subject.subcategoryId === selectedSubcategoryFilter;
+                const matchesCategory = !selectedCategoryFilter || subject.categorySlug === selectedCategoryFilter;
+                const matchesSubcategory = !selectedSubcategoryFilter || subject.subcategorySlug === selectedSubcategoryFilter;
                 return matchesCategory && matchesSubcategory;
               }).length || 0} subjects
             </Badge>
@@ -1735,8 +1733,8 @@ export default function AdminSimple() {
 
         <div className="grid gap-4">
           {subjects?.filter(subject => {
-            const matchesCategory = !selectedCategoryFilter || subject.categoryId === selectedCategoryFilter;
-            const matchesSubcategory = !selectedSubcategoryFilter || subject.subcategoryId === selectedSubcategoryFilter;
+            const matchesCategory = !selectedCategoryFilter || subject.categorySlug === selectedCategoryFilter;
+            const matchesSubcategory = !selectedSubcategoryFilter || subject.subcategorySlug === selectedSubcategoryFilter;
             return matchesCategory && matchesSubcategory;
           }).slice((subjectsPage - 1) * subjectsPerPage, subjectsPage * subjectsPerPage).map((subject) => (
             <Card key={subject.slug} className="hover:shadow-md transition-shadow">
@@ -2174,14 +2172,14 @@ export default function AdminSimple() {
             <SearchableSelect
               options={[
                 { value: "all", label: "All Categories" },
-                ...(categories?.filter(category => category?.id && category?.name).map((category) => ({
-                  value: category.id.toString(),
+                ...(categories?.filter(category => category?.slug && category?.name).map((category) => ({
+                  value: category.slug,
                   label: category.name,
                 })) || [])
               ]}
-              value={selectedExamCategoryFilter?.toString() || "all"}
+              value={selectedExamCategoryFilter || "all"}
               onValueChange={(value) => {
-                setSelectedExamCategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedExamCategoryFilter(value === "all" ? null : value);
                 setSelectedExamSubcategoryFilter(null); // Reset subcategory when category changes
                 setSelectedSubjectFilter("all"); // Reset subject when category changes
               }}
@@ -2194,18 +2192,18 @@ export default function AdminSimple() {
                 { value: "all", label: "All Subcategories" },
                 ...(subcategories
                   ?.filter(subcategory => 
-                    subcategory?.id && 
+                    subcategory?.slug && 
                     subcategory?.name && 
-                    (!selectedExamCategoryFilter || subcategory.categoryId === selectedExamCategoryFilter)
+                    (!selectedExamCategoryFilter || subcategory.categorySlug === selectedExamCategoryFilter)
                   )
                   ?.map((subcategory) => ({
-                    value: subcategory.id.toString(),
+                    value: subcategory.slug,
                     label: subcategory.name,
                   })) || [])
               ]}
-              value={selectedExamSubcategoryFilter?.toString() || "all"}
+              value={selectedExamSubcategoryFilter || "all"}
               onValueChange={(value) => {
-                setSelectedExamSubcategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedExamSubcategoryFilter(value === "all" ? null : value);
                 setSelectedSubjectFilter("all"); // Reset subject when subcategory changes
               }}
               placeholder="Filter by subcategory"
@@ -2218,8 +2216,8 @@ export default function AdminSimple() {
                 { value: "all", label: "All Subjects" },
                 ...(subjects?.filter(subject => {
                   if (!subject?.slug || !subject?.name) return false;
-                  const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
-                  const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
+                  const matchesCategory = !selectedExamCategoryFilter || subject.categorySlug === selectedExamCategoryFilter;
+                  const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategorySlug === selectedExamSubcategoryFilter;
                   return matchesCategory && matchesSubcategory;
                 }).map((subject) => ({
                   value: subject.slug,
@@ -2253,8 +2251,8 @@ export default function AdminSimple() {
                 const subject = subjects?.find(s => s.slug === exam.subjectSlug);
                 if (!subject) return false;
                 
-                const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
-                const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
+                const matchesCategory = !selectedExamCategoryFilter || subject.categorySlug === selectedExamCategoryFilter;
+                const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategorySlug === selectedExamSubcategoryFilter;
                 const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
                 
                 return matchesCategory && matchesSubcategory && matchesSubject;
@@ -2268,8 +2266,8 @@ export default function AdminSimple() {
             const subject = subjects?.find(s => s.slug === exam.subjectSlug);
             if (!subject) return false;
             
-            const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
-            const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
+            const matchesCategory = !selectedExamCategoryFilter || subject.categorySlug === selectedExamCategoryFilter;
+            const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategorySlug === selectedExamSubcategoryFilter;
             const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
             
             return matchesCategory && matchesSubcategory && matchesSubject;
