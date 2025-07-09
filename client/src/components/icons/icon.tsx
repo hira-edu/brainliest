@@ -103,19 +103,24 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
           
           // Always use SVG path for any resolved icon, including fallbacks
           const iconPath = `/icons/${result.iconId}.svg`;
-          setResolvedIconPath(iconPath);
-          console.log(`📁 Using SVG icon: ${iconPath} for "${subjectName}" (${result.source})`);
+          console.log(`📁 Attempting to load SVG: ${iconPath} for "${subjectName}"`);
           
-          // Test if the icon file actually exists
-          const testImg = new Image();
-          testImg.onload = () => {
-            console.log(`✅ Icon file exists: ${iconPath}`);
-          };
-          testImg.onerror = () => {
-            console.warn(`❌ Icon file missing: ${iconPath}, falling back to component`);
-            setResolvedIconPath(null);
-          };
-          testImg.src = iconPath;
+          // Set the resolved path immediately and let the img tag handle loading
+          setResolvedIconPath(iconPath);
+          console.log(`✅ Setting icon path: ${iconPath} for "${subjectName}"`);
+          
+          // Also test with fetch to verify file exists
+          fetch(iconPath, { method: 'HEAD' })
+            .then(response => {
+              if (response.ok) {
+                console.log(`✅ Icon file verified: ${iconPath} (${response.status})`);
+              } else {
+                console.warn(`⚠️ Icon file issue: ${iconPath} (${response.status})`);
+              }
+            })
+            .catch(error => {
+              console.warn(`❌ Icon file fetch failed: ${iconPath}`, error);
+            });
           
         } catch (error) {
           console.warn(`⚠️ Icon resolution failed for "${subjectName}":`, error);
@@ -147,11 +152,23 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
           alt={`${subjectName} icon`}
           className={`inline-block ${props.className || 'w-6 h-6'}`}
           style={props.style}
+          onLoad={() => {
+            console.log(`✅ Icon successfully loaded in browser: ${resolvedIconPath}`);
+          }}
           onError={(e) => {
-            console.warn(`Failed to load icon: ${resolvedIconPath}`);
-            // Hide the broken image and show fallback
-            e.currentTarget.style.display = 'none';
-            setResolvedIconPath(null);
+            console.warn(`❌ Browser failed to load icon: ${resolvedIconPath}`);
+            // Try to reload once before falling back
+            const img = e.currentTarget as HTMLImageElement;
+            if (!img.dataset.retried) {
+              img.dataset.retried = 'true';
+              setTimeout(() => {
+                img.src = resolvedIconPath;
+              }, 100);
+            } else {
+              // Hide the broken image and show fallback
+              img.style.display = 'none';
+              setResolvedIconPath(null);
+            }
           }}
         />
       );

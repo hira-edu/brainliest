@@ -218,7 +218,7 @@ class IconRegistryService {
       { keywords: ['web development', 'frontend', 'backend'], icon: 'react' },
       { keywords: ['programming', 'coding', 'development'], icon: 'computer-science' },
       
-      // Test Prep & Examinations (specific icons)
+      // Test Prep & Examinations (specific icons that actually exist)
       { keywords: ['hesi'], icon: 'hesi' },
       { keywords: ['teas'], icon: 'teas' },
       { keywords: ['gre'], icon: 'gre' },
