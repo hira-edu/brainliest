@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useCallback } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import UploadsManager from './uploads-manager';
 import IconAssignment from './icon-assignment';
 import { DynamicIcon } from "../../../utils/dynamic-icon";
@@ -67,7 +68,7 @@ function IconSelector({ value, onValueChange, placeholder = "Select an icon...",
     />
   );
 }
-import { useQuery, useMutation } from "@tanstack/react-query";
+
 import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "../../../../../shared/schema";
 import { apiRequest, queryClient } from "../../../services/queryClient";
 import { useToast } from "../../shared/hooks/use-toast";
@@ -1395,7 +1396,7 @@ export default function AdminSimple() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {categories?.map((category) => (
-                                      <SelectItem key={category.id} value={category.id.toString()}>
+                                      <SelectItem key={category.slug} value={category.slug}>
                                         {category.name}
                                       </SelectItem>
                                     ))}
@@ -1406,13 +1407,13 @@ export default function AdminSimple() {
                                 <Textarea placeholder="Description (optional)" id="quick-subcategory-desc" />
                                 <Input placeholder="Icon (optional)" id="quick-subcategory-icon" />
                                 <Button onClick={() => {
-                                  const categoryId = (document.getElementById('quick-subcategory-parent') as HTMLInputElement)?.value;
+                                  const categorySlug = (document.getElementById('quick-subcategory-parent') as HTMLInputElement)?.value;
                                   const name = (document.getElementById('quick-subcategory-name') as HTMLInputElement)?.value;
                                   const description = (document.getElementById('quick-subcategory-desc') as HTMLTextAreaElement)?.value;
                                   const icon = (document.getElementById('quick-subcategory-icon') as HTMLInputElement)?.value;
-                                  if (categoryId && name) {
+                                  if (categorySlug && name) {
                                     createSubcategoryMutation.mutate({
-                                      categoryId: parseInt(categoryId),
+                                      categorySlug,
                                       name,
                                       description: description || "",
                                       icon: icon || "",
@@ -1595,7 +1596,7 @@ export default function AdminSimple() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {categories?.map((category) => (
-                                      <SelectItem key={category.id} value={category.id.toString()}>
+                                      <SelectItem key={category.slug} value={category.slug}>
                                         {category.name}
                                       </SelectItem>
                                     ))}
@@ -1606,13 +1607,13 @@ export default function AdminSimple() {
                                 <Textarea placeholder="Description (optional)" id="edit-quick-subcategory-desc" />
                                 <Input placeholder="Icon (optional)" id="edit-quick-subcategory-icon" />
                                 <Button onClick={() => {
-                                  const categoryId = (document.getElementById('edit-quick-subcategory-parent') as HTMLInputElement)?.value;
+                                  const categorySlug = (document.getElementById('edit-quick-subcategory-parent') as HTMLInputElement)?.value;
                                   const name = (document.getElementById('edit-quick-subcategory-name') as HTMLInputElement)?.value;
                                   const description = (document.getElementById('edit-quick-subcategory-desc') as HTMLTextAreaElement)?.value;
                                   const icon = (document.getElementById('edit-quick-subcategory-icon') as HTMLInputElement)?.value;
-                                  if (categoryId && name) {
+                                  if (categorySlug && name) {
                                     createSubcategoryMutation.mutate({
-                                      categoryId: parseInt(categoryId),
+                                      categorySlug,
                                       name,
                                       description: description || "",
                                       icon: icon || "",
@@ -2345,8 +2346,8 @@ export default function AdminSimple() {
             const subject = subjects?.find(s => s.slug === exam.subjectSlug);
             if (!subject) return false;
             
-            const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
-            const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
+            const matchesCategory = !selectedExamCategoryFilter || subject.categorySlug === selectedExamCategoryFilter;
+            const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategorySlug === selectedExamSubcategoryFilter;
             const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
             
             return matchesCategory && matchesSubcategory && matchesSubject;
@@ -3217,9 +3218,9 @@ export default function AdminSimple() {
                           <div>
                             <p className="font-semibold">Row Structure (All entities in one file):</p>
                             <p>• <strong>Entity Type</strong> (subject|exam|question) - First column determines row type</p>
-                            <p>• <strong>Subject columns:</strong> name, description, icon, sortOrder, categoryId, subcategoryId</p>
-                            <p>• <strong>Exam columns:</strong> title, description, subjectId, difficulty, timeLimit, passingScore</p>
-                            <p>• <strong>Question columns:</strong> text, options (pipe-separated), correctAnswer, explanation, examId, subjectId, domain</p>
+                            <p>• <strong>Subject columns:</strong> name, description, icon, sortOrder, categorySlug, subcategorySlug</p>
+                            <p>• <strong>Exam columns:</strong> title, description, subjectSlug, difficulty, timeLimit, passingScore</p>
+                            <p>• <strong>Question columns:</strong> text, options (pipe-separated), correctAnswer, explanation, examSlug, subjectSlug, domain</p>
                           </div>
                           <div>
                             <p className="font-semibold">Automatic relationships:</p>
