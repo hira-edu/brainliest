@@ -40,8 +40,8 @@ export interface JSONSubjectData {
   description?: string;
   icon?: string;
   color?: string;
-  categoryId?: number;
-  subcategoryId?: number;
+  categorySlug?: string;
+  subcategorySlug?: string;
   
   // Exams for this subject
   exams: JSONExamData[];
@@ -94,77 +94,111 @@ export class JSONService {
   generateTemplate(): JSONImportData {
     return {
       subject: {
-        name: "Sample Subject Name",
-        description: "Detailed description of the subject",
-        icon: "book",
-        color: "#3B82F6",
-        categoryId: 1,
-        subcategoryId: 1,
+        name: "AWS Solutions Architect Certification Prep",
+        description: "Comprehensive preparation course for AWS Certified Solutions Architect Associate exam. Covers cloud architecture, security, cost optimization, and best practices for designing distributed systems on AWS platform.",
+        icon: "cloud",
+        color: "#FF9900",
+        categorySlug: "professional-certifications",
+        subcategorySlug: "cybersecurity",
         exams: [
           {
-            title: "Sample Exam 1",
-            description: "Description of the first exam",
-            questionCount: 2,
-            duration: 60,
-            difficulty: "Intermediate",
+            title: "AWS Core Services Practice Exam",
+            description: "Test your knowledge of fundamental AWS services including EC2, S3, VPC, and IAM. This exam covers basic cloud concepts and core AWS infrastructure components.",
+            questionCount: 3,
+            duration: 90,
+            difficulty: "Beginner",
             isActive: true,
             questions: [
               {
-                text: "What is the capital of France?",
+                text: "Which AWS service provides scalable object storage with high durability and availability?",
                 options: [
-                  "London",
-                  "Berlin", 
-                  "Paris",
-                  "Madrid"
+                  "Amazon EC2",
+                  "Amazon S3", 
+                  "Amazon EBS",
+                  "Amazon RDS"
                 ],
-                correctAnswer: 2,
-                correctAnswers: [2],
+                correctAnswer: 1,
+                correctAnswers: [1],
                 allowMultipleAnswers: false,
-                explanation: "Paris is the capital and largest city of France.",
-                domain: "Geography",
+                explanation: "Amazon S3 (Simple Storage Service) provides scalable object storage with 99.999999999% (11 9's) durability and high availability across multiple facilities.",
+                domain: "Storage Services",
                 difficulty: "Beginner",
                 order: 1
               },
               {
-                text: "Which of the following are programming languages? (Select all that apply)",
+                text: "Which of the following are components of Amazon VPC? (Select all that apply)",
                 options: [
-                  "JavaScript",
-                  "HTML",
-                  "Python", 
-                  "CSS",
-                  "Java"
+                  "Subnets",
+                  "Internet Gateway",
+                  "Route Tables", 
+                  "Load Balancer",
+                  "Security Groups"
                 ],
                 correctAnswer: 0,
-                correctAnswers: [0, 2, 4],
+                correctAnswers: [0, 1, 2, 4],
                 allowMultipleAnswers: true,
-                explanation: "JavaScript, Python, and Java are programming languages. HTML and CSS are markup and styling languages respectively.",
-                domain: "Computer Science",
+                explanation: "VPC components include Subnets, Internet Gateway, Route Tables, and Security Groups. Load Balancer is a separate service that can be used within a VPC.",
+                domain: "Networking",
                 difficulty: "Intermediate",
                 order: 2
+              },
+              {
+                text: "What is the maximum size for a single S3 object?",
+                options: [
+                  "5 GB",
+                  "5 TB",
+                  "500 GB",
+                  "50 TB"
+                ],
+                correctAnswer: 1,
+                correctAnswers: [1],
+                allowMultipleAnswers: false,
+                explanation: "The maximum size for a single S3 object is 5 TB (terabytes). For objects larger than 100 MB, it's recommended to use multipart upload.",
+                domain: "Storage Services",
+                difficulty: "Intermediate",
+                order: 3
               }
             ]
           },
           {
-            title: "Sample Exam 2", 
-            description: "Description of the second exam",
-            questionCount: 1,
-            duration: 30,
+            title: "AWS Security & Identity Management", 
+            description: "Advanced exam covering AWS security best practices, IAM policies, encryption, and compliance frameworks. Focus on securing AWS environments and implementing least privilege access.",
+            questionCount: 2,
+            duration: 60,
             difficulty: "Advanced",
             isActive: true,
             questions: [
               {
-                text: "Explain the concept of polymorphism in object-oriented programming.",
+                text: "Which AWS service should you use to rotate database credentials automatically?",
                 options: [
-                  "The ability of different classes to be treated as instances of the same type",
-                  "The process of creating multiple instances of a class",
-                  "The inheritance of properties from a parent class",
-                  "The encapsulation of data within a class"
+                  "AWS IAM",
+                  "AWS Secrets Manager",
+                  "AWS Systems Manager Parameter Store",
+                  "AWS Key Management Service (KMS)"
                 ],
-                correctAnswer: 0,
-                explanation: "Polymorphism allows objects of different types to be treated as objects of a common base type.",
-                domain: "Programming Concepts",
+                correctAnswer: 1,
+                correctAnswers: [1],
+                allowMultipleAnswers: false,
+                explanation: "AWS Secrets Manager provides automatic rotation of database credentials, API keys, and other sensitive information with built-in integration for RDS, DocumentDB, and Redshift.",
+                domain: "Security & Identity",
                 difficulty: "Advanced",
                 order: 1
+              },
+              {
+                text: "What is the principle of least privilege in AWS IAM?",
+                options: [
+                  "Granting users minimum permissions required to perform their job functions",
+                  "Using root account for all administrative tasks",
+                  "Sharing IAM credentials between team members",
+                  "Disabling MFA for better user experience"
+                ],
+                correctAnswer: 0,
+                correctAnswers: [0],
+                allowMultipleAnswers: false,
+                explanation: "The principle of least privilege means granting users only the minimum permissions necessary to perform their job functions, reducing security risks and potential damage from compromised accounts.",
+                domain: "Security & Identity",
+                difficulty: "Advanced",
+                order: 2
               }
             ]
           }
@@ -173,7 +207,7 @@ export class JSONService {
       metadata: {
         version: "1.0",
         createdAt: new Date().toISOString(),
-        description: "Sample JSON template for importing subject with exams and questions"
+        description: "Comprehensive JSON template for hierarchical import - includes subject with categorySlug/subcategorySlug, multiple exams with descriptions and durations, and diverse question types with proper validation fields"
       }
     };
   }
@@ -220,8 +254,8 @@ export class JSONService {
         description: subject.description || undefined,
         icon: subject.icon || undefined,
         color: subject.color || undefined,
-        categoryId: subject.categoryId || undefined,
-        subcategoryId: subject.subcategoryId || undefined,
+        categorySlug: subject.categorySlug || undefined,
+        subcategorySlug: subject.subcategorySlug || undefined,
         exams: jsonExams
       }
     };
@@ -473,8 +507,8 @@ export class JSONService {
           description: subjectData.description,
           icon: subjectData.icon,
           color: subjectData.color,
-          categoryId: subjectData.categoryId,
-          subcategoryId: subjectData.subcategoryId
+          categorySlug: subjectData.categorySlug,
+          subcategorySlug: subjectData.subcategorySlug
         };
 
         subject = await this.storage.createSubject(insertSubject);
