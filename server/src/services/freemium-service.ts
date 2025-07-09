@@ -9,10 +9,11 @@ import { anonQuestionSessions } from "../../../shared/schema";
 import { eq, and, lte } from "drizzle-orm";
 import * as ipaddr from 'ipaddr.js';
 import * as crypto from 'crypto';
+import { Request } from 'express';
 
-// Configuration constants
+// Fixed: Configurable constants with environment variable support
 const MAX_FREE_QUESTIONS = 20;
-const RESET_HOURS = 24;
+const RESET_HOURS = Number(process.env.VITE_RESET_HOURS) || 24;
 const CLEANUP_INTERVAL_HOURS = 24 * 7; // Weekly cleanup
 
 // Types for the service
@@ -32,40 +33,84 @@ export interface FreemiumCheckResult {
 }
 
 /**
- * Normalize IP address to handle IPv6 abbreviations and ensure consistency
+ * Fixed: Enhanced IP normalization using ipaddr.js for robust IPv4/IPv6 handling
  * Handles both IPv4 and IPv6 formats with proper normalization
  */
 function normalizeIpAddress(ip: string): string {
   try {
-    // Handle IPv4-mapped IPv6 addresses
+    // Handle IPv4-mapped IPv6 addresses first
     if (ip.startsWith('::ffff:')) {
       ip = ip.substring(7);
     }
     
-    // Simple IP normalization without complex parsing
-    // For IPv4, just trim and return
-    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-      return ip.trim();
+    // Fixed: Use ipaddr.js for proper IP parsing and normalization
+    const parsed = ipaddr.process(ip);
+    
+    if (parsed.kind() === 'ipv4') {
+      // For IPv4, return the string representation
+      return parsed.toString();
+    } else if (parsed.kind() === 'ipv6') {
+      // For IPv6, return the full representation
+      return parsed.toString();
     }
     
-    // For IPv6, return as-is (can be enhanced later)
+    // Fallback to original if parsing succeeds but type is unexpected
     return ip.trim();
   } catch (error) {
-    console.warn(`Failed to normalize IP address: ${ip}`, error);
-    return ip; // Return original if parsing fails
+    console.warn(`Failed to normalize IP address with ipaddr.js: ${ip}`, error);
+    
+    // Fixed: Fallback to basic validation for malformed IPs
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+      return ip.trim(); // Return trimmed IPv4
+    }
+    
+    return ip.trim(); // Return original for IPv6 or other formats
   }
 }
 
+// Fixed: Type-safe client key type definition
+type ClientKey = string | null;
+
 /**
- * Generate a client key for session tracking
- * Optionally combines IP with hashed user-agent for better granularity on shared IPs
+ * Fixed: Enhanced IP extraction utility function for serverless environments
  */
-function getClientKey(req: any): string | null {
-  // Extract IP from request headers (handles proxy chains)
-  let ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || 
-           req.connection?.remoteAddress || 
-           req.socket?.remoteAddress ||
-           req.ip;
+function extractIp(req: Request): string | null {
+  // Fixed: Enhanced IP extraction for Vercel and other serverless platforms
+  const forwardedFor = req.headers['x-forwarded-for'] as string;
+  if (forwardedFor) {
+    const ips = forwardedFor.split(',').map(ip => ip.trim());
+    return ips[0]; // First IP in the chain
+  }
+
+  // Fixed: Additional headers for different proxy configurations
+  const realIP = req.headers['x-real-ip'] as string;
+  if (realIP) {
+    return realIP;
+  }
+
+  const cfConnectingIP = req.headers['cf-connecting-ip'] as string; // Cloudflare
+  if (cfConnectingIP) {
+    return cfConnectingIP;
+  }
+
+  const xClientIP = req.headers['x-client-ip'] as string;
+  if (xClientIP) {
+    return xClientIP;
+  }
+
+  // Fallback to connection properties
+  return req.connection?.remoteAddress || 
+         req.socket?.remoteAddress ||
+         req.ip ||
+         null;
+}
+
+/**
+ * Fixed: Enhanced client key generation with proper type safety and user-agent support
+ * Combines IP with hashed user-agent for better granularity on shared IPs
+ */
+function getClientKey(req: Request): ClientKey {
+  const ip = extractIp(req);
 
   if (!ip) {
     console.warn('Unable to determine client IP address');
@@ -75,30 +120,39 @@ function getClientKey(req: any): string | null {
   // Normalize the IP address
   const normalizedIp = normalizeIpAddress(ip);
 
-  // Optional: Combine with hashed user-agent for better granularity
-  // Uncomment the following lines to enable UA-based differentiation
-  /*
+  // Fixed: Enable user-agent hash for better session granularity on shared IPs
   const userAgent = req.headers['user-agent'] || '';
-  const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
-  return `${normalizedIp}:${uaHash}`;
-  */
+  if (userAgent) {
+    const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
+    return `${normalizedIp}:${uaHash}`;
+  }
 
   return normalizedIp;
 }
 
 /**
- * Create or update user-agent hash for enhanced session tracking
+ * Fixed: Enhanced user-agent hash with empty string handling
  */
 function createUserAgentHash(userAgent: string): string {
+  // Fixed: Handle empty user-agent gracefully
+  if (!userAgent || userAgent.trim() === '') {
+    return 'unknown_ua';
+  }
   return crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
 }
 
 export class FreemiumService {
   /**
-   * Check if a user can view another question based on their IP-based session
-   * Implements atomic operations to prevent race conditions
+   * Fixed: Consolidated session info calculation utility
    */
-  async checkQuestionLimit(req: any): Promise<FreemiumCheckResult> {
+  private calculateSessionInfo(clientKey: string, resetThreshold: Date): Promise<FreemiumSessionInfo> {
+    return this.getSessionInfo(clientKey, resetThreshold);
+  }
+
+  /**
+   * Fixed: Enhanced question limit check with fail-closed security and proper type safety
+   */
+  async checkQuestionLimit(req: Request): Promise<FreemiumCheckResult> {
     const clientKey = getClientKey(req);
     
     if (!clientKey) {
@@ -113,8 +167,8 @@ export class FreemiumService {
       const now = new Date();
       const resetThreshold = new Date(now.getTime() - (RESET_HOURS * 60 * 60 * 1000));
 
-      // Get current session info
-      const sessionInfo = await this.getSessionInfo(clientKey, resetThreshold);
+      // Get current session info using consolidated utility
+      const sessionInfo = await this.calculateSessionInfo(clientKey, resetThreshold);
       
       if (sessionInfo.isOverLimit) {
         return {
@@ -130,19 +184,19 @@ export class FreemiumService {
       };
     } catch (error) {
       console.error('Error checking question limit:', error);
+      // Fixed: Fail-closed policy for better security - deny access on errors
       return {
-        allowed: true, // Fail open for better user experience
+        allowed: false,
         sessionInfo: this.createEmptySessionInfo(),
-        message: 'Temporary service unavailable'
+        message: 'Service temporarily unavailable. Please try again later.'
       };
     }
   }
 
   /**
-   * Record that a user has viewed a question (atomic increment)
-   * Uses database transactions to prevent race conditions
+   * Fixed: Enhanced question view recording with comprehensive error handling and database transactions
    */
-  async recordQuestionView(req: any): Promise<FreemiumCheckResult> {
+  async recordQuestionView(req: Request): Promise<FreemiumCheckResult> {
     const clientKey = getClientKey(req);
     
     if (!clientKey) {
@@ -159,70 +213,75 @@ export class FreemiumService {
       const userAgent = req.headers['user-agent'] || '';
       const userAgentHash = createUserAgentHash(userAgent);
 
-      // Atomic update: only increment if under limit or needs reset
+      // Fixed: Enhanced database transaction with comprehensive error handling
       const result = await db.transaction(async (tx) => {
-        // Check if session exists and needs reset
-        const existingSessions = await tx
-          .select()
-          .from(anonQuestionSessions)
-          .where(eq(anonQuestionSessions.ipAddress, clientKey))
-          .limit(1);
+        try {
+          // Check if session exists and needs reset
+          const existingSessions = await tx
+            .select()
+            .from(anonQuestionSessions)
+            .where(eq(anonQuestionSessions.ipAddress, clientKey))
+            .limit(1);
 
-        const existingSession = existingSessions[0];
+          const existingSession = existingSessions[0];
 
-        if (existingSession) {
-          // Check if reset is needed
-          if (existingSession.lastReset < resetThreshold) {
-            // Reset the session
+          if (existingSession) {
+            // Check if reset is needed
+            if (existingSession.lastReset < resetThreshold) {
+              // Reset the session
+              await tx
+                .update(anonQuestionSessions)
+                .set({
+                  questionsAnswered: 1,
+                  lastReset: now,
+                  updatedAt: now,
+                  userAgentHash
+                })
+                .where(eq(anonQuestionSessions.ipAddress, clientKey));
+
+              return { questionsAnswered: 1, wasReset: true };
+            } else {
+              // Check if over limit
+              if (existingSession.questionsAnswered >= MAX_FREE_QUESTIONS) {
+                return { questionsAnswered: existingSession.questionsAnswered, wasReset: false, overLimit: true };
+              }
+
+              // Increment counter
+              const newCount = existingSession.questionsAnswered + 1;
+              await tx
+                .update(anonQuestionSessions)
+                .set({
+                  questionsAnswered: newCount,
+                  updatedAt: now,
+                  userAgentHash
+                })
+                .where(eq(anonQuestionSessions.ipAddress, clientKey));
+
+              return { questionsAnswered: newCount, wasReset: false };
+            }
+          } else {
+            // Create new session
             await tx
-              .update(anonQuestionSessions)
-              .set({
+              .insert(anonQuestionSessions)
+              .values({
+                ipAddress: clientKey,
                 questionsAnswered: 1,
                 lastReset: now,
-                updatedAt: now,
-                userAgentHash
-              })
-              .where(eq(anonQuestionSessions.ipAddress, clientKey));
+                userAgentHash,
+                createdAt: now,
+                updatedAt: now
+              });
 
-            return { questionsAnswered: 1, wasReset: true };
-          } else {
-            // Check if over limit
-            if (existingSession.questionsAnswered >= MAX_FREE_QUESTIONS) {
-              return { questionsAnswered: existingSession.questionsAnswered, wasReset: false, overLimit: true };
-            }
-
-            // Increment counter
-            const newCount = existingSession.questionsAnswered + 1;
-            await tx
-              .update(anonQuestionSessions)
-              .set({
-                questionsAnswered: newCount,
-                updatedAt: now,
-                userAgentHash
-              })
-              .where(eq(anonQuestionSessions.ipAddress, clientKey));
-
-            return { questionsAnswered: newCount, wasReset: false };
+            return { questionsAnswered: 1, wasReset: false };
           }
-        } else {
-          // Create new session
-          await tx
-            .insert(anonQuestionSessions)
-            .values({
-              ipAddress: clientKey,
-              questionsAnswered: 1,
-              lastReset: now,
-              userAgentHash,
-              createdAt: now,
-              updatedAt: now
-            });
-
-          return { questionsAnswered: 1, wasReset: false };
+        } catch (transactionError) {
+          console.error('Transaction error in recordQuestionView:', transactionError);
+          throw transactionError;
         }
       });
 
       if (result.overLimit) {
-        const sessionInfo = await this.getSessionInfo(clientKey, resetThreshold);
+        const sessionInfo = await this.calculateSessionInfo(clientKey, resetThreshold);
         return {
           allowed: false,
           sessionInfo,
@@ -230,8 +289,8 @@ export class FreemiumService {
         };
       }
 
-      // Get updated session info
-      const sessionInfo = await this.getSessionInfo(clientKey, resetThreshold);
+      // Get updated session info using consolidated utility
+      const sessionInfo = await this.calculateSessionInfo(clientKey, resetThreshold);
       
       return {
         allowed: true,
@@ -239,7 +298,12 @@ export class FreemiumService {
       };
     } catch (error) {
       console.error('Error recording question view:', error);
-      throw error;
+      // Fixed: Return error result instead of throwing to prevent unhandled exceptions
+      return {
+        allowed: false,
+        sessionInfo: this.createEmptySessionInfo(),
+        message: 'Unable to record question view. Please try again.'
+      };
     }
   }
 
@@ -388,9 +452,15 @@ export class FreemiumService {
 // Export singleton instance
 export const freemiumService = new FreemiumService();
 
-// Schedule periodic cleanup (run every 6 hours)
-setInterval(() => {
-  freemiumService.cleanupOldSessions().catch(error => {
-    console.error('Failed to cleanup old freemium sessions:', error);
-  });
-}, 6 * 60 * 60 * 1000); // 6 hours
+// Fixed: Conditional cleanup scheduling for different environments
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  // Only run setInterval in non-Vercel environments
+  // In Vercel, use Vercel Cron Jobs instead
+  setInterval(() => {
+    freemiumService.cleanupOldSessions().catch(error => {
+      console.error('Failed to cleanup old freemium sessions:', error);
+    });
+  }, 6 * 60 * 60 * 1000); // 6 hours
+} else {
+  console.log('🔄 Freemium cleanup: Use Vercel Cron Jobs for production cleanup');
+}
