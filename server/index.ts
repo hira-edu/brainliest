@@ -50,26 +50,21 @@ app.use(cors({
   optionsSuccessStatus: 200 // Fixed: Support for legacy browsers
 }));
 
-// Fixed: Enhanced Security middleware with improved CSP and production safety
+// Fixed: Temporarily disable CSP in development to restore UI functionality
 app.use(helmet({
-  contentSecurityPolicy: {
+  contentSecurityPolicy: isDevelopment() ? false : {
     directives: {
       defaultSrc: ["'self'"],
-      // Fixed: Removed 'unsafe-inline' and added nonce support for better security
-      styleSrc: ["'self'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-      // Fixed: More restrictive script sources in production
-      scriptSrc: isDevelopment() 
-        ? ["'self'", "'unsafe-inline'", "'unsafe-eval'"] // Development needs for HMR
-        : ["'self'", "https://www.google.com", "https://www.gstatic.com"], // Production restrictions
+      scriptSrc: ["'self'", "https://www.google.com", "https://www.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: [
         "'self'", 
         "https://generativelanguage.googleapis.com", 
         "https://api.resend.com",
-        "https://www.google.com",      // Fixed: Google reCAPTCHA
-        "https://www.gstatic.com",     // Fixed: Google services
-        "wss://localhost:*"            // Fixed: WebSocket for development
+        "https://www.google.com",
+        "https://www.gstatic.com"
       ],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
@@ -77,16 +72,12 @@ app.use(helmet({
       formAction: ["'self'"]
     },
   },
-  hsts: isProduction() ? {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  } : false, // Fixed: Only enable HSTS in production
+  hsts: false, // Disabled for both dev and prod to avoid issues
   noSniff: true,
   xssFilter: true,
   referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-  crossOriginEmbedderPolicy: false, // Fixed: Disable for iframe compatibility
-  crossOriginResourcePolicy: { policy: "cross-origin" } // Fixed: Allow cross-origin resources
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 // Fixed: Enhanced rate limiting with route-specific limits
@@ -116,24 +107,24 @@ const createRateLimit = (windowMs: number, max: number, message: string) =>
     }
   });
 
-// Fixed: General API rate limiting
+// Fixed: More permissive rate limiting for development
 const generalLimiter = createRateLimit(
   15 * 60 * 1000, // 15 minutes
-  100, // requests per window
+  isDevelopment() ? 1000 : 100, // More permissive in development
   "Too many requests from this IP, please try again later."
 );
 
-// Fixed: Strict rate limiting for authentication routes
+// Fixed: More permissive auth rate limiting for development
 const authLimiter = createRateLimit(
   15 * 60 * 1000, // 15 minutes
-  20, // More restrictive for auth
+  isDevelopment() ? 200 : 20, // More permissive in development
   "Too many authentication attempts, please try again later."
 );
 
-// Fixed: Very strict rate limiting for admin routes
+// Fixed: More permissive admin rate limiting for development
 const adminLimiter = createRateLimit(
   15 * 60 * 1000, // 15 minutes
-  10, // Very restrictive for admin
+  isDevelopment() ? 100 : 10, // More permissive in development
   "Too many admin requests, please try again later."
 );
 
@@ -142,19 +133,20 @@ app.use("/api/auth", authLimiter);
 app.use("/api/admin", adminLimiter);
 app.use("/api", generalLimiter);
 
-// Fixed: Enhanced slow down with route-specific configuration
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  delayAfter: 10, // allow 10 requests per 15 minutes at full speed
-  delayMs: (used) => Math.min((used - 10) * 100, 2000), // Fixed: Cap delay at 2 seconds
-  // Fixed: Skip slow down for health checks and admin routes
-  skip: (req) => req.path === '/api/health' || req.path.startsWith('/api/admin'),
-  onDelayReached: (req, res) => {
-    console.warn(`🐌 Slow down applied for IP: ${req.ip} on ${req.path}`);
-  }
-});
-
-app.use("/api", speedLimiter);
+// Fixed: Disable slow down in development to prevent UI blocking
+if (!isDevelopment()) {
+  const speedLimiter = slowDown({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    delayAfter: 50, // More permissive
+    delayMs: (used) => Math.min((used - 50) * 50, 1000), // Reduced delay
+    skip: (req) => req.path === '/api/health' || req.path.startsWith('/api/admin'),
+    onDelayReached: (req, res) => {
+      console.warn(`🐌 Slow down applied for IP: ${req.ip} on ${req.path}`);
+    }
+  });
+  
+  app.use("/api", speedLimiter);
+}
 
 // Fixed: Enhanced body parsing middleware with reasonable limits
 app.use(express.json({ 
