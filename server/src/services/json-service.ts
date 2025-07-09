@@ -65,8 +65,8 @@ export interface JSONValidationError {
 
 export interface JSONProcessResult {
   success: boolean;
-  subjectId?: number;
-  examIds: number[];
+  subjectId?: string;
+  examIds: string[];
   questionIds: number[];
   createdCounts: {
     subjects: number;
@@ -179,17 +179,17 @@ export class JSONService {
   }
 
   // Export existing data to JSON format
-  async exportSubjectToJSON(subjectId: number, options: JSONExportOptions = {}): Promise<JSONImportData> {
-    const subject = await this.storage.getSubject(subjectId);
+  async exportSubjectToJSON(subjectSlug: string, options: JSONExportOptions = {}): Promise<JSONImportData> {
+    const subject = await this.storage.getSubjectBySlug(subjectSlug);
     if (!subject) {
-      throw new Error(`Subject with ID ${subjectId} not found`);
+      throw new Error(`Subject with slug ${subjectSlug} not found`);
     }
 
-    const exams = await this.storage.getExamsBySubject(subjectId);
+    const exams = await this.storage.getExamsBySubjectSlug(subjectSlug);
     const jsonExams: JSONExamData[] = [];
 
     for (const exam of exams) {
-      const questions = await this.storage.getQuestionsByExam(exam.id);
+      const questions = await this.storage.getQuestionsByExamSlug(exam.slug);
       
       const jsonQuestions: JSONQuestionData[] = questions.map(q => ({
         text: q.text,
@@ -465,7 +465,7 @@ export class JSONService {
 
       if (existingSubject) {
         subject = existingSubject;
-        result.subjectId = subject.id;
+        result.subjectId = subject.slug;
       } else {
         // Create new subject
         const insertSubject: InsertSubject = {
@@ -478,7 +478,7 @@ export class JSONService {
         };
 
         subject = await this.storage.createSubject(insertSubject);
-        result.subjectId = subject.id;
+        result.subjectId = subject.slug;
         result.createdCounts.subjects = 1;
       }
 
@@ -486,7 +486,7 @@ export class JSONService {
       for (const examData of subjectData.exams) {
         // Create exam
         const insertExam: InsertExam = {
-          subjectId: subject.id,
+          subjectSlug: subject.slug,
           title: examData.title,
           description: examData.description,
           questionCount: examData.questionCount,
@@ -496,14 +496,14 @@ export class JSONService {
         };
 
         const exam = await this.storage.createExam(insertExam);
-        result.examIds.push(exam.id);
+        result.examIds.push(exam.slug);
         result.createdCounts.exams++;
 
         // Create questions for this exam
         for (const questionData of examData.questions) {
           const insertQuestion: InsertQuestion = {
-            examId: exam.id,
-            subjectId: subject.id,
+            examSlug: exam.slug,
+            subjectSlug: subject.slug,
             text: questionData.text,
             options: questionData.options,
             correctAnswer: questionData.correctAnswer,

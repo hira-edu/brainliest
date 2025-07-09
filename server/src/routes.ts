@@ -2254,20 +2254,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/json/export/:subjectId", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get("/api/json/export/:subjectSlug", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
     try {
       const { JSONService } = await import('./json-service');
       const jsonService = new JSONService(storage);
       
-      const subjectId = parseInt(req.params.subjectId);
-      if (isNaN(subjectId)) {
+      const subjectSlug = req.params.subjectSlug;
+      if (!subjectSlug || typeof subjectSlug !== 'string') {
         return res.status(400).json({ 
           success: false, 
-          message: 'Invalid subject ID' 
+          message: 'Invalid subject slug' 
         });
       }
       
-      const exportData = await jsonService.exportSubjectToJSON(subjectId, { 
+      const exportData = await jsonService.exportSubjectToJSON(subjectSlug, { 
         includeMetadata: true, 
         prettyFormat: true 
       });
@@ -2275,7 +2275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jsonContent = jsonService.formatJSONForDownload(exportData, { prettyFormat: true });
       
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="subject_${subjectId}_export.json"`);
+      res.setHeader('Content-Disposition', `attachment; filename="subject_${subjectSlug}_export.json"`);
       res.send(jsonContent);
     } catch (error) {
       console.error('JSON export error:', error);

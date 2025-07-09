@@ -293,6 +293,7 @@ export default function AdminSimple() {
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [selectedExam, setSelectedExam] = useState<string>("all");
   const [selectedCsvEntity, setSelectedCsvEntity] = useState<string>("");
+  const [selectedSubjectForExport, setSelectedSubjectForExport] = useState<string>("");
   
   // Pagination state for each tab
   const [subjectsPage, setSubjectsPage] = useState(1);
@@ -3063,44 +3064,69 @@ export default function AdminSimple() {
                           Export Data to JSON
                         </h4>
                         <p className="text-sm text-gray-600 mb-4">Export existing data as structured JSON format for backup or migration.</p>
-                        <Button
-                          onClick={async () => {
-                            try {
-                              const adminToken = localStorage.getItem('admin_token');
-                              if (!adminToken) {
-                                toast({ title: "Admin authentication required", variant: "destructive" });
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Select Subject to Export</label>
+                            <Select value={selectedSubjectForExport} onValueChange={setSelectedSubjectForExport}>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose a subject..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {subjects?.map((subject) => (
+                                  <SelectItem key={subject.slug} value={subject.slug}>
+                                    {subject.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <Button
+                            onClick={async () => {
+                              if (!selectedSubjectForExport) {
+                                toast({ title: "Please select a subject to export", variant: "destructive" });
                                 return;
                               }
-                              const response = await fetch('/api/json/export', {
-                                method: 'GET',
-                                headers: {
-                                  'Authorization': `Bearer ${adminToken}`
+                              
+                              try {
+                                const adminToken = localStorage.getItem('admin_token');
+                                if (!adminToken) {
+                                  toast({ title: "Admin authentication required", variant: "destructive" });
+                                  return;
                                 }
-                              });
-                              if (response.ok) {
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `brainliest_export_${new Date().toISOString().split('T')[0]}.json`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                document.body.removeChild(a);
-                                toast({ title: "Data exported to JSON successfully!" });
-                              } else {
-                                toast({ title: "Failed to export data", variant: "destructive" });
+                                const response = await fetch(`/api/json/export/${selectedSubjectForExport}`, {
+                                  method: 'GET',
+                                  headers: {
+                                    'Authorization': `Bearer ${adminToken}`
+                                  }
+                                });
+                                if (response.ok) {
+                                  const blob = await response.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `subject_${selectedSubjectForExport}_export_${new Date().toISOString().split('T')[0]}.json`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  window.URL.revokeObjectURL(url);
+                                  document.body.removeChild(a);
+                                  toast({ title: "Data exported to JSON successfully!" });
+                                } else {
+                                  toast({ title: "Failed to export data", variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Error exporting data", variant: "destructive" });
                               }
-                            } catch (error) {
-                              toast({ title: "Error exporting data", variant: "destructive" });
-                            }
-                          }}
-                          size="sm"
-                          className="w-full bg-orange-600 hover:bg-orange-700"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Export to JSON
-                        </Button>
+                            }}
+                            size="sm"
+                            className="w-full bg-orange-600 hover:bg-orange-700"
+                            disabled={!selectedSubjectForExport}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Export to JSON
+                          </Button>
+                        </div>
                       </Card>
 
                       <Card className="p-6 border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors">
