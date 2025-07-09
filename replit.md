@@ -533,5 +533,20 @@ The application follows modern best practices for scalability, security, and mai
 - **Fixed metadata storage**: Updated auditLogs.changes and authLogs.metadata to use JSONB for native JSON operations
 - **Improved array data types**: Converted text fields storing arrays to JSONB for better performance (strongestSubjects, weakestSubjects, domains)
 - **Enhanced data integrity**: Fixed schema consistency issues and ensured proper nullability alignment between tables and insert schemas
+- **Fixed critical runtime error**: Removed .refine() validation from insertQuestionSchema that was breaking .extend() functionality in admin components
 - **Production-ready types**: All schema changes maintain existing functionality while enabling better PostgreSQL performance and native JSON querying
 - **Comprehensive indexing strategy**: Added composite indexes for common query patterns improving database performance across analytics and session tables
+
+### July 09, 2025 - Gemini AI Service Comprehensive Audit Fixes (COMPLETED)
+- **Enhanced API key validation**: Added strict checking with fallback to VITE_GEMINI_API_KEY for Vite compatibility and early return if missing
+- **Consolidated error handling**: Created centralized handleGeminiError function eliminating duplicate error logic across both functions
+- **Comprehensive input validation**: Added validateQuestionInputs and validateAnswerInputs with detailed checks for all parameters including array bounds validation
+- **Enhanced error specificity**: Implemented parsing for specific Gemini API error codes (rate limits, quota exceeded, network issues) with tailored user messages
+- **Word limit enforcement**: Added enforceWordLimit function to ensure 200-word (help) and 250-word (explanation) limits are consistently applied
+- **Improved response parsing**: Added try-catch around response.text() to handle malformed API responses gracefully
+- **Utility function consolidation**: Created formatOptions utility eliminating duplicate option formatting code
+- **Context-specific error messages**: Enhanced all error messages to include subject context for better user experience
+- **Production-ready logging**: Added comprehensive error logging with timestamps and context for debugging while masking sensitive information
+- **Service availability utilities**: Added isAIServiceAvailable and getAIServiceStatus functions for better service monitoring
+- **Enhanced prompt validation**: Added input trimming and validation to ensure meaningful prompts are sent to Gemini API
+- **Memory leak prevention**: Proper error handling and cleanup to prevent memory issues during high-volume usage
