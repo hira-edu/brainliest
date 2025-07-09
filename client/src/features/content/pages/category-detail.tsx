@@ -68,13 +68,13 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     let filtered = subjects.filter(subject => {
       if (!subject || !subject.name) return false;
       
-      const subjectCategory = getCategoryForSubject(subject);
-      if (!subjectCategory || subjectCategory === "other") return false;
-      
+      // Use direct database category relationships instead of pattern matching
       if (categoryData.subCategory) {
-        return subjectCategory === categoryData.subCategory.id;
+        // Filter by subcategory: check if subject's subcategorySlug matches
+        return subject.subcategorySlug === categoryData.subCategory.id;
       } else {
-        return subjectCategory === categoryData.category.id;
+        // Filter by main category: check if subject's categorySlug matches
+        return subject.categorySlug === categoryData.category.id;
       }
     });
     

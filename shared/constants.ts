@@ -23,106 +23,106 @@ export const categoryConfig = {
 // Category structure for navigation pages
 export const categoryStructure = [
   {
-    id: "professional",
+    id: "professional-certifications",
     title: "Professional Certifications",
     description: "Industry-recognized certifications for career advancement",
     icon: "Award",
     color: "blue",
-    route: "/categories/professional",
+    route: "/categories/professional-certifications",
     subCategories: [
       {
-        id: "it-cloud",
+        id: "it-cloud-computing",
         title: "IT & Cloud Computing",
         description: "AWS, Azure, Google Cloud, and other cloud platforms",
         icon: "Cloud",
-        route: "/categories/professional/it-cloud"
+        route: "/categories/professional-certifications/it-cloud-computing"
       },
       {
         id: "project-management",
         title: "Project Management",
         description: "PMP, Agile, Scrum, and project leadership certifications",
         icon: "Briefcase",
-        route: "/categories/professional/project-management"
+        route: "/categories/professional-certifications/project-management"
       },
       {
         id: "cybersecurity",
         title: "Cybersecurity",
         description: "CompTIA Security+, CISSP, and security certifications",
         icon: "Shield",
-        route: "/categories/professional/cybersecurity"
+        route: "/categories/professional-certifications/cybersecurity"
       },
       {
         id: "networking",
         title: "Networking",
         description: "Cisco, CompTIA Network+, and networking technologies",
         icon: "Network",
-        route: "/categories/professional/networking"
+        route: "/categories/professional-certifications/networking"
       }
     ]
   },
   {
-    id: "academic",
+    id: "university-college",
     title: "University & College",
     description: "Academic subjects for students and learners",
     icon: "GraduationCap",
     color: "green",
-    route: "/categories/academic",
+    route: "/categories/university-college",
     subCategories: [
       {
         id: "mathematics-statistics",
         title: "Mathematics & Statistics",
         description: "Calculus, Algebra, Statistics, and Mathematical Sciences",
         icon: "Calculator",
-        route: "/categories/academic/mathematics-statistics"
+        route: "/categories/university-college/mathematics-statistics"
       },
       {
         id: "computer-science",
         title: "Computer Science",
         description: "Programming, Data Structures, Algorithms, and Software Engineering",
         icon: "Code",
-        route: "/categories/academic/computer-science"
+        route: "/categories/university-college/computer-science"
       },
       {
         id: "natural-sciences",
         title: "Natural Sciences",
         description: "Physics, Chemistry, Biology, and Earth Sciences",
         icon: "Flask",
-        route: "/categories/academic/natural-sciences"
+        route: "/categories/university-college/natural-sciences"
       },
       {
         id: "engineering",
         title: "Engineering",
         description: "Mechanical, Electrical, Civil, and Engineering Fundamentals",
         icon: "Cog",
-        route: "/categories/academic/engineering"
+        route: "/categories/university-college/engineering"
       },
       {
         id: "business-economics",
         title: "Business & Economics",
         description: "Accounting, Finance, Economics, and Business Administration",
         icon: "TrendingUp",
-        route: "/categories/academic/business-economics"
+        route: "/categories/university-college/business-economics"
       },
       {
-        id: "health-medical",
+        id: "health-medical-sciences",
         title: "Health & Medical Sciences",
         description: "Nursing, Medical Sciences, Anatomy, and Healthcare",
         icon: "Stethoscope",
-        route: "/categories/academic/health-medical"
+        route: "/categories/university-college/health-medical-sciences"
       },
       {
         id: "social-sciences-humanities",
         title: "Social Sciences & Humanities",
         description: "Psychology, History, Philosophy, and Social Studies",
         icon: "Users",
-        route: "/categories/academic/social-sciences-humanities"
+        route: "/categories/university-college/social-sciences-humanities"
       },
       {
-        id: "test-prep",
+        id: "standardized-test-prep",
         title: "Standardized Test Prep",
-        description: "GRE, LSAT, TOEFL, and standardized test preparation",
+        description: "HESI, TEAS, GRE, LSAT, TOEFL, and standardized test preparation",
         icon: "FileText",
-        route: "/categories/academic/test-prep"
+        route: "/categories/university-college/standardized-test-prep"
       }
     ]
   }
