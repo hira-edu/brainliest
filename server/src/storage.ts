@@ -659,10 +659,6 @@ export class DatabaseStorage implements IStorage {
       emailVerificationExpires: users.emailVerificationExpires,
       passwordResetToken: users.passwordResetToken,
       passwordResetExpires: users.passwordResetExpires,
-      googleId: users.googleId,
-      oauthProvider: users.oauthProvider,
-      twoFactorEnabled: users.twoFactorEnabled,
-      twoFactorSecret: users.twoFactorSecret,
       metadata: users.metadata
     }).from(users);
   }
@@ -809,10 +805,6 @@ export class DatabaseStorage implements IStorage {
         emailVerificationExpires: users.emailVerificationExpires,
         passwordResetToken: users.passwordResetToken,
         passwordResetExpires: users.passwordResetExpires,
-        googleId: users.googleId,
-        oauthProvider: users.oauthProvider,
-        twoFactorEnabled: users.twoFactorEnabled,
-        twoFactorSecret: users.twoFactorSecret,
         metadata: users.metadata
       }).from(users).where(and(...conditions));
     }
@@ -842,10 +834,6 @@ export class DatabaseStorage implements IStorage {
       emailVerificationExpires: users.emailVerificationExpires,
       passwordResetToken: users.passwordResetToken,
       passwordResetExpires: users.passwordResetExpires,
-      googleId: users.googleId,
-      oauthProvider: users.oauthProvider,
-      twoFactorEnabled: users.twoFactorEnabled,
-      twoFactorSecret: users.twoFactorSecret,
       metadata: users.metadata
     }).from(users);
   }
