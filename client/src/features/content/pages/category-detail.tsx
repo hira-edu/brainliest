@@ -15,7 +15,24 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "../../../components/ui/select";
-import { Search, ArrowLeft, Filter } from "lucide-react";
+import { Search, ArrowLeft, Filter, Award, GraduationCap, FileText, Users, Cloud, Briefcase, Shield, Network, Calculator, Code, FlaskConical, Cog, Stethoscope } from "lucide-react";
+
+// Icon mapping for category structure
+const iconMap = {
+  Award,
+  GraduationCap,
+  FileText,
+  Users,
+  Cloud,
+  Briefcase,
+  Shield,
+  Network,
+  Calculator,
+  Code,
+  Flask: FlaskConical,
+  Cog,
+  Stethoscope
+};
 
 interface CategoryDetailPageProps {
   categoryId?: string;
@@ -49,13 +66,15 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
     if (!subjects || !categoryData) return [];
     
     let filtered = subjects.filter(subject => {
-      const subjectCategory = getCategoryForSubject(subject.name);
-      if (!subjectCategory) return false;
+      if (!subject || !subject.name) return false;
+      
+      const subjectCategory = getCategoryForSubject(subject);
+      if (!subjectCategory || subjectCategory === "other") return false;
       
       if (categoryData.subCategory) {
-        return subjectCategory.subCategory.id === categoryData.subCategory.id;
+        return subjectCategory === categoryData.subCategory.id;
       } else {
-        return subjectCategory.category.id === categoryData.category.id;
+        return subjectCategory === categoryData.category.id;
       }
     });
     
@@ -133,7 +152,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
 
   const { category, subCategory } = categoryData;
   const currentCategory = subCategory || category;
-  const IconComponent = currentCategory.icon;
+  const IconComponent = iconMap[currentCategory.icon as keyof typeof iconMap] || FileText;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -173,7 +192,7 @@ export default function CategoryDetailPage({ categoryId, subCategoryId }: Catego
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Sub-categories</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {category.subCategories.map((subCat) => {
-                const SubIconComponent = subCat.icon;
+                const SubIconComponent = iconMap[subCat.icon as keyof typeof iconMap] || FileText;
                 return (
                   <Link key={subCat.id} href={subCat.route}>
                     <div className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border">
