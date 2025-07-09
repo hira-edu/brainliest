@@ -1,4 +1,12 @@
-import { useState, useEffect } from "react";
+/**
+ * UnifiedAuthModal - Fixed version addressing all audit issues
+ * Provides modal dialog for authentication with reCAPTCHA v3 integration
+ * Fixed: reCAPTCHA token handling, password validation, resend logic, debouncing, error handling
+ */
+
+"use client"; // Fixed: RSC directive for Vercel compatibility with reCAPTCHA and dialog functionality
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -47,10 +55,15 @@ function UnifiedAuthModalContent({
   const [isVerificationLoading, setIsVerificationLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false); // Fixed: Add separate loading state for resend
 
-  const { signIn, signUp, signInWithGoogle, verifyEmail } = useAuth();
+  const { signIn, signUp, signInWithGoogle, verifyEmail, resendEmailVerification } = useAuth();
   const { toast } = useToast();
   const { executeRecaptcha } = useGoogleReCaptcha();
+
+  // Fixed: Add refs to prevent memory leaks and track mounted state
+  const mountedRef = useRef(true);
+  const resendDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const defaultTitle = mode === 'freemium' 
     ? 'Unlock Unlimited Access' 
@@ -68,9 +81,30 @@ function UnifiedAuthModalContent({
     }
   };
 
+  // Fixed: Enhanced password validation matching UI requirements
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = [];
+    if (password.length < 8) errors.push('At least 8 characters long');
+    if (!/[A-Z]/.test(password)) errors.push('One uppercase letter (A-Z)');
+    if (!/[a-z]/.test(password)) errors.push('One lowercase letter (a-z)');
+    if (!/[0-9]/.test(password)) errors.push('One number (0-9)');
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>?]/.test(password)) errors.push('One special character (!@#$%^&*)');
+    return errors;
+  };
+
+  // Fixed: Enhanced username validation
+  const validateUsername = (username: string): string | null => {
+    if (!username.trim()) return null; // Username is optional
+    if (username.length < 3) return 'Username must be at least 3 characters';
+    if (username.length > 20) return 'Username must be less than 20 characters';
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) return 'Username can only contain letters, numbers, hyphens, and underscores';
+    return null;
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    // Email validation
     if (!formData.email) {
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -83,18 +117,28 @@ function UnifiedAuthModalContent({
       }
     } else {
       // Signup validation
-      if (!formData.firstName) {
+      if (!formData.firstName?.trim()) {
         newErrors.firstName = 'First name is required';
       }
       
-      if (!formData.lastName) {
+      if (!formData.lastName?.trim()) {
         newErrors.lastName = 'Last name is required';
       }
+
+      // Fixed: Enhanced username validation
+      const usernameError = validateUsername(formData.username);
+      if (usernameError) {
+        newErrors.username = usernameError;
+      }
       
+      // Fixed: Enhanced password validation
       if (!formData.password) {
         newErrors.password = 'Password is required';
-      } else if (formData.password.length < 8) {
-        newErrors.password = 'Password must be at least 8 characters';
+      } else {
+        const passwordErrors = validatePassword(formData.password);
+        if (passwordErrors.length > 0) {
+          newErrors.password = `Password must include: ${passwordErrors.join(', ')}`;
+        }
       }
       
       if (!formData.confirmPassword) {
@@ -108,28 +152,51 @@ function UnifiedAuthModalContent({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Fixed: Reusable reCAPTCHA token generation function
+  const generateRecaptchaToken = useCallback(async (action: string): Promise<string> => {
+    if (!executeRecaptcha) {
+      if (import.meta.env.MODE === 'development') {
+        console.warn(`🔒 executeRecaptcha function not available for action: ${action}`);
+      }
+      return '';
+    }
+
+    try {
+      if (import.meta.env.MODE === 'development') {
+        console.log(`🔒 Executing reCAPTCHA with action: ${action}`);
+      }
+      const token = await executeRecaptcha(action);
+      if (import.meta.env.MODE === 'development') {
+        console.log('🔒 reCAPTCHA token generated:', token ? `${token.substring(0, 20)}...` : 'EMPTY');
+      }
+      return token || '';
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown reCAPTCHA error';
+      console.error(`🔒 reCAPTCHA execution failed for action ${action}:`, errorMessage);
+      return '';
+    }
+  }, [executeRecaptcha]);
+
+  // Fixed: Centralized error toast utility
+  const showErrorToast = useCallback((title: string, description: string) => {
+    toast({
+      title,
+      description,
+      variant: "destructive",
+    });
+  }, [toast]);
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
     try {
-      // Generate reCAPTCHA token
-      let recaptchaToken = '';
-      if (executeRecaptcha) {
-        try {
-          console.log('🔒 Executing reCAPTCHA with action:', authMode === 'signin' ? 'login' : 'signup');
-          recaptchaToken = await executeRecaptcha(authMode === 'signin' ? 'login' : 'signup');
-          console.log('🔒 reCAPTCHA token generated:', recaptchaToken ? `${recaptchaToken.substring(0, 20)}...` : 'EMPTY');
-        } catch (error) {
-          console.error('🔒 reCAPTCHA execution failed:', error);
-          // Continue without reCAPTCHA if it fails
-        }
-      } else {
-        console.warn('🔒 executeRecaptcha function not available');
-      }
+      // Fixed: Use reusable reCAPTCHA token generation
+      const recaptchaToken = await generateRecaptchaToken(authMode === 'signin' ? 'login' : 'signup');
       
-      // Log final token status
-      console.log('🔒 Final reCAPTCHA token status:', recaptchaToken ? 'PRESENT' : 'MISSING');
+      if (import.meta.env.MODE === 'development') {
+        console.log('🔒 Final reCAPTCHA token status:', recaptchaToken ? 'PRESENT' : 'MISSING');
+      }
 
       if (authMode === 'signin') {
         const result = await signIn(formData.email, formData.password, recaptchaToken);
@@ -150,27 +217,25 @@ function UnifiedAuthModalContent({
             });
           }
         } else {
-          toast({
-            title: "Sign-in Failed",
-            description: result.message || "Invalid credentials. Please try again.",
-            variant: "destructive",
-          });
+          showErrorToast("Sign-in Failed", result.message || "Invalid credentials. Please try again.");
         }
       } else {
-        // Debug: Log the signup payload
-        console.log('Signup payload:', {
-          email: formData.email,
-          password: '***hidden***',
-          username: formData.username,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          recaptchaToken: recaptchaToken ? 'present' : 'missing'
-        });
+        // Fixed: Only log in development mode for security
+        if (import.meta.env.MODE === 'development') {
+          console.log('Signup payload:', {
+            email: formData.email,
+            password: '***hidden***',
+            username: formData.username,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            recaptchaToken: recaptchaToken ? 'present' : 'missing'
+          });
+        }
         
         const result = await signUp(formData.email, formData.password, {
-          username: formData.username,
-          firstName: formData.firstName,
-          lastName: formData.lastName
+          username: formData.username?.trim() || undefined, // Fixed: Handle optional username properly
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim()
         }, recaptchaToken);
         
         if (result.success) {
@@ -190,19 +255,13 @@ function UnifiedAuthModalContent({
             });
           }
         } else {
-          toast({
-            title: "Sign-up Failed",
-            description: result.message || "Failed to create account. Please try again.",
-            variant: "destructive",
-          });
+          showErrorToast("Sign-up Failed", result.message || "Failed to create account. Please try again.");
         }
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      console.error('Authentication error:', errorMessage);
+      showErrorToast("Error", "An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -210,17 +269,13 @@ function UnifiedAuthModalContent({
 
   const handleVerifyEmail = async () => {
     if (!verificationCode.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter the verification code",
-        variant: "destructive",
-      });
+      showErrorToast("Error", "Please enter the verification code");
       return;
     }
 
     setIsVerificationLoading(true);
     try {
-      const result = await verifyEmail(verificationCode);
+      const result = await verifyEmail(verificationCode.trim());
       if (result.success) {
         onClose();
         resetForm();
@@ -229,20 +284,16 @@ function UnifiedAuthModalContent({
           description: "Your email has been verified successfully.",
         });
       } else {
-        toast({
-          title: "Verification Failed",
-          description: result.message || "Invalid verification code. Please try again.",
-          variant: "destructive",
-        });
+        showErrorToast("Verification Failed", result.message || "Invalid verification code. Please try again.");
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to verify email. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown verification error';
+      console.error('Email verification error:', errorMessage);
+      showErrorToast("Error", "Failed to verify email. Please try again.");
     } finally {
-      setIsVerificationLoading(false);
+      if (mountedRef.current) {
+        setIsVerificationLoading(false);
+      }
     }
   };
 
@@ -250,35 +301,39 @@ function UnifiedAuthModalContent({
     try {
       setIsGoogleLoading(true);
       
-      // Generate reCAPTCHA token for Google sign-in
-      let recaptchaToken = '';
-      if (executeRecaptcha) {
-        try {
-          recaptchaToken = await executeRecaptcha('google_signin');
-        } catch (error) {
-          console.warn('reCAPTCHA execution failed:', error);
-          // Continue without reCAPTCHA if it fails
+      // Fixed: Use reusable reCAPTCHA token generation
+      const recaptchaToken = await generateRecaptchaToken('google_signin');
+      
+      const result = await signInWithGoogle(recaptchaToken);
+      
+      // Fixed: Check for email verification requirement like other auth methods
+      if (result?.success) {
+        if (result.requiresEmailVerification) {
+          setIsEmailSent(true);
+          startResendTimer();
+          toast({
+            title: "Email Verification Required",
+            description: "Please check your email for a verification code.",
+          });
+        } else {
+          onClose();
+          resetForm();
+          toast({
+            title: "Welcome!",
+            description: "Successfully signed in with Google!",
+          });
         }
+      } else {
+        showErrorToast("Google Sign-in Failed", result?.message || "Failed to authenticate with Google. Please try again.");
       }
-      
-      await signInWithGoogle(recaptchaToken);
-      
-      onClose();
-      resetForm();
-      
-      toast({
-        title: "Welcome!",
-        description: "Successfully signed in with Google!",
-      });
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      toast({
-        title: "Google Sign-in Failed",
-        description: "Failed to authenticate with Google. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown Google sign-in error';
+      console.error('Google sign-in error:', errorMessage);
+      showErrorToast("Google Sign-in Failed", "Failed to authenticate with Google. Please try again.");
     } finally {
-      setIsGoogleLoading(false);
+      if (mountedRef.current) {
+        setIsGoogleLoading(false);
+      }
     }
   };
 
@@ -329,57 +384,71 @@ function UnifiedAuthModalContent({
     return () => clearInterval(interval);
   }, [resendTimer]);
 
-  // Resend email verification
+  // Fixed: Resend email verification with debouncing and proper endpoint
   const handleResendEmail = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Generate reCAPTCHA token for resend
-      let recaptchaToken = '';
-      if (executeRecaptcha) {
-        try {
-          recaptchaToken = await executeRecaptcha('resend_verification');
-        } catch (error) {
-          console.warn('reCAPTCHA execution failed:', error);
+    // Fixed: Debounce to prevent spam clicking
+    if (resendDebounceRef.current) {
+      clearTimeout(resendDebounceRef.current);
+    }
+
+    resendDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsResendingEmail(true);
+        
+        // Fixed: Use reusable reCAPTCHA token generation
+        const recaptchaToken = await generateRecaptchaToken('resend_verification');
+
+        // Fixed: Use dedicated resend endpoint if available, otherwise fall back to signUp
+        let result;
+        if (resendEmailVerification) {
+          result = await resendEmailVerification(formData.email, recaptchaToken);
+        } else {
+          // Fallback: Use signUp method for resending
+          result = await signUp(formData.email, formData.password, {
+            username: formData.username?.trim() || undefined,
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim()
+          }, recaptchaToken);
+        }
+        
+        if (result.success) {
+          startResendTimer();
+          toast({
+            title: "Email Resent",
+            description: "We've sent a new verification code to your email.",
+          });
+        } else {
+          showErrorToast("Resend Failed", result.message || "Failed to resend email. Please try again.");
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown resend error';
+        console.error('Email resend error:', errorMessage);
+        showErrorToast("Error", "Failed to resend email. Please try again.");
+      } finally {
+        if (mountedRef.current) {
+          setIsResendingEmail(false);
         }
       }
-
-      const result = await signUp(formData.email, formData.password, {
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName
-      }, recaptchaToken);
-      
-      if (result.success) {
-        startResendTimer();
-        toast({
-          title: "Email Resent",
-          description: "We've sent a new verification code to your email.",
-        });
-      } else {
-        toast({
-          title: "Resend Failed",
-          description: result.message || "Failed to resend email. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend email. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    }, 500); // 500ms debounce
   };
 
-  // Reset form when modal closes
+  // Fixed: Enhanced useEffect cleanup and modal management
   useEffect(() => {
-    if (!isOpen) {
+    mountedRef.current = true;
+    
+    // Fixed: Only reset form if not in email verification state
+    if (!isOpen && !isEmailSent) {
       resetForm();
     }
-  }, [isOpen]);
+    
+    return () => {
+      mountedRef.current = false;
+      // Clear debounce timeout on unmount
+      if (resendDebounceRef.current) {
+        clearTimeout(resendDebounceRef.current);
+      }
+    };
+  }, [isOpen, isEmailSent]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -437,11 +506,14 @@ function UnifiedAuthModalContent({
               <Button
                 onClick={handleResendEmail}
                 variant="link"
-                disabled={!canResend || isLoading}
+                disabled={!canResend || isResendingEmail}
                 className="p-0 h-auto text-blue-600 hover:text-blue-800"
               >
+                {isResendingEmail && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                 {resendTimer > 0 ? (
                   `Resend in ${resendTimer}s`
+                ) : isResendingEmail ? (
+                  "Sending..."
                 ) : (
                   "Resend verification email"
                 )}
@@ -521,12 +593,12 @@ function UnifiedAuthModalContent({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="username">Username</Label>
+                    <Label htmlFor="username">Username (optional)</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
                         id="username"
-                        placeholder="Choose a username"
+                        placeholder="Choose a username (optional)"
                         className="pl-10"
                         value={formData.username}
                         onChange={(e) => handleInputChange('username', e.target.value)}
@@ -534,6 +606,7 @@ function UnifiedAuthModalContent({
                         autoComplete="username"
                       />
                     </div>
+                    {errors.username && <p className="text-sm text-red-600">{errors.username}</p>}
                   </div>
                 </>
               )}
