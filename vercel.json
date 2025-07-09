@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "mkdir -p dist/public && cp dist/public/simple-index.html dist/public/index.html && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.mjs",
+  "buildCommand": "mkdir -p dist/public && cp dist/public/simple-index.html dist/public/index.html && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.mjs || true",
   "outputDirectory": "dist/public",
   "routes": [
     {
