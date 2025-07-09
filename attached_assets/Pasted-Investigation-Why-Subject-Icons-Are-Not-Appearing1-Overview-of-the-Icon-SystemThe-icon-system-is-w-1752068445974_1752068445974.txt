@@ -1,0 +1,559 @@
+Investigation: Why Subject Icons Are Not Appearing1. Overview of the Icon SystemThe icon system is well-designed with the following components:BaseIcon: A foundational SVG component that handles size, color, variant, and accessibility.
+Icon: A smart component that supports lazy loading, fallbacks, and dynamic icon retrieval.
+SubjectIcon: Maps subject names to icon names using a hardcoded useSubjectIconName hook.
+IconProvider: Manages icon state and provides hooks (useIcon, useSubjectIcon, etc.) for accessing icons.
+IndustrialIconRegistry: A robust registry for storing and searching icons with LRU caching and mutex-based concurrency.
+Hooks: useIcon, useSubjectIcon, useIconSearch, etc., for accessing icons dynamically.
+
+The SubjectIcon component is likely where the issue originates, as it’s responsible for rendering subject-specific icons. Let’s investigate step-by-step.2. Line-by-Line Analysis of SubjectIcon and Related LogicFile: icon.tsxtypescript
+
+export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
+  ({ subjectName, fallback = 'academic', ...props }, ref) => {
+    // Always call hook
+    const iconName = useSubjectIconName(subjectName);
+    return (
+      <Icon
+        ref={ref}
+        name={iconName || fallback}
+        fallback={fallback}
+        {...props}
+      />
+    );
+  }
+);
+
+Line 104: const iconName = useSubjectIconName(subjectName);This calls the useSubjectIconName hook to map a subjectName (e.g., "Mathematics") to an icon name (e.g., "mathematics").
+If no mapping exists, it returns undefined, and the Icon component falls back to fallback ("academic").
+Line 106: name={iconName || fallback}The Icon component uses iconName if defined; otherwise, it uses fallback. This ensures a default icon is rendered if the mapping fails.
+Potential Issue: If useSubjectIconName consistently returns undefined for valid subject names, or if the academic fallback icon is not registered in the IndustrialIconRegistry, the icon won’t appear.
+
+Helper Hook: useSubjectIconNametypescript
+
+function useSubjectIconName(subjectName: string): string {
+  const subjectIconMap: Record<string, string> = {
+    'PMP Certification': 'pmp',
+    'AWS Cloud Practitioner': 'aws',
+    // ... other mappings
+    Mathematics: 'mathematics',
+    // ... more mappings
+  };
+  return subjectIconMap[subjectName] || 'academic';
+}
+
+Line 163-212: The subjectIconMap is a hardcoded mapping of subject names to icon IDs.Example: "Mathematics": "mathematics", "AWS Cloud Practitioner": "aws".
+If the subjectName doesn’t match exactly (case-sensitive, exact string), it returns "academic".
+Line 213: return subjectIconMap[subjectName] || 'academic';Ensures a fallback icon ID (academic) is returned if no mapping exists.
+Potential Issues:Case Sensitivity: The mapping is case-sensitive. If the subjectName is "mathematics" (lowercase) instead of "Mathematics", it won’t match and will return "academic".
+Exact Matching: The subject name must match exactly, including spaces and punctuation. Any variation (e.g., "Math" vs. "Mathematics") will fail.
+Missing Icons in Registry: If the mapped icon ID (e.g., mathematics, aws, or academic) is not registered in the IndustrialIconRegistry, the Icon component will fall back to FallbackIcon, which may not be the desired behavior.
+Static Mapping: The hardcoded subjectIconMap is not dynamic. If new subjects are added to the database, they won’t have icons unless the code is updated.
+Related Registry Logic: IndustrialIconRegistry.getIconForSubjecttypescript
+
+getIconForSubject(subjectName: string, fallback = 'academic'): string {
+  // 1. Try exact mapping first (would be loaded from config)
+  const exactMapping = this.getExactSubjectMapping(subjectName);
+  if (exactMapping && this.hasIcon(exactMapping)) {
+    return exactMapping;
+  }
+
+  // 2. Fuzzy search in registry
+  const searchResults = this.searchIcons(subjectName);
+  if (searchResults.length > 0) {
+    const bestMatch = searchResults[0];
+    if (this.debug) {
+      console.log(`Fuzzy match for "${subjectName}": ${bestMatch.metadata.id}`);
+    }
+    return bestMatch.metadata.id;
+  }
+
+  // 3. Category inference
+  const categoryIcon = this.inferCategoryIcon(subjectName);
+  if (categoryIcon && this.hasIcon(categoryIcon)) {
+    return categoryIcon;
+  }
+
+  // 4. Final fallback
+  return fallback;
+}
+
+Line 618-622: getExactSubjectMapping checks a hardcoded mapping (similar to useSubjectIconName).This is a placeholder that “would be loaded from a configuration file or database” but currently uses a static object.
+Issue: If the mapping is not dynamic and doesn’t cover all subjects, it will fail for new or unmapped subjects.
+Line 624-630: Fuzzy search (searchIcons) attempts to find an icon by searching the registry.This relies on the searchIndex being populated with relevant terms (from metadata.name, keywords, tags).
+Issue: If the registry lacks icons with metadata matching the subject name, this step will return no results.
+Line 632-636: inferCategoryIcon uses regex patterns to infer a category (e.g., /(math|statistics|calculus|algebra)/i → mathematics).Issue: The patterns may not cover all subjects, and the inferred icon ID must exist in the registry.
+Line 638: Returns fallback (academic) if all steps fail.Issue: If academic is not registered, the Icon component will render FallbackIcon.
+Icon Component Logictypescript
+
+export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
+  ({ name, fallback, showLoading = true, ...props }, ref) => {
+    const { component: PrimaryComponent, loading: primaryLoading } = useIcon(name);
+    const { component: FallbackComponent, loading: fallbackLoading } = useIcon(fallback ?? '');
+
+    if (primaryLoading && showLoading) {
+      return <LoadingIcon ref={ref} {...props} />;
+    }
+
+    if (PrimaryComponent) {
+      return (
+        <Suspense fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}>
+          <PrimaryComponent ref={ref} {...props} />
+        </Suspense>
+      );
+    }
+
+    if (fallback && FallbackComponent) {
+      return (
+        <Suspense fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}>
+          <FallbackComponent ref={ref} {...props} />
+        </Suspense>
+      );
+    }
+
+    return <FallbackIcon ref={ref} {...props} />;
+  }
+);
+
+Line 25-26: Uses useIcon to fetch the primary and fallback icons.
+Line 28-30: Shows LoadingIcon if the primary icon is loading.
+Line 32-37: Renders PrimaryComponent if it exists.
+Line 39-44: Renders FallbackComponent if the primary fails and a fallback is provided.
+Line 46: Renders FallbackIcon as a last resort.
+Potential Issues:Registry Miss: If useIcon(name) returns null because the icon ID (name) is not in the registry, it falls back to FallbackIcon.
+Suspense Fallback: The Suspense component may cause a brief flash of LoadingIcon if icons load slowly, which could be confusing.
+Error Handling: The code doesn’t log or handle errors from useIcon, which could make debugging difficult.
+useIcon Hooktypescript
+
+export function useIcon(id: string) {
+  const context = useIcons();
+  const component = context.getIcon(id);
+  const metadata = context.getIconMetadata(id);
+  return {
+    component,
+    metadata,
+    loading: false
+  };
+}
+
+Calls context.getIcon(id), which delegates to IndustrialIconRegistry.getIcon.
+Always returns loading: false, assuming synchronous access.
+Issue: If the registry is not initialized or the icon is missing, component will be null.
+
+IconProvider Initializationtypescript
+
+useEffect(() => {
+  const initializeIcons = async () => {
+    try {
+      const { registerAllIcons } = await import('./definitions');
+      await registerAllIcons();
+      setIsInitialized(true);
+    } catch (error) {
+      console.error('Failed to initialize icon system:', error);
+      setIsInitialized(true); // Still sets to true on error
+    }
+  };
+  initializeIcons();
+}, []);
+
+Line 68-75: Dynamically imports registerAllIcons and registers icons.
+Line 74: Sets isInitialized(true) even on error, which could cause getIcon to return null for all icons.
+Issue: If registerAllIcons fails (e.g., due to a missing file or network issue), the registry remains empty, causing all icons to render as FallbackIcon.
+
+3. Potential Root Causes for Subject Icons Not AppearingBased on the analysis, here are the likely reasons why subject icons are not appearing:Unregistered Icons in IndustrialIconRegistry:Icons like mathematics, aws, or academic may not be registered in the registry.
+The registerAllIcons function (in definitions.ts, not provided) may not include these icons or may fail to execute.
+Mismatched Subject Names:The subjectName passed to SubjectIcon may not match the exact keys in subjectIconMap (e.g., "Math" vs. "Mathematics").
+Case sensitivity or extra spaces could cause mismatches.
+Registry Initialization Failure:If IconProvider’s initializeIcons fails (e.g., due to a missing definitions.ts or network issue), the registry will be empty, and all useIcon calls will return null.
+Missing Fallback Icon:If the academic fallback icon is not registered, the Icon component will render FallbackIcon (a generic square with an X), which may not be noticeable or could be mistaken for a missing icon.
+Database/Storage Misconfiguration:If subject icons are stored in a database or file storage (e.g., S3 for user-uploaded icons), the mapping between subjects and icon IDs may not be correctly synced with the registry.
+Admin Panel Issue:The admin panel may not be updating subject-to-icon mappings correctly, or the UI may not display available icons for selection.
+4. Checking Routes, Schemas, and StorageSince the provided code doesn’t include routes, database schemas, or storage details, I’ll assume a typical setup for a platform like Brainliest:Routes:Admin panel routes (e.g., /admin/subjects, /admin/exams) for managing subjects and exams.
+API endpoints (e.g., POST /api/subjects, PATCH /api/subjects/:id) to update subject metadata, including icons.
+Database Schema (Assumed, e.g., MongoDB or PostgreSQL):typescript
+
+interface Subject {
+  _id: string;
+  name: string; // e.g., "Mathematics"
+  iconId: string; // e.g., "mathematics" or URL for user-uploaded icon
+  category: string; // e.g., "academic"
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Exam {
+  _id: string;
+  name: string; // e.g., "PMP Certification"
+  subjectId: string; // Reference to Subject
+  iconId?: string; // Optional override for exam-specific icon
+  createdAt: Date;
+  updatedAt: Date;
+}
+Storage:User-uploaded icons stored in a cloud service (e.g., AWS S3) with URLs saved in the database.
+Predefined icons stored in the application (e.g., /public/icons or bundled in definitions.ts).
+Potential Issues:Routes: If the admin panel’s API endpoints don’t update iconId correctly, the database won’t reflect icon changes.
+Schema: If iconId is missing or not validated, subjects may lack associated icons.
+Storage: User-uploaded icons may not be properly saved or linked to the registry, causing getIcon to return null.
+
+5. Logic Evaluation Against Industry StandardsThe icon system is robust and aligns with many industry standards, but there are areas for improvement:Strengths:Modularity: Separates concerns (BaseIcon, IconProvider, IndustrialIconRegistry) for maintainability.
+Lazy Loading: Uses dynamic imports and Suspense for performance optimization.
+Fallbacks: Provides LoadingIcon and FallbackIcon for resilience.
+Concurrency: IndustrialIconRegistry uses a mutex for thread-safe operations, suitable for high-scale applications.
+Accessibility: BaseIcon includes ARIA attributes (role="img", aria-label) for screen readers.
+Search: Fuzzy search with TF-IDF-like scoring is sophisticated and scalable.
+
+Weaknesses:Static Mappings: Hardcoded subjectIconMap and getExactSubjectMapping are not scalable for dynamic subjects.
+Error Handling: Limited logging and error propagation make debugging difficult.
+Initialization: Setting isInitialized(true) on error in IconProvider can mask registry failures.
+Dynamic Icons: No clear mechanism for integrating user-uploaded icons into the registry.
+Admin Integration: Lacks a clear admin panel interface for icon management.
+
+Industry Standards Comparison:Standard: Icon systems should support dynamic registration (e.g., from a database or CDN).Gap: Relies on registerAllIcons, which is static and not database-driven.
+Standard: Admin panels should provide search and select interfaces for icons.Gap: Not implemented in the provided code.
+Standard: User-uploaded assets should be validated and sanitized.Gap: No mechanism for handling uploaded icons.
+Standard: Error logging and monitoring for debugging.Gap: Minimal logging, no integration with monitoring tools (e.g., Sentry).
+Proposed SolutionTo fix the issue of subject icons not appearing and enhance the system to meet industry standards, I’ll propose updates across the icon system, admin panel, database, and storage.1. Fix Subject Icons Not AppearingSteps:Normalize Subject Names:Update useSubjectIconName to normalize inputs (e.g., lowercase, trim spaces) to reduce mismatches.
+Replace hardcoded subjectIconMap with a dynamic mapping from the database.
+Ensure Registry Initialization:Fix IconProvider to handle initialization errors gracefully and log them.
+Verify that registerAllIcons includes all required icons (mathematics, aws, academic, etc.).
+Validate Registry Contents:Add a debug endpoint to list all registered icon IDs.
+Ensure academic and other fallback icons are registered.
+Dynamic Mapping:Store subject-to-icon mappings in the database and sync with the registry.
+Updated useSubjectIconNametypescript
+
+function useSubjectIconName(subjectName: string): string {
+  const { getIconForSubject } = useIcons();
+  const normalizedName = subjectName.trim().toLowerCase();
+  return getIconForSubject(normalizedName, 'academic');
+}
+
+Updated IconProvidertypescript
+
+useEffect(() => {
+  const initializeIcons = async () => {
+    try {
+      const { registerAllIcons } = await import('./definitions');
+      await registerAllIcons();
+      setIsInitialized(true);
+    } catch (error) {
+      console.error('Failed to initialize icon system:', error);
+      setIsInitialized(false); // Prevent null returns
+      // Optionally notify monitoring service (e.g., Sentry)
+    }
+  };
+  initializeIcons();
+}, []);
+
+Debug Endpoint (Add to routes, e.g., Express)typescript
+
+app.get('/api/debug/icons', (req, res) => {
+  const iconIds = industrialIconRegistry.getAllIconIds();
+  res.json({ icons: iconIds });
+});
+
+2. Update Admin Panel for Icon ManagementRequirements:Allow admins to search and select icons for subjects and exams.
+Support predefined icons from the registry and user-uploaded icons.
+Update the database with the selected iconId or icon URL.
+Provide a preview of the selected icon.
+
+Proposed Admin Panel UI:Subject Management Page (/admin/subjects):Table listing subjects with columns: Name, Category, Icon (preview), Actions (Edit, Delete).
+Edit form with:Text input for subject name.
+Searchable dropdown for selecting predefined icons (using useIconSearch).
+File upload for custom icons.
+Preview of the selected icon.
+Exam Management Page (/admin/exams):Similar to subjects, with an optional iconId field to override the subject’s icon.
+React Component for Icon Selectiontypescript
+
+import { useIconSearch, useIcon } from './icon-provider';
+import { useState } from 'react';
+
+interface IconSelectorProps {
+  value: string; // Current iconId or URL
+  onChange: (iconId: string) => void; // Callback for selection
+}
+
+const IconSelector: React.FC<IconSelectorProps> = ({ value, onChange }) => {
+  const { search, results, clearSearch } = useIconSearch();
+  const { component: IconComponent } = useIcon(value);
+  const [query, setQuery] = useState('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    search(e.target.value);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+      // Upload to storage (e.g., S3) and get URL
+      const url = await uploadIcon(file);
+      onChange(url); // Treat URL as iconId for custom icons
+    }
+  };
+
+  return (
+    <div className="icon-selector">
+      <label>Icon</label>
+      <div className="preview">
+        {IconComponent ? <IconComponent size="lg" /> : <span>No icon selected</span>}
+      </div>
+      <input
+        type="text"
+        value={query}
+        onChange={handleSearch}
+        placeholder="Search icons..."
+      />
+      <div className="results">
+        {results.map(({ metadata: { id } }) => (
+          <div key={id} onClick={() => { onChange(id); clearSearch(); setQuery(''); }}>
+            <Icon name={id} size="md" />
+            <span>{id}</span>
+          </div>
+        ))}
+      </div>
+      <input type="file" accept="image/svg+xml" onChange={handleFileUpload} />
+    </div>
+  );
+};
+
+async function uploadIcon(file: File): Promise<string> {
+  // Example: Upload to S3
+  const formData = new FormData();
+  formData.append('icon', file);
+  const response = await fetch('/api/upload/icon', {
+    method: 'POST',
+    body: formData,
+  });
+  const { url } = await response.json();
+  return url;
+}
+
+Admin Panel Route (Express Example)typescript
+
+// PATCH /api/subjects/:id
+app.patch('/api/subjects/:id', async (req, res) => {
+  const { name, iconId } = req.body;
+  const subject = await Subject.findByIdAndUpdate(
+    req.params.id,
+    { name, iconId },
+    { new: true }
+  );
+  res.json(subject);
+});
+
+// POST /api/upload/icon
+app.post('/api/upload/icon', async (req, res) => {
+  // Assume middleware (e.g., multer) handles file upload
+  const file = req.file;
+  // Upload to S3
+  const s3 = new AWS.S3();
+  const params = {
+    Bucket: 'brainliest-icons',
+    Key: `icons/${Date.now()}-${file.originalname}`,
+    Body: file.buffer,
+    ContentType: 'image/svg+xml',
+  };
+  const { Location: url } = await s3.upload(params).promise();
+  res.json({ url });
+});
+
+3. Database and Storage SchemaProposed Database Schema (MongoDB Example):typescript
+
+interface Subject {
+  _id: string;
+  name: string; // e.g., "Mathematics"
+  iconId: string; // Icon ID (e.g., "mathematics") or URL (e.g., "https://s3.amazonaws.com/icons/math.svg")
+  category: IconCategory; // e.g., "academic"
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Exam {
+  _id: string;
+  name: string; // e.g., "PMP Certification"
+  subjectId: string; // Reference to Subject
+  iconId?: string; // Optional override
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface Icon {
+  _id: string;
+  iconId: string; // Unique ID (e.g., "mathematics")
+  source: 'predefined' | 'user-uploaded';
+  url?: string; // For user-uploaded icons
+  metadata: IconMetadata; // Name, keywords, tags, etc.
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+Storage Setup:Predefined Icons: Bundled in the application (e.g., /public/icons or definitions.ts).
+User-Uploaded Icons: Stored in AWS S3 with metadata in the Icon collection.
+Validation: Ensure uploaded SVGs are sanitized (e.g., using sanitize-svg) to prevent XSS attacks.
+
+Mongoose Schema Example:typescript
+
+import mongoose from 'mongoose';
+
+const IconSchema = new mongoose.Schema({
+  iconId: { type: String, required: true, unique: true },
+  source: { type: String, enum: ['predefined', 'user-uploaded'], required: true },
+  url: { type: String },
+  metadata: {
+    name: { type: String, required: true },
+    category: { type: String, required: true },
+    keywords: [String],
+    tags: [String],
+    description: String,
+    official: Boolean,
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const SubjectSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  iconId: { type: String, required: true }, // References Icon.iconId or URL
+  category: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const ExamSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
+  iconId: { type: String }, // Optional override
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+export const Icon = mongoose.model('Icon', IconSchema);
+export const Subject = mongoose.model('Subject', SubjectSchema);
+export const Exam = mongoose.model('Exam', ExamSchema);
+
+Sync Icons with Registry:typescript
+
+async function syncIconsWithRegistry() {
+  const icons = await Icon.find();
+  for (const icon of icons) {
+    const entry: IconRegistryEntry = {
+      component: icon.source === 'predefined'
+        ? industrialIconRegistry.getIcon(icon.iconId)
+        : createIcon(<img src={icon.url} alt={icon.metadata.name} />, icon.iconId),
+      metadata: icon.metadata,
+    };
+    await industrialIconRegistry.registerIcon(entry);
+  }
+}
+
+4. Industry-Standard RecommendationsDynamic Icon Mapping:Store subject-to-icon mappings in the database (Subject.iconId) instead of hardcoding.
+Sync mappings with the registry on application startup.
+Error Handling and Logging:Integrate a monitoring service (e.g., Sentry) for errors in IconProvider and IndustrialIconRegistry.
+Log registry initialization failures and icon lookup misses.
+User-Uploaded Icons:Validate and sanitize SVG uploads using libraries like sanitize-svg.
+Store metadata (e.g., size, dimensions) in the Icon collection.
+Use a CDN (e.g., CloudFront) to serve uploaded icons for performance.
+Admin Panel Enhancements:Add bulk icon assignment for multiple subjects/exams.
+Provide icon usage analytics (e.g., most-used icons) using useIconMetrics.
+Performance Optimization:Preload critical icons (e.g., academic, mathematics) using preloadCriticalIcons.
+Use a CDN for predefined icons to reduce bundle size.
+Security:Restrict admin panel routes to authorized users (e.g., using JWT middleware).
+Validate iconId updates to prevent invalid or malicious values.
+Testing:Write unit tests for useSubjectIconName, Icon, and IndustrialIconRegistry using Jest.
+Test admin panel UI with Cypress or React Testing Library.
+Example Test:typescript
+
+import { render, screen } from '@testing-library/react';
+import { IconProvider, SubjectIcon } from './icon-provider';
+
+test('renders SubjectIcon with fallback', () => {
+  render(
+    <IconProvider>
+      <SubjectIcon subjectName="Unknown Subject" />
+    </IconProvider>
+  );
+  expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'academic');
+});
+
+5. Complete Updated Code (Key Changes)useSubjectIconNametypescript
+
+function useSubjectIconName(subjectName: string): string {
+  const { getIconForSubject } = useIcons();
+  const normalizedName = subjectName.trim().toLowerCase();
+  // Query database for dynamic mapping
+  const subject = useSubjectQuery(normalizedName); // Custom hook
+  return subject?.iconId || getIconForSubject(normalizedName, 'academic');
+}
+
+Custom Hook for Subject Query (Using React Query)typescript
+
+import { useQuery } from '@tanstack/react-query';
+
+async function fetchSubject(name: string) {
+  const response = await fetch(`/api/subjects?name=${encodeURIComponent(name)}`);
+  return response.json();
+}
+
+function useSubjectQuery(name: string) {
+  return useQuery(['subject', name], () => fetchSubject(name));
+}
+
+definitions.ts (Ensure Icons Are Registered)typescript
+
+import { createIcon } from './base-icon';
+import { industrialIconRegistry } from './registry';
+
+export async function registerAllIcons() {
+  const icons = [
+    {
+      id: 'academic',
+      component: createIcon(<path d="M50 20 L20 40 L80 40 Z" />, 'AcademicIcon'),
+      metadata: { name: 'Academic', category: 'academic', keywords: ['school', 'education'] },
+    },
+    {
+      id: 'mathematics',
+      component: createIcon(<path d="M20 20 H80 M20 50 H80 M20 80 H80" />, 'MathematicsIcon'),
+      metadata: { name: 'Mathematics', category: 'mathematics', keywords: ['math', 'calculus'] },
+    },
+    // Add more icons
+  ];
+  await industrialIconRegistry.registerIcons(icons);
+}
+
+Admin Panel Route (Express)typescript
+
+app.get('/api/subjects', async (req, res) => {
+  const { name } = req.query;
+  const query = name ? { name: new RegExp(name as string, 'i') } : {};
+  const subjects = await Subject.find(query);
+  res.json(subjects);
+});
+
+app.patch('/api/subjects/:id', async (req, res) => {
+  const { name, iconId } = req.body;
+  // Validate iconId
+  if (!industrialIconRegistry.hasIcon(iconId) && !iconId.startsWith('http')) {
+    return res.status(400).json({ error: 'Invalid iconId' });
+  }
+  const subject = await Subject.findByIdAndUpdate(
+    req.params.id,
+    { name, iconId },
+    { new: true }
+  );
+  res.json(subject);
+});
+
+Final RecommendationsImmediate Fix:Verify registerAllIcons includes all required icons (academic, mathematics, etc.).
+Normalize subjectName in useSubjectIconName.
+Check database for subject-to-icon mappings.
+Long-Term Improvements:Move subject-to-icon mappings to the database.
+Implement the admin panel icon selector UI.
+Add support for user-uploaded icons with validation.
+Integrate monitoring and logging for debugging.
+Testing Plan:Test SubjectIcon rendering with known and unknown subjects.
+Test admin panel icon selection and updates.
+Test user-uploaded icon uploads and rendering.
+Documentation:Document the icon system API and admin panel workflows.
+Provide guidelines for adding new icons to the registry.
+This solution ensures subject icons appear correctly, integrates with a dynamic database-driven approach, and meets industry standards for scalability and user experience. If you can share definitions.ts, database schemas, or admin panel code, I can refine the solution further. Let me know if you need specific implementation details or additional features!
+

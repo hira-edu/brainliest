@@ -170,8 +170,11 @@ StatusIcon.displayName = 'StatusIcon';
 
 // Helper hook to get subject icon name - always returns a string
 function useSubjectIconName(subjectName: string): string {
+  // Enhanced mapping with exact database names and pattern matching
   const subjectIconMap: Record<string, string> = {
+    // Exact database matches
     'PMP Certification': 'pmp',
+    'AWS Certified Solutions Architect': 'aws',
     'AWS Cloud Practitioner': 'aws',
     'AWS Solutions Architect': 'aws',
     'AWS Developer': 'aws',
@@ -182,64 +185,138 @@ function useSubjectIconName(subjectName: string): string {
     'Cisco CCNA': 'cisco',
     'Cisco CCNP': 'cisco',
     'Azure Fundamentals': 'azure',
+    'Microsoft Azure Fundamentals': 'azure',
     'Azure Administrator': 'azure',
     'Google Cloud Professional': 'google-cloud',
     'Oracle Database': 'oracle',
     'VMware vSphere': 'vmware',
     'Kubernetes Administrator': 'kubernetes',
     'Docker Certified Associate': 'docker',
-    Mathematics: 'mathematics',
-    Calculus: 'mathematics',
+    
+    // Mathematics subjects
+    'Mathematics': 'mathematics',
+    'Calculus': 'mathematics',
     'Linear Algebra': 'mathematics',
     'Discrete Mathematics': 'mathematics',
-    Geometry: 'mathematics',
+    'Geometry': 'mathematics',
     'Pre-Calculus': 'mathematics',
-    Statistics: 'statistics',
+    
+    // Statistics subjects  
+    'Statistics': 'statistics',
     'AP Statistics': 'statistics',
-    Biostatistics: 'statistics',
+    'Biostatistics': 'statistics',
     'Business Statistics': 'statistics',
     'Elementary Statistics': 'statistics',
     'Intro to Statistics': 'statistics',
-    Physics: 'science',
-    Chemistry: 'science',
-    Biology: 'science',
-    Astronomy: 'science',
+    
+    // Science subjects
+    'Physics': 'science',
+    'Chemistry': 'science',
+    'Biology': 'science',
+    'Astronomy': 'science',
     'Earth Science': 'science',
+    'Psychology': 'science',
+    'Sociology': 'science',
+    'Political Science': 'science',
+    
+    // Computer Science
     'Computer Science': 'computer-science',
-    Programming: 'code',
+    'Computer Science Fundamentals': 'computer-science',
+    'Programming': 'code',
     'Data Structures': 'algorithm',
-    Algorithms: 'algorithm',
+    'Algorithms': 'algorithm',
     'Web Development': 'web-dev',
     'Database Design': 'database',
-    'Computer Science Fundamentals': 'computer-science',
-    Business: 'business',
-    Accounting: 'business',
-    Economics: 'business',
-    Finance: 'business',
+    
+    // Business
+    'Business': 'business',
     'Business Administration': 'business',
-    Engineering: 'engineering',
+    'Accounting': 'business',
+    'Economics': 'business',
+    'Finance': 'business',
+    'History': 'business',
+    'Philosophy': 'business',
+    'English': 'business',
+    'Writing': 'business',
+    
+    // Engineering
+    'Engineering': 'engineering',
     'Mechanical Engineering': 'engineering',
     'Electrical Engineering': 'engineering',
-    Nursing: 'medical',
-    Pharmacology: 'medical',
+    
+    // Medical
+    'Nursing': 'medical',
+    'Pharmacology': 'medical',
     'Medical Sciences': 'medical',
     'Health Sciences': 'medical',
-    Anatomy: 'medical',
-    HESI: 'medical',
-    TEAS: 'medical',
-    Psychology: 'science',
-    History: 'business',
-    Philosophy: 'business',
-    Sociology: 'science',
-    'Political Science': 'science',
-    English: 'business',
-    Writing: 'business',
-    GRE: 'test-prep',
-    LSAT: 'test-prep',
-    TOEFL: 'test-prep',
-    GED: 'test-prep',
+    'Anatomy': 'medical',
+    'HESI': 'medical',
+    'TEAS': 'medical',
+    
+    // Test Prep
+    'GRE': 'test-prep',
+    'LSAT': 'test-prep',
+    'TOEFL': 'test-prep',
+    'GED': 'test-prep',
   };
-  return subjectIconMap[subjectName] || 'academic';
+
+  // First try exact match
+  if (subjectIconMap[subjectName]) {
+    console.log(`✅ Icon mapping: "${subjectName}" -> "${subjectIconMap[subjectName]}"`);
+    return subjectIconMap[subjectName];
+  }
+
+  // Pattern matching for partial matches
+  const lowerName = subjectName.toLowerCase();
+  
+  // AWS variants
+  if (lowerName.includes('aws') || lowerName.includes('amazon')) {
+    return 'aws';
+  }
+  
+  // CompTIA variants
+  if (lowerName.includes('comptia')) {
+    return 'comptia';
+  }
+  
+  // Math variants
+  if (lowerName.includes('math') || lowerName.includes('calculus') || lowerName.includes('algebra')) {
+    return 'mathematics';
+  }
+  
+  // Statistics variants
+  if (lowerName.includes('stat') || lowerName.includes('data analysis')) {
+    return 'statistics';
+  }
+  
+  // Science variants
+  if (lowerName.includes('physics') || lowerName.includes('chemistry') || lowerName.includes('biology')) {
+    return 'science';
+  }
+  
+  // Computer Science variants
+  if (lowerName.includes('computer') || lowerName.includes('programming') || lowerName.includes('software')) {
+    return 'computer-science';
+  }
+  
+  // Business variants
+  if (lowerName.includes('business') || lowerName.includes('management') || lowerName.includes('finance')) {
+    return 'business';
+  }
+  
+  // Engineering variants
+  if (lowerName.includes('engineering') || lowerName.includes('mechanical') || lowerName.includes('electrical')) {
+    return 'engineering';
+  }
+  
+  // Medical variants
+  if (lowerName.includes('medical') || lowerName.includes('nursing') || lowerName.includes('health')) {
+    return 'medical';
+  }
+  
+  // Default fallback
+  console.log(`⚠️ No icon mapping found for "${subjectName}", using fallback: academic`);
+  return 'academic';
 }
 
 export default Icon;

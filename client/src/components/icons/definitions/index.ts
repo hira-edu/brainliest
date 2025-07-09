@@ -16,12 +16,14 @@ export async function registerAllIcons(): Promise<void> {
       certificationIcons,
       academicIcons,
       technologyIcons,
-      generalIcons
+      generalIcons,
+      azureIcons
     ] = await Promise.all([
       import('./certification-icons'),
       import('./academic-icons'),
       import('./technology-icons'),
-      import('./general-icons')
+      import('./general-icons'),
+      import('./azure-icons')
     ]);
 
     // Register all icon sets
@@ -29,7 +31,8 @@ export async function registerAllIcons(): Promise<void> {
       ...certificationIcons.icons,
       ...academicIcons.icons,
       ...technologyIcons.icons,
-      ...generalIcons.icons
+      ...generalIcons.icons,
+      ...azureIcons.icons
     ]);
 
 
