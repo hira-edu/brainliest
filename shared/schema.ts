@@ -400,6 +400,12 @@ export const insertDailyTrendingSnapshotSchema = createInsertSchema(dailyTrendin
   createdAt: true,
 });
 
+export const insertAnonQuestionSessionSchema = createInsertSchema(anonQuestionSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Subcategory = typeof subcategories.$inferSelect;
@@ -447,3 +453,5 @@ export type SubjectTrendingStats = typeof subjectTrendingStats.$inferSelect;
 export type InsertSubjectTrendingStats = z.infer<typeof insertSubjectTrendingStatsSchema>;
 export type DailyTrendingSnapshot = typeof dailyTrendingSnapshot.$inferSelect;
 export type InsertDailyTrendingSnapshot = z.infer<typeof insertDailyTrendingSnapshotSchema>;
+export type AnonQuestionSession = typeof anonQuestionSessions.$inferSelect;
+export type InsertAnonQuestionSession = z.infer<typeof insertAnonQuestionSessionSchema>;
