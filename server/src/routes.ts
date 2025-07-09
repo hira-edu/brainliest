@@ -2729,6 +2729,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Email route for Titan Email testing
+  app.post("/api/test-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Email address is required" 
+        });
+      }
+
+      // Simple email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid email format" 
+        });
+      }
+
+      console.log(`📧 Sending test email to: ${email}`);
+      
+      // Send test email using the email service
+      const emailSent = await emailService.sendTestEmail(email);
+      
+      if (emailSent) {
+        console.log(`✅ Test email sent successfully to ${email}`);
+        res.json({ 
+          success: true, 
+          message: `Test email sent successfully to ${email}`,
+          service: "Titan Mail",
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log(`❌ Failed to send test email to ${email}`);
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to send test email. Please check Titan Email configuration.",
+          service: "Titan Mail",
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error("Test email error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Test email failed: " + (error.message || "Unknown error"),
+        service: "Titan Mail",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

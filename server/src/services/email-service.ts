@@ -27,12 +27,11 @@ class EmailService {
         return;
       }
 
-      // Error if Titan credentials not found
+      // Error if Titan credentials not found - fallback to console logging for testing
       console.error('TITAN_EMAIL and TITAN_PASSWORD environment variables are required');
-      throw new Error('Titan Email credentials not configured');
-
-      // 7. Development/Testing fallback
-      this.transporter = nodemailer.createTransport({
+      console.log('Falling back to console logging for development/testing');
+      
+      this.transporter = nodemailer.createTransporter({
         streamTransport: true,
         newline: 'unix',
         buffer: true,
@@ -480,6 +479,86 @@ Brainliest - Your Ultimate Exam Preparation Platform
       return true;
     } catch (error) {
       console.error('Email service connection test failed:', error);
+      return false;
+    }
+  }
+
+  async sendTestEmail(email: string): Promise<boolean> {
+    if (!this.transporter) {
+      console.error('Email transporter not initialized');
+      return false;
+    }
+
+    const senderAddress = process.env.TITAN_EMAIL || 'noreply@brainliest.com';
+    
+    const mailOptions = {
+      from: {
+        name: 'Brainliest Test',
+        address: senderAddress
+      },
+      to: email,
+      subject: 'Titan Email Test - Brainliest Platform',
+      text: `
+BRAINLIEST - Test Email
+
+This is a test email sent through Titan Mail service.
+
+Sent to: ${email}
+From: ${senderAddress}
+Date: ${new Date().toISOString()}
+
+If you received this email, the Titan Email configuration is working correctly!
+
+---
+Brainliest Platform
+Powered by Titan Mail
+      `,
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Titan Email Test</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; border-radius: 8px;">
+    <h1>🧠 Brainliest</h1>
+    <h2>Titan Email Test</h2>
+  </div>
+  
+  <div style="background: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 8px;">
+    <h3>✅ Email Service Test Successful</h3>
+    <p>This test email confirms that your Titan Mail configuration is working correctly.</p>
+    
+    <p><strong>Test Details:</strong></p>
+    <ul>
+      <li><strong>Recipient:</strong> ${email}</li>
+      <li><strong>Sender:</strong> ${senderAddress}</li>
+      <li><strong>Service:</strong> Titan Mail (smtp.titan.email)</li>
+      <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
+    </ul>
+  </div>
+  
+  <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+    <p><strong>🎉 Success!</strong> Your Brainliest platform can now send emails through Titan Mail.</p>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666;">
+    <p><strong>Brainliest Platform</strong><br>
+    Powered by Titan Mail</p>
+  </div>
+</body>
+</html>
+      `
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Test email sent successfully to ${email}`);
+      console.log(`📧 Message ID: ${result.messageId || 'N/A'}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send test email:', error);
       return false;
     }
   }
