@@ -87,14 +87,12 @@ export default function Analytics() {
     isLoading,
     isError,
     error
-  } = useQuery<AnalyticsOverview>(
-    ['/api/analytics/overview', selectedUser],
-    { enabled: !!selectedUser },
-    {
-      retry: 2,
-      onError: (err) => console.error('Failed to fetch analytics:', err)
-    }
-  );
+  } = useQuery<AnalyticsOverview>({
+    queryKey: ['/api/analytics/overview', selectedUser],
+    enabled: !!selectedUser,
+    retry: 2,
+    onError: (err) => console.error('Failed to fetch analytics:', err)
+  });
 
   // Redirect or prompt if not signed in
   if (!isSignedIn) {

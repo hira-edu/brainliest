@@ -641,6 +641,16 @@ The application follows modern best practices for scalability, security, and mai
 - **Comprehensive error source elimination**: Systematically identified and fixed all sources of truncated error messages and API timeouts
 - **Production-ready AI integration**: All Gemini AI services now use current, supported model versions preventing 404 errors
 
+### July 09, 2025 - Critical Database Timeout Resolution and React Query v5 Compatibility Fix (COMPLETED)
+- **Root cause identified**: Neon database connection timeouts were causing "Timeout" unhandled Promise rejections in browser console
+- **Database connection timeout increased**: Extended from 10 seconds to 30 seconds for slow Neon connections and Vercel cold starts
+- **Comprehensive timeout handling**: Added 20-second timeout protection to all database count operations (getSubjectCount, getExamCount, getQuestionCount)
+- **TrendingService timeout protection**: Wrapped all database queries in getFallbackTrending and getTrendingCertifications with timeout handlers
+- **Enhanced error filtering**: Improved App.tsx unhandled Promise rejection filtering to catch timeout-related errors
+- **React Query v5 compatibility fix**: Fixed Analytics component to use object syntax instead of deprecated array syntax
+- **Database health check function**: Added proper timeout handling for API route health monitoring
+- **Production-ready error management**: All database operations now have graceful timeout handling preventing mysterious error dialogs
+
 ### July 09, 2025 - Complete FreemiumService IP Processing and Error Dialog Resolution (COMPLETED)
 - **Fixed root cause of truncated error dialogs**: Identified that long IP strings like 'parse_error:245805e99fbce926:9559d1e35f81d505' were causing database constraint violations and truncated error messages
 - **Shortened client key generation**: Reduced hash lengths from 16 characters to 8 characters for all IP fallbacks and user-agent hashes
