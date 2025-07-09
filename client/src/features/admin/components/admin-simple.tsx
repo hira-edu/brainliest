@@ -1655,10 +1655,10 @@ export default function AdminSimple() {
                   </div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     <Badge variant="outline">
-                      {exams?.filter(e => e.subjectId === subject.id).length || 0} exams
+                      {exams?.filter(e => e.subjectSlug === subject.slug).length || 0} exams
                     </Badge>
                     <Badge variant="outline">
-                      {questions?.filter(q => q.subjectId === subject.id).length || 0} questions
+                      {questions?.filter(q => q.subjectSlug === subject.slug).length || 0} questions
                     </Badge>
                     <Button
                       variant="ghost"
@@ -1674,7 +1674,7 @@ export default function AdminSimple() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedSubjectFilter(subject?.id?.toString() || "all");
+                        setSelectedSubjectFilter(subject?.slug || "all");
                         setExamsPage(1); // Reset exams page when filtering
                       }}
                       title="View exams for this subject"
@@ -1685,7 +1685,7 @@ export default function AdminSimple() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deleteSubjectMutation.mutate(subject.id)}
+                      onClick={() => deleteSubjectMutation.mutate(subject.slug)}
                       className="text-red-600 hover:text-red-700"
                       title="Delete subject"
                     >
@@ -1723,7 +1723,7 @@ export default function AdminSimple() {
     const examForm = useForm<InsertExam>({
       resolver: zodResolver(insertExamSchema),
       defaultValues: {
-        subjectId: 0,
+        subjectSlug: "",
         title: "",
         description: "",
         difficulty: "Intermediate",
@@ -1745,8 +1745,8 @@ export default function AdminSimple() {
     });
 
     const deleteExamMutation = useMutation({
-      mutationFn: async (id: number) => {
-        await apiRequest("DELETE", `/api/exams/${id}`);
+      mutationFn: async (slug: string) => {
+        await apiRequest("DELETE", `/api/exams/by-slug/${slug}`);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
@@ -1759,7 +1759,7 @@ export default function AdminSimple() {
     const editExamForm = useForm<InsertExam>({
       resolver: zodResolver(insertExamSchema),
       defaultValues: {
-        subjectId: 0,
+        subjectSlug: "",
         title: "",
         description: "",
         difficulty: "",
@@ -1767,8 +1767,8 @@ export default function AdminSimple() {
     });
 
     const updateExamMutation = useMutation({
-      mutationFn: async ({ id, data }: { id: number; data: InsertExam }) => {
-        await apiRequest("PUT", `/api/exams/${id}`, data);
+      mutationFn: async ({ slug, data }: { slug: string; data: InsertExam }) => {
+        await apiRequest("PUT", `/api/exams/by-slug/${slug}`, data);
       },
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/exams"] });
@@ -1802,14 +1802,14 @@ export default function AdminSimple() {
 
     const onEditSubmit = (data: InsertExam) => {
       if (editingExam) {
-        updateExamMutation.mutate({ id: editingExam.id, data });
+        updateExamMutation.mutate({ slug: editingExam.slug, data });
       }
     };
 
     const handleEditExam = (exam: Exam) => {
       setEditingExam(exam);
       editExamForm.reset({
-        subjectId: exam.subjectId,
+        subjectSlug: exam.subjectSlug,
         title: exam.title,
         description: exam.description || "",
         difficulty: exam.difficulty,
@@ -1839,18 +1839,18 @@ export default function AdminSimple() {
                 <form onSubmit={examForm.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={examForm.control}
-                    name="subjectId"
+                    name="subjectSlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={subjects?.filter(subject => subject?.id && subject?.name).map((subject) => ({
-                              value: subject.id.toString(),
+                            options={subjects?.filter(subject => subject?.slug && subject?.name).map((subject) => ({
+                              value: subject.slug,
                               label: subject.name,
                             })) || []}
-                            value={field.value?.toString()}
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            value={field.value || ""}
+                            onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subject"
                             searchPlaceholder="Search subjects..."
                             emptyText="No subjects found"
@@ -1938,18 +1938,18 @@ export default function AdminSimple() {
                 <form onSubmit={editExamForm.handleSubmit(onEditSubmit)} className="space-y-4">
                   <FormField
                     control={editExamForm.control}
-                    name="subjectId"
+                    name="subjectSlug"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subject</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={subjects?.filter(subject => subject?.id && subject?.name).map((subject) => ({
-                              value: subject.id.toString(),
+                            options={subjects?.filter(subject => subject?.slug && subject?.name).map((subject) => ({
+                              value: subject.slug,
                               label: subject.name,
                             })) || []}
-                            value={field.value?.toString()}
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)}
+                            value={field.value || ""}
+                            onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subject"
                             searchPlaceholder="Search subjects..."
                             emptyText="No subjects found"
@@ -2035,8 +2035,8 @@ export default function AdminSimple() {
             <SearchableSelect
               options={[
                 { value: "all", label: "All Subjects" },
-                ...(subjects?.filter(subject => subject?.id && subject?.name).map((subject) => ({
-                  value: subject.id.toString(),
+                ...(subjects?.filter(subject => subject?.slug && subject?.name).map((subject) => ({
+                  value: subject.slug,
                   label: subject.name,
                 })) || [])
               ]}
@@ -2061,10 +2061,10 @@ export default function AdminSimple() {
 
         <div className="grid gap-4">
           {exams?.filter((exam) => 
-            selectedSubjectFilter === "all" || exam.subjectId.toString() === selectedSubjectFilter
+            selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter
           ).slice((examsPage - 1) * examsPerPage, examsPage * examsPerPage).map((exam) => {
-            const subject = subjects?.find(s => s.id === exam.subjectId);
-            const questionCount = questions?.filter(q => q.examId === exam.id).length || 0;
+            const subject = subjects?.find(s => s.slug === exam.subjectSlug);
+            const questionCount = questions?.filter(q => q.examSlug === exam.slug).length || 0;
 
             return (
               <Card key={exam.slug} className="hover:shadow-md transition-shadow">
@@ -2093,7 +2093,7 @@ export default function AdminSimple() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          setSelectedExamFilter(exam.id.toString());
+                          setSelectedExamFilter(exam.slug);
                           setQuestionsPage(1); // Reset questions page when filtering
                         }}
                         title="View questions for this exam"
@@ -2112,7 +2112,7 @@ export default function AdminSimple() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deleteExamMutation.mutate(exam.id)}
+                        onClick={() => deleteExamMutation.mutate(exam.slug)}
                         className="text-red-600 hover:text-red-700"
                         title="Delete exam"
                       >
@@ -2129,7 +2129,7 @@ export default function AdminSimple() {
         <PaginationControls
           currentPage={examsPage}
           totalItems={exams?.filter((exam) => 
-            selectedSubjectFilter === "all" || exam.subjectId.toString() === selectedSubjectFilter
+            selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter
           ).length || 0}
           itemsPerPage={examsPerPage}
           onPageChange={setExamsPage}
@@ -2155,10 +2155,10 @@ export default function AdminSimple() {
         question.domain?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesSubject = selectedSubject === "all" || 
-        question.subjectId.toString() === selectedSubject;
+        question.subjectSlug === selectedSubject;
       
       const matchesExam = selectedExam === "all" || 
-        question.examId.toString() === selectedExam;
+        question.examSlug === selectedExam;
 
       return matchesSearch && matchesSubject && matchesExam;
     }) || [];
@@ -2166,8 +2166,8 @@ export default function AdminSimple() {
     const questionForm = useForm<QuestionFormData>({
       resolver: zodResolver(questionFormSchema),
       defaultValues: {
-        examId: 0,
-        subjectId: 0,
+        examSlug: "",
+        subjectSlug: "",
         text: "",
         options: ["", ""],
         correctAnswer: 0,
@@ -2243,8 +2243,8 @@ export default function AdminSimple() {
     const handleEditQuestion = (question: Question) => {
       setEditingQuestion(question);
       questionForm.reset({
-        examId: question.examId,
-        subjectId: question.subjectId,
+        examSlug: question.examSlug,
+        subjectSlug: question.subjectSlug,
         text: question.text,
         options: question.options || ["", ""],
         correctAnswer: question.correctAnswer,
@@ -2641,8 +2641,8 @@ export default function AdminSimple() {
                   setSelectedExam("all");
                 } else {
                   // Check if current exam belongs to selected subject
-                  const currentExam = exams?.find(e => e.id.toString() === selectedExam);
-                  if (!currentExam || currentExam.subjectId.toString() !== value) {
+                  const currentExam = exams?.find(e => e.slug === selectedExam);
+                  if (!currentExam || currentExam.subjectSlug !== value) {
                     setSelectedExam("all");
                   }
                 }
@@ -2711,8 +2711,8 @@ export default function AdminSimple() {
 
         <div className="space-y-4">
           {filteredQuestions.slice((questionsPage - 1) * questionsPerPage, questionsPage * questionsPerPage).map((question) => {
-            const exam = exams?.find(e => e.id === question.examId);
-            const subject = subjects?.find(s => s.id === question.subjectId);
+            const exam = exams?.find(e => e.slug === question.examSlug);
+            const subject = subjects?.find(s => s.slug === question.subjectSlug);
             
             return (
               <Card key={question.id} className="hover:shadow-md transition-shadow">
