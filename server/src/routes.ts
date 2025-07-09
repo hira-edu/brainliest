@@ -16,6 +16,7 @@ import { trendingService } from "./services/trending-service";
 import { sitemapService } from "./services/sitemap-service";
 import { geolocationService } from "./services/geolocation-service";
 import { parseId, parseOptionalId, sanitizeString, validatePassword } from './security/input-sanitizer';
+import { z } from 'zod';
 import { validateEmail } from './services/auth-service';
 import { logAdminAction } from './middleware/auth';
 import { 
@@ -324,16 +325,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Question routes
   app.get("/api/questions", checkFreemiumStatus(), async (req, res) => {
     try {
-      const examId = parseOptionalId(req.query.examId as string);
-      const examSlug = sanitizeString(req.query.examSlug as string);
-      
+      // Schema-first validation for query parameters
+      const querySchema = z.object({
+        examSlug: z.string().regex(/^[a-z0-9-]+$/, 'Exam slug must be lowercase letters, numbers, or hyphens').optional(),
+        examId: z.string().regex(/^\d+$/, 'Exam ID must be a positive integer').optional()
+      }).refine(data => !data.examSlug || !data.examId, {
+        message: "Cannot specify both examSlug and examId"
+      });
+
+      let validatedQuery;
+      try {
+        validatedQuery = querySchema.parse(req.query);
+      } catch (validationError) {
+        return res.status(400).json({ 
+          message: "Invalid query parameters", 
+          errors: validationError.errors 
+        });
+      }
+
       let questions;
-      if (examSlug) {
-        // Use examSlug (slug-based filtering) - FIXED: This was the bug!
-        questions = await storage.getQuestionsByExam(examSlug);
-      } else if (examId) {
-        // Legacy support for examId (ID-based filtering)
-        questions = await storage.getQuestionsByExam(examId);
+      if (validatedQuery.examSlug) {
+        // Schema-validated and sanitized examSlug
+        const cleanSlug = sanitizeString(validatedQuery.examSlug);
+        questions = await storage.getQuestionsByExam(cleanSlug);
+      } else if (validatedQuery.examId) {
+        // Legacy support for examId with validation
+        const examId = parseId(validatedQuery.examId);
+        questions = await storage.getQuestionsByExam(examId.toString());
       } else {
         // No filter, return all questions
         questions = await storage.getQuestions();
@@ -347,6 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(responseData);
     } catch (error) {
+      console.error('Questions API error:', error);
       res.status(500).json({ message: "Failed to fetch questions" });
     }
   });
