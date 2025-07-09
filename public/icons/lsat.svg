@@ -1,0 +1,8 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <title>LSAT Exam Icon</title>
+    <rect x="3" y="3" width="18" height="18" rx="2" fill="#7c2d12" stroke="#78350f" stroke-width="0.5"/>
+    <text x="12" y="9" text-anchor="middle" font-family="Arial, sans-serif" 
+          font-size="2.5" font-weight="bold" fill="white">LSAT</text>
+    <path d="M8 13 L12 15 L16 13" stroke="white" stroke-width="1.5" fill="none"/>
+    <circle cx="12" cy="17" r="1" fill="white"/>
+  </svg>

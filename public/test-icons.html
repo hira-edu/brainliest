@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Test</title>
+</head>
+<body>
+    <h1>Direct Icon Test</h1>
+    <p>Testing if icons load directly:</p>
+    
+    <div style="display: flex; gap: 20px; align-items: center;">
+        <div>
+            <p>HESI:</p>
+            <img src="/icons/hesi.svg" alt="HESI" style="width: 48px; height: 48px; border: 1px solid #ccc;" />
+        </div>
+        
+        <div>
+            <p>TEAS:</p>
+            <img src="/icons/teas.svg" alt="TEAS" style="width: 48px; height: 48px; border: 1px solid #ccc;" />
+        </div>
+        
+        <div>
+            <p>GRE:</p>
+            <img src="/icons/gre.svg" alt="GRE" style="width: 48px; height: 48px; border: 1px solid #ccc;" />
+        </div>
+        
+        <div>
+            <p>LSAT:</p>
+            <img src="/icons/lsat.svg" alt="LSAT" style="width: 48px; height: 48px; border: 1px solid #ccc;" />
+        </div>
+        
+        <div>
+            <p>TOEFL:</p>
+            <img src="/icons/toefl.svg" alt="TOEFL" style="width: 48px; height: 48px; border: 1px solid #ccc;" />
+        </div>
+    </div>
+    
+    <script>
+        // Test if files exist
+        ['hesi', 'teas', 'gre', 'lsat', 'toefl'].forEach(name => {
+            fetch(`/icons/${name}.svg`)
+                .then(response => {
+                    console.log(`${name}.svg:`, response.ok ? 'EXISTS' : 'NOT FOUND');
+                })
+                .catch(err => {
+                    console.log(`${name}.svg: ERROR`, err);
+                });
+        });
+    </script>
+</body>
+</html>

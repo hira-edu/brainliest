@@ -82,27 +82,36 @@ class IconRegistryService {
    * Get icon for a subject with intelligent fallback
    */
   async getIconForSubject(subjectName: string): Promise<{ iconId: string; source: 'database' | 'downloaded' | 'pattern' | 'fallback' }> {
+    console.log(`🔍 Icon resolution starting for: "${subjectName}"`);
+    
     await this.initialize();
 
     // 1. Try database mapping first (highest priority)
+    console.log('🗄️ Checking database for icon...');
     const dbIconId = await this.getDatabaseIconForSubject(subjectName);
     if (dbIconId && this.hasIcon(dbIconId)) {
+      console.log(`✅ Database match found: ${dbIconId}`);
       return { iconId: dbIconId, source: 'database' };
     }
 
     // 2. Try pattern matching with downloaded icons
+    console.log('🔎 Checking pattern matching...');
     const patternIcon = this.getIconByPattern(subjectName);
     if (patternIcon) {
+      console.log(`✅ Pattern match found: ${patternIcon}`);
       return { iconId: patternIcon, source: 'pattern' };
     }
 
     // 3. Try direct name matching
+    console.log('💾 Checking cache...');
     const directMatch = this.getIconByName(subjectName);
     if (directMatch) {
+      console.log(`✅ Cache match found: ${directMatch}`);
       return { iconId: directMatch, source: 'downloaded' };
     }
 
     // 4. Fallback to academic icon
+    console.log(`⚠️ No icon found for "${subjectName}", using fallback`);
     return { iconId: 'academic', source: 'fallback' };
   }
 
