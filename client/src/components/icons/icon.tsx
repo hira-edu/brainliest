@@ -95,31 +95,18 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
         
         setIsLoading(true);
         try {
-          // First try database lookup using subject name to find slug
-          const { apiRequest } = await import('../../services/queryClient');
-          const subjects = await apiRequest('/api/subjects');
-          const subject = subjects.find((s: any) => s.name === subjectName);
+          // Use enhanced icon registry service
+          const { iconRegistryService } = await import('../../services/icon-registry-service');
+          const result = await iconRegistryService.getIconForSubject(subjectName);
           
-          if (subject) {
-            // Try database-driven icon
-            const { iconService } = await import('../../services/icon-service');
-            const dbIcon = await iconService.getIconForSubject(subject.slug);
-            
-            if (dbIcon) {
-              console.log(`✅ Database icon resolved: "${subjectName}" -> "${dbIcon.id}"`);
-              setResolvedIcon(dbIcon.id);
-              return;
-            }
-          }
-          
-          // Fallback to hardcoded mapping
-          const hardcodedIcon = useSubjectIconName(subjectName);
-          console.log(`⚡ Fallback icon resolved: "${subjectName}" -> "${hardcodedIcon}"`);
-          setResolvedIcon(hardcodedIcon);
+          console.log(`🎨 Icon resolved: "${subjectName}" -> "${result.iconId}" (${result.source})`);
+          setResolvedIcon(result.iconId);
           
         } catch (error) {
           console.warn(`⚠️ Icon resolution failed for "${subjectName}":`, error);
-          setResolvedIcon(fallback);
+          // Final fallback to hardcoded mapping
+          const hardcodedIcon = useSubjectIconName(subjectName);
+          setResolvedIcon(hardcodedIcon);
         } finally {
           setIsLoading(false);
         }

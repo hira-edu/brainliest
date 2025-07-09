@@ -14,6 +14,7 @@ import { useToast } from '../../../hooks/use-toast';
 import { iconService, type IconSearchResult } from '../../../services/icon-service';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../../../services/queryClient';
+import { DownloadedIconManager } from './downloaded-icon-manager';
 
 interface SubjectIconAssignment {
   subjectSlug: string;
@@ -178,6 +179,7 @@ export function IconManagementPanel() {
           <TabsTrigger value="search">Search Icons</TabsTrigger>
           <TabsTrigger value="browse">Browse Icons</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="downloaded">Downloaded Icons</TabsTrigger>
         </TabsList>
 
         <TabsContent value="assign" className="space-y-4">
@@ -360,6 +362,10 @@ export function IconManagementPanel() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="downloaded" className="space-y-4">
+          <DownloadedIconManager />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,0 +1,1039 @@
+Objective: Download a complete set of SVG icons and store them in a folder for use in the application.Steps:Select Icon Library:Choose an open-source icon library (e.g., Heroicons, Feather Icons, or Tabler Icons) with at least 100 SVGs covering academic, certification, and technology categories.
+Example: Download Heroicons (https://heroicons.com/) or Tabler Icons (https://tabler.io/icons).
+Download Icons:Use a script to download SVGs programmatically or manually export them.
+Example script using axios:javascript
+
+const axios = require('axios');
+const fs = require('fs').promises;
+const path = require('path');
+
+async function downloadIcons() {
+  const icons = [
+    { id: 'academic', url: 'https://example.com/icons/academic.svg' },
+    { id: 'mathematics', url: 'https://example.com/icons/mathematics.svg' },
+    // Add more icons
+  ];
+  const outputDir = path.join(__dirname, 'public', 'icons');
+  await fs.mkdir(outputDir, { recursive: true });
+
+  for (const { id, url } of icons) {
+    try {
+      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      await fs.writeFile(path.join(outputDir, `${id}.svg`), response.data);
+      console.log(`Downloaded ${id}.svg`);
+    } catch (error) {
+      console.error(`Failed to download ${id}:`, error);
+    }
+  }
+}
+
+downloadIcons();
+Store Icons:Save icons in /public/icons (e.g., /public/icons/academic.svg, /public/icons/mathematics.svg).
+Alternatively, upload to an S3 bucket (brainliest-icons) and store URLs in the Icon collection.
+Register Icons in IndustrialIconRegistry:Update definitions.ts to register downloaded icons:typescript
+
+import { createIcon } from './base-icon';
+import { industrialIconRegistry } from './registry';
+
+export async function registerAllIcons() {
+  const icons = [
+    {
+      id: 'academic',
+      component: createIcon(
+        <path d="M50 20 L20 40 L80 40 Z" />,
+        'AcademicIcon'
+      ),
+      metadata: {
+        id: 'academic',
+        name: 'Academic',
+        category: 'academic',
+        keywords: ['school', 'education', 'learning'],
+        tags: ['study', 'classroom'],
+        official: true,
+      },
+    },
+    {
+      id: 'mathematics',
+      component: createIcon(
+        <path d="M20 20 H80 M20 50 H80 M20 80 H80" />,
+        'MathematicsIcon'
+      ),
+      metadata: {
+        id: 'mathematics',
+        name: 'Mathematics',
+        category: 'mathematics',
+        keywords: ['math', 'calculus', 'algebra'],
+        tags: ['numbers', 'equations'],
+        official: true,
+      },
+    },
+    // Add more icons
+  ];
+  await industrialIconRegistry.registerIcons(icons);
+}
+Validate Icons:Ensure all SVGs are valid and sanitized (use sanitize-svg for user-uploaded icons).
+Verify that all registered icons are accessible via /public/icons/[id].svg.
+Expected Output:A /public/icons folder containing at least 100 SVG icons.
+Updated definitions.ts registering all icons in the IndustrialIconRegistry.
+Optional: S3 bucket configuration with uploaded icons and URLs stored in the database.
+
+3. Dynamic Icon MappingObjective: Replace hardcoded subjectIconMap with a database-driven approach to map subjects and exams to icons dynamically.Steps:Update Database Schema:Use the following MongoDB schemas:typescript
+
+import mongoose from 'mongoose';
+
+const IconSchema = new mongoose.Schema({
+  iconId: { type: String, required: true, unique: true },
+  source: { type: String, enum: ['predefined', 'user-uploaded'], required: true },
+  url: { type: String }, // For user-uploaded icons
+  metadata: {
+    name: { type: String, required: true },
+    category: { type: String, required: true },
+    keywords: [String],
+    tags: [String],
+    description: String,
+    official: Boolean,
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const SubjectSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  iconId: { type: String, required: true }, // Icon ID or URL
+  category: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const ExamSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
+  iconId: { type: String }, // Optional override
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+export const Icon = mongoose.model('Icon', IconSchema);
+export const Subject = mongoose.model('Subject', SubjectSchema);
+export const Exam = mongoose.model('Exam', ExamSchema);
+Sync Icons with Registry:On application startup, sync Icon collection with IndustrialIconRegistry:typescript
+
+async function syncIconsWithRegistry() {
+  const icons = await Icon.find();
+  const entries = icons.map(icon => ({
+    component: icon.source === 'predefined'
+      ? industrialIconRegistry.getIcon(icon.iconId)
+      : createIcon(<img src={icon.url} alt={icon.metadata.name} />, icon.iconId),
+    metadata: icon.metadata,
+  }));
+  await industrialIconRegistry.registerIcons(entries);
+}
+Update useSubjectIconName:Query the database for the subject’s iconId:typescript
+
+import { useQuery } from '@tanstack/react-query';
+import { useIcons } from './icon-provider';
+
+async function fetchSubjectIcon(name: string) {
+  const response = await fetch(`/api/subjects?name=${encodeURIComponent(name)}`);
+  const subject = await response.json();
+  return subject?.iconId || null;
+}
+
+function useSubjectIconName(subjectName: string): string {
+  const { getIconForSubject } = useIcons();
+  const normalizedName = subjectName.trim().toLowerCase();
+  const { data: iconId } = useQuery(['subject-icon', normalizedName], () => fetchSubjectIcon(normalizedName), {
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+  return iconId || getIconForSubject(normalizedName, 'academic');
+}
+API Routes for Subjects:Implement endpoints to query and update subjects:typescript
+
+import express from 'express';
+import { Subject, Icon } from './models';
+
+const router = express.Router();
+
+router.get('/subjects', async (req, res) => {
+  const { name } = req.query;
+  const query = name ? { name: new RegExp(name as string, 'i') } : {};
+  const subjects = await Subject.find(query);
+  res.json(subjects[0] || null);
+});
+
+router.patch('/subjects/:id', async (req, res) => {
+  const { name, iconId } = req.body;
+  if (iconId && !iconId.startsWith('http') && !(await Icon.findOne({ iconId }))) {
+    return res.status(400).json({ error: 'Invalid iconId' });
+  }
+  const subject = await Subject.findByIdAndUpdate(
+    req.params.id,
+    { name, iconId },
+    { new: true }
+  );
+  res.json(subject);
+});
+
+export default router;
+Handle User-Uploaded Icons:Implement an upload endpoint for user-uploaded SVGs:typescript
+
+import AWS from 'aws-sdk';
+import multer from 'multer';
+import sanitizeSvg from 'sanitize-svg';
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.post('/upload/icon', upload.single('icon'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file || file.mimetype !== 'image/svg+xml') {
+      return res.status(400).json({ error: 'Invalid file type. Only SVG is allowed.' });
+    }
+
+    // Sanitize SVG
+    const sanitizedSvg = await sanitizeSvg(file.buffer);
+
+    // Upload to S3
+    const s3 = new AWS.S3();
+    const key = `icons/${Date.now()}-${file.originalname}`;
+    const params = {
+      Bucket: 'brainliest-icons',
+      Key: key,
+      Body: sanitizedSvg,
+      ContentType: 'image/svg+xml',
+    };
+    const { Location: url } = await s3.upload(params).promise();
+
+    // Save to database
+    const icon = new Icon({
+      iconId: key,
+      source: 'user-uploaded',
+      url,
+      metadata: {
+        name: req.body.name || 'Custom Icon',
+        category: req.body.category || 'custom',
+        keywords: req.body.keywords?.split(',') || [],
+        tags: req.body.tags?.split(',') || [],
+        official: false,
+      },
+    });
+    await icon.save();
+
+    res.json({ url, iconId: key });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to upload icon' });
+  }
+});
+Expected Output:A dynamic mapping system where subjects and exams retrieve iconId from the database.
+Support for both predefined and user-uploaded icons.
+API endpoints for querying and updating icon mappings.
+
+4. Admin Panel EnhancementsObjective: Enhance the admin panel to allow searching, selecting, and updating icons for subjects and exams.Steps:Icon Selector Component:Create a reusable component for selecting icons:typescript
+
+import { useState } from 'react';
+import { useIconSearch, useIcon } from './icon-provider';
+
+interface IconSelectorProps {
+  value: string;
+  onChange: (iconId: string) => void;
+}
+
+const IconSelector: React.FC<IconSelectorProps> = ({ value, onChange }) => {
+  const { search, results, clearSearch } = useIconSearch();
+  const { component: IconComponent } = useIcon(value);
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    search(e.target.value);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append('icon', file);
+      formData.append('name', file.name);
+      formData.append('category', 'custom');
+      const response = await fetch('/api/upload/icon', {
+        method: 'POST',
+        body: formData,
+      });
+      const { iconId } = await response.json();
+      onChange(iconId);
+      clearSearch();
+      setQuery('');
+    }
+  };
+
+  return (
+    <div className="icon-selector" style={{ padding: '16px' }}>
+      <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>
+        Select Icon
+      </label>
+      <div className="preview" style={{ marginBottom: '16px' }}>
+        {IconComponent ? (
+          <IconComponent size="lg" aria-label="Selected icon" />
+        ) : (
+          <span>No icon selected</span>
+        )}
+      </div>
+      <input
+        type="text"
+        value={query}
+        onChange={handleSearch}
+        placeholder="Search icons..."
+        style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
+      />
+      <div className="results" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+        {results.map(({ metadata: { id, name } }) => (
+          <div
+            key={id}
+            onClick={() => {
+              onChange(id);
+              clearSearch();
+              setQuery('');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px',
+              cursor: 'pointer',
+              background: id === value ? '#f0f0f0' : 'transparent',
+            }}
+          >
+            <Icon name={id} size="md" />
+            <span style={{ marginLeft: '8px' }}>{name}</span>
+          </div>
+        ))}
+      </div>
+      <input
+        type="file"
+        accept="image/svg+xml"
+        onChange={handleFileUpload}
+        style={{ marginTop: '16px' }}
+      />
+    </div>
+  );
+};
+
+export default IconSelector;
+Subject Management Page:Create a page to list and edit subjects:typescript
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import IconSelector from './IconSelector';
+
+const fetchSubjects = async () => {
+  const response = await fetch('/api/subjects');
+  return response.json();
+};
+
+const updateSubject = async ({ id, data }: { id: string; data: { name: string; iconId: string } }) => {
+  const response = await fetch(`/api/subjects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+};
+
+const SubjectManagement: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { data: subjects } = useQuery(['subjects'], fetchSubjects);
+  const mutation = useMutation(updateSubject, {
+    onSuccess: () => queryClient.invalidateQueries(['subjects']),
+  });
+
+  return (
+    <div>
+      <h1>Manage Subjects</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Icon</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {subjects?.map((subject: any) => (
+            <tr key={subject._id}>
+              <td>{subject.name}</td>
+              <td>
+                <IconSelector
+                  value={subject.iconId}
+                  onChange={(iconId) =>
+                    mutation.mutate({ id: subject._id, data: { name: subject.name, iconId } })
+                  }
+                />
+              </td>
+              <td>
+                <button>Edit</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default SubjectManagement;
+Exam Management Page:Similar to SubjectManagement, with an optional iconId override:typescript
+
+const ExamManagement: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { data: exams } = useQuery(['exams'], () => fetch('/api/exams').then(res => res.json()));
+  const mutation = useMutation(
+    ({ id, data }: { id: string; data: { name: string; iconId?: string } }) =>
+      fetch(`/api/exams/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }).then(res => res.json()),
+    { onSuccess: () => queryClient.invalidateQueries(['exams']) }
+  );
+
+  return (
+    <div>
+      <h1>Manage Exams</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Icon</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {exams?.map((exam: any) => (
+            <tr key={exam._id}>
+              <td>{exam.name}</td>
+              <td>
+                <IconSelector
+                  value={exam.iconId || exam.subject.iconId}
+                  onChange={(iconId) =>
+                    mutation.mutate({ id: exam._id, data: { name: exam.name, iconId } })
+                  }
+                />
+              </td>
+              <td>
+                <button>Edit</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default ExamManagement;
+Expected Output:A fully functional admin panel with searchable icon selection for subjects and exams.
+Support for uploading custom SVGs and assigning them to subjects/exams.
+Real-time previews of selected icons.
+
+5. Industry-Standard RecommendationsPerformance:Preload Critical Icons: Use preloadCriticalIcons to load commonly used icons (e.g., academic, mathematics) on startup.
+CDN Integration: Serve predefined and user-uploaded icons via a CDN (e.g., CloudFront) to reduce latency.
+Caching: Implement client-side caching for icon metadata using React Query’s staleTime.
+
+Security:SVG Sanitization: Use sanitize-svg to prevent XSS in user-uploaded SVGs.
+Access Control: Restrict /api/subjects and /api/upload/icon endpoints to admin users with JWT authentication.
+Validation: Validate iconId against the Icon collection or URL format before saving.
+
+Scalability:Database Indexing: Add indexes on Subject.name and Icon.iconId for faster queries.
+Batch Operations: Support bulk icon assignments in the admin panel.
+Distributed Storage: Use S3 with lifecycle policies to manage icon storage costs.
+
+Maintainability:Documentation: Document the icon system API, admin panel workflows, and database schemas.
+Type Safety: Use TypeScript interfaces for all API responses and database models.
+Modular Code: Keep IconSelector reusable for other entities (e.g., categories, users).
+
+Testing:Unit Tests:Test useSubjectIconName with various inputs.
+Test IconSelector rendering and interaction.
+Test IndustrialIconRegistry methods (getIcon, searchIcons).
+End-to-End Tests:Test admin panel workflows (icon selection, upload, save).
+Test icon rendering in subject and exam pages.
+Tools: Jest, React Testing Library, Cypress.
+
+Monitoring:Error Tracking: Integrate Sentry for runtime errors in IconProvider and IndustrialIconRegistry.
+Performance Metrics: Use IndustrialIconRegistry.getMetrics() to monitor search and lookup times.
+Logging: Use a structured logger (e.g., Winston) for debug logs.
+
+Expected Output:A comprehensive report with recommendations for performance, security, scalability, and maintainability.
+A testing plan with sample test cases.
+Integration with monitoring tools.
+
+6. Complete Updated CodeBelow is the consolidated code incorporating all changes. This includes updates to the icon system, database integration, and admin panel components.icon-provider.tsxtypescript
+
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { IconContextValue, IconConfig, IconCategory, IconRegistryEntry } from './types';
+import { industrialIconRegistry } from './registry';
+
+// Default configuration
+const DEFAULT_CONFIG: IconConfig = {
+  defaultSize: 'md',
+  defaultColor: 'current',
+  defaultVariant: 'filled',
+  lazyLoading: true,
+  cacheSize: 100,
+  themeColors: {
+    primary: 'hsl(207, 90%, 54%)',
+    secondary: 'hsl(146, 60%, 45%)',
+    accent: 'hsl(14, 87%, 55%)',
+    muted: 'hsl(25, 5.3%, 44.7%)',
+    destructive: 'hsl(0, 84.2%, 60.2%)',
+  },
+};
+
+// Create context
+const IconContext = createContext<IconContextValue | null>(null);
+
+interface IconProviderProps {
+  children: ReactNode;
+  config?: Partial<IconConfig>;
+}
+
+export function IconProvider({ children, config = {} }: IconProviderProps) {
+  const [isInitialized, setIsInitialized] = useState(false);
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+
+  useEffect(() => {
+    const initializeIcons = async () => {
+      try {
+        await import('./definitions').then(({ registerAllIcons }) => registerAllIcons());
+        await syncIconsWithRegistry(); // Sync database icons
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Failed to initialize icon system:', error);
+        // Log to Sentry or similar
+        setIsInitialized(false);
+      }
+    };
+    initializeIcons();
+  }, []);
+
+  const contextValue: IconContextValue = {
+    getIcon: (id: string) => (isInitialized ? industrialIconRegistry.getIcon(id) : null),
+    getIconMetadata: (id: string) => (isInitialized ? industrialIconRegistry.getIconMetadata(id) : null),
+    searchIcons: (query: string, category?: IconCategory) =>
+      isInitialized ? industrialIconRegistry.searchIcons(query, category) : [],
+    getIconsByCategory: (category: IconCategory) =>
+      isInitialized ? industrialIconRegistry.getIconsByCategory(category) : [],
+    registerIcon: (entry: IconRegistryEntry) => industrialIconRegistry.registerIcon(entry),
+    hasIcon: (id: string) => (isInitialized ? industrialIconRegistry.hasIcon(id) : false),
+    getAllIconIds: () => (isInitialized ? industrialIconRegistry.getAllIconIds() : []),
+  };
+
+  return <IconContext.Provider value={contextValue}>{children}</IconContext.Provider>;
+}
+
+export function useIcons() {
+  const context = useContext(IconContext);
+  if (!context) throw new Error('useIcons must be used within an IconProvider');
+  return context;
+}
+
+export function useIcon(id: string) {
+  const context = useIcons();
+  const component = context.getIcon(id);
+  const metadata = context.getIconMetadata(id);
+  return { component, metadata, loading: false };
+}
+
+export function useIconSearch() {
+  const { searchIcons, getIconsByCategory } = useIcons();
+  const [searchState, setSearchState] = useState({
+    query: '',
+    category: undefined as IconCategory | undefined,
+    results: [] as IconRegistryEntry[],
+  });
+
+  const search = (query: string, category?: IconCategory) => {
+    const results = query ? searchIcons(query, category) : category ? getIconsByCategory(category) : [];
+    setSearchState({ query, category, results });
+  };
+
+  const clearSearch = () => setSearchState({ query: '', category: undefined, results: [] });
+
+  return { ...searchState, search, clearSearch };
+}
+
+export function useSubjectIconName(subjectName: string): string {
+  const { getIconForSubject } = useIcons();
+  const normalizedName = subjectName.trim().toLowerCase();
+  const { data: iconId } = useQuery(['subject-icon', normalizedName], () => fetchSubjectIcon(normalizedName), {
+    staleTime: 5 * 60 * 1000,
+  });
+  return iconId || getIconForSubject(normalizedName, 'academic');
+}
+
+async function fetchSubjectIcon(name: string) {
+  const response = await fetch(`/api/subjects?name=${encodeURIComponent(name)}`);
+  const subject = await response.json();
+  return subject?.iconId || null;
+}
+
+async function syncIconsWithRegistry() {
+  const icons = await Icon.find();
+  const entries = icons.map(icon => ({
+    component: icon.source === 'predefined'
+      ? industrialIconRegistry.getIcon(icon.iconId)
+      : createIcon(<img src={icon.url} alt={icon.metadata.name} />, icon.iconId),
+    metadata: icon.metadata,
+  }));
+  await industrialIconRegistry.registerIcons(entries);
+}
+
+icon.tsxtypescript
+
+import React, { Suspense, forwardRef } from 'react';
+import { IconProps } from './types';
+import { useIcon } from './icon-provider';
+import { LoadingIcon, FallbackIcon } from './base-icon';
+
+interface IconComponentProps extends IconProps {
+  name: string;
+  fallback?: string;
+  showLoading?: boolean;
+}
+
+export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
+  ({ name, fallback, showLoading = true, ...props }, ref) => {
+    const { component: PrimaryComponent, loading: primaryLoading } = useIcon(name);
+    const { component: FallbackComponent, loading: fallbackLoading } = useIcon(fallback ?? '');
+
+    if (primaryLoading && showLoading) return <LoadingIcon ref={ref} {...props} />;
+    if (PrimaryComponent) {
+      return (
+        <Suspense fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}>
+          <PrimaryComponent ref={ref} {...props} />
+        </Suspense>
+      );
+    }
+    if (fallback && FallbackComponent) {
+      return (
+        <Suspense fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : null}>
+          <FallbackComponent ref={ref} {...props} />
+        </Suspense>
+      );
+    }
+    return <FallbackIcon ref={ref} {...props} />;
+  }
+);
+
+Icon.displayName = 'Icon';
+
+interface SubjectIconProps extends IconProps {
+  subjectName: string;
+  fallback?: string;
+}
+
+export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
+  ({ subjectName, fallback = 'academic', ...props }, ref) => {
+    const iconName = useSubjectIconName(subjectName);
+    return <Icon ref={ref} name={iconName || fallback} fallback={fallback} {...props} />;
+  }
+);
+
+SubjectIcon.displayName = 'SubjectIcon';
+
+definitions.tstypescript
+
+import { createIcon } from './base-icon';
+import { industrialIconRegistry } from './registry';
+
+export async function registerAllIcons() {
+  const icons = [
+    {
+      id: 'academic',
+      component: createIcon(<path d="M50 20 L20 40 L80 40 Z" />, 'AcademicIcon'),
+      metadata: {
+        id: 'academic',
+        name: 'Academic',
+        category: 'academic',
+        keywords: ['school', 'education', 'learning'],
+        tags: ['study', 'classroom'],
+        official: true,
+      },
+    },
+    {
+      id: 'mathematics',
+      component: createIcon(<path d="M20 20 H80 M20 50 H80 M20 80 H80" />, 'MathematicsIcon'),
+      metadata: {
+        id: 'mathematics',
+        name: 'Mathematics',
+        category: 'mathematics',
+        keywords: ['math', 'calculus', 'algebra'],
+        tags: ['numbers', 'equations'],
+        official: true,
+      },
+    },
+    // Add more icons (download from Heroicons or similar)
+  ];
+  await industrialIconRegistry.registerIcons(icons);
+}
+
+routes/icons.tstypescript
+
+import express from 'express';
+import AWS from 'aws-sdk';
+import multer from 'multer';
+import { Icon, Subject } from './models';
+import sanitizeSvg from 'sanitize-svg';
+
+const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.get('/subjects', async (req, res) => {
+  const { name } = req.query;
+  const query = name ? { name: new RegExp(name as string, 'i') } : {};
+  const subjects = await Subject.find(query);
+  res.json(subjects[0] || null);
+});
+
+router.patch('/subjects/:id', async (req, res) => {
+  const { name, iconId } = req.body;
+  if (iconId && !iconId.startsWith('http') && !(await Icon.findOne({ iconId }))) {
+    return res.status(400).json({ error: 'Invalid iconId' });
+  }
+  const subject = await Subject.findByIdAndUpdate(req.params.id, { name, iconId }, { new: true });
+  res.json(subject);
+});
+
+router.post('/upload/icon', upload.single('icon'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file || file.mimetype !== 'image/svg+xml') {
+      return res.status(400).json({ error: 'Invalid file type. Only SVG is allowed.' });
+    }
+    const sanitizedSvg = await sanitizeSvg(file.buffer);
+    const s3 = new AWS.S3();
+    const key = `icons/${Date.now()}-${file.originalname}`;
+    const params = {
+      Bucket: 'brainliest-icons',
+      Key: key,
+      Body: sanitizedSvg,
+      ContentType: 'image/svg+xml',
+    };
+    const { Location: url } = await s3.upload(params).promise();
+    const icon = new Icon({
+      iconId: key,
+      source: 'user-uploaded',
+      url,
+      metadata: {
+        name: req.body.name || 'Custom Icon',
+        category: req.body.category || 'custom',
+        keywords: req.body.keywords?.split(',') || [],
+        tags: req.body.tags?.split(',') || [],
+        official: false,
+      },
+    });
+    await icon.save();
+    res.json({ url, iconId: key });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to upload icon' });
+  }
+});
+
+router.get('/debug/icons', async (req, res) => {
+  const iconIds = industrialIconRegistry.getAllIconIds();
+  res.json({ icons: iconIds });
+});
+
+export default router;
+
+models.tstypescript
+
+import mongoose from 'mongoose';
+
+const IconSchema = new mongoose.Schema({
+  iconId: { type: String, required: true, unique: true },
+  source: { type: String, enum: ['predefined', 'user-uploaded'], required: true },
+  url: { type: String },
+  metadata: {
+    name: { type: String, required: true },
+    category: { type: String, required: true },
+    keywords: [String],
+    tags: [String],
+    description: String,
+    official: Boolean,
+  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const SubjectSchema = new mongoose.Schema({
+  name: { type: String, required: true, index: true },
+  iconId: { type: String, required: true },
+  category: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+const ExamSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject', required: true },
+  iconId: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
+export const Icon = mongoose.model('Icon', IconSchema);
+export const Subject = mongoose.model('Subject', SubjectSchema);
+export const Exam = mongoose.model('Exam', ExamSchema);
+
+IconSelector.tsxtypescript
+
+import { useState } from 'react';
+import { useIconSearch, useIcon } from './icon-provider';
+import { Icon } from './icon';
+
+interface IconSelectorProps {
+  value: string;
+  onChange: (iconId: string) => void;
+}
+
+const IconSelector: React.FC<IconSelectorProps> = ({ value, onChange }) => {
+  const { search, results, clearSearch } = useIconSearch();
+  const { component: IconComponent } = useIcon(value);
+  const [query, setQuery] = useState('');
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    search(e.target.value);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append('icon', file);
+      formData.append('name', file.name);
+      formData.append('category', 'custom');
+      const response = await fetch('/api/upload/icon', {
+        method: 'POST',
+        body: formData,
+      });
+      const { iconId } = await response.json();
+      onChange(iconId);
+      clearSearch();
+      setQuery('');
+    }
+  };
+
+  return (
+    <div className="icon-selector" style={{ padding: '16px' }}>
+      <label style={{ fontWeight: 'bold', marginBottom: '8px', display: 'block' }}>
+        Select Icon
+      </label>
+      <div className="preview" style={{ marginBottom: '16px' }}>
+        {IconComponent ? <IconComponent size="lg" aria-label="Selected icon" /> : <span>No icon selected</span>}
+      </div>
+      <input
+        type="text"
+        value={query}
+        onChange={handleSearch}
+        placeholder="Search icons..."
+        style={{ width: '100%', padding: '8px', marginBottom: '16px' }}
+      />
+      <div className="results" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+        {results.map(({ metadata: { id, name } }) => (
+          <div
+            key={id}
+            onClick={() => {
+              onChange(id);
+              clearSearch();
+              setQuery('');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px',
+              cursor: 'pointer',
+              background: id === value ? '#f0f0f0' : 'transparent',
+            }}
+          >
+            <Icon name={id} size="md" />
+            <span style={{ marginLeft: '8px' }}>{name}</span>
+          </div>
+        ))}
+      </div>
+      <input
+        type="file"
+        accept="image/svg+xml"
+        onChange={handleFileUpload}
+        style={{ marginTop: '16px' }}
+      />
+    </div>
+  );
+};
+
+export default IconSelector;
+
+SubjectManagement.tsxtypescript
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import IconSelector from './IconSelector';
+
+const fetchSubjects = async () => {
+  const response = await fetch('/api/subjects');
+  return response.json();
+};
+
+const updateSubject = async ({ id, data }: { id: string; data: { name: string; iconId: string } }) => {
+  const response = await fetch(`/api/subjects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+};
+
+const SubjectManagement: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { data: subjects } = useQuery(['subjects'], fetchSubjects);
+  const mutation = useMutation(updateSubject, {
+    onSuccess: () => queryClient.invalidateQueries(['subjects']),
+  });
+
+  return (
+    <div>
+      <h1>Manage Subjects</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Icon</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {subjects?.map((subject: any) => (
+            <tr key={subject._id}>
+              <td>{subject.name}</td>
+              <td>
+                <IconSelector
+                  value={subject.iconId}
+                  onChange={(iconId) => mutation.mutate({ id: subject._id, data: { name: subject.name, iconId } })}
+                />
+              </td>
+              <td>
+                <button>Edit</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default SubjectManagement;
+
+download-icons.jsjavascript
+
+const axios = require('axios');
+const fs = require('fs').promises;
+const path = require('path');
+
+async function downloadIcons() {
+  const icons = [
+    { id: 'academic', url: 'https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/academic-cap.svg' },
+    { id: 'mathematics', url: 'https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/calculator.svg' },
+    // Add more icons from Tabler Icons or similar
+  ];
+  const outputDir = path.join(__dirname, 'public', 'icons');
+  await fs.mkdir(outputDir, { recursive: true });
+
+  for (const { id, url } of icons) {
+    try {
+      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      await fs.writeFile(path.join(outputDir, `${id}.svg`), response.data);
+      console.log(`Downloaded ${id}.svg`);
+    } catch (error) {
+      console.error(`Failed to download ${id}:`, error);
+    }
+  }
+}
+
+downloadIcons();
+
+Dependencies:bash
+
+npm install axios mongoose @tanstack/react-query multer aws-sdk sanitize-svg
+npm install --save-dev @types/multer
+
+Run Download Script:bash
+
+node download-icons.js
+
+QA Testing PlanUnit Tests (Jest):typescript
+
+import { render, screen } from '@testing-library/react';
+import { IconProvider, SubjectIcon } from './icon-provider';
+import { industrialIconRegistry } from './registry';
+
+test('SubjectIcon renders correct icon', async () => {
+  await industrialIconRegistry.registerIcon({
+    id: 'mathematics',
+    component: () => <svg data-testid="math-icon" />,
+    metadata: { id: 'mathematics', name: 'Mathematics', category: 'mathematics' },
+  });
+  render(
+    <IconProvider>
+      <SubjectIcon subjectName="Mathematics" />
+    </IconProvider>
+  );
+  expect(screen.getByTestId('math-icon')).toBeInTheDocument();
+});
+
+test('SubjectIcon falls back to academic', async () => {
+  await industrialIconRegistry.registerIcon({
+    id: 'academic',
+    component: () => <svg data-testid="academic-icon" />,
+    metadata: { id: 'academic', name: 'Academic', category: 'academic' },
+  });
+  render(
+    <IconProvider>
+      <SubjectIcon subjectName="Unknown Subject" />
+    </IconProvider>
+  );
+  expect(screen.getByTestId('academic-icon')).toBeInTheDocument();
+});
+
+End-to-End Tests (Cypress):javascript
+
+describe('Admin Panel - Icon Management', () => {
+  it('updates subject icon', () => {
+    cy.visit('/admin/subjects');
+    cy.get('input[type="text"]').type('mathematics');
+    cy.get('.results div').first().click();
+    cy.get('button').contains('Edit').click();
+    cy.get('.preview svg').should('exist');
+  });
+
+  it('uploads custom icon', () => {
+    cy.visit('/admin/subjects');
+    cy.get('input[type="file"]').attachFile('custom-icon.svg');
+    cy.get('.preview svg').should('exist');
+  });
+});
+
+API Tests (Postman):GET /api/subjects?name=Mathematics: Verify iconId is returned.
+PATCH /api/subjects/:id: Send { name: "Mathematics", iconId: "mathematics" } and verify update.
+POST /api/upload/icon: Upload an SVG and verify the response contains a valid URL.
+
+Expected DeliverablesQA Report:Root cause analysis (e.g., missing icons, registry initialization failure).
+Test results for components, hooks, routes, and database queries.
+Icons:/public/icons folder with at least 100 SVG icons.
+Registered icons in IndustrialIconRegistry via definitions.ts.
+Dynamic Mapping:Database-driven icon assignments for subjects and exams.
+Updated useSubjectIconName using React Query.
+Admin Panel:Fully functional IconSelector component.
+Subject and exam management pages with icon selection and upload.
+Recommendations:Performance: CDN integration, caching.
+Security: SVG sanitization, JWT authentication.
+Scalability: Database indexing, batch operations.
+Testing: Unit and E2E test suites.
+

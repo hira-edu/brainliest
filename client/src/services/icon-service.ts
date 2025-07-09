@@ -28,7 +28,7 @@ class IconService {
   private subjectIconCache = new Map<string, DatabaseIcon>();
 
   /**
-   * Get icon for a subject from the database
+   * Get icon for a subject from the database or downloaded icons
    */
   async getIconForSubject(subjectSlug: string): Promise<DatabaseIcon | null> {
     if (this.subjectIconCache.has(subjectSlug)) {
@@ -36,14 +36,34 @@ class IconService {
     }
 
     try {
+      // First try the API endpoint
       const response = await apiRequest(`/api/icons/subject/${subjectSlug}`);
       const icon = response as DatabaseIcon;
       
       if (icon) {
         this.subjectIconCache.set(subjectSlug, icon);
+        return icon;
       }
       
-      return icon;
+      // Fallback to downloaded icons via registry service
+      const { iconRegistryService } = await import('./icon-registry-service');
+      const result = await iconRegistryService.getIconForSubject(subjectSlug);
+      
+      if (result.iconId !== 'academic') {
+        // Convert to DatabaseIcon format
+        const downloadedIcon: DatabaseIcon = {
+          id: result.iconId,
+          name: result.iconId,
+          category: 'downloaded',
+          svgContent: `<img src="/icons/${result.iconId}.svg" alt="${result.iconId}" />`,
+          brandColors: {},
+        };
+        
+        this.subjectIconCache.set(subjectSlug, downloadedIcon);
+        return downloadedIcon;
+      }
+      
+      return null;
     } catch (error) {
       console.warn(`Failed to get icon for subject ${subjectSlug}:`, error);
       return null;
