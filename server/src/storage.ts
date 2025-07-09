@@ -10,7 +10,6 @@ import {
   anonQuestionSessions,
   categories,
   subcategories,
-  uploads,
   type Subject,
   type InsertSubject,
   type Exam,
@@ -29,8 +28,6 @@ import {
   type InsertCategory,
   type Subcategory,
   type InsertSubcategory,
-  type Upload,
-  type InsertUpload,
 } from "../../shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
