@@ -27,7 +27,9 @@ import {
   insertCommentSchema,
   insertDetailedAnswerSchema,
   insertExamAnalyticsSchema,
-  insertUserSchema
+  insertUserSchema,
+  insertCategorySchema,
+  insertSubcategorySchema
 } from "../../shared/schema";
 
 // Store verification codes temporarily (in production, use Redis)
@@ -152,9 +154,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Note: Categories are hardcoded in frontend, no backend routes needed
+  // Category routes
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const categories = await storage.getCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
 
-  // Note: Subcategories are hardcoded in frontend, no backend routes needed
+  app.post("/api/categories", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+    try {
+      const validation = insertCategorySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid category data", errors: validation.error.errors });
+      }
+      const category = await storage.createCategory(validation.data);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Failed to create category:", error);
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+
+  app.put("/api/categories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'category ID');
+      const validation = insertCategorySchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid category data", errors: validation.error.errors });
+      }
+      const category = await storage.updateCategory(id, validation.data);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error("Failed to update category:", error);
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+
+  app.delete("/api/categories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'category ID');
+      const deleted = await storage.deleteCategory(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  // Subcategory routes
+  app.get("/api/subcategories", async (req, res) => {
+    try {
+      const subcategories = await storage.getSubcategories();
+      res.json(subcategories);
+    } catch (error) {
+      console.error("Failed to fetch subcategories:", error);
+      res.status(500).json({ message: "Failed to fetch subcategories" });
+    }
+  });
+
+  app.post("/api/subcategories", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+    try {
+      const validation = insertSubcategorySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid subcategory data", errors: validation.error.errors });
+      }
+      const subcategory = await storage.createSubcategory(validation.data);
+      res.status(201).json(subcategory);
+    } catch (error) {
+      console.error("Failed to create subcategory:", error);
+      res.status(500).json({ message: "Failed to create subcategory" });
+    }
+  });
+
+  app.put("/api/subcategories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'subcategory ID');
+      const validation = insertSubcategorySchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid subcategory data", errors: validation.error.errors });
+      }
+      const subcategory = await storage.updateSubcategory(id, validation.data);
+      if (!subcategory) {
+        return res.status(404).json({ message: "Subcategory not found" });
+      }
+      res.json(subcategory);
+    } catch (error) {
+      console.error("Failed to update subcategory:", error);
+      res.status(500).json({ message: "Failed to update subcategory" });
+    }
+  });
+
+  app.delete("/api/subcategories/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+    try {
+      const id = parseId(req.params.id, 'subcategory ID');
+      const deleted = await storage.deleteSubcategory(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Subcategory not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete subcategory:", error);
+      res.status(500).json({ message: "Failed to delete subcategory" });
+    }
+  });
 
   // Subject routes - specific routes first to prevent shadowing
   // Subject slug-based route
