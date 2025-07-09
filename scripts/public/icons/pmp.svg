@@ -1,0 +1,24 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <title>PMP Certification Icon</title>
+  <desc>Icon for PMP Project Management Professional certification</desc>
+  <!-- Shield background -->
+  <path d="M12 2 L20 6 L20 12 C20 16 16 20 12 22 C8 20 4 16 4 12 L4 6 Z" 
+        fill="#2563eb" stroke="#1e40af" stroke-width="0.5"/>
+  
+  <!-- PMP text -->
+  <text x="12" y="9" text-anchor="middle" font-family="Arial, sans-serif" 
+        font-size="3" font-weight="bold" fill="white">PMP</text>
+  
+  <!-- Project management symbols -->
+  <circle cx="8" cy="14" r="1" fill="white" opacity="0.8"/>
+  <circle cx="12" cy="14" r="1" fill="white" opacity="0.8"/>
+  <circle cx="16" cy="14" r="1" fill="white" opacity="0.8"/>
+  
+  <!-- Connecting lines -->
+  <line x1="8" y1="14" x2="12" y2="14" stroke="white" stroke-width="0.5" opacity="0.6"/>
+  <line x1="12" y1="14" x2="16" y2="14" stroke="white" stroke-width="0.5" opacity="0.6"/>
+  
+  <!-- Excellence ribbon -->
+  <path d="M6 16 L10 18 L10 20 L6 18 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="0.3"/>
+  <path d="M14 18 L18 16 L18 18 L14 20 Z" fill="#fbbf24" stroke="#f59e0b" stroke-width="0.3"/>
+</svg>

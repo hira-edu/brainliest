@@ -64,7 +64,12 @@ function Router() {
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
       <Route path="/auth/callback" component={AuthCallback} />
-      <Route path="/icon-test" component={lazy(() => import("./pages/icon-test"))} />
+      <Route path="/icon-test">
+        {() => {
+          const IconTestPage = lazy(() => import("./pages/icon-test").then(m => ({ default: m.IconTestPage })));
+          return <IconTestPage />;
+        }}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

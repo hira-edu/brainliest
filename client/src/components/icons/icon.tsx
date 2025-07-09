@@ -85,8 +85,8 @@ interface SubjectIconProps extends IconProps {
 
 export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
   ({ subjectName, fallback = 'academic', ...props }, ref) => {
-    // Enhanced icon resolution with database support
-    const [resolvedIcon, setResolvedIcon] = React.useState<string>(fallback);
+    // Enhanced icon resolution with downloaded SVG support
+    const [resolvedIconPath, setResolvedIconPath] = React.useState<string | null>(null);
     const [isLoading, setIsLoading] = React.useState(false);
     
     React.useEffect(() => {
@@ -95,18 +95,25 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
         
         setIsLoading(true);
         try {
-          // Use enhanced icon registry service
+          // Use enhanced icon registry service for pattern matching
           const { iconRegistryService } = await import('../../services/icon-registry-service');
           const result = await iconRegistryService.getIconForSubject(subjectName);
           
           console.log(`🎨 Icon resolved: "${subjectName}" -> "${result.iconId}" (${result.source})`);
-          setResolvedIcon(result.iconId);
+          
+          // If we got a downloaded icon, use the SVG path directly
+          if (result.source === 'pattern' || result.source === 'downloaded') {
+            const iconPath = `/icons/${result.iconId}.svg`;
+            setResolvedIconPath(iconPath);
+            console.log(`📁 Using downloaded SVG: ${iconPath}`);
+          } else {
+            // Fall back to component-based icons
+            setResolvedIconPath(null);
+          }
           
         } catch (error) {
           console.warn(`⚠️ Icon resolution failed for "${subjectName}":`, error);
-          // Final fallback to hardcoded mapping
-          const hardcodedIcon = useSubjectIconName(subjectName);
-          setResolvedIcon(hardcodedIcon);
+          setResolvedIconPath(null);
         } finally {
           setIsLoading(false);
         }
@@ -125,10 +132,31 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
       );
     }
     
+    // If we have a resolved SVG path, render it directly
+    if (resolvedIconPath) {
+      return (
+        <img 
+          ref={ref as any}
+          src={resolvedIconPath}
+          alt={`${subjectName} icon`}
+          className={`inline-block ${props.className || 'w-6 h-6'}`}
+          style={props.style}
+          onError={(e) => {
+            console.warn(`Failed to load icon: ${resolvedIconPath}`);
+            // Hide the broken image and show fallback
+            e.currentTarget.style.display = 'none';
+            setResolvedIconPath(null);
+          }}
+        />
+      );
+    }
+    
+    // Fallback to component-based icon system
+    const hardcodedIcon = useSubjectIconName(subjectName);
     return (
       <Icon
         ref={ref}
-        name={resolvedIcon}
+        name={hardcodedIcon}
         fallback={fallback}
         {...props}
       />

@@ -127,35 +127,59 @@ class IconRegistryService {
   }
 
   /**
-   * Pattern matching for certification and technology subjects
+   * Enhanced pattern matching for certification and technology subjects
    */
   getIconByPattern(subjectName: string): string | null {
     const name = subjectName.toLowerCase();
     
-    // Certification patterns
+    // Enhanced certification and subject patterns
     const patterns = [
-      { keywords: ['aws', 'amazon'], icon: 'aws' },
-      { keywords: ['azure', 'microsoft cloud'], icon: 'azure' },
-      { keywords: ['gcp', 'google cloud'], icon: 'gcp' },
-      { keywords: ['comptia', 'security+', 'network+'], icon: 'comptia' },
-      { keywords: ['cisco', 'ccna', 'ccnp'], icon: 'cisco' },
-      { keywords: ['docker', 'container'], icon: 'docker' },
-      { keywords: ['kubernetes', 'k8s'], icon: 'kubernetes' },
-      { keywords: ['terraform', 'infrastructure'], icon: 'terraform' },
-      { keywords: ['javascript', 'js'], icon: 'javascript' },
-      { keywords: ['python'], icon: 'python' },
-      { keywords: ['java'], icon: 'java' },
-      { keywords: ['react'], icon: 'react' },
-      { keywords: ['node', 'nodejs'], icon: 'nodejs' },
-      { keywords: ['database', 'sql', 'mysql', 'postgresql'], icon: 'database' },
-      { keywords: ['mathematics', 'math', 'calculus'], icon: 'mathematics' },
-      { keywords: ['statistics', 'stats'], icon: 'statistics' },
-      { keywords: ['science', 'physics', 'chemistry'], icon: 'science' },
-      { keywords: ['computer science', 'cs', 'computing'], icon: 'computer-science' },
-      { keywords: ['engineering', 'mechanical', 'electrical'], icon: 'engineering' },
-      { keywords: ['business', 'management', 'admin'], icon: 'business' },
-      { keywords: ['medical', 'medicine', 'health'], icon: 'medical' },
-      { keywords: ['law', 'legal'], icon: 'law' },
+      // Cloud Certifications
+      { keywords: ['aws', 'amazon web services', 'solutions architect', 'cloud practitioner'], icon: 'aws' },
+      { keywords: ['azure', 'microsoft cloud', 'az-', 'microsoft azure'], icon: 'azure' },
+      { keywords: ['gcp', 'google cloud', 'gce', 'cloud engineer'], icon: 'gcp' },
+      
+      // Security Certifications
+      { keywords: ['comptia', 'security+', 'network+', 'a+', 'security plus'], icon: 'comptia' },
+      { keywords: ['cissp', 'certified information systems security'], icon: 'cissp' },
+      { keywords: ['cisa', 'certified information systems auditor'], icon: 'cisa' },
+      
+      // Networking
+      { keywords: ['cisco', 'ccna', 'ccnp', 'ccie', 'routing', 'switching'], icon: 'cisco' },
+      
+      // Project Management
+      { keywords: ['pmp', 'project management professional', 'project management', 'pmbok'], icon: 'pmp' },
+      { keywords: ['project management', 'project manager', 'pm certification'], icon: 'project-management' },
+      
+      // DevOps & Cloud
+      { keywords: ['docker', 'container', 'containerization'], icon: 'docker' },
+      { keywords: ['kubernetes', 'k8s', 'container orchestration'], icon: 'kubernetes' },
+      { keywords: ['terraform', 'infrastructure as code', 'iac'], icon: 'terraform' },
+      
+      // Programming Languages
+      { keywords: ['javascript', 'js', 'ecmascript', 'node.js'], icon: 'javascript' },
+      { keywords: ['python', 'django', 'flask', 'py'], icon: 'python' },
+      { keywords: ['java', 'jvm', 'spring', 'hibernate'], icon: 'java' },
+      { keywords: ['react', 'reactjs', 'jsx'], icon: 'react' },
+      { keywords: ['node', 'nodejs', 'node.js', 'npm'], icon: 'nodejs' },
+      
+      // Technology & Databases
+      { keywords: ['database', 'sql', 'mysql', 'postgresql', 'mongodb'], icon: 'database' },
+      
+      // Academic Subjects
+      { keywords: ['mathematics', 'math', 'calculus', 'algebra', 'geometry'], icon: 'mathematics' },
+      { keywords: ['statistics', 'stats', 'probability', 'data analysis'], icon: 'statistics' },
+      { keywords: ['science', 'physics', 'chemistry', 'biology'], icon: 'science' },
+      { keywords: ['computer science', 'cs', 'computing', 'algorithms'], icon: 'computer-science' },
+      { keywords: ['engineering', 'mechanical', 'electrical', 'civil'], icon: 'engineering' },
+      { keywords: ['business', 'management', 'admin', 'mba', 'finance'], icon: 'business' },
+      { keywords: ['medical', 'medicine', 'health', 'nursing', 'pharmacy'], icon: 'medical' },
+      { keywords: ['law', 'legal', 'attorney', 'paralegal'], icon: 'law' },
+      
+      // General certifications and tests
+      { keywords: ['certification', 'certified', 'certificate'], icon: 'certification' },
+      { keywords: ['test', 'exam', 'practice'], icon: 'test' },
+      { keywords: ['study', 'learning', 'education'], icon: 'study' },
     ];
 
     for (const pattern of patterns) {
