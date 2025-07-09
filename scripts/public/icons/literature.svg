@@ -1,0 +1,9 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <title>Literature Icon</title>
+    <rect x="4" y="2" width="16" height="20" rx="1" fill="#7c2d12" stroke="#78350f" stroke-width="0.5"/>
+    <path d="M4 6 L20 6" stroke="white" stroke-width="0.5"/>
+    <path d="M7 9 Q12 7 17 9" stroke="white" stroke-width="0.8" fill="none"/>
+    <path d="M7 13 Q12 11 17 13" stroke="white" stroke-width="0.8" fill="none"/>
+    <path d="M7 17 Q12 15 17 17" stroke="white" stroke-width="0.8" fill="none"/>
+    <circle cx="12" cy="4" r="1" fill="white"/>
+  </svg>

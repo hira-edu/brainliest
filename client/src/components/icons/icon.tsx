@@ -101,14 +101,15 @@ export const SubjectIcon = forwardRef<SVGSVGElement, SubjectIconProps>(
           
           console.log(`🎨 Icon resolved: "${subjectName}" -> "${result.iconId}" (${result.source})`);
           
-          // If we got a downloaded icon, use the SVG path directly
-          if (result.source === 'pattern' || result.source === 'downloaded') {
+          // If we got a specific icon (not fallback), use the SVG path directly
+          if (result.iconId !== 'academic' && result.iconId !== 'fallback') {
             const iconPath = `/icons/${result.iconId}.svg`;
             setResolvedIconPath(iconPath);
-            console.log(`📁 Using downloaded SVG: ${iconPath}`);
+            console.log(`📁 Using downloaded SVG: ${iconPath} for "${subjectName}"`);
           } else {
             // Fall back to component-based icons
             setResolvedIconPath(null);
+            console.log(`⚠️ No specific icon found for "${subjectName}", using fallback component`);
           }
           
         } catch (error) {

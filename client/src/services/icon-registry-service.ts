@@ -166,20 +166,67 @@ class IconRegistryService {
       // Technology & Databases
       { keywords: ['database', 'sql', 'mysql', 'postgresql', 'mongodb'], icon: 'database' },
       
-      // Academic Subjects
-      { keywords: ['mathematics', 'math', 'calculus', 'algebra', 'geometry'], icon: 'mathematics' },
-      { keywords: ['statistics', 'stats', 'probability', 'data analysis'], icon: 'statistics' },
-      { keywords: ['science', 'physics', 'chemistry', 'biology'], icon: 'science' },
+      // Academic Subjects - Enhanced
+      { keywords: ['mathematics', 'math', 'calculus', 'algebra', 'geometry', 'trigonometry'], icon: 'mathematics' },
+      { keywords: ['statistics', 'stats', 'probability', 'data analysis', 'biostatistics'], icon: 'statistics' },
+      { keywords: ['physics'], icon: 'physics' },
+      { keywords: ['chemistry'], icon: 'chemistry' },
+      { keywords: ['biology'], icon: 'biology' },
+      { keywords: ['science', 'scientific'], icon: 'science' },
       { keywords: ['computer science', 'cs', 'computing', 'algorithms'], icon: 'computer-science' },
       { keywords: ['engineering', 'mechanical', 'electrical', 'civil'], icon: 'engineering' },
-      { keywords: ['business', 'management', 'admin', 'mba', 'finance'], icon: 'business' },
+      
+      // Business & Finance
+      { keywords: ['business', 'management', 'admin', 'mba'], icon: 'business' },
+      { keywords: ['finance', 'financial', 'banking'], icon: 'finance' },
+      { keywords: ['accounting', 'cpa'], icon: 'accounting' },
+      { keywords: ['economics', 'economic'], icon: 'economics' },
+      { keywords: ['marketing'], icon: 'marketing' },
+      
+      // Social Sciences & Humanities
+      { keywords: ['psychology', 'psychological'], icon: 'psychology' },
+      { keywords: ['sociology', 'social'], icon: 'sociology' },
+      { keywords: ['history', 'historical'], icon: 'history' },
+      { keywords: ['literature', 'english', 'writing'], icon: 'literature' },
+      { keywords: ['philosophy'], icon: 'philosophy' },
+      
+      // Health & Medicine
       { keywords: ['medical', 'medicine', 'health', 'nursing', 'pharmacy'], icon: 'medical' },
+      
+      // Legal
       { keywords: ['law', 'legal', 'attorney', 'paralegal'], icon: 'law' },
       
       // General certifications and tests
       { keywords: ['certification', 'certified', 'certificate'], icon: 'certification' },
       { keywords: ['test', 'exam', 'practice'], icon: 'test' },
       { keywords: ['study', 'learning', 'education'], icon: 'study' },
+      
+      // Additional specific patterns for subjects that might be missed
+      { keywords: ['network', 'networking'], icon: 'cisco' },
+      { keywords: ['security', 'cybersecurity', 'cyber'], icon: 'comptia' },
+      { keywords: ['cloud', 'infrastructure'], icon: 'aws' },
+      { keywords: ['data', 'analytics', 'data structures'], icon: 'database' },
+      { keywords: ['web development', 'frontend', 'backend'], icon: 'react' },
+      { keywords: ['programming', 'coding', 'development'], icon: 'computer-science' },
+      
+      // Test Prep & Examinations (specific icons)
+      { keywords: ['hesi'], icon: 'hesi' },
+      { keywords: ['teas'], icon: 'teas' },
+      { keywords: ['gre'], icon: 'gre' },
+      { keywords: ['lsat'], icon: 'lsat' },
+      { keywords: ['toefl'], icon: 'toefl' },
+      { keywords: ['ged'], icon: 'ged' },
+      { keywords: ['calculus', 'pre-calculus'], icon: 'mathematics' },
+      { keywords: ['algebra', 'linear algebra'], icon: 'mathematics' },
+      { keywords: ['geometry'], icon: 'mathematics' },
+      { keywords: ['anatomy'], icon: 'medical' },
+      { keywords: ['nursing'], icon: 'medical' },
+      { keywords: ['pharmacology'], icon: 'medical' },
+      { keywords: ['health sciences'], icon: 'medical' },
+      { keywords: ['astronomy'], icon: 'astronomy' },
+      { keywords: ['earth science'], icon: 'earth-science' },
+      { keywords: ['political science'], icon: 'political-science' },
+      { keywords: ['writing'], icon: 'literature' },
     ];
 
     for (const pattern of patterns) {
@@ -191,6 +238,7 @@ class IconRegistryService {
       }
     }
 
+    console.log(`❌ No pattern match found for "${subjectName}"`);
     return null;
   }
 

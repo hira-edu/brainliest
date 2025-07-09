@@ -1,0 +1,7 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <title>Physics Icon</title>
+    <circle cx="12" cy="12" r="9" fill="#1e40af" stroke="#1e3a8a" stroke-width="0.5"/>
+    <circle cx="12" cy="12" r="2" fill="white"/>
+    <path d="M12 4 L12 8 M12 16 L12 20 M4 12 L8 12 M16 12 L20 12" stroke="white" stroke-width="1.5"/>
+    <path d="M7 7 L9 9 M15 15 L17 17 M17 7 L15 9 M9 15 L7 17" stroke="white" stroke-width="1"/>
+  </svg>

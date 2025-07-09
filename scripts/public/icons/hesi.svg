@@ -1,0 +1,10 @@
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <title>HESI Exam Icon</title>
+    <rect x="3" y="3" width="18" height="18" rx="2" fill="#dc2626" stroke="#b91c1c" stroke-width="0.5"/>
+    <text x="12" y="9" text-anchor="middle" font-family="Arial, sans-serif" 
+          font-size="3" font-weight="bold" fill="white">HESI</text>
+    <path d="M6 13 L18 13" stroke="white" stroke-width="0.5"/>
+    <circle cx="8" cy="16" r="1" fill="white"/>
+    <circle cx="12" cy="16" r="1" fill="white"/>
+    <circle cx="16" cy="16" r="1" fill="white"/>
+  </svg>
