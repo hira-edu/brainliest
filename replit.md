@@ -134,3 +134,14 @@ Preferred communication style: Simple, everyday language.
 - Rate limiting and DDoS protection
 
 The application follows modern best practices for scalability, security, and maintainability while providing a comprehensive exam preparation platform with AI-powered features.
+
+## Recent Changes
+
+### July 09, 2025 - Slug-based System Clarification and Implementation (COMPLETED)
+- **Schema architecture clarification**: Confirmed that subjects and exams use slug-based primary keys, while questions use ID-based primary keys but reference exams/subjects via slug fields (examSlug, subjectSlug)
+- **Admin panel slug-based conversion**: Successfully converted admin interface to use slug-based system for subjects and exams
+- **Fixed subject and exam filtering**: Updated SearchableSelect components to use slug-based filtering throughout admin interface
+- **Form validation updates**: Converted form defaults and validation to use slug-based references for subjects and exams
+- **Database consistency**: Ensured all foreign key relationships use appropriate slug-based references (examSlug, subjectSlug)
+- **Mixed ID/slug system**: Questions maintain ID-based identification while correctly referencing slug-based subjects and exams
+- **Comprehensive testing**: Verified all CRUD operations work properly with the hybrid ID/slug system
