@@ -1478,9 +1478,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate password strength
-      const passwordValidation = validatePassword(password);
-      if (!passwordValidation.valid) {
-        return res.status(400).json({ success: false, message: passwordValidation.errors[0] });
+      try {
+        validatePassword(password);
+      } catch (error) {
+        return res.status(400).json({ 
+          success: false, 
+          message: error?.message || "Password validation failed"
+        });
       }
       
       // Log reCAPTCHA token presence (without logging the actual token for security)
