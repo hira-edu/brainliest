@@ -3,9 +3,9 @@ import { cleanEnv, str } from 'envalid';
 
 // Validate environment variables
 const env = cleanEnv(process.env, {
-  TITAN_EMAIL: str({ default: 'noreply@brainliest.com' }),
-  TITAN_PASSWORD: str({ default: 'Um@ir7156' }),
-  BASE_URL: str({ default: 'https://brainliest.com' }),
+  TITAN_EMAIL: str({ default: '' }),
+  TITAN_PASSWORD: str({ default: '' }),
+  BASE_URL: str({ default: 'http://localhost:5000' }),
   NODE_ENV: str({ choices: ['development', 'production', 'test'], default: 'development' }),
 });
 
@@ -122,10 +122,11 @@ class EmailService {
       const result = await this.transporter.sendMail(mailOptions);
 
       if (!this.isProduction && result.response && typeof result.response === 'string') {
-        console.log('\n=== EMAIL VERIFICATION ===');
-        console.log(`To: ${email}`);
-        console.log(`Verification URL: ${verificationUrl}`);
-        console.log('=========================\n');
+        console.log('\n=== EMAIL VERIFICATION (Development Mode) ===');
+        console.log(`📧 To: ${email}`);
+        console.log(`🔗 Verification URL: ${verificationUrl}`);
+        console.log(`📋 Token: ${token}`);
+        console.log('==========================================\n');
       }
 
       console.log(`Email verification sent to ${email}`);
@@ -134,11 +135,16 @@ class EmailService {
       console.error('Failed to send email verification:', error);
 
       if (!this.isProduction) {
-        console.log(`\n🔗 Email Verification URL for ${email}: ${verificationUrl}\n`);
-        return true;
+        console.log('\n=== EMAIL VERIFICATION FALLBACK (Development Mode) ===');
+        console.log(`📧 To: ${email}`);
+        console.log(`🔗 Verification URL: ${verificationUrl}`);
+        console.log(`📋 Token: ${token}`);
+        console.log('Note: Email delivery failed, but you can use this URL/token for testing');
+        console.log('====================================================\n');
+        return true; // Allow verification in development
       }
 
-      return false;
+      return false; // Fail in production
     }
   }
 
@@ -509,4 +515,6 @@ Brainliest - Your Ultimate Exam Preparation Platform
   }
 }
 
+// Export singleton instance
+export const emailService = new EmailService();
 export default EmailService;
