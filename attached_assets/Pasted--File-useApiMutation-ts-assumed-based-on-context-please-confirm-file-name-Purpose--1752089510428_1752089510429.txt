@@ -1,0 +1,117 @@
+### File: `useApiMutation.ts` (assumed based on context; please confirm file name)
+
+### Purpose:
+The `useApiMutation` hook provides a reusable abstraction for API mutations using TanStack Query, handling CRUD operations (`POST`, `PUT`, `PATCH`, `DELETE`) with features like query invalidation, toast notifications, and error handling. It includes specialized hooks (`useCreateMutation`, `useUpdateMutation`, `useDeleteMutation`, `useAuthMutation`) for common operations and authentication. The component is part of a Vite-based project deploying to Vercel with a Neon database, likely used in components like `UnifiedAuthModal.tsx` for authentication mutations.
+
+### Issues Found:
+**Prompt Reminder**: "You cannot create new models as this will mess up core functionalities. You only review the provided code and fix changes carefully, ensuring no alterations to the UI or core functionalities. All navigation logic must use slug-based routing as previously implemented, except for question cards, which currently use ID-based routing. For question cards, maintain ID-based routing (e.g., `/question/id/:id`) and do not convert it to slug-based routing. For all other navigation (e.g., subjects, exams, categories), remove any ID-based navigation logic (e.g., `subject.id`, `exam.id`) to align with the existing slug-based approach."
+
+1. **Runtime Errors**:
+   - **Response JSON Parsing**: The `mutationFn` attempts to parse JSON for both successful and error responses. If the server returns a non-JSON response (e.g., plain text or empty body), `response.json()` will throw, causing unhandled errors. Adding try-catch for error parsing could improve robustness.
+   - **Type Safety**: The generic types `<TData, TVariables>` are loosely typed (`any` by default), which could lead to runtime errors if incorrect data shapes are passed. Stricter typing or runtime validation could prevent issues.
+   - **Error Message Fallback**: The `onError` handler falls back to `String(error)` for unknown errors, which may produce unhelpful messages (e.g., `[object Object]`). Extracting error details (e.g., `error.message`) would improve user feedback.
+   - **URL Construction**: The `url` option accepts a function or string, but there’s no validation for the resulting `endpoint`. If the function returns an invalid URL (e.g., empty string), the request will fail silently.
+
+2. **Conflicts**:
+   - **Dependencies**: Assumes `@tanstack/react-query`, `use-toast`, and a custom `apiRequest` service are installed. Missing dependencies or misconfigured `apiRequest` (e.g., incorrect base URL) will cause errors. Please share `package.json` and `services/queryClient.ts` to verify.
+   - **Neon DB**: API endpoints (e.g., `/api/auth/login`, `/api/exams`) likely interact with Neon DB. Ensure `apiRequest` uses `@neondatabase/serverless` with SSL for serverless compatibility.
+   - **Routing**: No direct navigation logic is present, so the slug-based routing requirement is not violated. However, if mutations like `login` or `register` trigger navigation (e.g., in `UnifiedAuthModal`), ensure parent components use `/exam/${slug}` for exams and maintain `/question/id/:id` for question cards.
+   - **Auth Mutations**: The `useAuthMutation` hook disables toasts for `login` and `register` (`showToast: false`), but other components (e.g., `UnifiedAuthModal.tsx`) may show custom toasts, potentially causing duplication or inconsistency.
+
+3. **Duplicate Code**:
+   - **Toast Logic**: The `onSuccess` and `onError` handlers duplicate toast configuration logic (`title`, `description`, `variant`). A shared `showToast` utility could centralize this.
+   - **Query Invalidation**: The `invalidateQueries` logic in `useApiMutation` and `useUpdateMutation` is similar. A helper function could reduce repetition.
+   - **CRUD Hooks**: The `useCreateMutation`, `useUpdateMutation`, and `useDeleteMutation` hooks share similar patterns (e.g., URL construction, success messages). A factory function could further consolidate them.
+
+4. **Logical Issues**:
+   - **Query Invalidation**: The `invalidateQueries` option accepts `string | readonly string[]`, but there’s no validation to ensure keys are valid. Invalid keys could silently fail to invalidate caches, leading to stale data.
+   - **Default Toast Behavior**: The `showToast` option defaults to `true`, which may be overly aggressive for some mutations (e.g., silent background updates). Allowing a global default (e.g., `false` for non-user-facing actions) could improve flexibility.
+   - **Error Detail Loss**: The `onError` handler stringifies error details for HTTP failures, but this may lose structured error data (e.g., `{ code: 'INVALID_INPUT' }`). Preserving error objects would allow better debugging or custom handling.
+   - **Auth Mutation Toasts**: Disabling toasts for `login` and `register` is intentional, but the rationale isn’t clear. If `UnifiedAuthModal` handles toasts, ensure no conflicts arise from custom toast logic.
+   - **Accessibility**: Toast notifications rely on `useToast`, but there’s no guarantee they’re accessible (e.g., ARIA live regions). Ensure `use-toast` implements accessibility standards.
+
+5. **Deployment Considerations**:
+   - **Vercel**:
+     - The hook is client-side, suitable for Vercel’s frontend hosting. Ensure API endpoints (e.g., `/api/auth/login`) are serverless-compatible (e.g., in `api/` for Next.js).
+     - Verify `VITE_RECAPTCHA_SITE_KEY` in Vercel’s dashboard, as `useAuthMutation` endpoints may require reCAPTCHA (per `UnifiedAuthModal.tsx`).
+     - Test mutation performance in Vercel’s preview, as frequent mutations could increase serverless function invocations.
+   - **Neon DB**:
+     - Ensure `apiRequest` uses `@neondatabase/serverless` with `ssl: true` for Neon DB queries.
+     - Add indexes on relevant tables (e.g., `users` for `/api/auth`, `exams` for `/api/exams`) to optimize mutation performance.
+   - **Performance**:
+     - Cache invalidation via `invalidateQueries` could trigger multiple refetches. Use targeted keys to minimize overhead.
+     - If mutations are frequent (e.g., bulk updates), consider debouncing or batching to reduce API calls.
+
+### Recommendations:
+1. **Improve JSON Parsing**:
+   - Add try-catch for `response.json()` in error cases to handle non-JSON responses.
+   - Preserve structured error data instead of stringifying.
+
+2. **Enhance Type Safety**:
+   - Restrict `TData` and `TVariables` to specific interfaces or use runtime validation (e.g., Zod) for critical mutations.
+   - Validate `url` function output to ensure valid endpoints.
+
+3. **Centralize Toast Logic**:
+   - Extract `showToast` utility to handle `title`, `description`, and `variant` configuration.
+   - Ensure `use-toast` toasts are accessible with ARIA live regions.
+
+4. **Validate Query Keys**:
+   - Add validation for `invalidateQueries` keys, logging invalid keys in development.
+
+5. **Customize Toast Defaults**:
+   - Allow a global `showToast` default (e.g., `false` for background mutations) via a config option.
+
+6. **Consolidate CRUD Hooks**:
+   - Create a factory function for `useCreateMutation`, `useUpdateMutation`, and `useDeleteMutation` to share common logic.
+
+7. **Routing Compliance**:
+   - Ensure parent components using `useAuthMutation` (e.g., `UnifiedAuthModal`) navigate with `/exam/${slug}` for exams and maintain `/question/id/:id` for question cards.
+
+8. **Neon DB Preparation**:
+   - Verify `apiRequest` uses `@neondatabase/serverless` with `ssl: true`.
+   - Add indexes on `users`, `exams`, and other relevant tables for mutation endpoints.
+
+9. **Vercel Deployment**:
+   - Test mutation endpoints in Vercel’s preview for performance and reliability.
+   - Confirm `VITE_RECAPTCHA_SITE_KEY` for auth-related mutations.
+
+### Changes Required:
+1. **JSON Parsing**:
+   - Wrap `response.json()` in try-catch for error cases, returning plain `statusText` if non-JSON.
+   - Preserve error objects in `onError` instead of stringifying.
+
+2. **Type Safety**:
+   - Restrict `TData` and `TVariables` to specific types or add runtime validation.
+   - Validate `url` function output, logging invalid URLs in development.
+
+3. **Toast Logic**:
+   - Extract `showToast` utility for toast configuration.
+   - Verify `use-toast` toasts use `role="alert"` and `aria-live="assertive"`.
+
+4. **Query Invalidation**:
+   - Validate `invalidateQueries` keys, logging errors in development.
+
+5. **Toast Defaults**:
+   - Add global `showToast` config (e.g., default `false` for non-UI mutations).
+
+6. **CRUD Hooks**:
+   - Create `createMutationFactory` to generate `useCreateMutation`, `useUpdateMutation`, and `useDeleteMutation`.
+
+7. **Routing**:
+   - Ensure parent components use `/exam/${slug}` for exams and `/question/id/:id` for question cards.
+
+8. **Neon DB**:
+   - Confirm `apiRequest` uses `@neondatabase/serverless` with `ssl: true`.
+   - Add indexes on `users` (`id`, `email`), `exams` (`slug`), etc.
+
+9. **Vercel**:
+   - Test mutation endpoints in Vercel’s preview.
+   - Verify `VITE_RECAPTCHA_SITE_KEY` for `/api/auth` endpoints.
+
+### Next Steps:
+1. **Confirm File Name**: Is this `useApiMutation.ts`?
+2. **Share `package.json`**: To verify dependencies (`@tanstack/react-query`, `use-toast`).
+3. **Share `apiRequest`**: Provide `services/queryClient.ts` for Neon DB audit.
+4. **Parent Usage**: Indicate where `useApiMutation` is used (e.g., `UnifiedAuthModal.tsx`).
+5. **Next File**: Provide the next file (e.g., `AuthContext.tsx`, `/api/subjects`, or `package.json`).
+6. **Tech Stack**: Confirm Vite + React, Next.js, or other framework, and Neon DB setup details.
