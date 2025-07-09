@@ -1674,7 +1674,7 @@ export default function AdminSimple() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedSubjectFilter(subject.id.toString());
+                        setSelectedSubjectFilter(subject?.id?.toString() || "all");
                         setExamsPage(1); // Reset exams page when filtering
                       }}
                       title="View exams for this subject"
@@ -1845,7 +1845,7 @@ export default function AdminSimple() {
                         <FormLabel>Subject</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={subjects?.map((subject) => ({
+                            options={subjects?.filter(subject => subject?.id && subject?.name).map((subject) => ({
                               value: subject.id.toString(),
                               label: subject.name,
                             })) || []}
@@ -1944,7 +1944,7 @@ export default function AdminSimple() {
                         <FormLabel>Subject</FormLabel>
                         <FormControl>
                           <SearchableSelect
-                            options={subjects?.map((subject) => ({
+                            options={subjects?.filter(subject => subject?.id && subject?.name).map((subject) => ({
                               value: subject.id.toString(),
                               label: subject.name,
                             })) || []}
@@ -2035,7 +2035,7 @@ export default function AdminSimple() {
             <SearchableSelect
               options={[
                 { value: "all", label: "All Subjects" },
-                ...(subjects?.map((subject) => ({
+                ...(subjects?.filter(subject => subject?.id && subject?.name).map((subject) => ({
                   value: subject.id.toString(),
                   label: subject.name,
                 })) || [])
