@@ -311,8 +311,9 @@ export default function AdminSimple() {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<number | null>(null);
   const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState<number | null>(null);
   
-  // Difficulty filter for exams
-  const [selectedDifficultyFilter, setSelectedDifficultyFilter] = useState<string | null>(null);
+  // Category and subcategory filters for exams
+  const [selectedExamCategoryFilter, setSelectedExamCategoryFilter] = useState<number | null>(null);
+  const [selectedExamSubcategoryFilter, setSelectedExamSubcategoryFilter] = useState<number | null>(null);
 
   // PERFORMANCE OPTIMIZATION: Memoized query options
   const subjectsQuery = useQuery<Subject[]>({
@@ -2116,8 +2117,55 @@ export default function AdminSimple() {
             </div>
             <SearchableSelect
               options={[
+                { value: "all", label: "All Categories" },
+                ...(categories?.filter(category => category?.id && category?.name).map((category) => ({
+                  value: category.id.toString(),
+                  label: category.name,
+                })) || [])
+              ]}
+              value={selectedExamCategoryFilter?.toString() || "all"}
+              onValueChange={(value) => {
+                setSelectedExamCategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedExamSubcategoryFilter(null); // Reset subcategory when category changes
+                setSelectedSubjectFilter("all"); // Reset subject when category changes
+              }}
+              placeholder="Filter by category"
+              className="w-48"
+              clearable
+            />
+            <SearchableSelect
+              options={[
+                { value: "all", label: "All Subcategories" },
+                ...(subcategories
+                  ?.filter(subcategory => 
+                    subcategory?.id && 
+                    subcategory?.name && 
+                    (!selectedExamCategoryFilter || subcategory.categoryId === selectedExamCategoryFilter)
+                  )
+                  ?.map((subcategory) => ({
+                    value: subcategory.id.toString(),
+                    label: subcategory.name,
+                  })) || [])
+              ]}
+              value={selectedExamSubcategoryFilter?.toString() || "all"}
+              onValueChange={(value) => {
+                setSelectedExamSubcategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedSubjectFilter("all"); // Reset subject when subcategory changes
+              }}
+              placeholder="Filter by subcategory"
+              disabled={!selectedExamCategoryFilter}
+              className="w-48"
+              clearable
+            />
+            <SearchableSelect
+              options={[
                 { value: "all", label: "All Subjects" },
-                ...(subjects?.filter(subject => subject?.slug && subject?.name).map((subject) => ({
+                ...(subjects?.filter(subject => {
+                  if (!subject?.slug || !subject?.name) return false;
+                  const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
+                  const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
+                  return matchesCategory && matchesSubcategory;
+                }).map((subject) => ({
                   value: subject.slug,
                   label: subject.name,
                 })) || [])
@@ -2127,30 +2175,18 @@ export default function AdminSimple() {
               placeholder="Filter by subject"
               searchPlaceholder="Search subjects..."
               emptyText="No subjects found"
+              disabled={!selectedExamCategoryFilter && !selectedExamSubcategoryFilter}
               className="w-48"
               clearable
             />
-            <SearchableSelect
-              options={[
-                { value: "all", label: "All Difficulties" },
-                { value: "Beginner", label: "Beginner" },
-                { value: "Intermediate", label: "Intermediate" },
-                { value: "Advanced", label: "Advanced" },
-                { value: "Expert", label: "Expert" }
-              ]}
-              value={selectedDifficultyFilter || "all"}
-              onValueChange={(value) => setSelectedDifficultyFilter(value === "all" ? null : value)}
-              placeholder="Filter by difficulty"
-              className="w-48"
-              clearable
-            />
-            {(selectedSubjectFilter !== "all" || selectedDifficultyFilter) && (
+            {(selectedExamCategoryFilter || selectedExamSubcategoryFilter || selectedSubjectFilter !== "all") && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  setSelectedExamCategoryFilter(null);
+                  setSelectedExamSubcategoryFilter(null);
                   setSelectedSubjectFilter("all");
-                  setSelectedDifficultyFilter(null);
                 }}
               >
                 Clear Filters
@@ -2158,9 +2194,14 @@ export default function AdminSimple() {
             )}
             <Badge variant="outline">
               {exams?.filter((exam) => {
+                const subject = subjects?.find(s => s.slug === exam.subjectSlug);
+                if (!subject) return false;
+                
+                const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
+                const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
                 const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
-                const matchesDifficulty = !selectedDifficultyFilter || exam.difficulty === selectedDifficultyFilter;
-                return matchesSubject && matchesDifficulty;
+                
+                return matchesCategory && matchesSubcategory && matchesSubject;
               }).length || 0} exams
             </Badge>
           </div>
@@ -2168,9 +2209,14 @@ export default function AdminSimple() {
 
         <div className="grid gap-4">
           {exams?.filter((exam) => {
+            const subject = subjects?.find(s => s.slug === exam.subjectSlug);
+            if (!subject) return false;
+            
+            const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
+            const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
             const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
-            const matchesDifficulty = !selectedDifficultyFilter || exam.difficulty === selectedDifficultyFilter;
-            return matchesSubject && matchesDifficulty;
+            
+            return matchesCategory && matchesSubcategory && matchesSubject;
           }).slice((examsPage - 1) * examsPerPage, examsPage * examsPerPage).map((exam) => {
             const subject = subjects?.find(s => s.slug === exam.subjectSlug);
             const questionCount = questions?.filter(q => q.examSlug === exam.slug).length || 0;
@@ -2238,9 +2284,14 @@ export default function AdminSimple() {
         <PaginationControls
           currentPage={examsPage}
           totalItems={exams?.filter((exam) => {
+            const subject = subjects?.find(s => s.slug === exam.subjectSlug);
+            if (!subject) return false;
+            
+            const matchesCategory = !selectedExamCategoryFilter || subject.categoryId === selectedExamCategoryFilter;
+            const matchesSubcategory = !selectedExamSubcategoryFilter || subject.subcategoryId === selectedExamSubcategoryFilter;
             const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
-            const matchesDifficulty = !selectedDifficultyFilter || exam.difficulty === selectedDifficultyFilter;
-            return matchesSubject && matchesDifficulty;
+            
+            return matchesCategory && matchesSubcategory && matchesSubject;
           }).length || 0}
           itemsPerPage={examsPerPage}
           onPageChange={setExamsPage}

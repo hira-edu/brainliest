@@ -156,3 +156,11 @@ The application follows modern best practices for scalability, security, and mai
 - **Database consistency**: Ensured all foreign key relationships use appropriate slug-based references (examSlug, subjectSlug)
 - **Mixed ID/slug system**: Questions maintain ID-based identification while correctly referencing slug-based subjects and exams
 - **Comprehensive testing**: Verified all CRUD operations work properly with the hybrid ID/slug system
+
+### July 09, 2025 - Cascade Filtering Implementation for Exams Management (COMPLETED)
+- **Replaced difficulty filter with hierarchical cascade filtering**: Implemented Category → Subcategory → Subject filtering chain in exams management
+- **Intelligent filter dependencies**: Category selection filters subcategories; subcategory selection filters subjects; all filters cascade appropriately
+- **Enhanced user experience**: Subject filter is disabled until category/subcategory is selected, providing guided filtering workflow
+- **Real-time filter updates**: Filter options update dynamically based on parent selections with proper state management
+- **Comprehensive filter logic**: All exam display and pagination logic updated to support hierarchical filtering
+- **Consistent SearchableSelect usage**: Maintained elite SearchableSelect implementation across all filter components
