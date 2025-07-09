@@ -72,12 +72,14 @@
                         questionId: question.id,
                         userAnswer,
                       }),
-                    onSuccess: (data: { explanation: string }) => {
+                    onSuccess: (data: any) => {
                       console.log("AI explanation received:", data);
-                      setAiExplanation(data.explanation);
+                      const explanation = data?.explanation || "Unable to generate explanation at this time.";
+                      setAiExplanation(explanation);
                       setShowAiExplanation(true);
                     },
-                    onError: () => {
+                    onError: (error: any) => {
+                      console.error("AI explanation error:", error);
                       toast({
                         title: "Error",
                         description: "Unable to get AI explanation right now.",
