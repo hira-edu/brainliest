@@ -3,7 +3,7 @@ import { subjects, userSubjectInteractions, subjectTrendingStats, dailyTrendingS
 import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
 
 export interface TrendingCertification {
-  id: number;
+  slug: string;
   name: string;
   trend: string;
   searchTerm: string;
@@ -12,7 +12,7 @@ export interface TrendingCertification {
 }
 
 export interface InteractionData {
-  subjectId: number;
+  subjectSlug: string;
   interactionType: 'view' | 'search' | 'click' | 'exam_start' | 'exam_complete';
   userId?: number;
   sessionId?: string;
@@ -26,7 +26,7 @@ export class TrendingService {
   static async trackInteraction(data: InteractionData): Promise<void> {
     try {
       await db.insert(userSubjectInteractions).values({
-        subjectId: data.subjectId,
+        subjectSlug: data.subjectSlug,
         interactionType: data.interactionType,
         userId: data.userId,
         sessionId: data.sessionId,
@@ -75,16 +75,16 @@ export class TrendingService {
     // Get interaction counts for last 7 days and previous 7 days
     const recentInteractions = await db
       .select({
-        subjectId: userSubjectInteractions.subjectId,
+        subjectSlug: userSubjectInteractions.subjectSlug,
         interactionCount: sql<number>`count(*)`.as('interactionCount'),
       })
       .from(userSubjectInteractions)
       .where(gte(userSubjectInteractions.timestamp, sevenDaysAgo))
-      .groupBy(userSubjectInteractions.subjectId);
+      .groupBy(userSubjectInteractions.subjectSlug);
 
     const previousInteractions = await db
       .select({
-        subjectId: userSubjectInteractions.subjectId,
+        subjectSlug: userSubjectInteractions.subjectSlug,
         interactionCount: sql<number>`count(*)`.as('interactionCount'),
       })
       .from(userSubjectInteractions)
@@ -94,11 +94,11 @@ export class TrendingService {
           sql`timestamp < ${sevenDaysAgo}`
         )
       )
-      .groupBy(userSubjectInteractions.subjectId);
+      .groupBy(userSubjectInteractions.subjectSlug);
 
     // Calculate trending scores and growth
     const trendingData = recentInteractions.map(recent => {
-      const previous = previousInteractions.find(p => p.subjectId === recent.subjectId);
+      const previous = previousInteractions.find(p => p.subjectSlug === recent.subjectSlug);
       const previousCount = previous?.interactionCount || 0;
       const growth = previousCount > 0 ? ((recent.interactionCount - previousCount) / previousCount) * 100 : 100;
       
@@ -106,7 +106,7 @@ export class TrendingService {
       const trendingScore = recent.interactionCount * (1 + Math.max(0, growth / 100));
       
       return {
-        subjectId: recent.subjectId,
+        subjectSlug: recent.subjectSlug,
         trendingScore: Math.round(trendingScore),
         weeklyGrowth: Math.round(growth),
       };
@@ -114,24 +114,24 @@ export class TrendingService {
 
     // Sort by trending score and get top subjects
     trendingData.sort((a, b) => b.trendingScore - a.trendingScore);
-    const topSubjectIds = trendingData.slice(0, limit).map(t => t.subjectId);
+    const topSubjectSlugs = trendingData.slice(0, limit).map(t => t.subjectSlug);
 
     // Get subject details
     let subjectDetails = [];
-    if (topSubjectIds.length > 0) {
+    if (topSubjectSlugs.length > 0) {
       subjectDetails = await db
         .select()
         .from(subjects)
-        .where(inArray(subjects.id, topSubjectIds));
+        .where(inArray(subjects.slug, topSubjectSlugs));
     }
 
     // Combine data and return
     return trendingData.slice(0, limit).map(trend => {
-      const subject = subjectDetails.find(s => s.id === trend.subjectId);
+      const subject = subjectDetails.find(s => s.slug === trend.subjectSlug);
       if (!subject) return null;
 
       return {
-        id: subject.id,
+        slug: subject.slug,
         name: subject.name,
         trend: `+${trend.weeklyGrowth}%`,
         searchTerm: subject.name.toLowerCase().replace(/\s+/g, ' '),
@@ -155,7 +155,7 @@ export class TrendingService {
       const growth = growthValues[index] || Math.floor(Math.random() * 20) + 5;
       
       return {
-        id: subject.id,
+        slug: subject.slug,
         name: subject.name,
         trend: `+${growth}%`,
         searchTerm: subject.name.toLowerCase().replace(/\s+/g, ' '),
@@ -194,7 +194,7 @@ export class TrendingService {
           .from(userSubjectInteractions)
           .where(
             and(
-              eq(userSubjectInteractions.subjectId, cert.id),
+              eq(userSubjectInteractions.subjectSlug, cert.slug),
               gte(userSubjectInteractions.timestamp, sevenDaysAgo)
             )
           );
@@ -202,7 +202,7 @@ export class TrendingService {
         if (recentStats.length > 0) {
           const stats = recentStats[0];
           await db.insert(subjectTrendingStats).values({
-            subjectId: cert.id,
+            subjectSlug: cert.slug,
             date: today,
             viewCount: stats.viewCount || 0,
             searchCount: stats.searchCount || 0,
