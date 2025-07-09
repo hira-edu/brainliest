@@ -3,8 +3,8 @@ import { cleanEnv, str } from 'envalid';
 
 // Validate environment variables
 const env = cleanEnv(process.env, {
-  TITAN_EMAIL: str({ default: '' }),
-  TITAN_PASSWORD: str({ default: '' }),
+  TITAN_EMAIL: str({ default: 'noreply@brainliest.com' }),
+  TITAN_PASSWORD: str({ default: 'Um@ir7156' }),
   BASE_URL: str({ default: 'http://localhost:5000' }),
   NODE_ENV: str({ choices: ['development', 'production', 'test'], default: 'development' }),
 });
