@@ -1,8 +1,0 @@
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <title>Psychology Icon</title>
-    <circle cx="12" cy="10" r="6" fill="#ec4899" stroke="#db2777" stroke-width="0.5"/>
-    <circle cx="10" cy="9" r="1" fill="white"/>
-    <circle cx="14" cy="9" r="1" fill="white"/>
-    <path d="M9 12 Q12 14 15 12" stroke="white" stroke-width="1" fill="none"/>
-    <path d="M12 16 Q10 18 8 20 M12 16 Q14 18 16 20" stroke="#ec4899" stroke-width="1.5" fill="none"/>
-  </svg>

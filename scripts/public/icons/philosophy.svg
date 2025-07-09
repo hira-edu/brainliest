@@ -1,8 +1,0 @@
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <title>Philosophy Icon</title>
-    <circle cx="12" cy="12" r="9" fill="#374151" stroke="#1f2937" stroke-width="0.5"/>
-    <path d="M8 10 Q12 8 16 10 Q16 14 12 16 Q8 14 8 10" fill="white" opacity="0.9"/>
-    <circle cx="12" cy="12" r="2" fill="#374151"/>
-    <text x="12" y="19" text-anchor="middle" font-family="Arial, sans-serif" 
-          font-size="1.5" font-weight="bold" fill="white">φ</text>
-  </svg>

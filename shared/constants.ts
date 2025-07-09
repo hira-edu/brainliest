@@ -23,106 +23,106 @@ export const categoryConfig = {
 // Category structure for navigation pages
 export const categoryStructure = [
   {
-    id: "professional-certifications",
+    id: "professional",
     title: "Professional Certifications",
     description: "Industry-recognized certifications for career advancement",
     icon: "Award",
     color: "blue",
-    route: "/categories/professional-certifications",
+    route: "/categories/professional",
     subCategories: [
       {
-        id: "it-cloud-computing",
+        id: "it-cloud",
         title: "IT & Cloud Computing",
         description: "AWS, Azure, Google Cloud, and other cloud platforms",
         icon: "Cloud",
-        route: "/categories/professional-certifications/it-cloud-computing"
+        route: "/categories/professional/it-cloud"
       },
       {
         id: "project-management",
         title: "Project Management",
         description: "PMP, Agile, Scrum, and project leadership certifications",
         icon: "Briefcase",
-        route: "/categories/professional-certifications/project-management"
+        route: "/categories/professional/project-management"
       },
       {
         id: "cybersecurity",
         title: "Cybersecurity",
         description: "CompTIA Security+, CISSP, and security certifications",
         icon: "Shield",
-        route: "/categories/professional-certifications/cybersecurity"
+        route: "/categories/professional/cybersecurity"
       },
       {
         id: "networking",
         title: "Networking",
         description: "Cisco, CompTIA Network+, and networking technologies",
         icon: "Network",
-        route: "/categories/professional-certifications/networking"
+        route: "/categories/professional/networking"
       }
     ]
   },
   {
-    id: "university-college",
+    id: "academic",
     title: "University & College",
     description: "Academic subjects for students and learners",
     icon: "GraduationCap",
     color: "green",
-    route: "/categories/university-college",
+    route: "/categories/academic",
     subCategories: [
       {
         id: "mathematics-statistics",
         title: "Mathematics & Statistics",
         description: "Calculus, Algebra, Statistics, and Mathematical Sciences",
         icon: "Calculator",
-        route: "/categories/university-college/mathematics-statistics"
+        route: "/categories/academic/mathematics-statistics"
       },
       {
         id: "computer-science",
         title: "Computer Science",
         description: "Programming, Data Structures, Algorithms, and Software Engineering",
         icon: "Code",
-        route: "/categories/university-college/computer-science"
+        route: "/categories/academic/computer-science"
       },
       {
         id: "natural-sciences",
         title: "Natural Sciences",
         description: "Physics, Chemistry, Biology, and Earth Sciences",
         icon: "Flask",
-        route: "/categories/university-college/natural-sciences"
+        route: "/categories/academic/natural-sciences"
       },
       {
         id: "engineering",
         title: "Engineering",
         description: "Mechanical, Electrical, Civil, and Engineering Fundamentals",
         icon: "Cog",
-        route: "/categories/university-college/engineering"
+        route: "/categories/academic/engineering"
       },
       {
         id: "business-economics",
         title: "Business & Economics",
         description: "Accounting, Finance, Economics, and Business Administration",
         icon: "TrendingUp",
-        route: "/categories/university-college/business-economics"
+        route: "/categories/academic/business-economics"
       },
       {
-        id: "health-medical-sciences",
+        id: "health-medical",
         title: "Health & Medical Sciences",
         description: "Nursing, Medical Sciences, Anatomy, and Healthcare",
         icon: "Stethoscope",
-        route: "/categories/university-college/health-medical-sciences"
+        route: "/categories/academic/health-medical"
       },
       {
         id: "social-sciences-humanities",
         title: "Social Sciences & Humanities",
         description: "Psychology, History, Philosophy, and Social Studies",
         icon: "Users",
-        route: "/categories/university-college/social-sciences-humanities"
+        route: "/categories/academic/social-sciences-humanities"
       },
       {
-        id: "standardized-test-prep",
+        id: "test-prep",
         title: "Standardized Test Prep",
-        description: "HESI, TEAS, GRE, LSAT, TOEFL, and standardized test preparation",
+        description: "GRE, LSAT, TOEFL, and standardized test preparation",
         icon: "FileText",
-        route: "/categories/university-college/standardized-test-prep"
+        route: "/categories/academic/test-prep"
       }
     ]
   }
@@ -186,13 +186,8 @@ export const EXAM_DIFFICULTIES = [
 ] as const;
 
 // Helper function to categorize subjects
-export function getCategoryForSubject(subject: { name: string } | string): string {
-  if (!subject) return "other";
-  
-  const subjectName = typeof subject === 'string' ? subject : subject.name;
-  if (!subjectName) return "other";
-  
-  const subjectLower = subjectName.toLowerCase();
+export function getCategoryForSubject(subject: { name: string }): string {
+  const subjectLower = subject.name.toLowerCase();
   
   for (const [key, config] of Object.entries(categoryConfig)) {
     if (config.keywords.some(keyword => subjectLower.includes(keyword))) {

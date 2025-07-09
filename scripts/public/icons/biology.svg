@@ -1,8 +1,0 @@
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <title>Biology Icon</title>
-    <circle cx="12" cy="12" r="9" fill="#16a34a" stroke="#15803d" stroke-width="0.5"/>
-    <path d="M12 6 Q10 8 8 12 Q10 16 12 18 Q14 16 16 12 Q14 8 12 6" fill="white" opacity="0.9"/>
-    <circle cx="12" cy="9" r="1" fill="#16a34a"/>
-    <circle cx="12" cy="15" r="1" fill="#16a34a"/>
-    <path d="M9 12 L15 12" stroke="#16a34a" stroke-width="1"/>
-  </svg>

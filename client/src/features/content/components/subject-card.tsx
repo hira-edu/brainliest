@@ -1,5 +1,5 @@
 import { Subject } from "../../../../../shared/schema";
-import { SubjectIcon } from "../../../components/icons";
+import { Icon } from "../../../components/icons";
 
 interface SubjectCardProps {
   subject: Subject;
@@ -26,11 +26,13 @@ export default function SubjectCard({ subject, onClick }: SubjectCardProps) {
     >
       <div className="p-6">
         <div className="flex items-center justify-center w-16 h-16 rounded-lg mb-4 transition-colors">
-          <SubjectIcon 
-            subjectName={subject.name} 
-            className="w-12 h-12" 
-            fallback="academic"
-          />
+          {iconName ? (
+            <Icon name={iconName} size="lg" className="w-12 h-12" />
+          ) : (
+            <div className={`flex items-center justify-center w-full h-full rounded-lg ${getIconClass()}`}>
+              <i className={`${subject.icon} text-2xl`}></i>
+            </div>
+          )}
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">{subject.name}</h3>
         <p className="text-gray-600 mb-4">{subject.description}</p>

@@ -26,7 +26,6 @@ import AuthCallback from "./features/auth/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
 import { IconProvider } from "./components/icons";
-import { lazy } from "react";
 
 function Router() {
   return (
@@ -64,18 +63,6 @@ function Router() {
       <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/contact" component={Contact} />
       <Route path="/auth/callback" component={AuthCallback} />
-      <Route path="/icon-test">
-        {() => {
-          const IconTestPage = lazy(() => import("./pages/icon-test").then(m => ({ default: m.IconTestPage })));
-          return <IconTestPage />;
-        }}
-      </Route>
-      <Route path="/icon-performance">
-        {() => {
-          const IconPerformanceTestPage = lazy(() => import("./pages/icon-performance-test").then(m => ({ default: m.default })));
-          return <IconPerformanceTestPage />;
-        }}
-      </Route>
       <Route component={NotFound} />
     </Switch>
   );

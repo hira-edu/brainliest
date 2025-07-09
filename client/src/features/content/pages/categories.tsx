@@ -3,24 +3,7 @@ import { categoryStructure, type Category } from "../../../../../shared/constant
 import { Header, Footer } from "../../shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
-import { ArrowRight, BookOpen, Award, GraduationCap, FileText, Users, Cloud, Briefcase, Shield, Network, Calculator, Code, FlaskConical, Cog, Stethoscope } from "lucide-react";
-
-// Icon mapping for category structure
-const iconMap = {
-  Award,
-  GraduationCap,
-  FileText,
-  Users,
-  Cloud,
-  Briefcase,
-  Shield,
-  Network,
-  Calculator,
-  Code,
-  Flask: FlaskConical,
-  Cog,
-  Stethoscope
-};
+import { ArrowRight, BookOpen } from "lucide-react";
 
 export default function CategoriesPage() {
   return (
@@ -51,7 +34,7 @@ export default function CategoriesPage() {
 }
 
 function CategoryCard({ category }: { category: Category }) {
-  const IconComponent = iconMap[category.icon as keyof typeof iconMap] || FileText;
+  const IconComponent = category.icon;
   
   return (
     <Card className="hover:shadow-lg transition-shadow h-full">
@@ -70,7 +53,7 @@ function CategoryCard({ category }: { category: Category }) {
       <CardContent>
         <div className="space-y-3 mb-6">
           {category.subCategories.map((subCategory) => {
-            const SubIconComponent = iconMap[subCategory.icon as keyof typeof iconMap] || FileText;
+            const SubIconComponent = subCategory.icon;
             return (
               <Link key={subCategory.id} href={subCategory.route}>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group">

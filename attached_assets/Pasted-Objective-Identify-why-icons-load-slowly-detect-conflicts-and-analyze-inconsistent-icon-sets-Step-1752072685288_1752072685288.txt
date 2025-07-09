@@ -1,38 +1,0 @@
-Objective: Identify why icons load slowly, detect conflicts, and analyze inconsistent icon sets.Steps:Test Icon Loading Performance:Measure rendering time for <SubjectIcon subjectName="Mathematics" /> using browser DevTools (Performance tab).
-Profile IndustrialIconRegistry.getIcon and useIcon hook for lookup latency.
-Check network requests for SVG files (local or S3) and identify bottlenecks (e.g., large file sizes, slow CDN).
-Test with 100+ subjects to simulate high load and measure performance degradation.
-Investigate Conflicts:Check IndustrialIconRegistry for duplicate iconIds during registration.
-Test concurrent icon registrations using registerIcons with multiple threads/processes.
-Verify mutex functionality in RegistryMutex to prevent race conditions.
-Inspect useSubjectIconName for incorrect mappings (e.g., case sensitivity, missing iconId).
-Analyze Icon Inconsistencies:Query the Icon collection to list all iconIds and their metadata (e.g., category, style).
-Compare rendered icons for subjects (e.g., "Mathematics" vs. "AWS Cloud Practitioner") to identify style differences (e.g., filled vs. outlined, different libraries).
-Check if user-uploaded icons deviate from the predefined style.
-Database and Storage Audit:Verify Subject.iconId and Exam.iconId match registered icons or valid S3 URLs.
-Check S3 bucket (brainliest-icons) for accessibility and file integrity.
-Test database query performance for Subject.find({ name }) and Icon.find({ iconId }).
-Admin Panel Testing:Navigate to /admin/subjects and verify icon selector functionality.
-Test icon search (useIconSearch) for responsiveness and accuracy.
-Attempt to assign mismatched icons (e.g., non-existent iconId) and verify error handling.
-Tools:Browser DevTools: Profile performance and network requests.
-Jest: Unit tests for components, hooks, and registry.
-React Testing Library: Test component rendering.
-Cypress: End-to-end tests for admin panel workflows.
-Postman: Test API endpoints.
-Sentry: Capture runtime errors and performance metrics.
-Lighthouse: Audit page load performance.
-
-Test Cases:Performance:Render 100 <SubjectIcon /> components and measure time to interactive.
-Fetch 50 icons from S3 and verify latency < 100ms per icon.
-Conflicts:Register two icons with the same iconId and verify mutex prevents overwrite.
-Test concurrent registerIcons calls with 100 icons each.
-Consistency:Render icons for "Mathematics", "AWS Cloud Practitioner", and "PMP Certification" and verify same style (e.g., outlined, 24x24px).
-Upload a custom SVG with different style and verify rejection or normalization.
-Database:Query Subject for non-existent iconId and verify fallback to academic.
-Update 10 subjects with new iconIds and verify database consistency.
-Expected Output:A QA report detailing:Causes of slow loading (e.g., large SVGs, registry bottlenecks).
-Conflicts (e.g., duplicate iconIds, race conditions).
-Inconsistencies (e.g., mixed icon styles, missing iconIds).
-Database/storage issues (e.g., slow queries, inaccessible S3 files).
-

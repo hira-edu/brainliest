@@ -19,7 +19,6 @@ import { parseId, parseOptionalId, sanitizeString, validatePassword } from './se
 import { z } from 'zod';
 import { validateEmail } from './services/auth-service';
 import { logAdminAction } from './middleware/auth';
-import iconRoutes from './routes/icon-routes';
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -2782,15 +2781,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     }
-  });
-
-  // Icon management routes (temporary mock endpoints)
-  app.get('/api/icons/subject/:slug', (req, res) => {
-    res.json({ id: 'academic', name: 'Academic', category: 'general' });
-  });
-  
-  app.post('/api/icons/initialize', (req, res) => {
-    res.json({ success: true, message: 'Icon system initialized' });
   });
 
   const httpServer = createServer(app);
