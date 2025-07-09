@@ -1486,13 +1486,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log('Registration with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
-      // FIXED: Actually verify reCAPTCHA token if present
+      // Verify reCAPTCHA token if present
       if (recaptchaToken) {
-        // TODO: Implement actual reCAPTCHA verification
-        // const isValid = await recaptchaService.verifyToken(recaptchaToken);
-        // if (!isValid) {
-        //   return res.status(400).json({ message: "Invalid reCAPTCHA token" });
-        // }
+        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'signup');
+        if (!recaptchaResult.success) {
+          console.warn('reCAPTCHA verification failed for registration:', recaptchaResult['error-codes']);
+          return res.status(400).json({ 
+            success: false, 
+            message: "reCAPTCHA verification failed. Please try again." 
+          });
+        }
+        console.log(`reCAPTCHA verified for registration: score ${recaptchaResult.score}`);
       }
       
       const result = await authService.register(
@@ -1529,13 +1533,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log('Login with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
-      // FIXED: Actually verify reCAPTCHA token if present
+      // Verify reCAPTCHA token if present
       if (recaptchaToken) {
-        // TODO: Implement actual reCAPTCHA verification
-        // const isValid = await recaptchaService.verifyToken(recaptchaToken);
-        // if (!isValid) {
-        //   return res.status(400).json({ message: "Invalid reCAPTCHA token" });
-        // }
+        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'login');
+        if (!recaptchaResult.success) {
+          console.warn('reCAPTCHA verification failed for login:', recaptchaResult['error-codes']);
+          return res.status(400).json({ 
+            success: false, 
+            message: "reCAPTCHA verification failed. Please try again." 
+          });
+        }
+        console.log(`reCAPTCHA verified for login: score ${recaptchaResult.score}`);
       }
       
       const result = await authService.login(
@@ -1749,13 +1757,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log('Google OAuth with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
       
-      // FIXED: Actually verify reCAPTCHA token if present
+      // Verify reCAPTCHA token if present
       if (recaptchaToken) {
-        // TODO: Implement actual reCAPTCHA verification
-        // const isValid = await recaptchaService.verifyToken(recaptchaToken);
-        // if (!isValid) {
-        //   return res.status(400).json({ message: "Invalid reCAPTCHA token" });
-        // }
+        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'google_oauth');
+        if (!recaptchaResult.success) {
+          console.warn('reCAPTCHA verification failed for Google OAuth:', recaptchaResult['error-codes']);
+          return res.status(400).json({ 
+            success: false, 
+            message: "reCAPTCHA verification failed. Please try again." 
+          });
+        }
+        console.log(`reCAPTCHA verified for Google OAuth: score ${recaptchaResult.score}`);
       }
       
       const result = await authService.oauthLogin(
