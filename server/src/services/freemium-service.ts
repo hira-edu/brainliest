@@ -38,38 +38,55 @@ export interface FreemiumCheckResult {
  */
 function normalizeIpAddress(ip: string): string {
   try {
-    // Handle IPv4-mapped IPv6 addresses first
-    if (ip.startsWith('::ffff:')) {
-      ip = ip.substring(7);
+    // Clean the input first
+    const cleanIp = ip.trim();
+    
+    // Handle empty or null cases
+    if (!cleanIp || cleanIp === 'undefined' || cleanIp === 'null') {
+      return 'unknown';
     }
     
-    // Fixed: Use ipaddr.js for proper IP parsing and normalization
-    const parsed = ipaddr.process(ip);
+    // Handle IPv4-mapped IPv6 addresses first
+    let processedIp = cleanIp;
+    if (processedIp.startsWith('::ffff:')) {
+      processedIp = processedIp.substring(7);
+    }
+    
+    // Remove any port numbers (e.g., "192.168.1.1:8080" -> "192.168.1.1")
+    const portMatch = processedIp.match(/^(.+?):\d+$/);
+    if (portMatch) {
+      processedIp = portMatch[1];
+    }
+    
+    // Validate that it looks like an IP address before parsing
+    const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const ipv6Pattern = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
+    
+    if (!ipv4Pattern.test(processedIp) && !ipv6Pattern.test(processedIp)) {
+      // If it doesn't look like an IP, return a safe fallback
+      console.warn(`Invalid IP format received: ${ip}, using fallback`);
+      return 'unknown_format';
+    }
+    
+    // Use ipaddr.js for proper IP parsing and normalization
+    const parsed = ipaddr.process(processedIp);
     
     if (parsed.kind() === 'ipv4') {
-      // For IPv4, return the string representation
       return parsed.toString();
     } else if (parsed.kind() === 'ipv6') {
-      // For IPv6, return the full representation
       return parsed.toString();
     }
     
-    // Fallback to original if parsing succeeds but type is unexpected
-    return ip.trim();
+    return processedIp;
   } catch (error) {
-    console.warn(`Failed to normalize IP address with ipaddr.js: ${ip}`, error);
-    
-    // Fixed: Fallback to basic validation for malformed IPs
-    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-      return ip.trim(); // Return trimmed IPv4
-    }
-    
-    return ip.trim(); // Return original for IPv6 or other formats
+    console.warn(`Failed to normalize IP address: ${ip}, using safe fallback`, error);
+    // Return a safe fallback that won't cause database issues
+    return 'parse_error';
   }
 }
 
-// Fixed: Type-safe client key type definition
-type ClientKey = string | null;
+// Fixed: Type-safe client key type definition (always returns string with fallbacks)
+type ClientKey = string;
 
 /**
  * Fixed: Enhanced IP extraction utility function for serverless environments
@@ -109,18 +126,21 @@ function extractIp(req: Request): string | null {
  * Fixed: Enhanced client key generation with proper type safety and user-agent support
  * Combines IP with hashed user-agent for better granularity on shared IPs
  */
-function getClientKey(req: Request): ClientKey {
+function getClientKey(req: Request): string {
   const ip = extractIp(req);
 
   if (!ip) {
-    console.warn('Unable to determine client IP address');
-    return null;
+    console.warn('Unable to determine client IP address, using fallback');
+    // Use a fallback identifier when IP is not available
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
+    return `no_ip:${uaHash}`;
   }
 
-  // Normalize the IP address
+  // Normalize the IP address with safe fallback
   const normalizedIp = normalizeIpAddress(ip);
 
-  // Fixed: Enable user-agent hash for better session granularity on shared IPs
+  // Enhanced user-agent hash for better session granularity on shared IPs
   const userAgent = req.headers['user-agent'] || '';
   if (userAgent) {
     const uaHash = crypto.createHash('sha256').update(userAgent).digest('hex').substring(0, 16);
@@ -155,7 +175,8 @@ export class FreemiumService {
   async checkQuestionLimit(req: Request): Promise<FreemiumCheckResult> {
     const clientKey = getClientKey(req);
     
-    if (!clientKey) {
+    // Since getClientKey now always returns a string (with fallbacks), this check is for safety
+    if (!clientKey || clientKey.trim() === '') {
       return {
         allowed: false,
         sessionInfo: this.createEmptySessionInfo(),
@@ -199,7 +220,8 @@ export class FreemiumService {
   async recordQuestionView(req: Request): Promise<FreemiumCheckResult> {
     const clientKey = getClientKey(req);
     
-    if (!clientKey) {
+    // Since getClientKey now always returns a string (with fallbacks), this check is for safety
+    if (!clientKey || clientKey.trim() === '') {
       return {
         allowed: false,
         sessionInfo: this.createEmptySessionInfo(),
