@@ -306,6 +306,13 @@ export default function AdminSimple() {
   // Selected filters for linking tabs
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("all");
   const [selectedExamFilter, setSelectedExamFilter] = useState<string>("all");
+  
+  // Category and subcategory filters for subjects
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<number | null>(null);
+  const [selectedSubcategoryFilter, setSelectedSubcategoryFilter] = useState<number | null>(null);
+  
+  // Difficulty filter for exams
+  const [selectedDifficultyFilter, setSelectedDifficultyFilter] = useState<string | null>(null);
 
   // PERFORMANCE OPTIMIZATION: Memoized query options
   const subjectsQuery = useQuery<Subject[]>({
@@ -1640,8 +1647,81 @@ export default function AdminSimple() {
           </Dialog>
         </div>
 
+        {/* Subject Filter Controls */}
+        <div className="mb-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium">Filters:</span>
+            </div>
+            <SearchableSelect
+              options={[
+                { value: "all", label: "All Categories" },
+                ...(categories?.filter(category => category?.id && category?.name).map((category) => ({
+                  value: category.id.toString(),
+                  label: category.name,
+                })) || [])
+              ]}
+              value={selectedCategoryFilter || "all"}
+              onValueChange={(value) => {
+                setSelectedCategoryFilter(value === "all" ? null : parseInt(value));
+                setSelectedSubcategoryFilter(null); // Reset subcategory when category changes
+              }}
+              placeholder="Filter by category"
+              className="w-48"
+              clearable
+            />
+            <SearchableSelect
+              options={[
+                { value: "all", label: "All Subcategories" },
+                ...(subcategories
+                  ?.filter(subcategory => 
+                    subcategory?.id && 
+                    subcategory?.name && 
+                    (!selectedCategoryFilter || subcategory.categoryId === selectedCategoryFilter)
+                  )
+                  ?.map((subcategory) => ({
+                    value: subcategory.id.toString(),
+                    label: subcategory.name,
+                  })) || [])
+              ]}
+              value={selectedSubcategoryFilter?.toString() || "all"}
+              onValueChange={(value) => {
+                setSelectedSubcategoryFilter(value === "all" ? null : parseInt(value));
+              }}
+              placeholder="Filter by subcategory"
+              disabled={!selectedCategoryFilter}
+              className="w-48"
+              clearable
+            />
+            {(selectedCategoryFilter || selectedSubcategoryFilter) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedCategoryFilter(null);
+                  setSelectedSubcategoryFilter(null);
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
+            <Badge variant="outline">
+              {subjects?.filter(subject => {
+                const matchesCategory = !selectedCategoryFilter || subject.categoryId === selectedCategoryFilter;
+                const matchesSubcategory = !selectedSubcategoryFilter || subject.subcategoryId === selectedSubcategoryFilter;
+                return matchesCategory && matchesSubcategory;
+              }).length || 0} subjects
+            </Badge>
+          </div>
+        </div>
+
         <div className="grid gap-4">
-          {subjects?.slice((subjectsPage - 1) * subjectsPerPage, subjectsPage * subjectsPerPage).map((subject) => (
+          {subjects?.filter(subject => {
+            const matchesCategory = !selectedCategoryFilter || subject.categoryId === selectedCategoryFilter;
+            const matchesSubcategory = !selectedSubcategoryFilter || subject.subcategoryId === selectedSubcategoryFilter;
+            return matchesCategory && matchesSubcategory;
+          }).slice((subjectsPage - 1) * subjectsPerPage, subjectsPage * subjectsPerPage).map((subject) => (
             <Card key={subject.slug} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -2027,11 +2107,12 @@ export default function AdminSimple() {
           </Dialog>
         </div>
 
+        {/* Exam Filter Controls */}
         <div className="mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium">Filter by Subject:</span>
+              <span className="text-sm font-medium">Filters:</span>
             </div>
             <SearchableSelect
               options={[
@@ -2043,27 +2124,54 @@ export default function AdminSimple() {
               ]}
               value={selectedSubjectFilter}
               onValueChange={setSelectedSubjectFilter}
-              placeholder="All subjects"
+              placeholder="Filter by subject"
               searchPlaceholder="Search subjects..."
               emptyText="No subjects found"
               className="w-48"
+              clearable
             />
-            {selectedSubjectFilter !== "all" && (
+            <SearchableSelect
+              options={[
+                { value: "all", label: "All Difficulties" },
+                { value: "Beginner", label: "Beginner" },
+                { value: "Intermediate", label: "Intermediate" },
+                { value: "Advanced", label: "Advanced" },
+                { value: "Expert", label: "Expert" }
+              ]}
+              value={selectedDifficultyFilter || "all"}
+              onValueChange={(value) => setSelectedDifficultyFilter(value === "all" ? null : value)}
+              placeholder="Filter by difficulty"
+              className="w-48"
+              clearable
+            />
+            {(selectedSubjectFilter !== "all" || selectedDifficultyFilter) && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSelectedSubjectFilter("all")}
+                onClick={() => {
+                  setSelectedSubjectFilter("all");
+                  setSelectedDifficultyFilter(null);
+                }}
               >
-                Clear Filter
+                Clear Filters
               </Button>
             )}
+            <Badge variant="outline">
+              {exams?.filter((exam) => {
+                const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
+                const matchesDifficulty = !selectedDifficultyFilter || exam.difficulty === selectedDifficultyFilter;
+                return matchesSubject && matchesDifficulty;
+              }).length || 0} exams
+            </Badge>
           </div>
         </div>
 
         <div className="grid gap-4">
-          {exams?.filter((exam) => 
-            selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter
-          ).slice((examsPage - 1) * examsPerPage, examsPage * examsPerPage).map((exam) => {
+          {exams?.filter((exam) => {
+            const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
+            const matchesDifficulty = !selectedDifficultyFilter || exam.difficulty === selectedDifficultyFilter;
+            return matchesSubject && matchesDifficulty;
+          }).slice((examsPage - 1) * examsPerPage, examsPage * examsPerPage).map((exam) => {
             const subject = subjects?.find(s => s.slug === exam.subjectSlug);
             const questionCount = questions?.filter(q => q.examSlug === exam.slug).length || 0;
 
@@ -2129,9 +2237,11 @@ export default function AdminSimple() {
         
         <PaginationControls
           currentPage={examsPage}
-          totalItems={exams?.filter((exam) => 
-            selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter
-          ).length || 0}
+          totalItems={exams?.filter((exam) => {
+            const matchesSubject = selectedSubjectFilter === "all" || exam.subjectSlug === selectedSubjectFilter;
+            const matchesDifficulty = !selectedDifficultyFilter || exam.difficulty === selectedDifficultyFilter;
+            return matchesSubject && matchesDifficulty;
+          }).length || 0}
           itemsPerPage={examsPerPage}
           onPageChange={setExamsPage}
           onItemsPerPageChange={(items) => {
@@ -2633,8 +2743,15 @@ export default function AdminSimple() {
                 />
               </div>
             </div>
-            <Select 
-              value={selectedSubject} 
+            <SearchableSelect
+              options={[
+                { value: "all", label: "All Subjects" },
+                ...(subjects?.filter(subject => subject?.slug && subject?.name).map((subject) => ({
+                  value: subject.slug,
+                  label: subject.name,
+                })) || [])
+              ]}
+              value={selectedSubject}
               onValueChange={(value) => {
                 setSelectedSubject(value);
                 // Reset exam selection when subject changes
@@ -2648,53 +2765,40 @@ export default function AdminSimple() {
                   }
                 }
               }}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by subject" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {subjects?.map((subject) => (
-                  <SelectItem key={subject.slug} value={subject.slug}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select 
-              value={selectedExam} 
+              placeholder="Filter by subject"
+              className="w-48"
+              clearable
+            />
+            <SearchableSelect
+              options={[
+                { 
+                  value: "all", 
+                  label: selectedSubject === "all" ? "All Exams" : "All Exams in Subject" 
+                },
+                ...(selectedSubject === "all" 
+                  ? (exams?.filter(exam => exam?.slug && exam?.title).map((exam) => ({
+                      value: exam.slug,
+                      label: exam.title,
+                    })) || [])
+                  : (exams
+                      ?.filter(exam => exam.subjectSlug === selectedSubject && exam?.slug && exam?.title)
+                      ?.map((exam) => ({
+                        value: exam.slug,
+                        label: exam.title,
+                      })) || [])
+                )
+              ]}
+              value={selectedExam}
               onValueChange={setSelectedExam}
+              placeholder={
+                selectedSubject === "all" 
+                  ? "Select subject first" 
+                  : "Filter by exam"
+              }
               disabled={selectedSubject === "all"}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue 
-                  placeholder={
-                    selectedSubject === "all" 
-                      ? "Select subject first" 
-                      : "Filter by exam"
-                  } 
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {selectedSubject === "all" ? "All Exams" : "All Exams in Subject"}
-                </SelectItem>
-                {selectedSubject === "all" 
-                  ? exams?.map((exam) => (
-                      <SelectItem key={exam.slug} value={exam.slug}>
-                        {exam.title}
-                      </SelectItem>
-                    ))
-                  : exams
-                      ?.filter(exam => exam.subjectSlug === selectedSubject)
-                      ?.map((exam) => (
-                        <SelectItem key={exam.slug} value={exam.slug}>
-                          {exam.title}
-                        </SelectItem>
-                      ))
-                }
-              </SelectContent>
-            </Select>
+              className="w-48"
+              clearable
+            />
             <Badge variant="outline">{filteredQuestions.length} questions</Badge>
           </div>
         </div>
