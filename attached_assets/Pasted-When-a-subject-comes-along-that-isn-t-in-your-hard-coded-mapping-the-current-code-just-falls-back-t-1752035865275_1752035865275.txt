@@ -1,0 +1,112 @@
+When a subject comes along that isn’t in your hard-coded mapping, the current code just falls back to the generic “academic” icon (or whatever you passed in). That’s safe, but it means many of your real subject names—especially new or unexpected ones—won’t ever get a relevant icon. Here’s how to tighten that up and make sure every subject shows something meaningful:
+
+⸻
+
+1. Augment Your Mapping with Fuzzy Lookup
+
+Instead of just exact lookups, use your central iconRegistry’s search to find a close match:
+
+function useSubjectIconName(subjectName: string): string {
+  // 1. Exact mapping
+  const exact = subjectIconMap[subjectName];
+  if (exact) return exact;
+
+  // 2. Registry fuzzy search:
+  const results = iconRegistry.searchIcons(subjectName);
+  if (results.length) {
+    return results[0].metadata.id;
+  }
+
+  // 3. Infer by category:
+  return inferCategoryIcon(subjectName);
+}
+
+That way, if someone adds “AWS Certified Solutions Architect” to your platform, you’ll still pick up your existing “aws” icon via the fuzzy search index (matching the keyword “aws”).
+
+⸻
+
+2. Generate the Mapping From Your Index
+
+Maintaining a huge subjectIconMap manually is fragile. Instead, build it at startup from your registry:
+
+// definitions/subjectIconMap.ts
+import { iconRegistry } from './registry';
+
+// A small list of “seed” subject names that we know should map exactly:
+const SEED_SUBJECTS = ['PMP Certification', 'AWS Cloud Practitioner', /* … */];
+
+export const subjectIconMap: Record<string, string> = {};
+for (const name of SEED_SUBJECTS) {
+  subjectIconMap[name] = iconRegistry.getExactSubjectMapping(name)!;
+}
+
+Then rely on fuzzy search and category inference for everything else.
+
+⸻
+
+3. Improve Category Inference
+
+Your current regex‐based inferCategoryFromSubject is a great start, but you can make it data-driven:
+
+// definitions/categoryPatterns.ts
+export const CATEGORY_PATTERNS: [IconCategory, RegExp][] = [
+  ['certification', /(aws|azure|cloud|comptia|cisco)/i],
+  ['mathematics', /(math|statistics|calculus)/i],
+  // …
+];
+
+// registry method
+private inferCategoryFromSubject(subjectName: string): IconCategory {
+  for (const [cat, pattern] of CATEGORY_PATTERNS) {
+    if (pattern.test(subjectName)) return cat;
+  }
+  return 'general';
+}
+
+That allows you to tweak patterns without touching logic, and ensures wildcard matches for all uncaught cases.
+
+⸻
+
+4. Expose a “Missing Icon” Hook
+
+If you still end up with names that slip through, track them at runtime so you can back-fill your mapping:
+
+function useSubjectIconName(subjectName: string): string {
+  const iconId = /* exact→fuzzy→category logic */;
+  if (!iconRegistry.hasIcon(iconId)) {
+    console.warn(`No icon found for subject “${subjectName}” → using fallback`);
+    reportMissingIcon(subjectName);  // send to analytics or your issue tracker
+    return 'academic';
+  }
+  return iconId;
+}
+
+Now you’ll get a list of actual missing subjects in your logs or telemetry, making it easy to expand your seed map.
+
+⸻
+
+5. Fallback UI
+
+Finally, in your <SubjectIcon> component, render a meaningful placeholder if even the category fallback is missing:
+
+export const SubjectIcon = forwardRef<..., SubjectIconProps>(
+  ({ subjectName, fallback = 'academic', ...props }, ref) => {
+    const iconName = useSubjectIconName(subjectName);
+    const Component = iconRegistry.getIcon(iconName);
+    return Component
+      ? <Component ref={ref} {...props}/>
+      : <TextFallback ref={ref} label={subjectName} {...props}/>;
+  }
+);
+
+Where <TextFallback> could be a simple stylized circle with the subject initials (“CS” for “Computer Science”)—at least users see something contextual, not just an empty box.
+
+⸻
+
+Summary
+	1.	Fuzzy‐search your registry for any subjectName, not just exact map entries.
+	2.	Data‐drive both your exact mapping list and your category‐inference patterns.
+	3.	Log and report any truly missing icons so you can expand your catalog.
+	4.	Provide a text‐based fallback (initials or a generic badge) when even category fallback is absent.
+
+These steps ensure that every subject—past, present, and future—gets a fitting icon or at least a clear, consistent placeholder, yielding a truly industrial-grade user experience.
