@@ -97,10 +97,10 @@ export const anonQuestionSessions = pgTable("anon_question_sessions", {
   ipAddress: text("ip_address").notNull(),
   questionsAnswered: integer("questions_answered").notNull().default(0),
   // Time-zone aware timestamp for last reset of question count
-  lastReset: timestamp("last_reset", { mode: "tz" }).notNull().defaultNow(),
+  lastReset: timestamp("last_reset").notNull().defaultNow(),
   userAgentHash: text("user_agent_hash").notNull().default(""),
-  createdAt: timestamp("created_at", { mode: "tz" }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { mode: "tz" }).notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 
@@ -123,21 +123,21 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   emailVerified: boolean("email_verified").notNull().default(false),
   emailVerificationToken: text("email_verification_token"),
-  emailVerificationExpires: timestamp("email_verification_expires", { mode: "tz" }),
+  emailVerificationExpires: timestamp("email_verification_expires"),
   passwordResetToken: text("password_reset_token"),
-  passwordResetExpires: timestamp("password_reset_expires", { mode: "tz" }),
+  passwordResetExpires: timestamp("password_reset_expires"),
   
   // Security fields
   failedLoginAttempts: integer("failed_login_attempts").default(0),
-  lockedUntil: timestamp("locked_until", { mode: "tz" }),
+  lockedUntil: timestamp("locked_until"),
   loginCount: integer("login_count").default(0),
   
   // Tracking fields
-  lastLoginAt: timestamp("last_login_at", { mode: "tz" }),
+  lastLoginAt: timestamp("last_login_at"),
   lastLoginIp: text("last_login_ip").notNull().default(""),
   registrationIp: text("registration_ip").notNull().default(""),
-  createdAt: timestamp("created_at", { mode: "tz" }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { mode: "tz" }).notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
   // Store arbitrary JSON metadata in a native JSONB column
   metadata: jsonb("metadata").notNull().default("{}"),
 });
@@ -339,7 +339,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
   passwordResetExpires: true,
   failedLoginAttempts: true,
   lockedUntil: true,
-  twoFactorSecret: true,
+  loginCount: true,
+  lastLoginAt: true,
 });
 
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
