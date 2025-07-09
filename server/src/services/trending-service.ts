@@ -2,20 +2,6 @@ import { db } from "../db";
 import { subjects, userSubjectInteractions, subjectTrendingStats, dailyTrendingSnapshot } from "../../../shared/schema";
 import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
 
-// Fixed: Enhanced error handling and utility functions
-interface TrendingError {
-  success: false;
-  error: string;
-  context?: string;
-}
-
-interface TrendingSuccess<T> {
-  success: true;
-  data: T;
-}
-
-type TrendingResult<T> = TrendingSuccess<T> | TrendingError;
-
 export interface TrendingCertification {
   slug: string;
   name: string;
@@ -37,35 +23,7 @@ export interface InteractionData {
 export class TrendingService {
   private constructor() {}
 
-  /**
-   * Fixed: Centralized error logging utility
-   */
-  private static logError(error: unknown, context: string): void {
-    const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] TrendingService Error in ${context}:`, error);
-  }
-
-  /**
-   * Fixed: Centralized date range utility
-   */
-  private static getDateRange(daysAgo: number): Date {
-    const date = new Date();
-    date.setDate(date.getDate() - daysAgo);
-    return date;
-  }
-
-  /**
-   * Fixed: UTC date utility for consistent timezone handling
-   */
-  private static getUTCDate(): Date {
-    const now = new Date();
-    return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  }
-
-  /**
-   * Fixed: Enhanced interaction tracking with proper error propagation and type safety
-   */
-  static async trackInteraction(data: InteractionData): Promise<TrendingResult<void>> {
+  static async trackInteraction(data: InteractionData): Promise<void> {
     try {
       await db.insert(userSubjectInteractions).values({
         subjectSlug: data.subjectSlug,
@@ -75,25 +33,16 @@ export class TrendingService {
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
       });
-      
-      return { success: true, data: undefined };
     } catch (error) {
-      this.logError(error, 'trackInteraction');
-      return { 
-        success: false, 
-        error: 'Failed to track interaction', 
-        context: `subjectSlug: ${data.subjectSlug}, type: ${data.interactionType}` 
-      };
+      console.error('Error tracking interaction:', error);
     }
   }
 
-  /**
-   * Fixed: Enhanced trending certifications retrieval with safe JSON parsing and UTC timezone handling
-   */
   static async getTrendingCertifications(limit: number = 4): Promise<TrendingCertification[]> {
     try {
-      // Fixed: Use UTC date for consistent timezone handling
-      const today = this.getUTCDate();
+      // First try to get from daily snapshot
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       const snapshot = await db
         .select()
@@ -103,86 +52,63 @@ export class TrendingService {
         .limit(1);
 
       if (snapshot.length > 0) {
-        // Fixed: Safe JSON parsing with try-catch to handle malformed data
-        try {
-          const topSubjects = JSON.parse(snapshot[0].topSubjects);
-          if (Array.isArray(topSubjects)) {
-            return topSubjects.slice(0, limit);
-          } else {
-            this.logError('Invalid topSubjects format - not an array', 'getTrendingCertifications');
-          }
-        } catch (parseError) {
-          this.logError(parseError, 'JSON.parse in getTrendingCertifications');
-        }
+        const topSubjects = JSON.parse(snapshot[0].topSubjects);
+        return topSubjects.slice(0, limit);
       }
 
-      // If no snapshot or parsing failed, calculate trending on the fly
+      // If no snapshot, calculate trending on the fly
       return await this.calculateTrendingCertifications(limit);
     } catch (error) {
-      this.logError(error, 'getTrendingCertifications');
+      console.error('Error getting trending certifications:', error);
       // Return fallback trending data with real subjects
       return await this.getFallbackTrending(limit);
     }
   }
 
-  /**
-   * Fixed: Reusable interaction count query utility
-   */
-  private static async getInteractionCount(
-    subjectSlug: string | null, 
-    startDate: Date, 
-    endDate?: Date
-  ): Promise<Array<{subjectSlug: string; interactionCount: number}>> {
-    const whereClause = subjectSlug 
-      ? and(
-          eq(userSubjectInteractions.subjectSlug, subjectSlug),
-          gte(userSubjectInteractions.timestamp, startDate),
-          endDate ? sql`timestamp < ${endDate}` : undefined
-        ).filter(Boolean)
-      : endDate 
-        ? and(
-            gte(userSubjectInteractions.timestamp, startDate),
-            sql`timestamp < ${endDate}`
-          )
-        : gte(userSubjectInteractions.timestamp, startDate);
+  private static async calculateTrendingCertifications(limit: number): Promise<TrendingCertification[]> {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    return await db
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    // Get interaction counts for last 7 days and previous 7 days
+    const recentInteractions = await db
       .select({
         subjectSlug: userSubjectInteractions.subjectSlug,
         interactionCount: sql<number>`count(*)`.as('interactionCount'),
       })
       .from(userSubjectInteractions)
-      .where(whereClause)
+      .where(gte(userSubjectInteractions.timestamp, sevenDaysAgo))
       .groupBy(userSubjectInteractions.subjectSlug);
-  }
 
-  /**
-   * Fixed: Enhanced trending calculation with consolidated date utilities and weighted scoring
-   */
-  private static async calculateTrendingCertifications(limit: number): Promise<TrendingCertification[]> {
-    // Fixed: Use centralized date range utilities
-    const sevenDaysAgo = this.getDateRange(7);
-    const fourteenDaysAgo = this.getDateRange(14);
+    const previousInteractions = await db
+      .select({
+        subjectSlug: userSubjectInteractions.subjectSlug,
+        interactionCount: sql<number>`count(*)`.as('interactionCount'),
+      })
+      .from(userSubjectInteractions)
+      .where(
+        and(
+          gte(userSubjectInteractions.timestamp, fourteenDaysAgo),
+          sql`timestamp < ${sevenDaysAgo}`
+        )
+      )
+      .groupBy(userSubjectInteractions.subjectSlug);
 
-    // Fixed: Use consolidated interaction count utility
-    const recentInteractions = await this.getInteractionCount(null, sevenDaysAgo);
-    const previousInteractions = await this.getInteractionCount(null, fourteenDaysAgo, sevenDaysAgo);
-
-    // Fixed: Enhanced trending score calculation with weighted interaction types
+    // Calculate trending scores and growth
     const trendingData = recentInteractions.map(recent => {
       const previous = previousInteractions.find(p => p.subjectSlug === recent.subjectSlug);
       const previousCount = previous?.interactionCount || 0;
       const growth = previousCount > 0 ? ((recent.interactionCount - previousCount) / previousCount) * 100 : 100;
       
-      // Fixed: Enhanced trending score with better weighting for low-interaction subjects
-      const baseScore = recent.interactionCount;
-      const growthMultiplier = Math.max(0, growth / 100);
-      const trendingScore = baseScore * (1 + (growthMultiplier * 0.5)); // Reduced growth impact
+      // Trending score combines recent activity with growth
+      const trendingScore = recent.interactionCount * (1 + Math.max(0, growth / 100));
       
       return {
         subjectSlug: recent.subjectSlug,
         trendingScore: Math.round(trendingScore),
-        weeklyGrowth: Math.round(Math.max(-95, Math.min(500, growth))), // Cap extreme values
+        weeklyGrowth: Math.round(growth),
       };
     });
 
@@ -199,15 +125,10 @@ export class TrendingService {
         .where(inArray(subjects.slug, topSubjectSlugs));
     }
 
-    // Fixed: Enhanced logging for missing subjects in development
+    // Combine data and return
     return trendingData.slice(0, limit).map(trend => {
       const subject = subjectDetails.find(s => s.slug === trend.subjectSlug);
-      if (!subject) {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(`Missing subject details for slug: ${trend.subjectSlug}`);
-        }
-        return null;
-      }
+      if (!subject) return null;
 
       return {
         slug: subject.slug,
@@ -220,132 +141,97 @@ export class TrendingService {
     }).filter(Boolean) as TrendingCertification[];
   }
 
-  /**
-   * Fixed: Enhanced fallback trending using exam and question counts for better popularity metrics
-   */
   private static async getFallbackTrending(limit: number): Promise<TrendingCertification[]> {
-    // Fixed: Use examCount and questionCount for better popularity scoring
+    // Get certification subjects with some basic popularity scoring
     const certificationSubjects = await db
       .select()
       .from(subjects)
       .where(sql`name ILIKE ANY(ARRAY['%pmp%', '%aws%', '%comptia%', '%azure%', '%cisco%', '%google cloud%', '%certified%', '%certification%'])`)
-      .orderBy(desc(sql`(exam_count + question_count)`)) // Order by actual content volume
       .limit(limit * 2);
 
-    // Fixed: Use actual metrics instead of random values for trending data
+    // Create trending data with randomized but realistic growth numbers
     return certificationSubjects.slice(0, limit).map((subject, index) => {
-      // Base trending score on actual content metrics
-      const contentScore = (subject.examCount || 0) + (subject.questionCount || 0);
-      const normalizedScore = Math.max(10, Math.min(100, contentScore * 2));
-      
-      // Generate realistic but deterministic growth based on content
-      const growth = Math.max(5, Math.min(25, 20 - (index * 2) + (contentScore % 8)));
+      const growthValues = [23, 18, 15, 12, 8, 5]; // Decreasing trend values
+      const growth = growthValues[index] || Math.floor(Math.random() * 20) + 5;
       
       return {
         slug: subject.slug,
         name: subject.name,
         trend: `+${growth}%`,
         searchTerm: subject.name.toLowerCase().replace(/\s+/g, ' '),
-        trendingScore: normalizedScore,
+        trendingScore: 100 - (index * 10),
         weeklyGrowth: growth,
       };
     });
   }
 
-  /**
-   * Fixed: Enhanced daily trending data update with database transactions and UTC timezone handling
-   */
-  static async updateDailyTrendingData(): Promise<TrendingResult<void>> {
+  static async updateDailyTrendingData(): Promise<void> {
     try {
       const trendingCerts = await this.calculateTrendingCertifications(10);
       
-      // Fixed: Use UTC date for consistent timezone handling
-      const today = this.getUTCDate();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      // Fixed: Wrap all operations in a database transaction for atomicity
-      await db.transaction(async (tx) => {
-        // Insert daily snapshot
-        await tx.insert(dailyTrendingSnapshot).values({
-          date: today,
-          topSubjects: JSON.stringify(trendingCerts),
-        });
-
-        // Update individual subject trending stats
-        for (const cert of trendingCerts) {
-          const sevenDaysAgo = this.getDateRange(7);
-
-          const recentStats = await tx
-            .select({
-              viewCount: sql<number>`count(*) filter (where interaction_type = 'view')`.as('viewCount'),
-              searchCount: sql<number>`count(*) filter (where interaction_type = 'search')`.as('searchCount'),
-              clickCount: sql<number>`count(*) filter (where interaction_type = 'click')`.as('clickCount'),
-              examStartCount: sql<number>`count(*) filter (where interaction_type = 'exam_start')`.as('examStartCount'),
-              examCompleteCount: sql<number>`count(*) filter (where interaction_type = 'exam_complete')`.as('examCompleteCount'),
-            })
-            .from(userSubjectInteractions)
-            .where(
-              and(
-                eq(userSubjectInteractions.subjectSlug, cert.slug),
-                gte(userSubjectInteractions.timestamp, sevenDaysAgo)
-              )
-            );
-
-          if (recentStats.length > 0) {
-            const stats = recentStats[0];
-            await tx.insert(subjectTrendingStats).values({
-              subjectSlug: cert.slug,
-              date: today,
-              viewCount: stats.viewCount || 0,
-              searchCount: stats.searchCount || 0,
-              clickCount: stats.clickCount || 0,
-              examStartCount: stats.examStartCount || 0,
-              examCompleteCount: stats.examCompleteCount || 0,
-              trendingScore: cert.trendingScore,
-              growthPercentage: cert.trend,
-            });
-          }
-        }
+      // Insert daily snapshot
+      await db.insert(dailyTrendingSnapshot).values({
+        date: today,
+        topSubjects: JSON.stringify(trendingCerts),
       });
 
+      // Update individual subject trending stats
+      for (const cert of trendingCerts) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const recentStats = await db
+          .select({
+            viewCount: sql<number>`count(*) filter (where interaction_type = 'view')`.as('viewCount'),
+            searchCount: sql<number>`count(*) filter (where interaction_type = 'search')`.as('searchCount'),
+            clickCount: sql<number>`count(*) filter (where interaction_type = 'click')`.as('clickCount'),
+            examStartCount: sql<number>`count(*) filter (where interaction_type = 'exam_start')`.as('examStartCount'),
+            examCompleteCount: sql<number>`count(*) filter (where interaction_type = 'exam_complete')`.as('examCompleteCount'),
+          })
+          .from(userSubjectInteractions)
+          .where(
+            and(
+              eq(userSubjectInteractions.subjectSlug, cert.slug),
+              gte(userSubjectInteractions.timestamp, sevenDaysAgo)
+            )
+          );
+
+        if (recentStats.length > 0) {
+          const stats = recentStats[0];
+          await db.insert(subjectTrendingStats).values({
+            subjectSlug: cert.slug,
+            date: today,
+            viewCount: stats.viewCount || 0,
+            searchCount: stats.searchCount || 0,
+            clickCount: stats.clickCount || 0,
+            examStartCount: stats.examStartCount || 0,
+            examCompleteCount: stats.examCompleteCount || 0,
+            trendingScore: cert.trendingScore,
+            growthPercentage: cert.trend,
+          });
+        }
+      }
+
       console.log('Daily trending data updated successfully');
-      return { success: true, data: undefined };
     } catch (error) {
-      this.logError(error, 'updateDailyTrendingData');
-      return { 
-        success: false, 
-        error: 'Failed to update daily trending data', 
-        context: 'Database transaction failed' 
-      };
+      console.error('Error updating daily trending data:', error);
     }
   }
 
-  /**
-   * Fixed: Enhanced scheduling for Vercel deployment compatibility
-   */
   static async scheduleDaily(): Promise<void> {
     // Run initial update
-    const result = await this.updateDailyTrendingData();
+    await this.updateDailyTrendingData();
     
-    if (!result.success) {
-      this.logError(`Initial trending update failed: ${result.error}`, 'scheduleDaily');
-    }
-    
-    // Fixed: Conditional scheduling based on environment
-    if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-      // Only run setInterval in non-Vercel environments
-      // In Vercel, use Vercel Cron Jobs instead (see api/trending-cron.js)
-      setInterval(async () => {
-        const now = new Date();
-        if (now.getHours() === 0 && now.getMinutes() === 0) {
-          const updateResult = await this.updateDailyTrendingData();
-          if (!updateResult.success) {
-            this.logError(`Scheduled trending update failed: ${updateResult.error}`, 'scheduleDaily');
-          }
-        }
-      }, 60000); // Check every minute
-    } else {
-      console.log('🔄 Trending Service: Use Vercel Cron Jobs for production scheduling');
-    }
+    // Schedule daily updates at midnight
+    setInterval(async () => {
+      const now = new Date();
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        await this.updateDailyTrendingData();
+      }
+    }, 60000); // Check every minute
   }
 }
 
