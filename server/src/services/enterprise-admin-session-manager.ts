@@ -5,31 +5,39 @@
  * with comprehensive failover, redundancy, and enterprise security features.
  * 
  * Features:
- * - Triple-layer session persistence (localStorage + cookies + database)
+ * - Triple-layer session persistence (in-memory + database + audit logs)
  * - Automatic failover and recovery mechanisms
  * - Real-time session health monitoring
  * - Comprehensive security audit logging
  * - Anti-tampering protection
  * - Session fingerprinting and validation
  * - Graceful degradation under adverse conditions
+ * - Enhanced type safety and validation
+ * - Production-ready database persistence
  */
 
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../db';
-import { users, authLogs } from '../../../shared/schema';
-import { eq } from 'drizzle-orm';
+import { users, authLogs, authSessions } from '../../../shared/schema';
+import { eq, and, gte } from 'drizzle-orm';
 
-// Enterprise Security Configuration
-const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || (() => {
+// Fixed: Enhanced API key validation with multiple fallbacks for different environments
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || process.env.VITE_ADMIN_JWT_SECRET || (() => {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('🚨 CRITICAL: ADMIN_JWT_SECRET environment variable is required in production');
   }
-  const devSecret = crypto.randomBytes(64).toString('hex');
-  console.warn('⚠️  Development Mode: Auto-generated JWT secret. Set ADMIN_JWT_SECRET for production.');
+  // Fixed: Generate consistent secret in development for session persistence across restarts
+  const devSecret = process.env.DEV_ADMIN_JWT_SECRET || crypto.randomBytes(64).toString('hex');
+  if (!process.env.DEV_ADMIN_JWT_SECRET) {
+    console.warn('⚠️ Development Mode: Auto-generated JWT secret. Set ADMIN_JWT_SECRET for production.');
+  }
   return devSecret;
 })();
+
+// Fixed: Enhanced cookie domain handling for different environments
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || process.env.VITE_COOKIE_DOMAIN;
 
 const SESSION_CONFIG = {
   JWT_EXPIRY: '12h',
@@ -39,6 +47,16 @@ const SESSION_CONFIG = {
   FINGERPRINT_ROTATION_INTERVAL: 60 * 60 * 1000, // 1 hour
   COOKIE_MAX_AGE: 12 * 60 * 60 * 1000, // 12 hours
 } as const;
+
+// Fixed: Enhanced type safety with strict JWT payload interface
+export interface JWTPayload {
+  userId: number;
+  sessionId: string;
+  email: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
 
 export interface AdminUser {
   id: number;
@@ -57,6 +75,10 @@ export interface SessionMetadata {
   createdAt: number;
   lastActivity: number;
   deviceInfo?: string;
+  // Fixed: Enhanced fingerprinting with additional security signals
+  screenResolution?: string;
+  timezone?: string;
+  language?: string;
 }
 
 export interface AdminSession {
@@ -76,6 +98,13 @@ export interface SessionValidationResult {
   corrupted?: boolean;
   suspicious?: boolean;
   reason?: string;
+}
+
+// Fixed: Enhanced error interface for better error handling
+interface SessionError extends Error {
+  code?: string;
+  status?: number;
+  sessionId?: string;
 }
 
 /**
@@ -359,21 +388,40 @@ export class EnterpriseAdminSessionManager {
     });
   }
 
-  private verifyJWT(token: string): any {
+  // Fixed: Enhanced type safety for JWT verification
+  private verifyJWT(token: string): JWTPayload | null {
     try {
-      return jwt.verify(token, ADMIN_JWT_SECRET);
-    } catch {
+      const decoded = jwt.verify(token, ADMIN_JWT_SECRET) as JWTPayload;
+      
+      // Fixed: Validate required JWT payload fields
+      if (!decoded.userId || !decoded.sessionId || !decoded.email || !decoded.role) {
+        console.warn('JWT payload missing required fields:', decoded);
+        return null;
+      }
+      
+      return decoded;
+    } catch (error) {
+      console.warn('JWT verification failed:', error instanceof Error ? error.message : 'Unknown error');
       return null;
     }
   }
 
+  // Fixed: Enhanced fingerprinting with additional security signals
   private generateDeviceFingerprint(req: Request): string {
     const components = [
       req.headers['user-agent'] || '',
       req.headers['accept-language'] || '',
       req.headers['accept-encoding'] || '',
+      req.headers['accept'] || '',
+      req.headers['sec-ch-ua'] || '',
+      req.headers['sec-ch-ua-platform'] || '',
       this.extractRealIP(req),
       req.headers['x-forwarded-for'] || '',
+      // Fixed: Additional security signals for enhanced fingerprinting
+      req.headers['dnt'] || '', // Do Not Track
+      req.headers['sec-fetch-site'] || '',
+      req.headers['sec-fetch-mode'] || '',
+      req.headers['upgrade-insecure-requests'] || '',
     ];
 
     return crypto.createHash('sha256')
@@ -381,13 +429,61 @@ export class EnterpriseAdminSessionManager {
       .digest('hex');
   }
 
+  // Fixed: Enhanced IP extraction for serverless environments like Vercel
   private extractRealIP(req: Request): string {
-    return (req.headers['x-forwarded-for'] as string)?.split(',')[0] ||
-           req.headers['x-real-ip'] as string ||
-           req.connection.remoteAddress ||
-           req.socket.remoteAddress ||
-           (req.connection as any)?.socket?.remoteAddress ||
-           'unknown';
+    // Fixed: Prioritize headers commonly used by reverse proxies and CDNs
+    const forwardedFor = req.headers['x-forwarded-for'] as string;
+    if (forwardedFor) {
+      const ips = forwardedFor.split(',').map(ip => ip.trim());
+      // Return the first non-private IP
+      for (const ip of ips) {
+        if (ip && !this.isPrivateIP(ip)) {
+          return ip;
+        }
+      }
+      return ips[0]; // Fallback to first IP
+    }
+
+    // Fixed: Additional headers for different proxy configurations
+    const realIP = req.headers['x-real-ip'] as string;
+    if (realIP && !this.isPrivateIP(realIP)) {
+      return realIP;
+    }
+
+    const cfConnectingIP = req.headers['cf-connecting-ip'] as string; // Cloudflare
+    if (cfConnectingIP) {
+      return cfConnectingIP;
+    }
+
+    const xClientIP = req.headers['x-client-ip'] as string;
+    if (xClientIP) {
+      return xClientIP;
+    }
+
+    // Fixed: Safe extraction for serverless environments
+    try {
+      return req.connection?.remoteAddress ||
+             req.socket?.remoteAddress ||
+             (req.connection as any)?.socket?.remoteAddress ||
+             'unknown';
+    } catch {
+      return 'unknown';
+    }
+  }
+
+  // Fixed: Helper method to identify private IP addresses
+  private isPrivateIP(ip: string): boolean {
+    const privateRanges = [
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[01])\./,
+      /^192\.168\./,
+      /^127\./,
+      /^::1$/,
+      /^fc00:/,
+      /^fe80:/
+    ];
+    
+    return privateRanges.some(range => range.test(ip));
   }
 
   private extractDeviceInfo(req: Request): string {
@@ -565,47 +661,172 @@ export class EnterpriseAdminSessionManager {
     }
   }
 
-  // Database persistence methods
+  // Fixed: Complete database persistence methods implementation
   private async persistSession(sessionId: string, session: AdminSession): Promise<void> {
-    // Implement database persistence logic here
-    // This would store session data in a dedicated admin_sessions table
+    try {
+      // Fixed: Use authSessions table for session persistence
+      await db.insert(authSessions).values({
+        sessionId,
+        userId: session.user.id,
+        token: session.token,
+        refreshToken: session.refreshToken,
+        ipAddress: session.metadata.ipAddress,
+        userAgent: session.metadata.userAgent,
+        fingerprint: session.metadata.fingerprint,
+        expiresAt: new Date(session.expiresAt),
+        lastActivity: new Date(session.metadata.lastActivity),
+        isActive: session.isValid,
+        deviceInfo: session.metadata.deviceInfo || 'unknown'
+      }).onConflictDoUpdate({
+        target: authSessions.sessionId,
+        set: {
+          token: session.token,
+          refreshToken: session.refreshToken,
+          lastActivity: new Date(session.metadata.lastActivity),
+          isActive: session.isValid,
+          expiresAt: new Date(session.expiresAt)
+        }
+      });
+
+      console.log(`🔒 Session ${sessionId} persisted to authSessions table`);
+    } catch (error) {
+      console.error('🚨 Failed to persist session to database:', error);
+      // Don't throw - session can still work with in-memory storage
+    }
   }
 
   private async recoverSessionFromDatabase(sessionId: string): Promise<AdminSession | null> {
-    // Implement database recovery logic here
-    return null;
+    try {
+      const [sessionRecord] = await db
+        .select()
+        .from(authSessions)
+        .where(
+          and(
+            eq(authSessions.sessionId, sessionId),
+            eq(authSessions.isActive, true),
+            gte(authSessions.expiresAt, new Date())
+          )
+        );
+
+      if (!sessionRecord) {
+        return null;
+      }
+
+      // Verify user still exists and is valid
+      const user = await this.validateUserStatus(sessionRecord.userId);
+      if (!user) {
+        // Clean up invalid session
+        await this.removeSessionFromDatabase(sessionId);
+        return null;
+      }
+
+      // Reconstruct session object
+      const session: AdminSession = {
+        user,
+        token: sessionRecord.token,
+        refreshToken: sessionRecord.refreshToken,
+        metadata: {
+          userAgent: sessionRecord.userAgent,
+          ipAddress: sessionRecord.ipAddress,
+          fingerprint: sessionRecord.fingerprint,
+          createdAt: sessionRecord.createdAt.getTime(),
+          lastActivity: sessionRecord.lastActivity.getTime(),
+          deviceInfo: sessionRecord.deviceInfo || undefined
+        },
+        expiresAt: sessionRecord.expiresAt.getTime(),
+        isValid: sessionRecord.isActive
+      };
+
+      console.log(`🔄 Session ${sessionId} recovered from database`);
+      
+      // Re-add to in-memory cache
+      this.activeSessions.set(sessionId, session);
+      this.sessionFingerprints.set(sessionId, session.metadata.fingerprint);
+      
+      return session;
+    } catch (error) {
+      console.error('🚨 Failed to recover session from database:', error);
+      return null;
+    }
   }
 
   private async removeSessionFromDatabase(sessionId: string): Promise<void> {
-    // Implement database cleanup logic here
+    try {
+      await db
+        .update(authSessions)
+        .set({ 
+          isActive: false,
+          lastActivity: new Date()
+        })
+        .where(eq(authSessions.sessionId, sessionId));
+
+      console.log(`🗑️ Session ${sessionId} marked inactive in database`);
+    } catch (error) {
+      console.error('🚨 Failed to remove session from database:', error);
+    }
   }
 
   private async updateSessionActivity(sessionId: string, session: AdminSession): Promise<void> {
-    // Update session activity in database
+    try {
+      await db
+        .update(authSessions)
+        .set({ 
+          lastActivity: new Date(session.metadata.lastActivity),
+          ipAddress: session.metadata.ipAddress // Update IP if changed
+        })
+        .where(eq(authSessions.sessionId, sessionId));
+    } catch (error) {
+      console.error('🚨 Failed to update session activity:', error);
+      // Don't throw - this is a background operation
+    }
   }
 
-  private async logSessionEvent(event: string, userId: number, metadata: any): Promise<void> {
+  // Fixed: Consolidated logging utility to eliminate duplicate code
+  private async logEvent(
+    action: string, 
+    userId: number | null, 
+    metadata: any, 
+    options: { 
+      success?: boolean; 
+      severity?: 'LOW' | 'MEDIUM' | 'HIGH'; 
+      investigated?: boolean;
+      method?: string;
+    } = {}
+  ): Promise<void> {
     try {
-      await db.insert(authLogs).values({
-        email: metadata.email || 'system',
-        action: event,
-        method: 'admin_session',
+      // Fixed: Use nullable userId for system events or invalid user scenarios
+      const logEntry = {
+        email: userId ? `user_${userId}` : 'system',
+        action,
+        method: options.method || 'enterprise_session',
         ipAddress: metadata.ipAddress || 'unknown',
         userAgent: metadata.userAgent || 'unknown',
-        success: true,
-        metadata: JSON.stringify(metadata)
-      });
+        success: options.success ?? true,
+        metadata: JSON.stringify({
+          ...metadata,
+          ...(options.severity && { severity: options.severity }),
+          ...(options.investigated !== undefined && { investigated: options.investigated }),
+          timestamp: new Date().toISOString(),
+          userId: userId || null
+        })
+      };
+
+      await db.insert(authLogs).values(logEntry);
     } catch (error) {
-      console.error('Failed to log session event:', error);
+      console.error('🚨 Failed to log event:', error);
     }
+  }
+
+  private async logSessionEvent(action: string, userId: number, metadata: any): Promise<void> {
+    return this.logEvent(action, userId, metadata, { success: true });
   }
 
   private async logSuspiciousActivity(event: string, userId: number, metadata: any): Promise<void> {
     const activityKey = `${userId}_${event}_${Date.now()}`;
     this.suspiciousActivityLog.add(activityKey);
     
-    await this.logSessionEvent(`SUSPICIOUS_${event}`, userId, {
-      ...metadata,
+    await this.logEvent(`SUSPICIOUS_${event}`, userId, metadata, {
+      success: false,
       severity: 'HIGH',
       investigated: false
     });
@@ -614,170 +835,96 @@ export class EnterpriseAdminSessionManager {
     setTimeout(() => this.suspiciousActivityLog.delete(activityKey), 60 * 60 * 1000);
   }
 
+  // Fixed: Utility methods for session management with enhanced enterprise features
+  
   /**
-   * Missing Private Methods Implementation
-   * Industrial-level bulletproof session persistence and recovery
+   * Additional utility methods for comprehensive session management
    */
-
-  private parseTimeToMs(timeString: string): number {
-    const units: { [key: string]: number } = {
-      's': 1000,
-      'm': 60 * 1000,
-      'h': 60 * 60 * 1000,
-      'd': 24 * 60 * 60 * 1000
-    };
-    
-    const match = timeString.match(/^(\d+)([smhd])$/);
-    if (!match) {
-      throw new Error(`Invalid time format: ${timeString}`);
-    }
-    
-    const [, amount, unit] = match;
-    return parseInt(amount) * units[unit];
-  }
-
-  private async persistSession(sessionId: string, session: AdminSession): Promise<void> {
+  
+  // Fixed: Session cleanup utility for memory management  
+  public async cleanupExpiredSessions(): Promise<void> {
     try {
-      // Database persistence (primary)
-      await db.insert(authLogs).values({
-        email: session.user.email,
-        action: 'SESSION_CREATED',
-        method: 'enterprise_session',
-        ipAddress: session.metadata.ipAddress,
-        userAgent: session.metadata.userAgent,
-        success: true,
-        metadata: JSON.stringify({
-          sessionId,
-          expiresAt: session.expiresAt,
-          fingerprint: session.metadata.fingerprint.substring(0, 8) + '...'
-        })
-      });
-
-      console.log(`🔒 BULLETPROOF: Session ${sessionId} persisted to database`);
-    } catch (error) {
-      console.error('🚨 Critical: Failed to persist session to database:', error);
-      // Don't throw - session can still work with in-memory storage
-    }
-  }
-
-  private async recoverSessionFromDatabase(sessionId: string): Promise<AdminSession | null> {
-    try {
-      // Attempt to recover session from database
-      console.log(`🔄 BULLETPROOF: Attempting session recovery for ${sessionId}`);
+      const now = Date.now();
+      const expiredSessions: string[] = [];
       
-      // For now, return null as we don't have a sessions table
-      // In production, you'd query a sessions table here
-      return null;
-    } catch (error) {
-      console.error('🚨 Session recovery failed:', error);
-      return null;
-    }
-  }
-
-  private async updateSessionActivity(sessionId: string, session: AdminSession): Promise<void> {
-    try {
-      // Update session activity timestamp
-      this.activeSessions.set(sessionId, session);
-      console.log(`🔄 BULLETPROOF: Session ${sessionId} activity updated`);
-    } catch (error) {
-      console.error('Failed to update session activity:', error);
-    }
-  }
-
-  private async removeSessionFromDatabase(sessionId: string): Promise<void> {
-    try {
-      // Log session termination
-      await db.insert(authLogs).values({
-        email: 'system',
-        action: 'SESSION_TERMINATED',
-        method: 'enterprise_session',
-        ipAddress: 'system',
-        userAgent: 'system',
-        success: true,
-        metadata: JSON.stringify({ sessionId, reason: 'manual_invalidation' })
-      });
+      // Find expired sessions in memory
+      for (const [sessionId, session] of this.activeSessions.entries()) {
+        if (now > session.expiresAt || !session.isValid) {
+          expiredSessions.push(sessionId);
+        }
+      }
       
-      console.log(`🔒 BULLETPROOF: Session ${sessionId} removed from database`);
+      // Clean up expired sessions
+      for (const sessionId of expiredSessions) {
+        await this.invalidateSession(sessionId);
+      }
+      
+      // Clean up database expired sessions
+      await db
+        .update(authSessions)
+        .set({ isActive: false })
+        .where(
+          and(
+            eq(authSessions.isActive, true),
+            gte(new Date(), authSessions.expiresAt)
+          )
+        );
+      
+      if (expiredSessions.length > 0) {
+        console.log(`🧹 Cleaned up ${expiredSessions.length} expired sessions`);
+      }
     } catch (error) {
-      console.error('Failed to remove session from database:', error);
+      console.error('🚨 Failed to cleanup expired sessions:', error);
     }
   }
-
-  private async refreshSession(session: AdminSession, req: Request): Promise<AdminSession> {
-    const sessionId = this.extractSessionIdFromToken(session.token);
-    const newToken = this.generateJWT(session.user, sessionId);
-    const newRefreshToken = this.generateRefreshToken(session.user, sessionId);
-
-    const refreshedSession: AdminSession = {
-      ...session,
-      token: newToken,
-      refreshToken: newRefreshToken,
-      expiresAt: Date.now() + this.parseTimeToMs(SESSION_CONFIG.JWT_EXPIRY),
-      metadata: {
-        ...session.metadata,
-        lastActivity: Date.now()
-      }
+  
+  // Fixed: Session metrics for monitoring
+  public getSessionMetrics(): {
+    activeSessions: number;
+    totalHeartbeats: number;
+    suspiciousActivities: number;
+    memoryUsage: string;
+  } {
+    return {
+      activeSessions: this.activeSessions.size,
+      totalHeartbeats: this.heartbeatTimers.size,
+      suspiciousActivities: this.suspiciousActivityLog.size,
+      memoryUsage: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`
     };
-
-    // Update in all persistence layers
-    this.activeSessions.set(sessionId, refreshedSession);
-    await this.persistSession(sessionId, refreshedSession);
-
-    await this.logSessionEvent('SESSION_REFRESHED', session.user.id, {
-      sessionId,
-      newExpiresAt: refreshedSession.expiresAt
-    });
-
-    return refreshedSession;
   }
-
-  private startSessionHeartbeat(sessionId: string): void {
-    const heartbeatTimer = setInterval(async () => {
-      const session = this.activeSessions.get(sessionId);
-      if (!session || !session.isValid || Date.now() > session.expiresAt) {
-        clearInterval(heartbeatTimer);
-        this.heartbeatTimers.delete(sessionId);
-        return;
+  
+  // Fixed: Enhanced session validation for specific user
+  public async validateUserSessions(userId: number): Promise<AdminSession[]> {
+    const userSessions: AdminSession[] = [];
+    
+    for (const [sessionId, session] of this.activeSessions.entries()) {
+      if (session.user.id === userId && session.isValid) {
+        userSessions.push(session);
       }
-
-      // Update last activity
-      session.metadata.lastActivity = Date.now();
-      this.activeSessions.set(sessionId, session);
-    }, SESSION_CONFIG.HEARTBEAT_INTERVAL);
-
-    this.heartbeatTimers.set(sessionId, heartbeatTimer);
-  }
-
-  private async logSessionEvent(action: string, userId: number, metadata: any): Promise<void> {
-    try {
-      await db.insert(authLogs).values({
-        email: userId > 0 ? `user_${userId}` : 'system',
-        action,
-        method: 'enterprise_session',
-        ipAddress: metadata.ipAddress || 'unknown',
-        userAgent: metadata.userAgent || 'unknown',
-        success: true,
-        metadata: JSON.stringify(metadata)
-      });
-    } catch (error) {
-      console.error('Failed to log session event:', error);
     }
+    
+    return userSessions;
   }
-
-  private sendUnauthorizedResponse(res: Response, reason: string): void {
-    console.log(`🚨 BULLETPROOF: Unauthorized access blocked - ${reason}`);
-    res.status(401).json({
-      success: false,
-      message: 'Unauthorized',
-      reason,
-      timestamp: new Date().toISOString()
+  
+  // Fixed: Force logout all sessions for a user  
+  public async invalidateAllUserSessions(userId: number): Promise<void> {
+    const userSessions = await this.validateUserSessions(userId);
+    
+    for (const session of userSessions) {
+      const sessionId = this.extractSessionIdFromToken(session.token);
+      await this.invalidateSession(sessionId);
+    }
+    
+    // Also cleanup database sessions
+    await db
+      .update(authSessions)
+      .set({ isActive: false })
+      .where(eq(authSessions.userId, userId));
+      
+    await this.logEvent('ALL_SESSIONS_INVALIDATED', userId, {
+      reason: 'Administrative action',
+      sessionCount: userSessions.length
     });
-  }
-
-  private setSecurityHeaders(res: Response, session: AdminSession): void {
-    res.setHeader('X-Admin-Session-ID', this.extractSessionIdFromToken(session.token).substring(0, 8));
-    res.setHeader('X-Session-Expires', new Date(session.expiresAt).toISOString());
-    res.setHeader('X-Last-Activity', new Date(session.metadata.lastActivity).toISOString());
   }
 }
 
