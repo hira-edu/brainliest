@@ -208,9 +208,12 @@ export class AuthService {
 
       // Generate username from email if not provided
       // Remove special characters and ensure it matches the database constraint ^[A-Za-z0-9_-]+$
-      const emailPrefix = email.split('@')[0].replace(/[^A-Za-z0-9_-]/g, '');
-      const randomSuffix = Math.random().toString(36).substr(2, 4);
-      const generatedUsername = emailPrefix + randomSuffix;
+      let generatedUsername = username;
+      if (!generatedUsername) {
+        const emailPrefix = email.split('@')[0].replace(/[^A-Za-z0-9_-]/g, '');
+        const randomSuffix = Math.random().toString(36).substr(2, 4);
+        generatedUsername = emailPrefix + randomSuffix;
+      }
       
       // Create user and log registration in a transaction
       const [newUser] = await db.transaction(async (trx) => {

@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { AlertCircle, Lock, Mail } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import RecaptchaProvider from '../../auth/recaptcha-provider';
 
 interface AdminLoginModalProps {
   onLogin: (email: string, password: string, recaptchaToken?: string) => Promise<void>;
@@ -14,7 +15,7 @@ interface AdminLoginModalProps {
   error: string | null;
 }
 
-export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalProps) {
+function AdminLoginModalContent({ onLogin, isLoading, error }: AdminLoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -140,5 +141,14 @@ export function AdminLoginModal({ onLogin, isLoading, error }: AdminLoginModalPr
         </form>
       </Card>
     </div>
+  );
+}
+
+// Export the wrapped component
+export function AdminLoginModal(props: AdminLoginModalProps) {
+  return (
+    <RecaptchaProvider>
+      <AdminLoginModalContent {...props} />
+    </RecaptchaProvider>
   );
 }

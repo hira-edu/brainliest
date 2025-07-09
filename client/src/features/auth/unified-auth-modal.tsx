@@ -121,12 +121,15 @@ function UnifiedAuthModalContent({
           recaptchaToken = await executeRecaptcha(authMode === 'signin' ? 'login' : 'signup');
           console.log('🔒 reCAPTCHA token generated:', recaptchaToken ? `${recaptchaToken.substring(0, 20)}...` : 'EMPTY');
         } catch (error) {
-          console.warn('🔒 reCAPTCHA execution failed:', error);
+          console.error('🔒 reCAPTCHA execution failed:', error);
           // Continue without reCAPTCHA if it fails
         }
       } else {
         console.warn('🔒 executeRecaptcha function not available');
       }
+      
+      // Log final token status
+      console.log('🔒 Final reCAPTCHA token status:', recaptchaToken ? 'PRESENT' : 'MISSING');
 
       if (authMode === 'signin') {
         const result = await signIn(formData.email, formData.password, recaptchaToken);

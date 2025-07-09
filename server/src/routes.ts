@@ -1492,15 +1492,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
-        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'signup');
-        if (!recaptchaResult.success) {
-          console.warn('reCAPTCHA verification failed for registration:', recaptchaResult['error-codes']);
-          return res.status(400).json({ 
-            success: false, 
-            message: "reCAPTCHA verification failed. Please try again." 
-          });
+        try {
+          const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'signup');
+          if (!recaptchaResult.success) {
+            console.warn('reCAPTCHA verification failed for registration:', recaptchaResult['error-codes']);
+            return res.status(400).json({ 
+              success: false, 
+              message: "reCAPTCHA verification failed. Please try again." 
+            });
+          }
+          console.log(`reCAPTCHA verified for registration: score ${recaptchaResult.score}`);
+        } catch (error) {
+          console.error('reCAPTCHA verification error:', error);
+          // Continue without reCAPTCHA if service fails
+          console.log('Continuing registration without reCAPTCHA due to service error');
         }
-        console.log(`reCAPTCHA verified for registration: score ${recaptchaResult.score}`);
       }
       
       const result = await authService.register(
@@ -1539,15 +1545,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
-        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'login');
-        if (!recaptchaResult.success) {
-          console.warn('reCAPTCHA verification failed for login:', recaptchaResult['error-codes']);
-          return res.status(400).json({ 
-            success: false, 
-            message: "reCAPTCHA verification failed. Please try again." 
-          });
+        try {
+          const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'login');
+          if (!recaptchaResult.success) {
+            console.warn('reCAPTCHA verification failed for login:', recaptchaResult['error-codes']);
+            return res.status(400).json({ 
+              success: false, 
+              message: "reCAPTCHA verification failed. Please try again." 
+            });
+          }
+          console.log(`reCAPTCHA verified for login: score ${recaptchaResult.score}`);
+        } catch (error) {
+          console.error('reCAPTCHA verification error:', error);
+          // Continue without reCAPTCHA if service fails
+          console.log('Continuing login without reCAPTCHA due to service error');
         }
-        console.log(`reCAPTCHA verified for login: score ${recaptchaResult.score}`);
       }
       
       const result = await authService.login(
