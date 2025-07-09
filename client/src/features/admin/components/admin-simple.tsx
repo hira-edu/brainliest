@@ -2,44 +2,70 @@ import { useState, useRef, useMemo, useCallback } from "react";
 import UploadsManager from './uploads-manager';
 import IconAssignment from './icon-assignment';
 
-// Common certification and academic icons
-const COMMON_ICONS = [
-  { value: "fas fa-certificate", label: "Certificate (fas fa-certificate)" },
-  { value: "fas fa-graduation-cap", label: "Graduation Cap (fas fa-graduation-cap)" },
-  { value: "fas fa-award", label: "Award (fas fa-award)" },
-  { value: "fas fa-cloud", label: "Cloud (fas fa-cloud)" },
-  { value: "fas fa-server", label: "Server (fas fa-server)" },
-  { value: "fas fa-shield-alt", label: "Shield (fas fa-shield-alt)" },
-  { value: "fas fa-network-wired", label: "Network (fas fa-network-wired)" },
-  { value: "fas fa-database", label: "Database (fas fa-database)" },
-  { value: "fas fa-code", label: "Code (fas fa-code)" },
-  { value: "fas fa-laptop-code", label: "Laptop Code (fas fa-laptop-code)" },
-  { value: "fas fa-chart-line", label: "Chart Line (fas fa-chart-line)" },
-  { value: "fas fa-calculator", label: "Calculator (fas fa-calculator)" },
-  { value: "fas fa-brain", label: "Brain (fas fa-brain)" },
-  { value: "fas fa-book", label: "Book (fas fa-book)" },
-  { value: "fas fa-microscope", label: "Microscope (fas fa-microscope)" },
-  { value: "fas fa-atom", label: "Atom (fas fa-atom)" },
-  { value: "fas fa-heartbeat", label: "Heartbeat (fas fa-heartbeat)" },
-  { value: "fas fa-stethoscope", label: "Stethoscope (fas fa-stethoscope)" },
-  { value: "fas fa-briefcase", label: "Briefcase (fas fa-briefcase)" },
-  { value: "fas fa-chart-pie", label: "Chart Pie (fas fa-chart-pie)" },
-  { value: "fas fa-globe", label: "Globe (fas fa-globe)" },
-  { value: "fas fa-language", label: "Language (fas fa-language)" },
-  { value: "fas fa-pen", label: "Pen (fas fa-pen)" },
-  { value: "fas fa-users", label: "Users (fas fa-users)" },
-  { value: "fas fa-balance-scale", label: "Balance Scale (fas fa-balance-scale)" },
-  { value: "📚", label: "Books Emoji (📚)" },
-  { value: "💻", label: "Computer Emoji (💻)" },
-  { value: "🎓", label: "Graduation Cap Emoji (🎓)" },
-  { value: "🔬", label: "Microscope Emoji (🔬)" },
-  { value: "🧮", label: "Abacus Emoji (🧮)" },
-  { value: "⚗️", label: "Test Tube Emoji (⚗️)" },
-  { value: "🩺", label: "Stethoscope Emoji (🩺)" },
-  { value: "💼", label: "Briefcase Emoji (💼)" },
-  { value: "🌐", label: "Globe Emoji (🌐)" },
-  { value: "🔒", label: "Lock Emoji (🔒)" }
-];
+// Icon selection component for uploaded images
+interface UploadedIcon {
+  id: number;
+  fileName: string;
+  originalName: string;
+  uploadPath: string;
+  isActive: boolean;
+}
+
+// Custom hook to fetch uploaded icons
+function useUploadedIcons() {
+  return useQuery<UploadedIcon[]>({
+    queryKey: ['uploaded-icons'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/uploads?fileType=image&limit=100', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch icons');
+      const data = await response.json();
+      return data.uploads?.filter((upload: UploadedIcon) => upload.isActive) || [];
+    }
+  });
+}
+
+// Icon Selector Component
+interface IconSelectorProps {
+  value?: string;
+  onValueChange?: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+function IconSelector({ value, onValueChange, placeholder = "Select an icon...", disabled = false }: IconSelectorProps) {
+  const { data: icons = [], isLoading } = useUploadedIcons();
+  
+  const iconOptions = useMemo(() => {
+    const options = icons.map(icon => ({
+      value: icon.uploadPath,
+      label: icon.originalName,
+      disabled: false
+    }));
+    
+    // Add "No Icon" option
+    return [
+      { value: "", label: "No Icon", disabled: false },
+      ...options
+    ];
+  }, [icons]);
+
+  return (
+    <SearchableSelect
+      options={iconOptions}
+      value={value || ""}
+      onValueChange={onValueChange}
+      placeholder={placeholder}
+      disabled={disabled || isLoading}
+      loading={isLoading}
+      clearable={true}
+      emptyText={isLoading ? "Loading icons..." : "No icons available"}
+    />
+  );
+}
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Category, Subcategory, Question, Subject, Exam, InsertCategory, InsertSubcategory, InsertQuestion, InsertExam, InsertSubject } from "../../../../../shared/schema";
 import { apiRequest, queryClient } from "../../../services/queryClient";
@@ -378,11 +404,7 @@ export default function AdminSimple() {
     },
   });
 
-  // Track previously used icons
-  const getUsedIcons = () => {
-    const icons = subjects?.map(s => s.icon).filter((icon): icon is string => Boolean(icon)) || [];
-    return Array.from(new Set(icons)); // Remove duplicates
-  };
+  // Icon tracking no longer needed - using uploaded icons instead
 
 
 
@@ -648,7 +670,11 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., fas fa-certificate" {...field} />
+                          <IconSelector
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select an icon for this category..."
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -759,7 +785,11 @@ export default function AdminSimple() {
                     <FormItem>
                       <FormLabel>Icon (optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., fas fa-certificate" {...field} />
+                        <IconSelector
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Select an icon for this category..."
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -952,7 +982,11 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., fas fa-cloud" {...field} />
+                          <IconSelector
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select an icon for this subcategory..."
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1092,7 +1126,11 @@ export default function AdminSimple() {
                     <FormItem>
                       <FormLabel>Icon (optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., fas fa-cloud" {...field} />
+                        <IconSelector
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Select an icon for this subcategory..."
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1400,22 +1438,10 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
-                          <SearchableSelect
-                            options={[
-                              { value: "", label: "No icon" },
-                              ...COMMON_ICONS,
-                              ...getUsedIcons().map(icon => ({ 
-                                value: icon, 
-                                label: `Previously used: ${icon}` 
-                              }))
-                            ]}
-                            value={field.value || ""}
+                          <IconSelector
+                            value={field.value}
                             onValueChange={field.onChange}
-                            placeholder="Select or search icon"
-                            searchPlaceholder="Search icon classes..."
-                            emptyText="No icons found"
-                            clearable
-                            allowCustomValue
+                            placeholder="Select an icon for this subject..."
                           />
                         </FormControl>
                         <FormMessage />
@@ -1614,22 +1640,10 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
-                          <SearchableSelect
-                            options={[
-                              { value: "", label: "No icon" },
-                              ...COMMON_ICONS,
-                              ...getUsedIcons().map(icon => ({ 
-                                value: icon, 
-                                label: `Previously used: ${icon}` 
-                              }))
-                            ]}
-                            value={field.value || ""}
+                          <IconSelector
+                            value={field.value}
                             onValueChange={field.onChange}
-                            placeholder="Select or search icon"
-                            searchPlaceholder="Search icon classes..."
-                            emptyText="No icons found"
-                            clearable
-                            allowCustomValue
+                            placeholder="Select an icon for this subject..."
                           />
                         </FormControl>
                         <FormMessage />
@@ -1810,6 +1824,7 @@ export default function AdminSimple() {
         subjectSlug: "",
         title: "",
         description: "",
+        icon: "",
         difficulty: "Intermediate",
       }
     });
@@ -1846,6 +1861,7 @@ export default function AdminSimple() {
         subjectSlug: "",
         title: "",
         description: "",
+        icon: "",
         difficulty: "",
       }
     });
@@ -1896,6 +1912,7 @@ export default function AdminSimple() {
         subjectSlug: exam.subjectSlug,
         title: exam.title,
         description: exam.description || "",
+        icon: exam.icon || "",
         difficulty: exam.difficulty,
       });
       setIsEditDialogOpen(true);
@@ -1966,6 +1983,24 @@ export default function AdminSimple() {
                         <FormLabel>Description</FormLabel>
                         <FormControl>
                           <Textarea placeholder="Exam description..." {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={examForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <FormControl>
+                          <IconSelector
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select an icon for this exam..."
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -2070,6 +2105,25 @@ export default function AdminSimple() {
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={editExamForm.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Icon (optional)</FormLabel>
+                        <FormControl>
+                          <IconSelector
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Select an icon for this exam..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <FormField
                     control={editExamForm.control}
                     name="difficulty"

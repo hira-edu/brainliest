@@ -42,6 +42,7 @@ export const exams = pgTable("exams", {
   subjectSlug: text("subject_slug").notNull(),
   title: text("title").notNull(),
   description: text("description"),
+  icon: text("icon"),
   questionCount: integer("question_count").notNull(),
   duration: integer("duration"), // in minutes
   difficulty: text("difficulty").notNull(), // 'Beginner', 'Intermediate', 'Advanced', 'Expert'
