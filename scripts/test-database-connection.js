@@ -1,12 +1,9 @@
 #!/usr/bin/env node
 
 // Database Connection Testing Script for Vercel + Neon Debugging
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../shared/schema';
-
-neonConfig.webSocketConstructor = ws;
 
 async function testDatabaseConnection() {
   console.log('🔍 Testing Database Connection for Vercel + Neon...\n');
@@ -38,45 +35,28 @@ async function testDatabaseConnection() {
     console.log('Your connection string should end with: ?sslmode=require');
   }
 
-  // Test connection pool creation
-  console.log('\n🏊 Creating Connection Pool...');
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    max: 3,
-    min: 0,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 5000,
-    allowExitOnIdle: true
-  });
-
-  pool.on('connect', () => {
-    console.log('✅ Pool connection established');
-  });
-
-  pool.on('error', (err) => {
-    console.error('❌ Pool error:', err.message);
-  });
+  // Test Supabase HTTP connection
+  console.log('\n🌐 Creating Supabase HTTP Connection...');
+  const sql = neon(process.env.DATABASE_URL);
+  const db = drizzle(sql, { schema });
 
   // Test database operations
   try {
     console.log('\n🗄️  Testing Database Operations...');
     
-    const db = drizzle({ client: pool, schema });
-    
     // Test 1: Simple connection test
     console.log('   Test 1: Basic connection...');
-    const client = await pool.connect();
-    console.log('   ✅ Basic connection successful');
-    client.release();
+    const timeTest = await sql`SELECT NOW() as current_time`;
+    console.log('   ✅ Basic connection successful:', timeTest[0].current_time);
 
     // Test 2: Schema query
     console.log('   Test 2: Schema query...');
-    const tables = await client.query(`
+    const tables = await sql`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public'
-    `);
-    console.log(`   ✅ Found ${tables.rows.length} tables in database`);
+    `;
+    console.log(`   ✅ Found ${tables.length} tables in database`);
 
     // Test 3: Subjects table query
     console.log('   Test 3: Subjects table query...');

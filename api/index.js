@@ -1,12 +1,9 @@
 // Vercel serverless function wrapper for Express app
 import express from 'express';
 import cors from 'cors';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../shared/schema';
-
-neonConfig.webSocketConstructor = ws;
 
 const app = express();
 app.use(cors());
@@ -18,17 +15,10 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is required');
 }
 
-// Vercel + Neon optimized connection pool
-const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  max: 3,                     // Conservative for Neon free tier
-  min: 0,                     // No minimum connections for serverless
-  idleTimeoutMillis: 10000,   // Shorter idle timeout for serverless
-  connectionTimeoutMillis: 5000, // Longer timeout for cold starts
-  allowExitOnIdle: true       // Allow process exit when idle
-});
+// Supabase HTTP connection for Vercel serverless
+const sql = neon(process.env.DATABASE_URL);
 
-const db = drizzle({ client: pool, schema });
+const db = drizzle(sql, { schema });
 
 // Connection monitoring
 pool.on('connect', () => {

@@ -1,10 +1,7 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+// Supabase PostgreSQL connection using HTTP adapter for compatibility
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from "../../shared/schema";
-
-// Configure for remote Supabase (until local setup)
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -12,28 +9,13 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// SUPABASE LOCAL: Standard PostgreSQL connection
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 10,
-  min: 1,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
+// SUPABASE: HTTP-based connection for standard PostgreSQL compatibility
+const sql = neon(process.env.DATABASE_URL!);
 
-// Connection health monitoring
-pool.on('connect', () => {
-  console.log('📊 Database connection established with Supabase');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ Database pool error:', err);
-});
-
-export const db = drizzle({ 
-  client: pool, 
+// Initialize Drizzle ORM with HTTP adapter for Supabase PostgreSQL
+export const db = drizzle(sql, { 
   schema,
   logger: process.env.NODE_ENV === 'development'
 });
 
-console.log('📊 Supabase PostgreSQL connection configured');
+console.log('🚀 Supabase PostgreSQL HTTP connection configured successfully');

@@ -13,4 +13,8 @@ export default defineConfig({
   },
   verbose: true,
   strict: true,
+  // Supabase-specific configuration
+  migrations: {
+    prefix: 'supabase'
+  }
 });
