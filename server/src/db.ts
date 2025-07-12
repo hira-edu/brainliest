@@ -3,29 +3,27 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "../../shared/schema";
 
+// Configure for remote Supabase (until local setup)
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL must be set. Ensure Supabase is running locally with 'supabase start'",
   );
 }
 
-// VERCEL + NEON OPTIMIZED: Conservative connection pool for serverless deployment
+// SUPABASE LOCAL: Standard PostgreSQL connection
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 3,                     // Conservative for Neon free tier (100 max total)
-  min: 0,                     // No minimum connections for serverless
-  idleTimeoutMillis: 10000,   // Shorter idle timeout for serverless
-  connectionTimeoutMillis: 5000, // Longer timeout for cold starts
-  maxUses: 7500,             // Connection recycling
-  keepAlive: false,          // Disabled for serverless functions
-  allowExitOnIdle: true      // Allow process exit when idle
+  max: 10,
+  min: 1,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
 // Connection health monitoring
 pool.on('connect', () => {
-  console.log('📊 Database connection established');
+  console.log('📊 Database connection established with Supabase');
 });
 
 pool.on('error', (err) => {
@@ -37,3 +35,5 @@ export const db = drizzle({
   schema,
   logger: process.env.NODE_ENV === 'development'
 });
+
+console.log('📊 Supabase PostgreSQL connection configured');
