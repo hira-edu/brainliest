@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -8,7 +9,7 @@ import { setupVite, serveStatic, log } from "./src/vite";
 import { validateSecurityConfig } from './src/config/security';
 
 const app = express();
-
+dotenv.config();
 // Validate security configuration on startup
 validateSecurityConfig();
 
