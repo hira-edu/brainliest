@@ -424,7 +424,8 @@ export class FreemiumService {
       
       const deletedSessions = await db
         .delete(anonQuestionSessions)
-        .where(lte(anonQuestionSessions.lastReset, cleanupThreshold));
+        .where(lte(anonQuestionSessions.lastReset, cleanupThreshold))
+        .returning();
 
       console.log(`Cleaned up ${deletedSessions.length || 0} old freemium sessions`);
       return deletedSessions.length || 0;
