@@ -3,7 +3,7 @@
  * Prompts users to sign in when they reach free question limit (20 questions)
  */
 
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import React, { useState, useCallback } from 'react';
 import { z } from 'zod';
@@ -204,7 +204,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
     try {
       const result = await signInWithGoogle();
       
-      if (result.success) {
+      if (result && typeof result === 'object' && 'success' in result && (result as any).success) {
         // Only reset question count after successful authentication
         await resetViewedQuestions();
         
@@ -215,7 +215,10 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
         
         handleCloseModal();
       } else {
-        throw new Error(result.message || "Google sign-in failed");
+        const errorMessage = (result && typeof result === 'object' && 'message' in result) 
+          ? String(result.message) 
+          : "Google sign-in failed";
+        throw new Error(errorMessage);
       }
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);

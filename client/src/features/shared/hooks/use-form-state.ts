@@ -68,14 +68,14 @@ export function useFormState<T extends Record<string, any>>(
     setIsSubmitting(false);
   }, [initialData]);
 
-  const formState: FormState<T> = {
+  const formState = {
     data,
     errors,
     isLoading,
     isSubmitting
   };
 
-  const formActions: FormActions<T> = {
+  const formActions = {
     setData,
     setErrors,
     setIsLoading,

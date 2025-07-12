@@ -1,0 +1,10 @@
+\copy public.categories TO 'supabase\categories.sql' WITH CSV HEADER 
+\copy public.subcategories TO 'supabase\subcategories.sql' WITH CSV HEADER 
+\copy public.subjects TO 'supabase\subjects.sql' WITH CSV HEADER 
+\copy public.exams TO 'supabase\exams.sql' WITH CSV HEADER 
+\copy public.questions TO 'supabase\questions.sql' WITH CSV HEADER 
+\copy public.performance_trends TO 'supabase\performance_trends.sql' WITH CSV HEADER 
+\copy public.user_subject_interactions TO 'supabase\user_subject_interactions.sql' WITH CSV HEADER 
+\copy public.subject_trending_stats TO 'supabase\subject_trending_stats.sql' WITH CSV HEADER 
+\copy public.user_learning_paths TO 'supabase\user_learning_paths.sql' WITH CSV HEADER 
+\copy public.subject_popularity TO 'supabase\subject_popularity.sql' WITH CSV HEADER 

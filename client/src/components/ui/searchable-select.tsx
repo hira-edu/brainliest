@@ -16,7 +16,7 @@
  * Contact the development team before making changes.
  */
 
- // RSC directive for interactive search and selection functionality
+"use client"; // RSC directive for interactive search and selection functionality
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Check, ChevronDown, X, Loader2, Search } from "lucide-react";
@@ -252,7 +252,7 @@ export const SearchableSelect = React.forwardRef<
                   {filteredOptions.map((option, index) => (
                     <div
                       key={option.value}
-                      ref={(el) => (optionRefs.current[index] = el)}
+                      ref={(el) => { if (el) optionRefs.current[index] = el; }}
                       role="option"
                       aria-selected={value === option.value}
                       className={cn(
@@ -281,7 +281,7 @@ export const SearchableSelect = React.forwardRef<
                    searchValue.trim() && 
                    !filteredOptions.some(opt => opt.value.toLowerCase() === searchValue.toLowerCase()) && (
                     <div
-                      ref={(el) => (optionRefs.current[filteredOptions.length] = el)}
+                      ref={(el) => { if (el) optionRefs.current[filteredOptions.length] = el; }}
                       role="option"
                       className={cn(
                         "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors",

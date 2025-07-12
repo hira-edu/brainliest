@@ -1,4 +1,4 @@
- // RSC directive for admin panel client-side functionality
+"use client"; // RSC directive for admin panel client-side functionality
 
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -436,12 +436,12 @@ export default function AdminSimple() {
     const questionsList = Array.isArray(questions) ? questions : [];
     const questionsBySubject = subjects?.map(subject => ({
       name: subject.name,
-      count: questionsList.filter(q => q.subjectId === subject.id).length
+      count: questionsList.filter(q => q.subjectSlug === subject.slug).length
     })) || [];
 
     const questionsByExam = exams?.map(exam => ({
       title: exam.title,
-      count: questionsList.filter(q => q.examId === exam.id).length
+      count: questionsList.filter(q => q.examSlug === exam.slug).length
     })) || [];
 
     // Most popular exam (most questions)
@@ -547,7 +547,6 @@ export default function AdminSimple() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     
     const categoryForm = useForm<z.infer<typeof insertCategorySchema>>({
-      resolver: zodResolver(insertCategorySchema),
       defaultValues: {
         name: "",
         description: "",
@@ -559,7 +558,6 @@ export default function AdminSimple() {
     });
 
     const editCategoryForm = useForm<z.infer<typeof insertCategorySchema>>({
-      resolver: zodResolver(insertCategorySchema),
       defaultValues: {
         name: "",
         description: "",
@@ -661,7 +659,7 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Brief description..." {...field} />
+                          <Textarea placeholder="Brief description..." {...field} value={field.value || ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -675,7 +673,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
                           <IconSelector
-                            value={field.value}
+                            value={field.value || ''}
                             onValueChange={field.onChange}
                             placeholder="Select an icon for this category..."
                           />
@@ -691,7 +689,7 @@ export default function AdminSimple() {
                       <FormItem>
                         <FormLabel>Sort Order</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0" {...field} onChange={(e) => {
+                          <Input type="number" placeholder="0" {...field} value={field.value || 0} onChange={(e) => {
                             const value = parseInt(e.target.value);
                             field.onChange(isNaN(value) ? 0 : value);
                           }} />
@@ -790,7 +788,7 @@ export default function AdminSimple() {
                       <FormLabel>Icon (optional)</FormLabel>
                       <FormControl>
                         <IconSelector
-                          value={field.value}
+                          value={field.value || ""}
                           onValueChange={field.onChange}
                           placeholder="Select an icon for this category..."
                         />
@@ -830,7 +828,6 @@ export default function AdminSimple() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     
     const subcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
-      resolver: zodResolver(insertSubcategorySchema),
       defaultValues: {
         categorySlug: "",
         name: "",
@@ -843,7 +840,6 @@ export default function AdminSimple() {
     });
 
     const editSubcategoryForm = useForm<z.infer<typeof insertSubcategorySchema>>({
-      resolver: zodResolver(insertSubcategorySchema),
       defaultValues: {
         categorySlug: "",
         name: "",
@@ -944,7 +940,7 @@ export default function AdminSimple() {
                               field.onChange(value);
                             }}
                             placeholder="Select a category"
-                            searchPlaceholder="Search categories..."
+                            
                             emptyText="No categories found"
                             clearable
                           />
@@ -987,7 +983,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
                           <IconSelector
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select an icon for this subcategory..."
                           />
@@ -1088,7 +1084,7 @@ export default function AdminSimple() {
                           value={field.value || ""}
                           onValueChange={(value) => field.onChange(value)}
                           placeholder="Select a category"
-                          searchPlaceholder="Search categories..."
+                          
                           emptyText="No categories found"
                           clearable
                         />
@@ -1131,7 +1127,7 @@ export default function AdminSimple() {
                       <FormLabel>Icon (optional)</FormLabel>
                       <FormControl>
                         <IconSelector
-                          value={field.value}
+                          value={field.value || ''}
                           onValueChange={field.onChange}
                           placeholder="Select an icon for this subcategory..."
                         />
@@ -1147,7 +1143,7 @@ export default function AdminSimple() {
                     <FormItem>
                       <FormLabel>Sort Order</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                        <Input type="number" placeholder="0" {...field} value={field.value || 0} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1170,7 +1166,6 @@ export default function AdminSimple() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const subjectForm = useForm<InsertSubject>({
-      resolver: zodResolver(insertSubjectSchema),
       defaultValues: {
         name: "",
         description: "",
@@ -1194,7 +1189,6 @@ export default function AdminSimple() {
     });
 
     const editSubjectForm = useForm<InsertSubject>({
-      resolver: zodResolver(insertSubjectSchema),
       defaultValues: {
         name: "",
         description: "",
@@ -1314,7 +1308,7 @@ export default function AdminSimple() {
                             value={field.value || ""}
                             onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a category"
-                            searchPlaceholder="Search categories..."
+                            
                             emptyText="No categories found"
                             clearable
                             className="flex-1"
@@ -1339,6 +1333,7 @@ export default function AdminSimple() {
                                   const icon = (document.getElementById('quick-category-icon') as HTMLInputElement)?.value;
                                   if (name) {
                                     createCategoryMutation.mutate({
+                                      slug: name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
                                       name,
                                       description: description || "",
                                       icon: icon || "",
@@ -1373,7 +1368,7 @@ export default function AdminSimple() {
                             value={field.value || ""}
                             onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subcategory"
-                            searchPlaceholder="Search subcategories..."
+                            
                             emptyText="No subcategories found"
                             clearable
                             className="flex-1"
@@ -1415,6 +1410,7 @@ export default function AdminSimple() {
                                   const icon = (document.getElementById('quick-subcategory-icon') as HTMLInputElement)?.value;
                                   if (categorySlug && name) {
                                     createSubcategoryMutation.mutate({
+                                      slug: name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
                                       categorySlug,
                                       name,
                                       description: description || "",
@@ -1443,7 +1439,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
                           <IconSelector
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select an icon for this subject..."
                           />
@@ -1514,7 +1510,7 @@ export default function AdminSimple() {
                             value={field.value || ""}
                             onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a category"
-                            searchPlaceholder="Search categories..."
+                            
                             emptyText="No categories found"
                             clearable
                             className="flex-1"
@@ -1539,6 +1535,7 @@ export default function AdminSimple() {
                                   const icon = (document.getElementById('edit-quick-category-icon') as HTMLInputElement)?.value;
                                   if (name) {
                                     createCategoryMutation.mutate({
+                                      slug: name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
                                       name,
                                       description: description || "",
                                       icon: icon || "",
@@ -1573,7 +1570,7 @@ export default function AdminSimple() {
                             value={field.value || ""}
                             onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subcategory"
-                            searchPlaceholder="Search subcategories..."
+                            
                             emptyText="No subcategories found"
                             clearable
                             className="flex-1"
@@ -1615,6 +1612,7 @@ export default function AdminSimple() {
                                   const icon = (document.getElementById('edit-quick-subcategory-icon') as HTMLInputElement)?.value;
                                   if (categorySlug && name) {
                                     createSubcategoryMutation.mutate({
+                                      slug: name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
                                       categorySlug,
                                       name,
                                       description: description || "",
@@ -1643,7 +1641,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
                           <IconSelector
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select an icon for this subject..."
                           />
@@ -1824,7 +1822,6 @@ export default function AdminSimple() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const examForm = useForm<InsertExam>({
-      resolver: zodResolver(insertExamSchema),
       defaultValues: {
         subjectSlug: "",
         title: "",
@@ -1860,14 +1857,15 @@ export default function AdminSimple() {
       },
     });
 
-    const editExamForm = useForm<InsertExam>({
-      resolver: zodResolver(insertExamSchema),
+    const editExamForm = useForm({
       defaultValues: {
         subjectSlug: "",
         title: "",
+        slug: "",
+        questionCount: 0,
         description: "",
         icon: "",
-        difficulty: "",
+        difficulty: "Beginner" as const,
       }
     });
 
@@ -1905,7 +1903,7 @@ export default function AdminSimple() {
       createExamMutation.mutate(data);
     };
 
-    const onEditSubmit = (data: InsertExam) => {
+    const onEditSubmit = (data: any) => {
       if (editingExam) {
         updateExamMutation.mutate({ slug: editingExam.slug, data });
       }
@@ -1958,7 +1956,7 @@ export default function AdminSimple() {
                             value={field.value || ""}
                             onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subject"
-                            searchPlaceholder="Search subjects..."
+                            
                             emptyText="No subjects found"
                             clearable
                           />
@@ -2002,7 +2000,7 @@ export default function AdminSimple() {
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
                           <IconSelector
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select an icon for this exam..."
                           />
@@ -2026,10 +2024,10 @@ export default function AdminSimple() {
                               { value: "Advanced", label: "Advanced" },
                               { value: "Expert", label: "Expert" }
                             ]}
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select difficulty"
-                            searchPlaceholder="Search difficulty levels..."
+                            
                             emptyText="No difficulty levels found"
                             clearable
                           />
@@ -2061,7 +2059,7 @@ export default function AdminSimple() {
               <Form {...editExamForm}>
                 <form onSubmit={editExamForm.handleSubmit(onEditSubmit)} className="space-y-4">
                   <FormField
-                    control={editExamForm.control}
+                    control={editExamForm.control as any}
                     name="subjectSlug"
                     render={({ field }) => (
                       <FormItem>
@@ -2075,7 +2073,7 @@ export default function AdminSimple() {
                             value={field.value || ""}
                             onValueChange={(value) => field.onChange(value || "")}
                             placeholder="Select a subject"
-                            searchPlaceholder="Search subjects..."
+                            
                             emptyText="No subjects found"
                             clearable
                           />
@@ -2085,7 +2083,7 @@ export default function AdminSimple() {
                     )}
                   />
                   <FormField
-                    control={editExamForm.control}
+                    control={editExamForm.control as any}
                     name="title"
                     render={({ field }) => (
                       <FormItem>
@@ -2098,7 +2096,7 @@ export default function AdminSimple() {
                     )}
                   />
                   <FormField
-                    control={editExamForm.control}
+                    control={editExamForm.control as any}
                     name="description"
                     render={({ field }) => (
                       <FormItem>
@@ -2112,14 +2110,14 @@ export default function AdminSimple() {
                   />
                   
                   <FormField
-                    control={editExamForm.control}
+                    control={editExamForm.control as any}
                     name="icon"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Icon (optional)</FormLabel>
                         <FormControl>
                           <IconSelector
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select an icon for this exam..."
                           />
@@ -2130,7 +2128,7 @@ export default function AdminSimple() {
                   />
                   
                   <FormField
-                    control={editExamForm.control}
+                    control={editExamForm.control as any}
                     name="difficulty"
                     render={({ field }) => (
                       <FormItem>
@@ -2143,10 +2141,10 @@ export default function AdminSimple() {
                               { value: "Advanced", label: "Advanced" },
                               { value: "Expert", label: "Expert" }
                             ]}
-                            value={field.value}
+                            value={field.value || ""}
                             onValueChange={field.onChange}
                             placeholder="Select difficulty"
-                            searchPlaceholder="Search difficulty levels..."
+                            
                             emptyText="No difficulty levels found"
                             clearable
                           />
@@ -2234,7 +2232,7 @@ export default function AdminSimple() {
               value={selectedSubjectFilter}
               onValueChange={setSelectedSubjectFilter}
               placeholder="Filter by subject"
-              searchPlaceholder="Search subjects..."
+              
               emptyText="No subjects found"
               disabled={!selectedExamCategoryFilter && !selectedExamSubcategoryFilter}
               className="w-48"
@@ -2387,7 +2385,6 @@ export default function AdminSimple() {
     }) || [];
 
     const questionForm = useForm<QuestionFormData>({
-      resolver: zodResolver(questionFormSchema),
       defaultValues: {
         examSlug: "",
         subjectSlug: "",
@@ -2789,7 +2786,7 @@ export default function AdminSimple() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Difficulty</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select difficulty" />

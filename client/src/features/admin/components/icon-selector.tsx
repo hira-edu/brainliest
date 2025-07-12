@@ -55,7 +55,7 @@ export default function IconSelector({ selectedIcon, onSelect, className }: Icon
                     setOpen(false);
                   }}
                 >
-                  <IconComponent className="w-8 h-8 mb-1" />
+                  {React.createElement(IconComponent, { className: "w-8 h-8 mb-1" })}
                   <span className="text-xs capitalize truncate w-full text-center">
                     {iconName}
                   </span>

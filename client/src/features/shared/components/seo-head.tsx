@@ -126,7 +126,7 @@ export default function SEOHead({
     const createdElements: HTMLElement[] = [];
 
     // Function to update or create meta tag
-    const updateMetaTag = (name: string, content: string, property?: boolean) => {
+    const updateMetaTag = (name: string, content: string, property?: boolean): void => {
       const attribute = property ? 'property' : 'name';
       let meta = document.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement;
       

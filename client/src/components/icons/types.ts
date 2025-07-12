@@ -3,10 +3,12 @@
  * Modern TypeScript-first icon system with comprehensive type safety
  */
 
-import { ComponentType, SVGProps } from 'react';
+import { ComponentType, SVGProps, ReactNode } from 'react';
 
 // Base icon component props with comprehensive customization options
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'ref'> {
+  /** Icon children elements */
+  children?: ReactNode;
   /** Icon size - supports predefined sizes or custom values */
   size?: IconSize | number | string;
   /** Icon color - supports theme colors, hex, or CSS variables */

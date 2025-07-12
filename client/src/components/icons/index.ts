@@ -4,8 +4,6 @@
  * Fixes audit issue: Missing type exports
  */
 
-
-
 // Component exports
 export { Icon, SubjectIcon, CategoryIcon, StatusIcon } from './icon';
 export { BaseIcon, LoadingIcon, FallbackIcon, createIcon } from './base-icon';

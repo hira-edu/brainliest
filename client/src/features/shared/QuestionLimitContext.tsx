@@ -26,7 +26,7 @@ const SESSION_KEY = "brainliest_session_id";
 export function QuestionLimitProvider({ children }: { children: ReactNode }) {
   const [viewedQuestions, setViewedQuestions] = useState<Set<number>>(new Set());
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [sessionId] = useState(() => 
+  const [sessionId] = useState<string>(() => 
     CookieManager.getCookie(SESSION_KEY) || 
     Math.random().toString(36).substring(2, 15)
   );

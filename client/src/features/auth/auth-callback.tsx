@@ -4,8 +4,6 @@
  * Fixed: SSR compatibility, error handling, field alignment, accessibility
  */
 
- // Fixed: RSC directive for Vercel compatibility with window APIs
-
 import { useEffect } from 'react';
 
 // Fixed: TypeScript interface for Google user info

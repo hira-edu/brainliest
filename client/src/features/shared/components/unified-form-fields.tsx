@@ -63,7 +63,7 @@ export function EmailField({
   label = "Email",
   placeholder = "Enter your email address",
   ...props
-}: Omit<FormFieldProps, 'type'>) {
+}: Omit<FormFieldProps, 'type'> & any) {
   return (
     <div className="relative">
       <FormField
@@ -131,7 +131,7 @@ export function UsernameField({
   label = "Username",
   placeholder = "Choose a username",
   ...props
-}: Omit<FormFieldProps, 'type'>) {
+}: Omit<FormFieldProps, 'type'> & any) {
   return (
     <div className="relative">
       <FormField

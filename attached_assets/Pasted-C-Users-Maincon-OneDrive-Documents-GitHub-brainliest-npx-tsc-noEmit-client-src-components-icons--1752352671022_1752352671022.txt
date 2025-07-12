@@ -1,0 +1,45 @@
+C:\Users\Maincon\OneDrive\Documents\GitHub\brainliest>npx tsc --noEmit
+client/src/components/icons/base-icon.tsx:56:5 - error TS2339: Property 'children' does not exist on type 'IconProps'.
+
+56     children,
+       ~~~~~~~~
+
+client/src/components/icons/base-icon.tsx:132:6 - error TS2322: Type '{ children: ReactNode; size?: string | number | undefined; color?: string | undefined; variant?: IconVariant | undefined; 'aria-label'?: string | undefined; ... 483 more ...; ref: ForwardedRef<...>; }' is not assignable to type 'IntrinsicAttributes & IconProps & RefAttributes<SVGSVGElement>'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & IconProps & RefAttributes<SVGSVGElement>'.
+
+132     <BaseIcon ref={ref} {...defaultProps} {...props}>
+         ~~~~~~~~
+
+client/src/components/icons/base-icon.tsx:145:4 - error TS2322: Type '{ children: Element; size?: string | number | undefined; color?: string | undefined; variant?: IconVariant | undefined; 'aria-label'?: string | undefined; title?: string | undefined; ... 482 more ...; ref: ForwardedRef<...>; }' is not assignable to type 'IntrinsicAttributes & IconProps & RefAttributes<SVGSVGElement>'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & IconProps & RefAttributes<SVGSVGElement>'.
+
+145   <BaseIcon ref={ref} loading {...props}>
+       ~~~~~~~~
+
+client/src/components/icons/base-icon.tsx:159:4 - error TS2322: Type '{ children: Element[]; size?: string | number | undefined; color?: string | undefined; variant?: IconVariant | undefined; 'aria-label'?: string | undefined; title?: string | undefined; ... 482 more ...; ref: ForwardedRef<...>; }' is not assignable to type 'IntrinsicAttributes & IconProps & RefAttributes<SVGSVGElement>'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & IconProps & RefAttributes<SVGSVGElement>'.
+
+159   <BaseIcon ref={ref} {...props}>
+       ~~~~~~~~
+
+client/src/components/icons/icon.tsx:5:21 - error TS2459: Module '"./types"' declares 'Booleanish' locally, but it is not exported.
+
+5 import { IconProps, Booleanish } from './types';
+                      ~~~~~~~~~~
+
+  client/src/components/icons/types.ts:7:10
+    7 import { Booleanish } from 'react'; // Import Booleanish for explicit typing
+               ~~~~~~~~~~
+    'Booleanish' is declared here.
+
+client/src/components/icons/icon.tsx:45:13 - error TS2339: Property 'aria-hidden' does not exist on type '{ string?: string | number | undefined; className?: string | undefined; suppressHydrationWarning?: boolean | undefined; color?: string | undefined; height?: string | number | undefined; ... 479 more ...; interactive?: boolean | undefined; }'.
+
+45     const { 'aria-hidden': _ariaHidden, ...restProps } = props;
+               ~~~~~~~~~~~~~
+
+client/src/components/icons/industrial-registry.ts:147:5 - error TS2322: Type '{ defaultSize?: IconSize | undefined; defaultColor?: IconColor | undefined; defaultVariant?: IconVariant | undefined; lazyLoading?: boolean | undefined; ... 5 more ...; evictionStrategy: "lru" | "fifo"; }' is not assignable to type 'IconConfig'.
+  Types of property 'defaultSize' are incompatible.
+    Type 'IconSize | undefined' is not assignable to type 'IconSize'.
+      Type 'undefined' is not assignable to type 'IconSize'.
+
+147     this.config = {

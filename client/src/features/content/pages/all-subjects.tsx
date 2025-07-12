@@ -1,4 +1,4 @@
- // RSC directive for client-side interactivity and Vercel compatibility
+"use client"; // RSC directive for client-side interactivity and Vercel compatibility
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -137,10 +137,10 @@ function SubjectCard({ subject, onClick }: SubjectCardProps) {
             </div>
           </div>
           {/* Fixed: Dynamic ratings - removed hardcoded 4.8 */}
-          {subject.rating && (
+          {validatedSubject.rating && (
             <div className="flex items-center space-x-1">
               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span>{subject.rating}</span>
+              <span>{validatedSubject.rating}</span>
             </div>
           )}
         </div>

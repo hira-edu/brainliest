@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, environment variable validation, error handling, type safety
  */
 
- // Fixed: RSC directive for Vercel compatibility with reCAPTCHA script loading
+"use client"; // Fixed: RSC directive for Vercel compatibility with reCAPTCHA script loading
 
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
@@ -80,7 +80,7 @@ export default function RecaptchaProvider({ children }: RecaptchaProviderProps) 
           defer: true,
         }}
         // Fixed: Error handling for script loading failures
-        onErrorCallback={(error) => {
+        onErrorCallback={(error: any) => {
           console.error('reCAPTCHA script loading failed:', error);
           if (import.meta.env.MODE === 'development') {
             console.warn('reCAPTCHA protection disabled due to script loading failure');

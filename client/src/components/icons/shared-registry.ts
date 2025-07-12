@@ -3,8 +3,6 @@
  * Fixes audit issue: Registry dependency conflicts
  */
 
-
-
 import { iconRegistry as originalIconRegistry } from './registry';
 
 // Create singleton shared registry to prevent conflicts

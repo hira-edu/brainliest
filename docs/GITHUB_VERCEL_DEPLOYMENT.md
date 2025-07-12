@@ -45,8 +45,8 @@ git push -u origin main
 
 ## Database Setup for Production
 
-### Option 1: Neon Database (Recommended)
-1. Go to [neon.tech](https://neon.tech) and create a free PostgreSQL database
+### Option 1: Supabase Database (Recommended)
+1. Go to [supabase.com](https://supabase.com) and create a free PostgreSQL database
 2. Copy the connection string to your Vercel environment variables
 3. Run database migration: `npm run db:push` (run locally first, then Vercel will auto-migrate)
 

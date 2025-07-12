@@ -99,7 +99,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-    return () => controller.abort();
   }, [storeToken, trackActivity]);
 
   const logout = useCallback(async () => {
@@ -158,7 +157,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
   }, [adminUser, checkAuthStatus, trackActivity]);
 
-  const value = useMemo(() => ({ adminUser, isLoading, error, login, logout, checkAuthStatus, trackActivity }), [adminUser, isLoading, error, login, logout, checkAuthStatus, trackActivity]);
+  const value = useMemo(() => ({ adminUser, isLoading, error, login: login as () => Promise<void>, logout, checkAuthStatus, trackActivity }), [adminUser, isLoading, error, login, logout, checkAuthStatus, trackActivity]);
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }

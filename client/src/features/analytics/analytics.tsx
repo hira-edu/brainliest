@@ -1,8 +1,6 @@
 // Analytics.tsx
 // Elite-level, war-tested logic enhancements with inline commentary
 
- // RSC directive for client-side analytics data visualization
-
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
@@ -93,7 +91,7 @@ export default function Analytics() {
     queryKey: ['/api/analytics/overview', selectedUser],
     enabled: !!selectedUser,
     retry: 2,
-    onError: (err) => console.error('Failed to fetch analytics:', err)
+    onError: (err: any) => console.error('Failed to fetch analytics:', err)
   });
 
   // Redirect or prompt if not signed in

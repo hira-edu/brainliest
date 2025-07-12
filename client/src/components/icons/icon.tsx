@@ -1,4 +1,4 @@
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import React, { Suspense, forwardRef } from 'react';
 import { IconProps } from './types';
@@ -42,13 +42,15 @@ export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
 
     // If primary loaded successfully and no error, render it
     if (PrimaryComponent && !primaryError) {
+      // Remove aria-hidden from props to avoid TypeScript error
+      const { 'aria-hidden': _ariaHidden, ...restProps } = props;
       return (
         <SafeIconWrapper 
           size={props.size} 
           aria-label={props['aria-label']}
           fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : undefined}
         >
-          <PrimaryComponent ref={ref} {...props} />
+          <PrimaryComponent ref={ref} {...restProps} />
         </SafeIconWrapper>
       );
     }
@@ -61,13 +63,14 @@ export const Icon = forwardRef<SVGSVGElement, IconComponentProps>(
       }
       // If fallback loaded successfully, render it
       if (FallbackComponent && !fallbackError) {
+        const { 'aria-hidden': _ariaHidden, ...restProps } = props;
         return (
           <SafeIconWrapper 
             size={props.size} 
             aria-label={props['aria-label']}
             fallback={showLoading ? <LoadingIcon ref={ref} {...props} /> : undefined}
           >
-            <FallbackComponent ref={ref} {...props} />
+            <FallbackComponent ref={ref} {...restProps} />
           </SafeIconWrapper>
         );
       }

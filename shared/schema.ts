@@ -499,9 +499,14 @@ export type SubjectTrendingStats = typeof subjectTrendingStats.$inferSelect;
 export type InsertSubjectTrendingStats = z.infer<typeof insertSubjectTrendingStatsSchema>;
 export type DailyTrendingSnapshot = typeof dailyTrendingSnapshot.$inferSelect;
 export type InsertDailyTrendingSnapshot = z.infer<typeof insertDailyTrendingSnapshotSchema>;
+
+// Anonymous Question Session Types
 export type AnonQuestionSession = typeof anonQuestionSessions.$inferSelect;
 export type InsertAnonQuestionSession = z.infer<typeof insertAnonQuestionSessionSchema>;
 
 // Upload Types
 export type Upload = typeof uploads.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
+
+// User Role Types (enum)
+export type UserRole = typeof userRoles.enumValues[number];

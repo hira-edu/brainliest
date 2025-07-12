@@ -124,6 +124,8 @@ class LRUSearchIndex {
   }
 }
 
+import { IconSize, IconColor, IconVariant, IconConfig, IconRegistryEntry, IconCategory } from './types';
+
 /**
  * Industrial-Grade Icon Registry
  */
@@ -145,6 +147,10 @@ export class IndustrialIconRegistry {
 
   constructor(config: Partial<IconConfig> = {}) {
     this.config = {
+      defaultSize: 'md' as IconSize,
+      defaultColor: 'current' as IconColor,
+      defaultVariant: 'outlined' as IconVariant,
+      lazyLoading: true,
       cacheSize: 5000,
       enableMetrics: true,
       enableDebug: false,

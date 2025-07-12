@@ -60,7 +60,7 @@ export function ProtectedAdminRoute({ children }: { children: React.ReactNode })
             </CardContent>
           </Card>
         </div>
-        {showLogin && <AdminLoginModal onLogin={handleLogin} isLoading={submitting} error={error} />}
+        {showLogin && <AdminLoginModal onLogin={handleLogin} isLoading={submitting} error={error || null} />}
       </>
     );
   }

@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as schema from '../shared/schema';
+import * as schema from '../shared/schema.js';
 
 const app = express();
 app.use(cors());
@@ -21,13 +21,7 @@ const sql = neon(process.env.DATABASE_URL);
 const db = drizzle(sql, { schema });
 
 // Connection monitoring
-pool.on('connect', () => {
-  console.log('🟢 Vercel → Neon database connection established');
-});
-
-pool.on('error', (err) => {
-  console.error('🔴 Database pool error:', err.message);
-});
+console.log('🔌 Supabase HTTP connection initialized for Vercel deployment');
 
 // Enhanced health check with database connectivity test
 app.get('/api/health', async (req, res) => {

@@ -4,7 +4,7 @@
  * Fixed: reCAPTCHA token handling, password validation, resend logic, debouncing, error handling
  */
 
- // RSC directive for client-side authentication and Vercel compatibility with reCAPTCHA and dialog functionality
+"use client"; // RSC directive for client-side authentication and Vercel compatibility with reCAPTCHA and dialog functionality
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../../components/ui/button";
@@ -57,9 +57,12 @@ function UnifiedAuthModalContent({
   const [canResend, setCanResend] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false); // Fixed: Add separate loading state for resend
 
-  const { signIn, signUp, signInWithGoogle, verifyEmail, resendEmailVerification } = useAuth();
+  const { signIn, signUp, signInWithGoogle, verifyEmail, resendEmailVerification } = useAuth() as any;
   const { toast } = useToast();
   const { executeRecaptcha } = useGoogleReCaptcha();
+
+  // Fixed: Add null check for executeRecaptcha to handle missing context
+  const isRecaptchaReady = executeRecaptcha !== null;
 
   // Fixed: Add refs to prevent memory leaks and track mounted state
   const mountedRef = useRef(true);

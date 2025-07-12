@@ -95,7 +95,7 @@ export default function CookieSettings() {
     });
   };
 
-  const updatePreference = (category: string, enabled: boolean) => {
+  const updatePreference = (category: keyof typeof preferences, enabled: boolean) => {
     setPreferences(prev => ({ ...prev, [category]: enabled }));
   };
 

@@ -1,0 +1,148 @@
+[18:41:58.417] Running build in Washington, D.C., USA (East) – iad1
+[18:41:58.418] Build machine configuration: 2 cores, 8 GB
+[18:41:58.454] Cloning github.com/hira-edu/brainliest (Branch: main, Commit: 3e2c4b6)
+[18:41:58.942] Cloning completed: 488.000ms
+[18:41:59.092] Restored build cache from previous deployment (8pJMXcSKfsTiaEfCGJxCMLpMtVqP)
+[18:41:59.368] Running "vercel build"
+[18:41:59.830] Vercel CLI 44.3.0
+[18:42:01.875] Installing dependencies...
+[18:42:07.158] npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+[18:42:07.980] npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+[18:42:08.034] npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+[18:42:16.970] 
+[18:42:16.970] added 640 packages in 15s
+[18:42:16.970] 
+[18:42:16.970] 86 packages are looking for funding
+[18:42:16.970]   run `npm fund` for details
+[18:42:17.212] Running "npm run build"
+[18:42:17.444] 
+[18:42:17.445] > rest-express@1.0.0 build
+[18:42:17.445] > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+[18:42:17.445] 
+[18:42:18.022] [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+[18:42:18.071] transforming...
+[18:42:18.540] client/src/components/ui/tooltip.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.541] client/src/components/ui/tooltip.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/ui/tooltip.tsx" was ignored.
+[18:42:18.580] node_modules/@tanstack/react-query/build/modern/useQueries.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" was ignored.
+[18:42:18.584] node_modules/@tanstack/react-query/build/modern/useQuery.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" was ignored.
+[18:42:18.627] client/src/features/analytics/analytics.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.628] client/src/features/analytics/analytics.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/analytics/analytics.tsx" was ignored.
+[18:42:18.652] node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" was ignored.
+[18:42:18.654] node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" was ignored.
+[18:42:18.656] node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" was ignored.
+[18:42:18.657] node_modules/@tanstack/react-query/build/modern/useIsFetching.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" was ignored.
+[18:42:18.658] node_modules/@tanstack/react-query/build/modern/useMutationState.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" was ignored.
+[18:42:18.659] node_modules/@tanstack/react-query/build/modern/useMutation.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" was ignored.
+[18:42:18.661] node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" was ignored.
+[18:42:18.662] node_modules/@tanstack/react-query/build/modern/isRestoring.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/isRestoring.js" was ignored.
+[18:42:18.668] client/src/features/content/pages/all-subjects.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.669] client/src/features/content/pages/all-subjects.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/content/pages/all-subjects.tsx" was ignored.
+[18:42:18.679] node_modules/@radix-ui/react-tooltip/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-tooltip/dist/index.mjs" was ignored.
+[18:42:18.699] Browserslist: browsers data (caniuse-lite) is 9 months old. Please run:
+[18:42:18.700]   npx update-browserslist-db@latest
+[18:42:18.700]   Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[18:42:18.794] client/src/features/auth/AuthContext.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.794] client/src/features/auth/AuthContext.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/auth/AuthContext.tsx" was ignored.
+[18:42:18.800] client/src/features/admin/components/admin-simple.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.800] client/src/features/admin/components/admin-simple.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/admin/components/admin-simple.tsx" was ignored.
+[18:42:18.826] client/src/features/auth/auth-callback.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.826] client/src/features/auth/auth-callback.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/auth/auth-callback.tsx" was ignored.
+[18:42:18.863] client/src/components/icons/index.ts (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.868] client/src/components/icons/index.ts (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/icons/index.ts" was ignored.
+[18:42:18.869] client/src/features/exam/components/question-interface.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.869] client/src/features/exam/components/question-interface.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/exam/components/question-interface.tsx" was ignored.
+[18:42:18.887] node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" was ignored.
+[18:42:18.888] node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" was ignored.
+[18:42:18.889] node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" was ignored.
+[18:42:18.895] node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" was ignored.
+[18:42:18.908] client/src/features/content/pages/categories.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.908] client/src/features/content/pages/categories.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/content/pages/categories.tsx" was ignored.
+[18:42:18.916] client/src/features/exam/components/exam-selection.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.916] client/src/features/exam/components/exam-selection.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/exam/components/exam-selection.tsx" was ignored.
+[18:42:18.919] client/src/features/content/pages/category-detail.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:18.920] client/src/features/content/pages/category-detail.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/content/pages/category-detail.tsx" was ignored.
+[18:42:18.944] node_modules/@tanstack/react-query/build/modern/useBaseQuery.js (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" was ignored.
+[18:42:19.102] client/src/components/ui/select.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.102] client/src/components/ui/select.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/ui/select.tsx" was ignored.
+[18:42:19.116] client/src/features/admin/components/AdminLoginModal.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.116] client/src/features/admin/components/AdminLoginModal.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/admin/components/AdminLoginModal.tsx" was ignored.
+[18:42:19.120] client/src/utils/dynamic-icon.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.125] client/src/utils/dynamic-icon.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/utils/dynamic-icon.tsx" was ignored.
+[18:42:19.149] client/src/features/content/components/subject-card.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.150] client/src/features/content/components/subject-card.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/content/components/subject-card.tsx" was ignored.
+[18:42:19.151] client/src/features/shared/components/header.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.151] client/src/features/shared/components/header.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/shared/components/header.tsx" was ignored.
+[18:42:19.153] node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs" was ignored.
+[18:42:19.161] node_modules/@radix-ui/react-popper/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-popper/dist/index.mjs" was ignored.
+[18:42:19.189] node_modules/@radix-ui/react-portal/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-portal/dist/index.mjs" was ignored.
+[18:42:19.189] node_modules/@radix-ui/react-presence/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-presence/dist/index.mjs" was ignored.
+[18:42:19.600] client/src/features/auth/auth-api.ts (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.600] client/src/features/auth/auth-api.ts (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/auth/auth-api.ts" was ignored.
+[18:42:19.728] client/src/features/auth/google-auth.ts (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.728] client/src/features/auth/google-auth.ts (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/auth/google-auth.ts" was ignored.
+[18:42:19.731] client/src/components/ui/dialog.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.731] client/src/components/ui/dialog.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/ui/dialog.tsx" was ignored.
+[18:42:19.752] client/src/components/ui/form.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.753] client/src/components/ui/form.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/ui/form.tsx" was ignored.
+[18:42:19.788] client/src/components/ui/searchable-select.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.789] client/src/components/ui/searchable-select.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/ui/searchable-select.tsx" was ignored.
+[18:42:19.805] client/src/features/shared/components/cookie-consent-banner.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.806] client/src/features/shared/components/cookie-consent-banner.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/shared/components/cookie-consent-banner.tsx" was ignored.
+[18:42:19.808] client/src/components/icons/base-icon.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.808] client/src/components/icons/base-icon.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/icons/base-icon.tsx" was ignored.
+[18:42:19.812] client/src/components/icons/icon.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:19.813] client/src/components/icons/icon.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/icons/icon.tsx" was ignored.
+[18:42:20.805] node_modules/@radix-ui/react-toast/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-toast/dist/index.mjs" was ignored.
+[18:42:20.822] client/src/features/auth/unified-auth-modal.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:20.822] client/src/features/auth/unified-auth-modal.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/auth/unified-auth-modal.tsx" was ignored.
+[18:42:20.995] client/src/features/exam/components/ErrorMessage.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:20.996] client/src/features/exam/components/ErrorMessage.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/exam/components/ErrorMessage.tsx" was ignored.
+[18:42:21.004] client/src/features/exam/components/exam-card.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:21.007] client/src/features/exam/components/exam-card.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/exam/components/exam-card.tsx" was ignored.
+[18:42:22.030] node_modules/@radix-ui/react-switch/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-switch/dist/index.mjs" was ignored.
+[18:42:22.031] node_modules/@radix-ui/react-tabs/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-tabs/dist/index.mjs" was ignored.
+[18:42:22.038] node_modules/@radix-ui/react-select/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-select/dist/index.mjs" was ignored.
+[18:42:22.047] node_modules/@radix-ui/react-label/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-label/dist/index.mjs" was ignored.
+[18:42:22.071] client/src/components/icons/suspense-wrapper.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:22.073] client/src/components/icons/suspense-wrapper.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/icons/suspense-wrapper.tsx" was ignored.
+[18:42:22.089] client/src/features/auth/recaptcha-provider.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:22.090] client/src/features/auth/recaptcha-provider.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/features/auth/recaptcha-provider.tsx" was ignored.
+[18:42:22.095] node_modules/@radix-ui/react-dialog/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-dialog/dist/index.mjs" was ignored.
+[18:42:22.125] node_modules/@radix-ui/react-collection/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-collection/dist/index.mjs" was ignored.
+[18:42:22.130] client/src/components/ui/collapsible.tsx (1:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+[18:42:22.130] client/src/components/ui/collapsible.tsx (1:0): Module level directives cause errors when bundled, "use client" in "client/src/components/ui/collapsible.tsx" was ignored.
+[18:42:22.146] node_modules/@radix-ui/react-roving-focus/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-roving-focus/dist/index.mjs" was ignored.
+[18:42:22.152] node_modules/@radix-ui/react-focus-guards/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-focus-guards/dist/index.mjs" was ignored.
+[18:42:22.153] node_modules/@radix-ui/react-focus-scope/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-focus-scope/dist/index.mjs" was ignored.
+[18:42:22.154] node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs" was ignored.
+[18:42:22.202] node_modules/@radix-ui/react-popover/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-popover/dist/index.mjs" was ignored.
+[18:42:22.204] node_modules/@radix-ui/react-alert-dialog/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-alert-dialog/dist/index.mjs" was ignored.
+[18:42:22.205] node_modules/@radix-ui/react-collapsible/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-collapsible/dist/index.mjs" was ignored.
+[18:42:22.216] node_modules/@radix-ui/react-menu/dist/index.mjs (1:0): Module level directives cause errors when bundled, "use client" in "node_modules/@radix-ui/react-menu/dist/index.mjs" was ignored.
+[18:42:24.297] [32m✓[39m 1906 modules transformed.
+[18:42:24.781] rendering chunks...
+[18:42:25.511] computing gzip size...
+[18:42:25.550] [2mdist/[22m[32mindex.html                              [39m[1m[2m    1.43 kB[22m[1m[22m[2m │ gzip:   0.54 kB[22m
+[18:42:25.550] [2mdist/[22m[2massets/[22m[35mindex-BxFMpzJm.css               [39m[1m[2m   98.23 kB[22m[1m[22m[2m │ gzip:  16.39 kB[22m
+[18:42:25.550] [2mdist/[22m[2massets/[22m[36mindex-m1RRDU9d.js                [39m[1m[2m    0.84 kB[22m[1m[22m[2m │ gzip:   0.41 kB[22m
+[18:42:25.550] [2mdist/[22m[2massets/[22m[36mgeneral-icons-DwirjN3m.js        [39m[1m[2m    2.88 kB[22m[1m[22m[2m │ gzip:   0.85 kB[22m
+[18:42:25.551] [2mdist/[22m[2massets/[22m[36mtechnology-icons-NRZxwGTv.js     [39m[1m[2m    4.67 kB[22m[1m[22m[2m │ gzip:   1.19 kB[22m
+[18:42:25.551] [2mdist/[22m[2massets/[22m[36macademic-icons-BOtuijjy.js       [39m[1m[2m    6.07 kB[22m[1m[22m[2m │ gzip:   1.47 kB[22m
+[18:42:25.551] [2mdist/[22m[2massets/[22m[36mcertification-icons-DC4TdS6h.js  [39m[1m[2m    8.16 kB[22m[1m[22m[2m │ gzip:   1.66 kB[22m
+[18:42:25.551] [2mdist/[22m[2massets/[22m[36mindex-BbLHYK1Q.js                [39m[1m[33m1,638.50 kB[39m[22m[2m │ gzip: 372.45 kB[22m
+[18:42:25.551] [33m
+[18:42:25.551] (!) Some chunks are larger than 500 kB after minification. Consider:
+[18:42:25.551] - Using dynamic import() to code-split the application
+[18:42:25.551] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[18:42:25.552] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[18:42:25.552] [32m✓ built in 7.51s[39m
+[18:42:25.625] 
+[18:42:25.625]   dist/index.js  343.3kb
+[18:42:25.625] 
+[18:42:25.625] ⚡ Done in 29ms
+[18:42:25.924] Using TypeScript 5.6.3 (local user-provided)
+[18:42:35.748] Using TypeScript 5.6.3 (local user-provided)
+[18:42:36.986] Build Completed in /vercel/output [35s]
+[18:42:37.128] Deploying outputs...
+[18:42:41.397] 
+[18:42:41.543] Deployment completed

@@ -1,0 +1,70 @@
+
+  client/src/features/admin/components/admin-simple.tsx:37:3
+    37   value?: string;
+         ~~~~~
+    The expected type comes from property 'value' which is declared here on type 'IntrinsicAttributes & IconSelectorProps'
+
+client/src/features/admin/components/admin-simple.tsx:1517:29 - error TS2322: Type '{ options: { value: string; label: string; }[]; value: string; onValueChange: (value: string) => void; placeholder: string; searchPlaceholder: string; emptyText: string; clearable: true; className: string; }' is not assignable to type 'IntrinsicAttributes & SearchableSelectProps & RefAttributes<HTMLButtonElement>'.
+  Property 'searchPlaceholder' does not exist on type 'IntrinsicAttributes & SearchableSelectProps & RefAttributes<HTMLButtonElement>'.
+
+1517                             searchPlaceholder="Search categories..."
+                                 ~~~~~~~~~~~~~~~~~
+
+client/src/features/admin/components/admin-simple.tsx:1541:67 - error TS2345: Argument of type '{ name: string; description: string; icon: string; color: string; isActive: true; sortOrder: number; }' is not assignable to parameter of type '{ name: string; slug: string; color?: string | null | undefined; icon?: string | null | undefined; description?: string | null | undefined; isActive?: boolean | null | undefined; sortOrder?: number | ... 1 more ... | undefined; createdAt?: Date | ... 1 more ... | undefined; }'.
+  Property 'slug' is missing in type '{ name: string; description: string; icon: string; color: string; isActive: true; sortOrder: number; }' but required in type '{ name: string; slug: string; color?: string | null | undefined; icon?: string | null | undefined; description?: string | null | undefined; isActive?: boolean | null | undefined; sortOrder?: number | ... 1 more ... | undefined; createdAt?: Date | ... 1 more ... | undefined; }'.
+
+1541                                     createCategoryMutation.mutate({
+                                                                       ~
+1542                                       name,
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ...
+1547                                       sortOrder: categories?.length || 0
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1548                                     });
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  shared/schema.ts:9:3
+    9   slug: text("slug").primaryKey(),
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    'slug' is declared here.
+
+client/src/features/admin/components/admin-simple.tsx:1576:29 - error TS2322: Type '{ options: { value: string; label: string; }[]; value: string; onValueChange: (value: string) => void; placeholder: string; searchPlaceholder: string; emptyText: string; clearable: true; className: string; }' is not assignable to type 'IntrinsicAttributes & SearchableSelectProps & RefAttributes<HTMLButtonElement>'.
+  Property 'searchPlaceholder' does not exist on type 'IntrinsicAttributes & SearchableSelectProps & RefAttributes<HTMLButtonElement>'.
+
+1576                             searchPlaceholder="Search subcategories..."
+                                 ~~~~~~~~~~~~~~~~~
+
+client/src/features/admin/components/admin-simple.tsx:1617:70 - error TS2345: Argument of type '{ categorySlug: string; name: string; description: string; icon: string; color: string; isActive: true; sortOrder: number; }' is not assignable to parameter of type '{ name: string; slug: string; categorySlug: string; color?: string | null | undefined; icon?: string | null | undefined; description?: string | null | undefined; isActive?: boolean | null | undefined; sortOrder?: number | ... 1 more ... | undefined; createdAt?: Date | ... 1 more ... | undefined; }'.
+  Property 'slug' is missing in type '{ categorySlug: string; name: string; description: string; icon: string; color: string; isActive: true; sortOrder: number; }' but required in type '{ name: string; slug: string; categorySlug: string; color?: string | null | undefined; icon?: string | null | undefined; description?: string | null | undefined; isActive?: boolean | null | undefined; sortOrder?: number | ... 1 more ... | undefined; createdAt?: Date | ... 1 more ... | undefined; }'.
+
+1617                                     createSubcategoryMutation.mutate({
+                                                                          ~
+1618                                       categorySlug,
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ...
+1624                                       sortOrder: subcategories?.length || 0
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1625                                     });
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  shared/schema.ts:20:3
+    20   slug: text("slug").primaryKey(),
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    'slug' is declared here.
+
+client/src/features/admin/components/admin-simple.tsx:1646:29 - error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+
+1646                             value={field.value}
+                                 ~~~~~
+
+  client/src/features/admin/components/admin-simple.tsx:37:3
+    37   value?: string;
+         ~~~~~
+    The expected type comes from property 'value' which is declared here on type 'IntrinsicAttributes & IconSelectorProps'
+
+client/src/features/admin/components/admin-simple.tsx:1754:25 - error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+
+1754                         name={subject.icon}
+                             ~~~~

@@ -252,7 +252,7 @@ const IconAssignment: React.FC = () => {
 
         <TabsContent value="subjects" className="space-y-4">
           <div className="grid gap-4">
-            {filterEntities(subjects, searchTerm).map((subject) => (
+            {filterEntities(subjects || [], searchTerm).map((subject: any) => (
               <EntityCard
                 key={subject.slug}
                 entity={subject}

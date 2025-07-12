@@ -65,8 +65,6 @@ export function useExamLoader(slugOrId: string | number | null): ExamLoaderData 
   // Create normalized subject query key
   const subjectKey = exam?.subjectSlug 
     ? ["subject", "slug", exam.subjectSlug]
-    : exam?.subjectId 
-    ? ["subject", "id", exam.subjectId] 
     : null;
 
   // Fetch subject data
@@ -81,9 +79,7 @@ export function useExamLoader(slugOrId: string | number | null): ExamLoaderData 
     queryFn: async () => {
       if (!exam) throw new Error("Exam data required for subject fetch");
       
-      const url = exam.subjectSlug
-        ? `/api/subjects/by-slug/${exam.subjectSlug}`
-        : `/api/subjects/${exam.subjectId}`;
+      const url = `/api/subjects/by-slug/${exam.subjectSlug}`;
       
       const res = await fetch(url);
       if (!res.ok) {

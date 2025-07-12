@@ -3,7 +3,7 @@
  * Catches JavaScript errors, logs them securely, and provides fallback UI
  */
 
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -209,7 +209,7 @@ export class SecurityErrorBoundary extends Component<Props, State> {
         errorId: this.state.errorId,
         message: error.message,
         stack: error.stack,
-        componentStack: errorInfo.componentStack,
+        componentStack: errorInfo.componentStack || '',
         timestamp,
         retryCount: this.retryCount
       });
@@ -234,7 +234,7 @@ export class SecurityErrorBoundary extends Component<Props, State> {
       errorId,
       message: error.message,
       stack: error.stack,
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack || '',
       timestamp: getCurrentTimestamp(),
       ...browserInfo,
       userId: this.getUserId(),

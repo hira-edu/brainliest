@@ -1,0 +1,68 @@
+# Remote Database Configuration for Brainliest Project
+# This configuration file defines settings for remote Supabase database deployment
+
+[database]
+# Remote Supabase database connection
+provider = "supabase"
+host = "aws-0-us-east-1.pooler.supabase.com"
+port = 6543
+database = "postgres"
+# Connection string format: postgres://postgres.{project_id}:{password}@{host}:{port}/{database}?sslmode=require
+ssl_mode = "require"
+connection_pooling = true
+max_connections = 20
+idle_timeout = 30000
+query_timeout = 60000
+
+[authentication]
+# JWT configuration for remote database
+jwt_secret_env = "SUPABASE_JWT_SECRET"
+service_role_key_env = "SUPABASE_SERVICE_ROLE_KEY"
+anon_key_env = "VITE_SUPABASE_ANON_KEY"
+# Token expiration in seconds (1 hour)
+token_expiry = 3600
+
+[migration]
+# Database migration settings
+migrations_table = "schema_migrations"
+migrations_directory = "./migrations"
+auto_migrate = false
+backup_before_migrate = true
+
+[security]
+# Row Level Security configuration
+rls_enabled = true
+public_read_tables = ["subjects", "categories", "subcategories", "exams", "questions"]
+protected_tables = ["users", "user_sessions", "auth_logs", "audit_logs"]
+anonymous_access = ["freemium_sessions"]
+
+[performance]
+# Performance optimization settings
+connection_pool_size = 10
+query_cache_ttl = 300000
+index_scan_enabled = true
+parallel_query_enabled = true
+work_mem = "256MB"
+shared_buffers = "256MB"
+
+[monitoring]
+# Database monitoring and logging
+log_queries = true
+log_duration = true
+log_connections = true
+slow_query_threshold = 5000
+health_check_interval = 30000
+
+[backup]
+# Backup configuration
+auto_backup = true
+backup_retention_days = 30
+backup_format = "custom"
+backup_compression = true
+
+[development]
+# Development environment settings
+seed_data = true
+debug_mode = true
+query_logging = true
+schema_validation = true

@@ -1,7 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set. Ensure Supabase is running locally with 'supabase start'");
+  throw new Error("DATABASE_URL must be set. Get it from your Supabase dashboard → Settings → Database");
 }
 
 export default defineConfig({

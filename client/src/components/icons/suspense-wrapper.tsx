@@ -3,7 +3,7 @@
  * Fixes audit issue: Missing Suspense for slow initialization
  */
 
-
+"use client";
 
 import React, { Suspense, ReactNode } from 'react';
 import { LoadingIcon } from './base-icon';
@@ -47,7 +47,7 @@ export function withIconSuspense<P extends IconProps>(
 ) {
   const SuspenseWrappedIcon = React.forwardRef<SVGSVGElement, P>((props, ref) => (
     <IconSuspenseWrapper size={props.size} aria-label={props['aria-label']}>
-      <WrappedComponent ref={ref} {...props} />
+      <WrappedComponent {...props} ref={ref} />
     </IconSuspenseWrapper>
   ));
 

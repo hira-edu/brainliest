@@ -702,9 +702,9 @@ export default function AdminUsers() {
                             <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
                             <span className="truncate">{formatDate(user.lastLoginAt)}</span>
                           </div>
-                          {user.loginCount > 0 && (
+                          {((user.loginCount ?? 0) > 0) && (
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {user.loginCount} logins
+                              {user.loginCount ?? 0} logins
                             </div>
                           )}
                         </div>

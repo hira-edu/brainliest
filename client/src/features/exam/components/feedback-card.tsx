@@ -182,11 +182,11 @@
                                   console.log("AI explanation button clicked");
                                   getAiExplanationMutation.mutate();
                                 }}
-                                disabled={getAiExplanationMutation.isLoading || showAiExplanation}
+                                disabled={getAiExplanationMutation.isPending || showAiExplanation}
                                 className="flex items-center px-3 py-2 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
                               >
                                 <i className="fas fa-brain mr-2"></i>
-                                {getAiExplanationMutation.isLoading
+                                {getAiExplanationMutation.isPending
                                   ? "Getting AI explanation..."
                                   : showAiExplanation
                                   ? "AI explanation shown below"

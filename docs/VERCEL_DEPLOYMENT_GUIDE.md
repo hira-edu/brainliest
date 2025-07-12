@@ -4,11 +4,11 @@
 
 Your application is already configured for Vercel deployment. Follow these simple steps:
 
-### 1. Create Neon Database (if you haven't already)
+### 1. Create Supabase Database (if you haven't already)
 
-1. Go to [Neon Console](https://console.neon.tech/)
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Create a new project
-3. Copy your connection string (it looks like: `postgresql://user:pass@ep-xxx.us-east-1.aws.neon.tech:5432/main`)
+3. Copy your connection string (it looks like: `postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres`)
 
 ### 2. Deploy to Vercel
 
@@ -35,8 +35,8 @@ In your Vercel project dashboard:
 2. Add these variables:
 
 ```bash
-# Required: Database connection
-DATABASE_URL=postgresql://user:pass@ep-xxx.us-east-1.aws.neon.tech:5432/main?sslmode=require
+# Required: Supabase database connection
+DATABASE_URL=postgresql://postgres:pass@db.xxx.supabase.co:5432/postgres?sslmode=require
 
 # Required: Security secrets (generate random 32+ character strings)
 SESSION_SECRET=your_super_secret_session_key_must_be_32_chars_minimum

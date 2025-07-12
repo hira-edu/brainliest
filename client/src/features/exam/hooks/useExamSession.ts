@@ -36,10 +36,10 @@ export function useExamSession({ exam, questions }: UseExamSessionProps): ExamSe
 
   // Session creation mutation with proper error handling
   const createSessionMutation = useMutation({
-    mutationFn: async (examId: number) => {
+    mutationFn: async (examSlug: string) => {
       const response = await apiRequest("/api/sessions", {
         method: "POST",
-        body: { examId }
+        body: { examSlug }
       });
       return response;
     },

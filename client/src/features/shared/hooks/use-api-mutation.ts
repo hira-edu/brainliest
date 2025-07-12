@@ -2,7 +2,7 @@
  * Reusable API mutation hook - Industrial-grade, war-tested logic
  * Fixed: SSR compatibility, enhanced error handling, type safety, accessibility
  */
-
+"use client";
 
 import { useCallback } from 'react';
 import { useMutation, UseMutationResult, useQueryClient } from '@tanstack/react-query';
@@ -290,7 +290,7 @@ export function useCreateMutation<TData = any, TVariables = any>(
   );
 }
 
-export function useUpdateMutation<TData = any, TVariables extends { id: number }>(
+export function useUpdateMutation<TData = any, TVariables extends { id: number | string }>(
   entityName: string,
   queryKeys: Array<string | readonly string[]>
 ) {
@@ -303,7 +303,7 @@ export function useUpdateMutation<TData = any, TVariables extends { id: number }
   );
 }
 
-export function useDeleteMutation<TVariables extends { id: number }>(
+export function useDeleteMutation<TVariables extends { id: number | string }>(
   entityName: string,
   queryKeys: Array<string | readonly string[]>
 ) {

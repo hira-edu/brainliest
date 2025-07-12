@@ -3,8 +3,6 @@
  * Fixes audit issues: cache implementation, lazy loading logic
  */
 
-
-
 import { IconComponent, IconRegistryEntry } from './types';
 
 // LRU Cache implementation for icons
@@ -34,7 +32,9 @@ class LRUCache<T> {
     } else if (this.cache.size >= this.maxSize) {
       // Remove least recently used (first item)
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined && firstKey !== null) {
+        this.cache.delete(firstKey);
+      }
     }
     this.cache.set(key, value);
   }

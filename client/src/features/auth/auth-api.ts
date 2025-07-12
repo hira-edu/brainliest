@@ -3,7 +3,7 @@
  * Fixed version addressing all audit issues while preserving core functionality
  */
 
- // Fixed: RSC directive for Vercel compatibility with localStorage
+"use client"; // Fixed: RSC directive for Vercel compatibility with localStorage
 
 import { apiRequest } from "../../services/queryClient";
 
@@ -45,7 +45,7 @@ class TokenStorage {
 
   // Fixed: SSR compatibility check
   private static isClientSide(): boolean {
-    return typeof window !== 'undefined' && window.localStorage;
+    return typeof window !== 'undefined' && !!window.localStorage;
   }
 
   static setTokens(accessToken: string, refreshToken?: string) {

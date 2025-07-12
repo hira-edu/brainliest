@@ -1,4 +1,4 @@
- // RSC directive for client-side exam interface and real-time interactions
+"use client"; // RSC directive for client-side exam interface and real-time interactions
 
 import { useRoute, useLocation } from "wouter";
 import { useAuth } from "../../auth/AuthContext";
@@ -155,7 +155,7 @@ export default function QuestionInterface() {
                     setLocation(
                       subject.slug
                         ? `/subject/${subject.slug}`
-                        : `/subject/id/${exam.subjectId}`
+                        : `/subject/${exam.subjectSlug || 'unknown'}`
                     )
                   }
                   className="text-gray-600 hover:text-gray-900"

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-// Database Connection Testing Script for Vercel + Neon Debugging
+// Database Connection Testing Script for Vercel + Supabase Debugging
+// Using HTTP PostgreSQL adapter that works with any PostgreSQL database including Supabase
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../shared/schema';
 
 async function testDatabaseConnection() {
-  console.log('🔍 Testing Database Connection for Vercel + Neon...\n');
+  console.log('🔍 Testing Database Connection for Vercel + Supabase...\n');
 
   // Check environment variables
   console.log('📋 Environment Variables Check:');
@@ -29,13 +30,13 @@ async function testDatabaseConnection() {
   console.log(`   Username: ${dbUrl.username}`);
   console.log(`   SSL Mode: ${dbUrl.searchParams.get('sslmode') || 'not specified'}`);
 
-  // Check if SSL mode is required for Neon
+  // Check if SSL mode is required for Supabase
   if (!dbUrl.searchParams.get('sslmode')) {
-    console.log('\n⚠️  WARNING: No SSL mode specified. Neon requires ?sslmode=require');
+    console.log('\n⚠️  WARNING: No SSL mode specified. Supabase requires ?sslmode=require');
     console.log('Your connection string should end with: ?sslmode=require');
   }
 
-  // Test Supabase HTTP connection
+  // Test Supabase HTTP connection using framework-agnostic adapter
   console.log('\n🌐 Creating Supabase HTTP Connection...');
   const sql = neon(process.env.DATABASE_URL);
   const db = drizzle(sql, { schema });
@@ -83,7 +84,7 @@ async function testDatabaseConnection() {
     
     if (error.code === 'ENOTFOUND') {
       console.log('\n💡 Troubleshooting ENOTFOUND:');
-      console.log('   - Check if your Neon database is active (not suspended)');
+      console.log('   - Check if your Supabase database is active (not suspended)');
       console.log('   - Verify the hostname in your connection string');
       console.log('   - Ensure you have internet connectivity');
     }
@@ -103,13 +104,12 @@ async function testDatabaseConnection() {
     if (error.message.includes('SSL') || error.message.includes('ssl')) {
       console.log('\n💡 Troubleshooting SSL:');
       console.log('   - Add ?sslmode=require to your connection string');
-      console.log('   - Neon requires SSL connections');
+      console.log('   - Supabase requires SSL connections');
     }
 
     process.exit(1);
   } finally {
-    await pool.end();
-    console.log('\n🔌 Connection pool closed');
+    console.log('\n🔌 Database connection test completed');
   }
 }
 
