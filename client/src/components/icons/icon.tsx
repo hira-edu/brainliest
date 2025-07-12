@@ -1,4 +1,4 @@
-"use client"; // Fixed: RSC directive for Vercel compatibility
+ // Fixed: RSC directive for Vercel compatibility
 
 import React, { Suspense, forwardRef } from 'react';
 import { IconProps } from './types';

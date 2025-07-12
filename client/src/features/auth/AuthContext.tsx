@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, error typing, parameter validation, OAuth callback handling
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility with window APIs
+ // Fixed: RSC directive for Vercel compatibility with window APIs
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { googleAuthService } from "./google-auth";

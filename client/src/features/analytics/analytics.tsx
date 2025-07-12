@@ -1,7 +1,7 @@
 // Analytics.tsx
 // Elite-level, war-tested logic enhancements with inline commentary
 
-"use client"; // RSC directive for client-side analytics data visualization
+ // RSC directive for client-side analytics data visualization
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";

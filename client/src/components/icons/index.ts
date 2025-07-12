@@ -4,7 +4,7 @@
  * Fixes audit issue: Missing type exports
  */
 
-"use client";
+
 
 // Component exports
 export { Icon, SubjectIcon, CategoryIcon, StatusIcon } from './icon';

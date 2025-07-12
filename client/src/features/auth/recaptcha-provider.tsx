@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, environment variable validation, error handling, type safety
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility with reCAPTCHA script loading
+ // Fixed: RSC directive for Vercel compatibility with reCAPTCHA script loading
 
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 

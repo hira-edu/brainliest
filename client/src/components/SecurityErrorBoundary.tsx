@@ -3,7 +3,7 @@
  * Catches JavaScript errors, logs them securely, and provides fallback UI
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility
+ // Fixed: RSC directive for Vercel compatibility
 
 import React, { Component, ReactNode, ErrorInfo } from 'react';
 import { v4 as uuidv4 } from 'uuid';

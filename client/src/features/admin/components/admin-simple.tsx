@@ -1,4 +1,4 @@
-"use client"; // RSC directive for admin panel client-side functionality
+ // RSC directive for admin panel client-side functionality
 
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";

@@ -3,7 +3,7 @@
  * Fixes audit issues: cache implementation, lazy loading logic
  */
 
-"use client";
+
 
 import { IconComponent, IconRegistryEntry } from './types';
 

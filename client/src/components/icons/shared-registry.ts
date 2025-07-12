@@ -3,7 +3,7 @@
  * Fixes audit issue: Registry dependency conflicts
  */
 
-"use client";
+
 
 import { iconRegistry as originalIconRegistry } from './registry';
 

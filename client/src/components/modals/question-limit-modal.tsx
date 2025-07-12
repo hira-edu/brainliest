@@ -3,7 +3,7 @@
  * Prompts users to sign in when they reach free question limit (20 questions)
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility
+ // Fixed: RSC directive for Vercel compatibility
 
 import React, { useState, useCallback } from 'react';
 import { z } from 'zod';

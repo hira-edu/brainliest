@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, error handling, field alignment, accessibility
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility with window APIs
+ // Fixed: RSC directive for Vercel compatibility with window APIs
 
 import { useEffect } from 'react';
 
