@@ -31,6 +31,8 @@ import {
   type InsertSubcategory,
   type Upload,
   type InsertUpload,
+  type AnonQuestionSession,
+  type InsertAnonQuestionSession,
 } from "../../shared/schema";
 import { db } from "./db";
 import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
