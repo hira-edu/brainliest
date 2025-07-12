@@ -2,13 +2,13 @@
 export const categoryConfig = {
   professional: {
     name: "Professional Certifications",
-    keywords: ["pmp", "aws", "azure", "google cloud", "comptia", "cisco", "oracle", "kubernetes", "docker", "vmware", "certification", "professional"],
+    keywords: ["certification", "professional"],
     color: "blue",
     icon: "award"
   },
   academic: {
     name: "University & College",
-    keywords: ["statistics", "mathematics", "calculus", "algebra", "computer science", "programming", "physics", "chemistry", "biology", "engineering", "business", "economics", "accounting", "nursing", "medical", "anatomy", "psychology", "history", "english", "writing", "philosophy", "sociology", "political", "astronomy", "earth science", "discrete", "linear", "geometry", "pre-calculus", "biostatistics", "elementary", "intro", "ap", "ged", "teas", "hesi", "gre", "lsat", "toefl"],
+    keywords: ["university", "college", "academic"],
     color: "green",
     icon: "graduation-cap"
   },
@@ -35,28 +35,32 @@ export const categoryStructure = [
         title: "IT & Cloud Computing",
         description: "AWS, Azure, Google Cloud, and other cloud platforms",
         icon: "Cloud",
-        route: "/categories/professional/it-cloud"
+        route: "/categories/professional/it-cloud",
+        keywords: ["aws", "azure", "google cloud", "kubernetes", "docker", "vmware", "oracle", "cloud", "devops", "solutions architect"]
       },
       {
         id: "project-management",
         title: "Project Management",
         description: "PMP, Agile, Scrum, and project leadership certifications",
         icon: "Briefcase",
-        route: "/categories/professional/project-management"
+        route: "/categories/professional/project-management",
+        keywords: ["pmp", "agile", "scrum", "project management", "csm"]
       },
       {
         id: "cybersecurity",
         title: "Cybersecurity",
         description: "CompTIA Security+, CISSP, and security certifications",
         icon: "Shield",
-        route: "/categories/professional/cybersecurity"
+        route: "/categories/professional/cybersecurity",
+        keywords: ["comptia security", "cissp", "cybersecurity", "security"]
       },
       {
         id: "networking",
         title: "Networking",
         description: "Cisco, CompTIA Network+, and networking technologies",
         icon: "Network",
-        route: "/categories/professional/networking"
+        route: "/categories/professional/networking",
+        keywords: ["cisco", "ccna", "comptia network", "networking"]
       }
     ]
   },
@@ -73,56 +77,64 @@ export const categoryStructure = [
         title: "Mathematics & Statistics",
         description: "Calculus, Algebra, Statistics, and Mathematical Sciences",
         icon: "Calculator",
-        route: "/categories/academic/mathematics-statistics"
+        route: "/categories/academic/mathematics-statistics",
+        keywords: ["statistics", "mathematics", "calculus", "algebra", "discrete", "linear", "geometry", "pre-calculus", "biostatistics"]
       },
       {
         id: "computer-science",
         title: "Computer Science",
         description: "Programming, Data Structures, Algorithms, and Software Engineering",
         icon: "Code",
-        route: "/categories/academic/computer-science"
+        route: "/categories/academic/computer-science",
+        keywords: ["computer science", "programming", "data structures", "algorithms", "software engineering"]
       },
       {
         id: "natural-sciences",
         title: "Natural Sciences",
         description: "Physics, Chemistry, Biology, and Earth Sciences",
         icon: "Flask",
-        route: "/categories/academic/natural-sciences"
+        route: "/categories/academic/natural-sciences",
+        keywords: ["physics", "chemistry", "biology", "astronomy", "earth science"]
       },
       {
         id: "engineering",
         title: "Engineering",
         description: "Mechanical, Electrical, Civil, and Engineering Fundamentals",
         icon: "Cog",
-        route: "/categories/academic/engineering"
+        route: "/categories/academic/engineering",
+        keywords: ["engineering", "mechanical", "electrical", "civil"]
       },
       {
         id: "business-economics",
         title: "Business & Economics",
         description: "Accounting, Finance, Economics, and Business Administration",
         icon: "TrendingUp",
-        route: "/categories/academic/business-economics"
+        route: "/categories/academic/business-economics",
+        keywords: ["business", "economics", "accounting", "finance"]
       },
       {
         id: "health-medical",
         title: "Health & Medical Sciences",
         description: "Nursing, Medical Sciences, Anatomy, and Healthcare",
         icon: "Stethoscope",
-        route: "/categories/academic/health-medical"
+        route: "/categories/academic/health-medical",
+        keywords: ["nursing", "medical", "anatomy", "health"]
       },
       {
         id: "social-sciences-humanities",
         title: "Social Sciences & Humanities",
         description: "Psychology, History, Philosophy, and Social Studies",
         icon: "Users",
-        route: "/categories/academic/social-sciences-humanities"
+        route: "/categories/academic/social-sciences-humanities",
+        keywords: ["psychology", "history", "english", "writing", "philosophy", "sociology", "political"]
       },
       {
         id: "test-prep",
         title: "Standardized Test Prep",
         description: "GRE, LSAT, TOEFL, and standardized test preparation",
         icon: "FileText",
-        route: "/categories/academic/test-prep"
+        route: "/categories/academic/test-prep",
+        keywords: ["ap", "ged", "teas", "hesi", "gre", "lsat", "toefl", "elementary", "intro"]
       }
     ]
   }
@@ -145,6 +157,7 @@ export interface SubCategory {
   description: string;
   icon: string;
   route: string;
+  keywords: string[];
 }
 
 // Default values
@@ -185,17 +198,61 @@ export const EXAM_DIFFICULTIES = [
   'Expert'
 ] as const;
 
+// Data classifications from schema
+export const DATA_CLASSIFICATIONS = {
+  public: 'public',
+  internal: 'internal',
+  sensitive: 'sensitive',
+  restricted: 'restricted'
+} as const;
+
+// Severity levels from schema
+export const SEVERITY_LEVELS = {
+  debug: 'debug',
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+  critical: 'critical'
+} as const;
+
+// Permission types from schema
+export const PERMISSION_TYPES = {
+  read: 'read',
+  write: 'write',
+  delete: 'delete',
+  admin: 'admin',
+  create: 'create',
+  update: 'update'
+} as const;
+
+// Retention actions from schema
+export const RETENTION_ACTIONS = {
+  soft_delete: 'soft_delete',
+  hard_delete: 'hard_delete',
+  archive: 'archive',
+  anonymize: 'anonymize'
+} as const;
+
 // Helper function to categorize subjects
-export function getCategoryForSubject(subject: { name: string } | string): string {
+export function getCategorySlugsForSubject(subject: { name: string } | string): { category: string; subcategory: string | null } {
   const subjectName = typeof subject === 'string' ? subject : subject?.name;
-  if (!subjectName) return "other";
+  if (!subjectName) return { category: "other", subcategory: null };
   const subjectLower = subjectName.toLowerCase();
-  
-  for (const [key, config] of Object.entries(categoryConfig)) {
-    if (config.keywords.some(keyword => subjectLower.includes(keyword))) {
-      return key;
+
+  for (const cat of categoryStructure) {
+    for (const sub of cat.subCategories) {
+      if (sub.keywords.some(keyword => subjectLower.includes(keyword.toLowerCase()))) {
+        return { category: cat.id, subcategory: sub.id };
+      }
     }
   }
-  
-  return "other";
+
+  // Fallback to top-level category config if no subcategory match
+  for (const [key, config] of Object.entries(categoryConfig)) {
+    if (config.keywords.some(keyword => subjectLower.includes(keyword.toLowerCase()))) {
+      return { category: key, subcategory: null };
+    }
+  }
+
+  return { category: "other", subcategory: null };
 }
