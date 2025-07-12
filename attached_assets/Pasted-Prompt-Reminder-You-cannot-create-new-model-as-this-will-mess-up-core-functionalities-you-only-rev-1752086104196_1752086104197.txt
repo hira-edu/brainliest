@@ -4,95 +4,127 @@ Fetch user info from https://www.googleapis.com/oauth2/v2/userinfo.
 Send GOOGLE_AUTH_SUCCESS or GOOGLE_AUTH_ERROR messages to the parent window.
 Close the window after processing.
 Display a loading UI during processing.
-UI (to preserve):Centered loading spinner (animate-spin) with text “Completing sign-in...” in a min-h-screen container.
-Dependencies:React (react@18.3.1): useEffect.
+
+UI (to preserve):Centered loading spinner (animate-spin) with text “Completing sign-in...” in a min-h-screen container.
+
+Dependencies:React (react@18.3.1): useEffect.
 No external libraries beyond browser APIs (window.location, window.opener, fetch).
-TypeScript Errors (assumed):TS18046 (error is unknown) in the fetch catch block.
+
+TypeScript Errors (assumed):TS18046 (error is unknown) in the fetch catch block.
 Potential issues with untyped userInfo response from Google’s API.
-Deployment Context:Vercel: Requires CSR due to window.opener, window.location, and fetch usage.
+
+Deployment Context:Vercel: Requires CSR due to window.opener, window.location, and fetch usage.
 Neon: Indirectly used via auth.ts’s googleOAuth (called by parent window after receiving postMessage).
 Icons: No icons used, but must align with lucide-react@0.48.0 in related components (e.g., AdminLoginModal.tsx).
-Audit FindingsPrompt Reminder: You cannot create new model as this will mess up core functionalities, you only review the previous code and fix changes carefully, dont change any UI or change core functionalities.1. Runtime ErrorsSSR Compatibility:Issue: Uses window.location.hash, window.opener, and window.close without checking for window availability, risking errors in Vercel’s SSR (e.g., Next.js).
+
+Audit FindingsPrompt Reminder: You cannot create new model as this will mess up core functionalities, you only review the previous code and fix changes carefully, dont change any UI or change core functionalities.1. Runtime ErrorsSSR Compatibility:Issue: Uses window.location.hash, window.opener, and window.close without checking for window availability, risking errors in Vercel’s SSR (e.g., Next.js).
 Impact: Breaks in SSR environments.
 Fix: Add typeof window !== 'undefined' checks (minimal change, preserves functionality).
-Error Typing in Fetch:Issue: error in the fetch catch block is untyped, causing TS18046.
+
+Error Typing in Fetch:Issue: error in the fetch catch block is untyped, causing TS18046.
 Impact: Type safety issues.
 Fix: Type error as Error (minimal change).
-UserInfo Response Validation:Issue: userInfo from fetch is assumed to have email, name, picture, and id fields, but Google’s API may return unexpected data or errors.
+
+UserInfo Response Validation:Issue: userInfo from fetch is assumed to have email, name, picture, and id fields, but Google’s API may return unexpected data or errors.
 Impact: Runtime errors if fields are missing.
 Fix: Add basic validation for userInfo (minimal change, preserves functionality).
-Window Opener Check:Issue: window.opener?.postMessage uses optional chaining, but no fallback if window.opener is null (e.g., direct navigation to callback URL).
+
+Window Opener Check:Issue: window.opener?.postMessage uses optional chaining, but no fallback if window.opener is null (e.g., direct navigation to callback URL).
 Impact: Silent failure if no parent window.
 Fix: Add fallback behavior (e.g., redirect) to preserve functionality (minimal change).
-Fetch Error Handling:Issue: fetch doesn’t handle non-OK responses (e.g., 401 from Google API).
+
+Fetch Error Handling:Issue: fetch doesn’t handle non-OK responses (e.g., 401 from Google API).
 Impact: Incorrect error message sent to parent window.
 Fix: Check response.ok before parsing JSON (minimal change).
-2. Conflictsauth.ts Integration:Issue: After fetching user info, the component sends data to the parent window, which likely calls authAPI.googleOAuth from auth.ts. The userInfo object (email, name, picture, sub) must align with googleData in authAPI.googleOAuth (email, googleId, firstName, lastName, profileImage).
+
+2. Conflictsauth.ts Integration:Issue: After fetching user info, the component sends data to the parent window, which likely calls authAPI.googleOAuth from auth.ts. The userInfo object (email, name, picture, sub) must align with googleData in authAPI.googleOAuth (email, googleId, firstName, lastName, profileImage).
 Impact: Field mismatches (e.g., sub vs. googleId) cause errors in authAPI.googleOAuth.
 Fix: Align field names in postMessage (minimal change, preserves functionality).
-AdminContext.tsx:Issue: If used in admin flows (e.g., via AdminLoginModal.tsx), the token storage may conflict with TokenStorage (brainliest_access_token) vs. admin_token.
+
+AdminContext.tsx:Issue: If used in admin flows (e.g., via AdminLoginModal.tsx), the token storage may conflict with TokenStorage (brainliest_access_token) vs. admin_token.
 Impact: Inconsistent token handling.
 Fix: Add comment to clarify token usage (no code change).
-API Route:Issue: Assumes /api/auth/oauth/google (from auth.ts) handles the user info correctly, but no guarantee it’s defined in Vercel Functions.
+
+API Route:Issue: Assumes /api/auth/oauth/google (from auth.ts) handles the user info correctly, but no guarantee it’s defined in Vercel Functions.
 Impact: Potential 404 errors in parent window.
 Fix: Add comment to verify route (no code change).
-3. Duplicate CodepostMessage Logic:Issue: window.opener?.postMessage is repeated for success and error cases.
+
+3. Duplicate CodepostMessage Logic:Issue: window.opener?.postMessage is repeated for success and error cases.
 Impact: Minor code repetition.
 Fix: Keep as is to preserve functionality; suggest a sendMessage utility in future (no change).
-Error Handling:Issue: Error handling in fetch catch block is similar to auth.ts’s logAuthError.
+
+Error Handling:Issue: Error handling in fetch catch block is similar to auth.ts’s logAuthError.
 Impact: Inconsistent logging.
 Fix: Keep as is to preserve functionality; suggest using logAuthError from auth.ts (no change).
-4. Logical IssuesWindow Close Timing:Issue: window.close() is called immediately after postMessage, but postMessage is asynchronous and may not complete before the window closes.
+
+4. Logical IssuesWindow Close Timing:Issue: window.close() is called immediately after postMessage, but postMessage is asynchronous and may not complete before the window closes.
 Impact: Messages may not reach the parent window.
 Fix: Delay window.close() with setTimeout (minimal change, preserves functionality).
-Access Token Validation:Issue: No validation for accessToken format (e.g., empty or malformed).
+
+Access Token Validation:Issue: No validation for acceat (e.g., empty or malformed).
 Impact: Invalid tokens sent to Google API.
-Fix: Add basic validation (e.g., non-empty check) (minimal change).
-Accessibility:Issue: Loading UI lacks ARIA attributes (e.g., aria-busy, aria-live for screen readers).
+Fix: Add tion (e.g., non-empty check) (minimal change).
+
+Accessibility:Issue: Loading UI lacks ARIA attributes (e.g., aria-busy, aria-live for screen readers).
 Impact: Reduced accessibility.
 Fix: Add minimal ARIA attributes (no UI change).
-Error Message:Issue: Generic Failed to fetch user info message in catch block lacks detail.
+
+Error Message:Issue: Generic Failed to fetch user info message in catch block lacks detail.
 Impact: Hard to debug.
 Fix: Include error.message in postMessage (minimal change).
-5. TypeScript ErrorsTS18046 (error is unknown):Issue: error in fetch catch block is untyped.
+
+5. TypeScript ErrorsTS18046 (error is unknown):Issue: error in fetch catch block is untyped.
 Fix: Type as Error.
-UserInfo Typing:Issue: userInfo is untyped, assuming email, name, picture, id.
+
+UserInfo Typing:Issue: userInfo is untyped, assuming email, name, picture, id.
 Impact: Potential runtime errors.
 Fix: Add GoogleUserInfo interface (minimal change).
-Window Opener:Issue: window.opener is typed as Window | null, but TypeScript may warn about postMessage calls.
+
+Window Opener:Issue: window.opener is typed as Window | null, but TypeScript may warn about postMessage calls.
 Fix: Add type guard (minimal change).
-6. Vercel CompatibilityRSC Directive:Issue: Missing "use client" for window APIs and useEffect.
+
+6. Vercel CompatibilityRSC Directive:Issue: Missing "use client" for window APIs and useEffect.
 Impact: SSR errors in Next.js.
 Fix: Add "use client" (minimal change).
-API Route:Issue: Relies on /api/auth/oauth/google in parent window, which must be a Vercel Function.
+
+API Route:Issue: Relies on /api/auth/oauth/google in parent window, which must be a Vercel Function.
 Impact: Potential 404 errors.
 Fix: Add comment to verify route (no code change).
-Bundle Size:Issue: Minimal code, but fetch could be replaced with apiRequest for consistency.
+
+Bundle Size:Issue: Minimal code, but fetch could be replaced with apiRequest for consistency.
 Fix: Keep fetch to preserve functionality; suggest apiRequest (no change).
-7. Neon CompatibilityIndirect Usage:Issue: authAPI.googleOAuth (called by parent) queries Neon, but no optimization for user lookups.
+
+7. Neon CompatibilityIndirect Usage:Issue: authAPI.googleOAuth (called by parent) queries Neon, but no optimization for user lookups.
 Impact: Performance issues with large user bases.
 Fix: Add comment to optimize Neon queries in /api/auth/oauth/google (no code change).
-Token Storage:Issue: Uses TokenStorage from auth.ts, which stores tokens in localStorage.
+
+Token Storage:Issue: Uses TokenStorage from auth.ts, which stores tokens in localStorage.
 Impact: Consistent with auth.ts, but less secure than cookies.
 Fix: Keep as is; note cookie-based alternative (no change).
-8. Icon System AlignmentIssue: No icons used, but parent components (e.g., AdminLoginModal.tsx) use lucide-react.
+
+8. Icon System AlignmentIssue: No icons used, but parent components (e.g., AdminLoginModal.tsx) use lucide-react.
 Impact: No conflict.
 Fix: No change needed.
 
 9. Integration with Other Filesauth.ts:Issue: postMessage user data (email, name, picture, sub) must align with authAPI.googleOAuth’s googleData (email, googleId, firstName, lastName, profileImage).
 Fix: Update postMessage fields to match (minimal change).
-AdminContext.tsx:Issue: If used in admin flows, TokenStorage must align with admin_token.
+
+AdminContext.tsx:Issue: If used in admin flows, TokenStorage must align with admin_token.
 Fix: Add comment to clarify token usage (no change).
-AdminLoginModal.tsx:Issue: May handle GOOGLE_AUTH_SUCCESS messages; must process userInfo correctly.
+
+AdminLoginModal.tsx:Issue: May handle GOOGLE_AUTH_SUCCESS messages; must process userInfo correctly.
 Fix: Suggest updating AdminLoginModal.tsx to handle new field names (no change in AuthCallback.tsx).
-SecurityErrorBoundary:Issue: No error boundary, risking uncaught errors in fetch.
+
+SecurityErrorBoundary:Issue: No error boundary, risking uncaught errors in fetch.
 Fix: Suggest wrapping in parent:typescript
 
 import { SecurityErrorBoundary } from './SecurityErrorBoundary';
 <SecurityErrorBoundary>
   <AuthCallback />
 </SecurityErrorBoundary>
-Note: No change in AuthCallback.tsx.
-QuestionLimitModal:Issue: Not relevant, but could inspire OAuth attempt limits.
+
+Note: No change in AuthCallback.tsx.
+
+QuestionLimitModal:Issue: Not relevant, but could inspire OAuth attempt limits.
 Fix: Add comment for rate limiting (no change).
-
+
