@@ -53,16 +53,21 @@ export class TrendingService {
 
       if (snapshot.length > 0) {
         console.log('📊 Using trending snapshot data');
-        const topSubjects = JSON.parse(snapshot[0].topSubjects);
-        // Map old format to new format if needed
-        return topSubjects.slice(0, limit).map((item: any) => ({
-          slug: item.slug || `trending-${item.id}`,
-          name: item.name,
-          trend: item.trend || `+${item.weeklyGrowth || 0}%`,
-          searchTerm: item.searchTerm || item.name.toLowerCase(),
-          trendingScore: item.trendingScore || 50,
-          weeklyGrowth: item.weeklyGrowth || 0
-        }));
+        try {
+          const topSubjects = JSON.parse(snapshot[0].topSubjects);
+          // Map old format to new format if needed
+          return topSubjects.slice(0, limit).map((item: any) => ({
+            slug: item.slug || `trending-${item.id}`,
+            name: item.name,
+            trend: item.trend || `+${item.weeklyGrowth || 0}%`,
+            searchTerm: item.searchTerm || item.name.toLowerCase(),
+            trendingScore: item.trendingScore || 50,
+            weeklyGrowth: item.weeklyGrowth || 0
+          }));
+        } catch (parseError) {
+          console.error('📊 JSON parsing failed for snapshot, using fallback:', parseError);
+          // Fall through to fallback
+        }
       }
 
       // If no recent snapshot, use fallback with real subject data

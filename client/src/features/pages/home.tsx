@@ -283,27 +283,23 @@ export default function Home() {
             <TrendingUp className="w-6 h-6 text-green-500" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {(trendingCerts ? trendingCerts : [
-              { name: 'PMP Certification', trend: '+15%', searchTerm: 'pmp' },
-              { name: 'AWS Cloud Practitioner', trend: '+23%', searchTerm: 'aws' },
-              { name: 'CompTIA Security+', trend: '+18%', searchTerm: 'comptia' },
-              { name: 'Azure Fundamentals', trend: '+12%', searchTerm: 'azure' }
-            ]).map((cert: any) => {
-              // Get appropriate icon based on subject name
-              const getIconForSubject = (name: string) => {
+            {(trendingCerts || []).map((cert: any) => {
+              // Get appropriate icon name based on subject
+              const getIconName = (name: string) => {
                 const nameLower = name.toLowerCase();
-                if (nameLower.includes('pmp')) return () => <Icon name="pmp" size="lg" />;
-                if (nameLower.includes('aws')) return () => <Icon name="aws" size="lg" />;
-                if (nameLower.includes('comptia')) return () => <Icon name="comptia" size="lg" />;
-                if (nameLower.includes('azure') || nameLower.includes('microsoft')) return () => <Icon name="azure" size="lg" />;
-                return BookOpen; // Default icon
+                if (nameLower.includes('pmp')) return 'pmp';
+                if (nameLower.includes('aws')) return 'aws';
+                if (nameLower.includes('comptia')) return 'comptia';
+                if (nameLower.includes('azure') || nameLower.includes('microsoft')) return 'azure';
+                if (nameLower.includes('cisco')) return 'cisco';
+                return 'book-open'; // Default icon
               };
               
-              const IconComponent = getIconForSubject(cert.name);
+              const iconName = getIconName(cert.name);
               
               return (
                 <div 
-                  key={cert.name}
+                  key={cert.slug || cert.name}
                   className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors group"
                   onClick={() => {
                     setSearchQuery(cert.searchTerm);
@@ -311,7 +307,7 @@ export default function Home() {
                   }}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <IconComponent className="w-8 h-8" />
+                    <Icon name={iconName} size="lg" className="w-8 h-8" />
                     <Badge variant="outline" className="text-xs text-green-600">
                       {cert.trend}
                     </Badge>
