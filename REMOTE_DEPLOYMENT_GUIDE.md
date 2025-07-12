@@ -133,9 +133,15 @@ The migration includes comprehensive RLS policies:
 ### For Supabase Deployments
 Use the additional RLS policies in `migrations/supabase-rls-policies.sql`:
 ```bash
-# After main migration, apply Supabase-specific policies
+# After main migration, apply Supabase-specific policies and function security fixes
 psql "$DATABASE_URL" -f migrations/supabase-rls-policies.sql
 ```
+
+### Function Security Fixes
+The migration includes fixes for function search path security vulnerabilities:
+- All database functions now use `SECURITY DEFINER` with explicit `search_path`
+- Prevents SQL injection through search path manipulation
+- Includes trigger functions, search functions, and encryption utilities
 
 ### General Security
 - Use strong database credentials

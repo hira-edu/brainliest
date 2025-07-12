@@ -82,3 +82,83 @@ CREATE POLICY "Admin only access" ON public.auth_sessions
       AND role = 'admin'
     )
   );
+
+-- ===============================
+-- FUNCTION SECURITY FIXES
+-- ===============================
+
+-- Fix function search path security vulnerabilities
+-- All functions now use SECURITY DEFINER with explicit search_path
+
+-- Update trigger function for updated_at
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+
+-- Update search vector functions with secure search path
+CREATE OR REPLACE FUNCTION public.update_subjects_search_vector()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    NEW.search_vector := setweight(to_tsvector('english', COALESCE(NEW.name, '')), 'A') ||
+                        setweight(to_tsvector('english', COALESCE(NEW.description, '')), 'B');
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_questions_search_vector()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    NEW.search_vector := setweight(to_tsvector('english', COALESCE(NEW.text, '')), 'A') ||
+                        setweight(to_tsvector('english', COALESCE(NEW.explanation, '')), 'B') ||
+                        setweight(to_tsvector('english', COALESCE(NEW.domain, '')), 'C');
+    RETURN NEW;
+END;
+$$;
+
+-- Fix encryption functions with secure search path
+CREATE OR REPLACE FUNCTION public.encrypt_sensitive_data(data TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF data IS NULL OR data = '' THEN
+    RETURN NULL;
+  END IF;
+  RETURN encode(encrypt(data::bytea, 'brainliest_encryption_key_2025'::bytea, 'aes'), 'hex');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.decrypt_sensitive_data(encrypted_data TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF encrypted_data IS NULL OR encrypted_data = '' THEN
+    RETURN NULL;
+  END IF;
+  RETURN convert_from(decrypt(decode(encrypted_data, 'hex'), 'brainliest_encryption_key_2025'::bytea, 'aes'), 'UTF8');
+EXCEPTION 
+  WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$;
