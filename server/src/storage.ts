@@ -371,6 +371,7 @@ export class DatabaseStorage implements IStorage {
       subjectSlug: exams.subjectSlug,
       title: exams.title,
       description: exams.description,
+      icon: exams.icon,
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
@@ -384,6 +385,7 @@ export class DatabaseStorage implements IStorage {
       subjectSlug: exams.subjectSlug,
       title: exams.title,
       description: exams.description,
+      icon: exams.icon,
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
@@ -397,6 +399,7 @@ export class DatabaseStorage implements IStorage {
       subjectSlug: exams.subjectSlug,
       title: exams.title,
       description: exams.description,
+      icon: exams.icon,
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
@@ -410,18 +413,9 @@ export class DatabaseStorage implements IStorage {
     return this.getExam(slug);
   }
 
-  async getExamById(id: number): Promise<Exam | undefined> {
-    const [exam] = await db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams).where(eq(exams.id, id));
-    return exam;
+  async getExamById(slug: string): Promise<Exam | undefined> {
+    // Since we're using slug-based system, this method now uses slug
+    return this.getExam(slug);
   }
 
   // Dynamic question counting methods
@@ -809,37 +803,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      profileImage: users.profileImage,
-      role: users.role,
-      isActive: users.isActive,
-      isBanned: users.isBanned,
-      banReason: users.banReason,
-      emailVerified: users.emailVerified,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt,
-      lastLoginIp: users.lastLoginIp,
-      registrationIp: users.registrationIp,
-      loginCount: users.loginCount,
-      failedLoginAttempts: users.failedLoginAttempts,
-      lockedUntil: users.lockedUntil,
-      passwordHash: users.passwordHash,
-      emailVerificationToken: users.emailVerificationToken,
-      emailVerificationExpires: users.emailVerificationExpires,
-      passwordResetToken: users.passwordResetToken,
-      passwordResetExpires: users.passwordResetExpires,
-      googleId: users.googleId,
-      oauthProvider: users.oauthProvider,
-      twoFactorEnabled: users.twoFactorEnabled,
-      twoFactorSecret: users.twoFactorSecret,
-      metadata: users.metadata
-    }).from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
@@ -907,7 +871,7 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
 
     if (filters.role) {
-      conditions.push(eq(users.role, filters.role));
+      conditions.push(eq(users.role, filters.role as 'admin' | 'user' | 'moderator'));
     }
     if (filters.isActive !== undefined) {
       conditions.push(eq(users.isActive, filters.isActive));
@@ -1060,6 +1024,7 @@ export class DatabaseStorage implements IStorage {
       subjectSlug: exams.subjectSlug,
       title: exams.title,
       description: exams.description,
+      icon: exams.icon,
       questionCount: exams.questionCount,
       duration: exams.duration,
       difficulty: exams.difficulty,
@@ -1103,7 +1068,7 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(questions.examSlug, filters.examSlug));
     }
     if (filters?.difficulty) {
-      conditions.push(eq(questions.difficulty, filters.difficulty));
+      conditions.push(eq(questions.difficulty, filters.difficulty as 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'));
     }
     if (filters?.search) {
       // FIXED: searchVector column doesn't exist, use ILIKE search instead
