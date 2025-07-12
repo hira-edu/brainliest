@@ -1,4 +1,4 @@
-"use client"; // Fixed: RSC directive for Vercel compatibility
+ // Fixed: RSC directive for Vercel compatibility
 
 import { Link } from "wouter";
 import { categoryStructure, type Category } from "../../../../../shared/constants";

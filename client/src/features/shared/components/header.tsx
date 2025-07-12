@@ -1,4 +1,4 @@
-"use client"; // RSC directive for client-side navigation and authentication state
+ // RSC directive for client-side navigation and authentication state
 
 import { useAuth } from "../../auth/AuthContext";
 import { Link, useLocation } from "wouter";

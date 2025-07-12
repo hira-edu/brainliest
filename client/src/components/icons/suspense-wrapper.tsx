@@ -3,7 +3,7 @@
  * Fixes audit issue: Missing Suspense for slow initialization
  */
 
-"use client";
+
 
 import React, { Suspense, ReactNode } from 'react';
 import { LoadingIcon } from './base-icon';

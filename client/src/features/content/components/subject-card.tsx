@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, field validation, accessibility, error handling
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility with DynamicIcon
+ // Fixed: RSC directive for Vercel compatibility with DynamicIcon
 
 import { Subject } from "../../../../../shared/schema";
 import { DynamicIcon } from "../../../utils/dynamic-icon";
