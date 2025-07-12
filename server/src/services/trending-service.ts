@@ -40,24 +40,34 @@ export class TrendingService {
 
   static async getTrendingCertifications(limit: number = 4): Promise<TrendingCertification[]> {
     try {
-      // First try to get from daily snapshot
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // First try to get the most recent snapshot (within last 30 days for development)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const snapshot = await db
         .select()
         .from(dailyTrendingSnapshot)
-        .where(gte(dailyTrendingSnapshot.date, today))
+        .where(gte(dailyTrendingSnapshot.date, thirtyDaysAgo))
         .orderBy(desc(dailyTrendingSnapshot.createdAt))
         .limit(1);
 
       if (snapshot.length > 0) {
+        console.log('📊 Using trending snapshot data');
         const topSubjects = JSON.parse(snapshot[0].topSubjects);
-        return topSubjects.slice(0, limit);
+        // Map old format to new format if needed
+        return topSubjects.slice(0, limit).map((item: any) => ({
+          slug: item.slug || `trending-${item.id}`,
+          name: item.name,
+          trend: item.trend || `+${item.weeklyGrowth || 0}%`,
+          searchTerm: item.searchTerm || item.name.toLowerCase(),
+          trendingScore: item.trendingScore || 50,
+          weeklyGrowth: item.weeklyGrowth || 0
+        }));
       }
 
-      // If no snapshot, calculate trending on the fly
-      return await this.calculateTrendingCertifications(limit);
+      // If no recent snapshot, use fallback with real subject data
+      console.log('📊 Using fallback trending data');
+      return await this.getFallbackTrending(limit);
     } catch (error) {
       console.error('Error getting trending certifications:', error);
       // Return fallback trending data with real subjects
