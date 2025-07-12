@@ -123,10 +123,26 @@ The migration includes optimized indexes for:
 
 ## 🔐 Security Considerations
 
+### Row Level Security (RLS)
+The migration includes comprehensive RLS policies:
+- **Content tables** (subjects, exams, questions): Public read access
+- **User data** (users, sessions): Restricted access requiring authentication
+- **Analytics tables**: Protected for user privacy
+- **Anonymous sessions**: Allowed for freemium functionality
+
+### For Supabase Deployments
+Use the additional RLS policies in `migrations/supabase-rls-policies.sql`:
+```bash
+# After main migration, apply Supabase-specific policies
+psql "$DATABASE_URL" -f migrations/supabase-rls-policies.sql
+```
+
+### General Security
 - Use strong database credentials
 - Restrict database access to your application servers
 - Consider connection pooling for production deployments
 - Regular backup your database after deployment
+- Monitor RLS policy effectiveness in production
 
 ## 📞 Support
 

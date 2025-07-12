@@ -254,6 +254,40 @@ SELECT setval('subcategories_id_seq', COALESCE((SELECT MAX(id) FROM subcategorie
 SELECT setval('questions_id_seq', COALESCE((SELECT MAX(id) FROM questions), 1));
 
 -- ===============================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ===============================
+
+-- Enable RLS on all tables
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subcategories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_subject_interactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.daily_trending_snapshot ENABLE ROW LEVEL SECURITY;
+
+-- Public read access for content tables
+CREATE POLICY "Allow public read access" ON public.categories FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON public.subcategories FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON public.subjects FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON public.exams FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON public.questions FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON public.daily_trending_snapshot FOR SELECT USING (true);
+
+-- Anonymous session management
+CREATE POLICY "Allow anonymous session access" ON public.user_subject_interactions FOR ALL USING (true);
+
+-- User data protection (requires application-level auth in non-Supabase environments)
+CREATE POLICY "Restrict user data access" ON public.users FOR ALL USING (false);
+CREATE POLICY "Restrict user sessions" ON public.user_sessions FOR ALL USING (false);
+
+-- Note: For Supabase deployments, update user policies to use auth.uid():
+-- CREATE POLICY "Users can view own data" ON public.users FOR SELECT USING (auth.uid()::text = id::text);
+-- CREATE POLICY "Users can access own sessions" ON public.user_sessions FOR ALL USING (auth.uid()::text = user_id::text);
+
+-- ===============================
 -- VERIFICATION QUERIES
 -- ===============================
 
