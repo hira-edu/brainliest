@@ -1,4 +1,4 @@
- // RSC directive for client-side exam interface and real-time interactions
+"use client"; // RSC directive for client-side exam interface and real-time interactions
 
 import { useRoute, useLocation } from "wouter";
 import { useAuth } from "../../auth/AuthContext";

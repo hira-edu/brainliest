@@ -1,4 +1,4 @@
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import { Link } from "wouter";
 import { categoryStructure, type Category } from "../../../../../shared/constants";
@@ -118,10 +118,32 @@ function CategoryCard({ category }: { category: Category }) {
                 route: subCategory.route || '#'
               };
 
+              // Map subcategory IDs to actual database slugs
+              const getSubcategorySlug = (id: string) => {
+                const slugMap: Record<string, string> = {
+                  'it-cloud': 'cloud-computing',
+                  'project-management': 'project-management',
+                  'cybersecurity': 'cybersecurity',
+                  'networking': 'networking',
+                  'mathematics-statistics': 'mathematics',
+                  'computer-science': 'data-science',
+                  'natural-sciences': 'sciences',
+                  'engineering': 'systems-admin',
+                  'business-economics': 'cpa-accounting',
+                  'health-medical': 'sciences',
+                  'social-sciences-humanities': 'business-intelligence',
+                  'test-prep': 'requirements-analysis'
+                };
+                return slugMap[id] || id;
+              };
+
+              const subcategorySlug = getSubcategorySlug(subCategory.id);
+              const subcategoryRoute = `/subcategory/${subcategorySlug}`;
+
               return (
                 <StyledLink 
                   key={subCategory.id} 
-                  href={validatedSubCategory.route}
+                  href={subcategoryRoute}
                   ariaLabel={`Navigate to ${validatedSubCategory.title} subcategory`}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
                 >

@@ -1,5 +1,0 @@
-id,text,domain,exam_id,subject_id,allow_multiple_answers,explanation,order,correct_answers,options,correct_answer
-1,What is 2 + 2?,algebra,algebra-basics,mathematics,f,Basic arithmetic operation,1,{1},{"3","4","5"},1
-2,What is the derivative of x^2?,calculus,calculus-intro,mathematics,f,Power rule: d/dx(x^n) = n*x^(n-1),1,{1},{"x","2x","x^2"},1
-3,What is Newton's First Law?,mechanics,mechanics-basics,physics,f,Newton's First Law describes inertia,1,{1},{"F=ma","An object at rest stays at rest","For every action, there is an equal and opposite reaction"},1
-10,What is an AWS Availability Zone?,cloud-computing,aws-solutions-architect,aws-certification,f,Availability Zones are isolated locations within a region for high availability,1,{1},{"A region","An isolated location within a region","A global endpoint"},1

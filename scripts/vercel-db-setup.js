@@ -8,7 +8,7 @@
  * Can be run as a build step or manually after deployment.
  */
 
-// Using HTTP PostgreSQL adapter that works with any PostgreSQL database including Supabase
+// Using HTTP PostgreSQL adapter for Supabase database connection
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { sql } from 'drizzle-orm';

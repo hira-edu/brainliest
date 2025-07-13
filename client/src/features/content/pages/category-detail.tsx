@@ -1,4 +1,4 @@
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";

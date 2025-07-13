@@ -8,7 +8,7 @@
  * Designed to be idempotent and safe to run multiple times.
  */
 
-// Using HTTP PostgreSQL adapter that works with any PostgreSQL database including Supabase
+// Using HTTP PostgreSQL adapter for Supabase database connection
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../shared/schema';

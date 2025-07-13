@@ -3,7 +3,7 @@
  * Manages icon state, configuration, and provides icon access throughout app
  */
 
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { IconContextValue, IconConfig, IconCategory, IconRegistryEntry, IconProps } from './types';

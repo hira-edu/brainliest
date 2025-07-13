@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 // Database Connection Testing Script for Vercel + Supabase Debugging
-// Using HTTP PostgreSQL adapter that works with any PostgreSQL database including Supabase
+// Using HTTP PostgreSQL adapter for Supabase database connection
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as schema from '../shared/schema';
+import * as schema from '../shared/schema.ts';
 
 async function testDatabaseConnection() {
   console.log('🔍 Testing Database Connection for Vercel + Supabase...\n');

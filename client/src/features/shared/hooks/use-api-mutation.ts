@@ -2,7 +2,7 @@
  * Reusable API mutation hook - Industrial-grade, war-tested logic
  * Fixed: SSR compatibility, enhanced error handling, type safety, accessibility
  */
-
+"use client";
 
 import { useCallback } from 'react';
 import { useMutation, UseMutationResult, useQueryClient } from '@tanstack/react-query';

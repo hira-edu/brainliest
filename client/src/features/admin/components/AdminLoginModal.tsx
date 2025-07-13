@@ -3,7 +3,7 @@
  * Modal component for admin login with enhanced security and accessibility
  */
 
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '../../../components/ui/button';

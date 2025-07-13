@@ -1,4 +1,4 @@
- // RSC directive for interactive button functionality
+"use client"; // RSC directive for interactive button functionality
 
 /**
  * Optimized button component - DRY solution for repeated button patterns

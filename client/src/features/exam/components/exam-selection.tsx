@@ -1,4 +1,4 @@
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";

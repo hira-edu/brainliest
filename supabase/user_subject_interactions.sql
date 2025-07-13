@@ -1,1 +1,0 @@
-id,user_id,interaction_type,timestamp,subject_slug

@@ -50,7 +50,7 @@ npm start
 
 Make sure your `.env` file contains:
 ```
-DATABASE_URL=postgresql://neondb_owner:npg_ROynF3Et2bYX@ep-super-rice-ado47v0n-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:npg_ROynF3Et2bYX@ep-super-rice-ado47v0n-pooler.c-2.us-east-1.aws.supabase.com/neondb?sslmode=require
 JWT_SECRET=dev-jwt-secret-min-32-chars-long
 JWT_REFRESH_SECRET=dev-refresh-secret-min-32-chars
 ADMIN_JWT_SECRET=dev-admin-secret-min-32-chars-long

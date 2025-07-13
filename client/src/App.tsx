@@ -22,6 +22,7 @@ import TermsOfService from "./features/pages/static/terms-of-service";
 import Contact from "./features/pages/static/contact";
 import Categories from "./features/content/pages/categories";
 import CategoryDetail from "./features/content/pages/category-detail";
+import SubcategoryDetail from "./features/content/pages/subcategory-detail";
 import AuthCallback from "./features/auth/auth-callback";
 import NotFound from "./features/pages/static/not-found";
 import { CookieConsentBanner } from "./features/shared";
@@ -38,6 +39,10 @@ function Router() {
       </Route>
       <Route path="/categories/:categoryId/:subCategoryId">
         {(params) => <CategoryDetail categoryId={params.categoryId} subCategoryId={params.subCategoryId} />}
+      </Route>
+      {/* Subcategory detail page */}
+      <Route path="/subcategory/:subcategorySlug">
+        {(params) => <SubcategoryDetail subcategorySlug={params.subcategorySlug} />}
       </Route>
       {/* New slug-based routes */}
       <Route path="/subject/:slug" component={ExamSelection} />

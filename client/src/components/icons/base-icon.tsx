@@ -3,7 +3,7 @@
  * Implements consistent styling, accessibility, and theming
  */
 
- // Fixed: RSC directive for Vercel compatibility
+"use client"; // Fixed: RSC directive for Vercel compatibility
 
 import React, { forwardRef } from 'react';
 import { cn } from '../../utils/utils';

@@ -3,7 +3,7 @@
  * Fixed version addressing all audit issues while preserving core functionality
  */
 
- // Fixed: RSC directive for Vercel compatibility with localStorage
+"use client"; // Fixed: RSC directive for Vercel compatibility with localStorage
 
 import { apiRequest } from "../../services/queryClient";
 

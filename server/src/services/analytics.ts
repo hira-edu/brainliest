@@ -141,7 +141,7 @@ export class MemAnalyticsService implements IAnalyticsService {
         userName,
         examId: Math.floor(Math.random() * 4) + 1,
         sessionId: Math.floor(Math.random() * 10) + 1,
-        score,
+        score: parseFloat(score),
         correctAnswers,
         totalQuestions,
         timeSpent: Math.floor(Math.random() * 1800) + 600, // 10-40 minutes
