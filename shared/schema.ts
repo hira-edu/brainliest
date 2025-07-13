@@ -1,10 +1,30 @@
-import { pgTable, text, serial, integer, boolean, timestamp, index, pgEnum, jsonb, numeric, foreignKey } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  timestamp,
+  index,
+  pgEnum,
+  jsonb,
+  numeric,
+  foreignKey,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // Fixed: Define difficulty enum for type safety and constraint enforcement
-export const difficultyEnum = pgEnum("difficulty", ["Beginner", "Intermediate", "Advanced", "Expert"]);
+export const difficultyEnum = pgEnum("difficulty", [
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+  "Expert",
+]);
+
+// Fixed: Ensure all tables use consistent slug-based primary keys and foreign keys
+// Remove any ID-based references and ensure proper cascading relationships
 
 // Categories table - top level hierarchy
 export const categories = pgTable("categories", {
@@ -22,7 +42,9 @@ export const categories = pgTable("categories", {
 // Subcategories table - belongs to categories
 export const subcategories = pgTable("subcategories", {
   slug: text("slug").primaryKey(),
-  categorySlug: text("category_slug").notNull().references(() => categories.slug, { onDelete: "cascade" }),
+  categorySlug: text("category_slug")
+    .notNull()
+    .references(() => categories.slug, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
@@ -40,8 +62,13 @@ export const subjects = pgTable("subjects", {
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
-  categorySlug: text("category_slug").references(() => categories.slug, { onDelete: "set null" }),
-  subcategorySlug: text("subcategory_slug").references(() => subcategories.slug, { onDelete: "set null" }),
+  categorySlug: text("category_slug").references(() => categories.slug, {
+    onDelete: "set null",
+  }),
+  subcategorySlug: text("subcategory_slug").references(
+    () => subcategories.slug,
+    { onDelete: "set null" }
+  ),
   examCount: integer("exam_count").default(0),
   questionCount: integer("question_count").default(0),
   isActive: boolean("is_active").default(true),
@@ -52,7 +79,9 @@ export const subjects = pgTable("subjects", {
 // Exams table - belongs to subjects
 export const exams = pgTable("exams", {
   slug: text("slug").primaryKey(),
-  subjectSlug: text("subject_slug").notNull().references(() => subjects.slug, { onDelete: "cascade" }),
+  subjectSlug: text("subject_slug")
+    .notNull()
+    .references(() => subjects.slug, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   icon: text("icon"),
@@ -67,8 +96,12 @@ export const exams = pgTable("exams", {
 // Questions table - belongs to exams and subjects
 export const questions = pgTable("questions", {
   id: serial("id").primaryKey(),
-  examSlug: text("exam_slug").notNull().references(() => exams.slug, { onDelete: "cascade" }),
-  subjectSlug: text("subject_slug").notNull().references(() => subjects.slug, { onDelete: "cascade" }),
+  examSlug: text("exam_slug")
+    .notNull()
+    .references(() => exams.slug, { onDelete: "cascade" }),
+  subjectSlug: text("subject_slug")
+    .notNull()
+    .references(() => subjects.slug, { onDelete: "cascade" }),
   text: text("text").notNull(),
   options: text("options").array().notNull(), // Array of option texts
   correctAnswer: integer("correct_answer").notNull(), // Index of correct option (0-based) or multiple if multipleCorrect is true
@@ -85,9 +118,15 @@ export const questions = pgTable("questions", {
 // Exam sessions table - tracks user exam attempts
 export const examSessions = pgTable("exam_sessions", {
   id: serial("id").primaryKey(),
-  examSlug: text("exam_slug").notNull().references(() => exams.slug, { onDelete: "cascade" }),
-  subjectSlug: text("subject_slug").notNull().references(() => subjects.slug, { onDelete: "cascade" }),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+  examSlug: text("exam_slug")
+    .notNull()
+    .references(() => exams.slug, { onDelete: "cascade" }),
+  subjectSlug: text("subject_slug")
+    .notNull()
+    .references(() => subjects.slug, { onDelete: "cascade" }),
+  userId: integer("user_id").references(() => users.id, {
+    onDelete: "cascade",
+  }),
   userName: text("user_name"), // For anonymous users
   sessionKey: text("session_key").notNull(), // Unique session identifier
   startedAt: timestamp("started_at").defaultNow(),
@@ -102,19 +141,22 @@ export const examSessions = pgTable("exam_sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Define Drizzle relations for proper joins and nested queries
+// Fixed: Updated relations to ensure proper slug-based relationships
 export const categoriesRelations = relations(categories, ({ many }) => ({
   subcategories: many(subcategories),
   subjects: many(subjects),
 }));
 
-export const subcategoriesRelations = relations(subcategories, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [subcategories.categorySlug],
-    references: [categories.slug],
-  }),
-  subjects: many(subjects),
-}));
+export const subcategoriesRelations = relations(
+  subcategories,
+  ({ one, many }) => ({
+    category: one(categories, {
+      fields: [subcategories.categorySlug],
+      references: [categories.slug],
+    }),
+    subjects: many(subjects),
+  })
+);
 
 export const subjectsRelations = relations(subjects, ({ one, many }) => ({
   category: one(categories, {
@@ -168,7 +210,9 @@ export const examSessionsRelations = relations(examSessions, ({ one }) => ({
 
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
-  questionId: integer("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
+  questionId: integer("question_id")
+    .notNull()
+    .references(() => questions.id, { onDelete: "cascade" }),
   authorName: text("author_name").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -199,7 +243,9 @@ export const uploads = pgTable("uploads", {
   mimeType: text("mime_type").notNull(),
   fileType: text("file_type").notNull(), // 'icon', 'image', 'document'
   uploadPath: text("upload_path").notNull(),
-  uploadedBy: integer("uploaded_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  uploadedBy: integer("uploaded_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -228,8 +274,6 @@ export const anonQuestionSessions = pgTable("anon_question_sessions", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-
-
 // Users table with audit fields, role enum, and JSONB metadata
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -243,7 +287,7 @@ export const users = pgTable("users", {
   banReason: text("ban_reason").notNull().default(""),
   // Enforced enum for roles prevents typos and invalid roles
   role: userRoles("role").notNull().default("user"),
-  
+
   // Authentication fields
   passwordHash: text("password_hash"),
   emailVerified: boolean("email_verified").notNull().default(false),
@@ -251,12 +295,12 @@ export const users = pgTable("users", {
   emailVerificationExpires: timestamp("email_verification_expires"),
   passwordResetToken: text("password_reset_token"),
   passwordResetExpires: timestamp("password_reset_expires"),
-  
+
   // Security fields
   failedLoginAttempts: integer("failed_login_attempts").default(0),
   lockedUntil: timestamp("locked_until"),
   loginCount: integer("login_count").default(0),
-  
+
   // Tracking fields
   lastLoginAt: timestamp("last_login_at"),
   lastLoginIp: text("last_login_ip").notNull().default(""),
@@ -271,8 +315,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   examSessions: many(examSessions),
   uploads: many(uploads),
 }));
-
-
 
 // Audit logging table for enterprise compliance
 export const auditLogs = pgTable("audit_logs", {
@@ -299,7 +341,9 @@ export const userProfiles = pgTable("user_profiles", {
   totalExamsTaken: integer("total_exams_taken").default(0),
   totalQuestionsAnswered: integer("total_questions_answered").default(0),
   // Fixed: Use numeric type for average score instead of text
-  averageScore: numeric("average_score", { precision: 5, scale: 2 }).default("0"),
+  averageScore: numeric("average_score", { precision: 5, scale: 2 }).default(
+    "0"
+  ),
   // Fixed: Use JSONB for strongest subjects instead of text
   strongestSubjects: jsonb("strongest_subjects").default("[]"),
   // Fixed: Use JSONB for weakest subjects instead of text
@@ -431,7 +475,10 @@ export const subjectTrendingStats = pgTable("subject_trending_stats", {
   examCompleteCount: integer("exam_complete_count").default(0),
   trendingScore: integer("trending_score").default(0),
   // Fixed: Use numeric type for growth percentage instead of text
-  growthPercentage: numeric("growth_percentage", { precision: 5, scale: 2 }).default("0"),
+  growthPercentage: numeric("growth_percentage", {
+    precision: 5,
+    scale: 2,
+  }).default("0"),
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
@@ -508,15 +555,21 @@ export const insertExamAnalyticsSchema = createInsertSchema(examAnalytics, {
   completedAt: undefined,
 });
 
-export const insertPerformanceTrendsSchema = createInsertSchema(performanceTrends, {
-  id: undefined,
-  createdAt: undefined,
-});
+export const insertPerformanceTrendsSchema = createInsertSchema(
+  performanceTrends,
+  {
+    id: undefined,
+    createdAt: undefined,
+  }
+);
 
-export const insertStudyRecommendationsSchema = createInsertSchema(studyRecommendations, {
-  id: undefined,
-  createdAt: undefined,
-});
+export const insertStudyRecommendationsSchema = createInsertSchema(
+  studyRecommendations,
+  {
+    id: undefined,
+    createdAt: undefined,
+  }
+);
 
 export const insertAuthLogSchema = createInsertSchema(authLogs, {
   id: undefined,
@@ -534,26 +587,38 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs, {
   timestamp: undefined,
 });
 
-export const insertUserSubjectInteractionSchema = createInsertSchema(userSubjectInteractions, {
-  id: undefined,
-  timestamp: undefined,
-});
+export const insertUserSubjectInteractionSchema = createInsertSchema(
+  userSubjectInteractions,
+  {
+    id: undefined,
+    timestamp: undefined,
+  }
+);
 
-export const insertSubjectTrendingStatsSchema = createInsertSchema(subjectTrendingStats, {
-  id: undefined,
-  lastUpdated: undefined,
-});
+export const insertSubjectTrendingStatsSchema = createInsertSchema(
+  subjectTrendingStats,
+  {
+    id: undefined,
+    lastUpdated: undefined,
+  }
+);
 
-export const insertDailyTrendingSnapshotSchema = createInsertSchema(dailyTrendingSnapshot, {
-  id: undefined,
-  createdAt: undefined,
-});
+export const insertDailyTrendingSnapshotSchema = createInsertSchema(
+  dailyTrendingSnapshot,
+  {
+    id: undefined,
+    createdAt: undefined,
+  }
+);
 
-export const insertAnonQuestionSessionSchema = createInsertSchema(anonQuestionSessions, {
-  id: undefined,
-  createdAt: undefined,
-  updatedAt: undefined,
-});
+export const insertAnonQuestionSessionSchema = createInsertSchema(
+  anonQuestionSessions,
+  {
+    id: undefined,
+    createdAt: undefined,
+    updatedAt: undefined,
+  }
+);
 
 export const insertUploadSchema = createInsertSchema(uploads, {
   id: undefined,
@@ -597,25 +662,38 @@ export type InsertDetailedAnswer = z.infer<typeof insertDetailedAnswerSchema>;
 export type ExamAnalytics = typeof examAnalytics.$inferSelect;
 export type InsertExamAnalytics = z.infer<typeof insertExamAnalyticsSchema>;
 export type PerformanceTrends = typeof performanceTrends.$inferSelect;
-export type InsertPerformanceTrends = z.infer<typeof insertPerformanceTrendsSchema>;
+export type InsertPerformanceTrends = z.infer<
+  typeof insertPerformanceTrendsSchema
+>;
 export type StudyRecommendations = typeof studyRecommendations.$inferSelect;
-export type InsertStudyRecommendations = z.infer<typeof insertStudyRecommendationsSchema>;
+export type InsertStudyRecommendations = z.infer<
+  typeof insertStudyRecommendationsSchema
+>;
 
 // Trending Types
-export type UserSubjectInteraction = typeof userSubjectInteractions.$inferSelect;
-export type InsertUserSubjectInteraction = z.infer<typeof insertUserSubjectInteractionSchema>;
+export type UserSubjectInteraction =
+  typeof userSubjectInteractions.$inferSelect;
+export type InsertUserSubjectInteraction = z.infer<
+  typeof insertUserSubjectInteractionSchema
+>;
 export type SubjectTrendingStats = typeof subjectTrendingStats.$inferSelect;
-export type InsertSubjectTrendingStats = z.infer<typeof insertSubjectTrendingStatsSchema>;
+export type InsertSubjectTrendingStats = z.infer<
+  typeof insertSubjectTrendingStatsSchema
+>;
 export type DailyTrendingSnapshot = typeof dailyTrendingSnapshot.$inferSelect;
-export type InsertDailyTrendingSnapshot = z.infer<typeof insertDailyTrendingSnapshotSchema>;
+export type InsertDailyTrendingSnapshot = z.infer<
+  typeof insertDailyTrendingSnapshotSchema
+>;
 
 // Anonymous Question Session Types
 export type AnonQuestionSession = typeof anonQuestionSessions.$inferSelect;
-export type InsertAnonQuestionSession = z.infer<typeof insertAnonQuestionSessionSchema>;
+export type InsertAnonQuestionSession = z.infer<
+  typeof insertAnonQuestionSessionSchema
+>;
 
 // Upload Types
 export type Upload = typeof uploads.$inferSelect;
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 
 // User Role Types (enum)
-export type UserRole = typeof userRoles.enumValues[number];
+export type UserRole = (typeof userRoles.enumValues)[number];

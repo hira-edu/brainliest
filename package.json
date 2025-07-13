@@ -15,7 +15,22 @@
     "perf:report": "node scripts/performance-monitor.js --report",
     "type-check": "tsc --noEmit --skipLibCheck",
     "type-check:watch": "tsc --noEmit --skipLibCheck --watch",
-    "build:stats": "npm run build && npm run analyze && npm run perf:report"
+    "build:stats": "npm run build && npm run analyze && npm run perf:report",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
+    "supabase:migrate": "supabase db push",
+    "supabase:generate": "supabase gen types typescript --local > shared/supabase-types.ts",
+    "supabase:deploy": "supabase db push --include-seed",
+    "supabase:link": "supabase link --project-ref YOUR_PROJECT_REF",
+    "supabase:pull": "supabase db pull",
+    "supabase:diff": "supabase db diff",
+    "db:migrate": "npm run supabase:migrate",
+    "db:reset": "npm run supabase:reset",
+    "db:seed": "supabase seed run",
+    "dev:full": "concurrently \"npm run supabase:start\" \"npm run dev\"",
+    "type-gen": "npm run supabase:generate"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
@@ -58,6 +73,7 @@
     "@types/multer": "^2.0.0",
     "@types/nodemailer": "^6.4.17",
     "@types/uuid": "^10.0.0",
+    "@supabase/supabase-js": "^2.45.4",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -93,6 +109,7 @@
     "openid-client": "^6.6.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "postgres": "^3.4.4",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -133,7 +150,9 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "supabase": "^1.200.3",
+    "concurrently": "^8.2.2"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
