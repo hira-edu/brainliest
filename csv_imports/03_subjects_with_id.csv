@@ -1,0 +1,6 @@
+id,slug,name,description,icon,color,category_slug,subcategory_slug,exam_count,question_count,is_active,created_at,updated_at
+1,comptia-security-plus,CompTIA Security+,Entry-level cybersecurity certification,fas fa-shield-alt,#EF4444,professional-certifications,cybersecurity,1,50,true,2024-01-01 00:00:00,2024-01-01 00:00:00
+2,cissp,CISSP,Certified Information Systems Security Professional,fas fa-user-shield,#DC2626,professional-certifications,cybersecurity,1,30,true,2024-01-01 00:00:00,2024-01-01 00:00:00
+3,aws-cloud-practitioner,AWS Cloud Practitioner,Amazon Web Services foundational certification,fab fa-aws,#FF9900,professional-certifications,cloud-computing,1,25,true,2024-01-01 00:00:00,2024-01-01 00:00:00
+4,pmp,PMP,Project Management Professional,fas fa-project-diagram,#059669,professional-certifications,project-management,1,40,true,2024-01-01 00:00:00,2024-01-01 00:00:00
+5,cisco-ccna,Cisco CCNA,Cisco Certified Network Associate,fas fa-network-wired,#1E40AF,professional-certifications,networking,0,0,true,2024-01-01 00:00:00,2024-01-01 00:00:00 

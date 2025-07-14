@@ -1,0 +1,5 @@
+id,slug,subject_slug,title,description,icon,question_count,duration,difficulty,is_active
+1,security-fundamentals,comptia-security-plus,Security Fundamentals,Basic security concepts and principles,fas fa-shield-alt,50,90,beginner,true
+2,cissp-practice,cissp,CISSP Practice Exam,Comprehensive CISSP practice questions,fas fa-user-shield,30,120,advanced,true
+3,aws-basics,aws-cloud-practitioner,AWS Basics,Fundamental AWS concepts and services,fab fa-aws,25,60,beginner,true
+4,pmp-fundamentals,pmp,PMP Fundamentals,Project management fundamentals,fas fa-project-diagram,40,90,intermediate,true 

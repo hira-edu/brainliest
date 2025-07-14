@@ -1,0 +1,5 @@
+id,slug,name,description,icon,color,is_active,sort_order,created_at,updated_at
+1,professional-certifications,Professional Certifications,Industry-recognized professional certifications,fas fa-certificate,#3B82F6,true,1,2024-01-01 00:00:00,2024-01-01 00:00:00
+2,academic,Academic,Academic subjects and courses,fas fa-graduation-cap,#10B981,true,2,2024-01-01 00:00:00,2024-01-01 00:00:00
+3,programming,Programming,Software development and programming languages,fas fa-code,#8B5CF6,true,3,2024-01-01 00:00:00,2024-01-01 00:00:00
+4,language,Language,Language learning and proficiency tests,fas fa-language,#F59E0B,true,4,2024-01-01 00:00:00,2024-01-01 00:00:00 
