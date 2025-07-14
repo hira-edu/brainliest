@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 import { registerRoutes } from "./src/routes";
 import { setupVite, serveStatic, log } from "./src/vite";
-import { validateSecurityConfig } from "./src/config/security";
+import { validateSecurityConfig } from './src/config/security';
 
 const app = express();
 
@@ -13,60 +13,50 @@ const app = express();
 validateSecurityConfig();
 
 // Trust proxy for accurate IP addresses behind reverse proxies
-app.set("trust proxy", 1);
+app.set('trust proxy', 1);
 
 // CORS configuration
-app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? ["https://brainliest.com", "https://www.brainliest.com"]
-        : ["http://localhost:5000", "http://127.0.0.1:5000"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
-);
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://brainliest.com', 'https://www.brainliest.com'] 
+    : ['http://localhost:5000', 'http://127.0.0.1:5000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
 // Enhanced Security middleware
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: [
-          "'self'",
-          "https://generativelanguage.googleapis.com",
-          "https://api.resend.com",
-        ],
-        frameSrc: ["'none'"],
-        objectSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-      },
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com", "https://api.resend.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+
     },
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true,
-    },
-    noSniff: true,
-    xssFilter: true,
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-  })
-);
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  noSniff: true,
+  xssFilter: true,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" }
+}));
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    message: "Too many requests from this IP, please try again later.",
-  },
+  message: { message: "Too many requests from this IP, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -84,8 +74,8 @@ const speedLimiter = slowDown({
 app.use("/api", speedLimiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -122,10 +112,10 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-
+    
     // Don't expose internal error messages in production
     let message = "Internal Server Error";
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === 'development') {
       message = err.message || "Internal Server Error";
     } else if (status < 500) {
       // Client errors can show their message
@@ -134,7 +124,7 @@ app.use((req, res, next) => {
 
     // Log error for debugging but don't expose stack traces
     if (status >= 500) {
-      console.error("Server Error:", err);
+      console.error('Server Error:', err);
     }
 
     res.status(status).json({ message });
@@ -149,29 +139,15 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Configure port and host for development vs production
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
-  const host = process.env.NODE_ENV === "development" ? "127.0.0.1" : "0.0.0.0";
-
-  server
-    .listen(port, host, () => {
-      log(`🚀 Server running at http://${host}:${port}`);
-      log(`📊 Supabase Studio: http://127.0.0.1:54323`);
-      log(`📧 Local Email Testing: http://127.0.0.1:54324`);
-    })
-    .on("error", (err: any) => {
-      if (err.code === "EADDRINUSE") {
-        console.error(
-          `❌ Port ${port} is already in use. Try a different port with PORT=3001 npm run dev`
-        );
-      } else if (err.code === "ENOTSUP") {
-        console.error(`❌ Socket binding error. Retrying with localhost...`);
-        // Fallback to localhost for macOS compatibility
-        server.listen(port, "localhost", () => {
-          log(`🚀 Server running at http://localhost:${port} (fallback)`);
-        });
-      } else {
-        console.error("❌ Server startup error:", err);
-      }
-    });
+  // ALWAYS serve the app on port 5000
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = 5000;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

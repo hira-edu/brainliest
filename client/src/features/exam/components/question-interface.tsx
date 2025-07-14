@@ -1,7 +1,7 @@
 "use client"; // RSC directive for client-side exam interface and real-time interactions
 
 import { useRoute, useLocation } from "wouter";
-import { useSecuredAuth } from "../../auth/secured-auth-system";
+import { useAuth } from "../../auth/AuthContext";
 import { useQuestionLimit } from "../../shared/QuestionLimitContext";
 import { Header } from "../../shared";
 import ProgressBar from "../components/progress-bar";
@@ -22,17 +22,15 @@ export default function QuestionInterface() {
   // Routing: prefer slug, fallback to ID with proper validation
   const [slugMatch, slugParams] = useRoute("/exam/:slug");
   const [idMatch, idParams] = useRoute("/exam/id/:id");
-
-  const slugOrId =
-    slugMatch && slugParams?.slug
-      ? slugParams.slug
-      : idMatch && idParams?.id
-      ? parseInt(idParams.id, 10)
-      : null;
+  
+  const slugOrId = slugMatch && slugParams?.slug 
+    ? slugParams.slug 
+    : idMatch && idParams?.id 
+    ? parseInt(idParams.id, 10) 
+    : null;
 
   // Industrial-grade data loading with error handling
-  const { exam, subject, questions, isLoading, isError, error, refetch } =
-    useExamLoader(slugOrId);
+  const { exam, subject, questions, isLoading, isError, error, refetch } = useExamLoader(slugOrId);
 
   // Session management with proper error handling
   const {
@@ -42,7 +40,7 @@ export default function QuestionInterface() {
     isCreatingSession,
     sessionError,
     updateSession,
-    finishExam,
+    finishExam
   } = useExamSession({ exam, questions });
 
   // Question navigation with preview limits
@@ -59,16 +57,15 @@ export default function QuestionInterface() {
     handleAnswer,
     handleSubmitAnswer,
     handleNextQuestion,
-    handlePreviousQuestion,
+    handlePreviousQuestion
   } = useQuestionNavigation({
     questions,
     session,
     updateSession,
-    onFinishExam: finishExam,
+    onFinishExam: finishExam
   });
 
-  const { isAuthenticated } = useSecuredAuth();
-  const isSignedIn = isAuthenticated;
+  const { isSignedIn } = useAuth();
   const { getRemainingQuestions } = useQuestionLimit();
 
   // Session management is now handled by useExamSession hook
@@ -81,10 +78,7 @@ export default function QuestionInterface() {
     return (
       <ErrorMessage
         title="Failed to load exam"
-        message={
-          error?.message ||
-          "We couldn't load this exam. Please check your connection and try again."
-        }
+        message={error?.message || "We couldn't load this exam. Please check your connection and try again."}
         onRetry={refetch}
       />
     );
@@ -108,15 +102,7 @@ export default function QuestionInterface() {
 
   // Enhanced loading state with proper feedback
   if (isLoading || isCreatingSession) {
-    return (
-      <LoadingState
-        message={
-          isCreatingSession
-            ? "Starting your exam session..."
-            : "Loading exam content..."
-        }
-      />
-    );
+    return <LoadingState message={isCreatingSession ? "Starting your exam session..." : "Loading exam content..."} />;
   }
 
   // Industrial-grade empty state protection - prevent users from starting empty exams
@@ -125,35 +111,22 @@ export default function QuestionInterface() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md mx-auto text-center bg-white rounded-xl shadow-lg p-8">
           <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            No Questions Available
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Questions Available</h1>
           <p className="text-gray-600 mb-6">
-            This exam doesn't have any questions yet. Please check back later or
-            contact support if you believe this is an error.
+            This exam doesn't have any questions yet. Please check back later or contact support if you believe this is an error.
           </p>
           <div className="space-y-3">
-            <button
+            <button 
               onClick={() => setLocation(`/subject/${exam.subjectSlug}`)}
               className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Back to {subject?.name || "Subject"} Exams
+              Back to {subject?.name || 'Subject'} Exams
             </button>
-            <button
+            <button 
               onClick={() => setLocation("/")}
               className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >
@@ -182,7 +155,7 @@ export default function QuestionInterface() {
                     setLocation(
                       subject.slug
                         ? `/subject/${subject.slug}`
-                        : `/subject/${exam.subjectSlug || "unknown"}`
+                        : `/subject/${exam.subjectSlug || 'unknown'}`
                     )
                   }
                   className="text-gray-600 hover:text-gray-900"
@@ -192,9 +165,7 @@ export default function QuestionInterface() {
                 </Button>
                 <div className="h-6 w-px bg-gray-300" />
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">
-                    {exam.title}
-                  </h1>
+                  <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
                   <p className="text-sm text-gray-600">{exam.description}</p>
                 </div>
               </div>
@@ -213,30 +184,16 @@ export default function QuestionInterface() {
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-              <svg
-                className="w-8 h-8 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-              No Questions Available
-            </h3>
+            <h3 className="text-2xl font-semibold text-gray-900 mb-4">No Questions Available</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              This exam doesn't have any questions yet. Our content team is
-              working on adding practice questions for this certification.
+              This exam doesn't have any questions yet. Our content team is working on adding practice questions for this certification.
             </p>
             <p className="text-sm text-gray-500 mb-8">
-              We're constantly expanding our question bank to provide
-              comprehensive preparation materials.
+              We're constantly expanding our question bank to provide comprehensive preparation materials.
             </p>
             <Button
               onClick={() =>
@@ -291,9 +248,7 @@ export default function QuestionInterface() {
               </Button>
               <div className="h-6 w-px bg-gray-300" />
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {exam.title}
-                </h1>
+                <h1 className="text-xl font-semibold text-gray-900">{exam.title}</h1>
                 <p className="text-sm text-gray-600">{exam.description}</p>
               </div>
             </div>
@@ -330,11 +285,7 @@ export default function QuestionInterface() {
           </div>
         )}
 
-        <div
-          className={
-            shouldBlurQuestion ? "pointer-events-none relative" : "relative"
-          }
-        >
+        <div className={shouldBlurQuestion ? "pointer-events-none relative" : "relative"}>
           <QuestionCard
             question={currentQuestion}
             onAnswer={handleAnswer}
@@ -347,12 +298,9 @@ export default function QuestionInterface() {
           {shouldBlurQuestion && (
             <div className="absolute inset-0 bg-gray-100/95 rounded-lg flex items-center justify-center z-10">
               <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
-                <h3 className="text-lg font-semibold mb-2">
-                  Sign in to continue
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">Sign in to continue</h3>
                 <p className="text-gray-600 mb-4">
-                  You've used up your free preview. Sign in to continue
-                  practicing.
+                  You've used up your free preview. Sign in to continue practicing.
                 </p>
                 <button
                   onClick={() => setShowAuthModal(true)}
@@ -399,9 +347,7 @@ export default function QuestionInterface() {
         onClose={() => setShowAuthModal(false)}
         mode="freemium"
         title="Unlock Unlimited Questions"
-        description={`You've viewed ${
-          20 - remaining
-        } free questions. Sign in to continue.`}
+        description={`You've viewed ${20 - remaining} free questions. Sign in to continue.`}
       />
     </div>
   );

@@ -3,21 +3,16 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSecuredAuth } from "../auth/secured-auth-system";
+import { useAuth } from "../auth/AuthContext";
 import { Header } from "../shared";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "../../components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Badge } from "../../components/ui/badge";
 import { Progress } from "../../components/ui/progress";
 import {
@@ -25,7 +20,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "../../components/ui/select";
 import {
   ResponsiveContainer,
@@ -42,8 +37,8 @@ import {
   Cell,
   ComposedChart,
   ScatterChart,
-  Scatter,
-} from "recharts";
+  Scatter
+} from 'recharts';
 import {
   TrendingUp,
   BarChart3,
@@ -51,18 +46,11 @@ import {
   Target,
   Clock,
   Brain,
-  Activity,
+  Activity
 } from "lucide-react";
 
 // Define colors constant outside component to avoid re-creation on each render
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82CA9D",
-];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 interface AnalyticsOverview {
   userProfile: {
@@ -73,25 +61,9 @@ interface AnalyticsOverview {
     weakestSubjects?: string;
     lastActiveAt?: string;
   };
-  examAnalytics: Array<{
-    completedAt: string;
-    score: string;
-    timeSpent?: number;
-    examId: string;
-  }>;
-  answerHistory: Array<{
-    questionId: string;
-    timeSpent: number;
-    isCorrect: boolean;
-    domain?: string;
-    difficulty?: string;
-  }>;
-  performanceTrends: Array<{
-    createdAt: string;
-    averageScore?: string;
-    questionsAttempted?: number;
-    timeSpentMinutes?: number;
-  }>;
+  examAnalytics: Array<{ completedAt: string; score: string; timeSpent?: number; examId: string }>;
+  answerHistory: Array<{ questionId: string; timeSpent: number; isCorrect: boolean; domain?: string; difficulty?: string }>;
+  performanceTrends: Array<{ createdAt: string; averageScore?: string; questionsAttempted?: number; timeSpentMinutes?: number }>;
   metrics: {
     totalTimeSpent: number;
     averageTimePerQuestion: number;
@@ -101,9 +73,7 @@ interface AnalyticsOverview {
 
 export default function Analytics() {
   // Authentication check
-  const { user, isAuthenticated } = useSecuredAuth();
-  const userName = user?.username || user?.firstName || user?.email || "User";
-  const isSignedIn = isAuthenticated;
+  const { userName, isSignedIn } = useAuth();
   const [selectedUser, setSelectedUser] = useState<string>(userName || "");
 
   // Memoized handler to prevent unnecessary re-renders
@@ -116,12 +86,12 @@ export default function Analytics() {
     data: analyticsData,
     isLoading,
     isError,
-    error,
+    error
   } = useQuery<AnalyticsOverview>({
-    queryKey: ["/api/analytics/overview", selectedUser],
+    queryKey: ['/api/analytics/overview', selectedUser],
     enabled: !!selectedUser,
     retry: 2,
-    onError: (err: any) => console.error("Failed to fetch analytics:", err),
+    onError: (err: any) => console.error('Failed to fetch analytics:', err)
   });
 
   // Redirect or prompt if not signed in
@@ -133,9 +103,7 @@ export default function Analytics() {
           <Card className="max-w-md mx-auto">
             <CardContent className="p-6 text-center">
               <h2 className="text-xl font-semibold mb-2">Sign In Required</h2>
-              <p className="text-muted-foreground">
-                Please sign in to view your analytics dashboard.
-              </p>
+              <p className="text-muted-foreground">Please sign in to view your analytics dashboard.</p>
             </CardContent>
           </Card>
         </div>
@@ -148,9 +116,7 @@ export default function Analytics() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <Header />
-        <div className="container mx-auto px-4 py-8 text-center">
-          Loading analytics...
-        </div>
+        <div className="container mx-auto px-4 py-8 text-center">Loading analytics...</div>
       </div>
     );
   }
@@ -163,12 +129,8 @@ export default function Analytics() {
         <div className="container mx-auto px-4 py-8">
           <Card className="max-w-md mx-auto border-red-500">
             <CardContent className="p-6 text-center">
-              <h2 className="text-xl font-semibold mb-2 text-red-600">
-                Error Loading Data
-              </h2>
-              <p className="text-sm text-red-500">
-                {(error as Error)?.message || "Unknown error occurred."}
-              </p>
+              <h2 className="text-xl font-semibold mb-2 text-red-600">Error Loading Data</h2>
+              <p className="text-sm text-red-500">{(error as Error)?.message || 'Unknown error occurred.'}</p>
             </CardContent>
           </Card>
         </div>
@@ -185,9 +147,7 @@ export default function Analytics() {
           <Card className="max-w-md mx-auto">
             <CardContent className="p-6 text-center">
               <h2 className="text-xl font-semibold mb-2">No Data Available</h2>
-              <p className="text-muted-foreground">
-                Start taking exams to see your analytics data.
-              </p>
+              <p className="text-muted-foreground">Start taking exams to see your analytics data.</p>
             </CardContent>
           </Card>
         </div>
@@ -202,10 +162,9 @@ export default function Analytics() {
     return Object.entries(analyticsData.metrics.difficultyAnalysis).map(
       ([difficulty, { correct, total }]) => ({
         difficulty,
-        accuracy:
-          total > 0 ? parseFloat(((correct / total) * 100).toFixed(1)) : 0,
+        accuracy: total > 0 ? parseFloat(((correct / total) * 100).toFixed(1)) : 0,
         total,
-        correct,
+        correct
       })
     );
   }, [analyticsData.metrics.difficultyAnalysis]);
@@ -213,32 +172,23 @@ export default function Analytics() {
   // 2. Domain performance calculation
   const domainData = useMemo(() => {
     const performance: Record<string, { correct: number; total: number }> = {};
-    analyticsData.answerHistory.forEach(({ domain = "Unknown", isCorrect }) => {
+    analyticsData.answerHistory.forEach(({ domain = 'Unknown', isCorrect }) => {
       if (!performance[domain]) performance[domain] = { correct: 0, total: 0 };
       performance[domain].total += 1;
       if (isCorrect) performance[domain].correct += 1;
     });
     return Object.entries(performance).map(([domain, { correct, total }]) => ({
       domain,
-      accuracy:
-        total > 0 ? parseFloat(((correct / total) * 100).toFixed(1)) : 0,
-      total,
+      accuracy: total > 0 ? parseFloat(((correct / total) * 100).toFixed(1)) : 0,
+      total
     }));
   }, [analyticsData.answerHistory]);
 
   // 3. Time distribution for scatter chart
   const timeDistribution = useMemo(
-    () =>
-      analyticsData.answerHistory
-        .filter((a) => a.timeSpent > 0)
-        .map(
-          ({ questionId, timeSpent, isCorrect, difficulty = "Unknown" }) => ({
-            questionId,
-            timeSpent,
-            isCorrect: isCorrect ? 1 : 0,
-            difficulty,
-          })
-        ),
+    () => analyticsData.answerHistory
+      .filter(a => a.timeSpent > 0)
+      .map(({ questionId, timeSpent, isCorrect, difficulty = 'Unknown' }) => ({ questionId, timeSpent, isCorrect: isCorrect ? 1 : 0, difficulty })),
     [analyticsData.answerHistory]
   );
 
@@ -249,7 +199,7 @@ export default function Analytics() {
         date: new Date(completedAt).toLocaleDateString(),
         score: Number(score),
         timeSpent: timeSpent ? Math.floor(timeSpent / 60) : 0,
-        examId,
+        examId
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-10);
@@ -257,24 +207,17 @@ export default function Analytics() {
 
   // 5. Weekly performance trends
   const weeklyTrends = useMemo(() => {
-    return analyticsData.performanceTrends.map(
-      ({
-        createdAt,
-        averageScore,
-        questionsAttempted = 0,
-        timeSpentMinutes = 0,
-      }) => ({
-        week: new Date(createdAt).toLocaleDateString(),
-        score: Number(averageScore) || 0,
-        questionsAttempted,
-        timeSpent: timeSpentMinutes,
-      })
-    );
+    return analyticsData.performanceTrends.map(({ createdAt, averageScore, questionsAttempted = 0, timeSpentMinutes = 0 }) => ({
+      week: new Date(createdAt).toLocaleDateString(),
+      score: Number(averageScore) || 0,
+      questionsAttempted,
+      timeSpent: timeSpentMinutes
+    }));
   }, [analyticsData.performanceTrends]);
 
   // Extract user profile summary
   const userProfile = analyticsData.userProfile;
-  const averageScore = parseFloat(userProfile.averageScore || "0");
+  const averageScore = parseFloat(userProfile.averageScore || '0');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -283,12 +226,8 @@ export default function Analytics() {
         {/* --- Dashboard Header --- */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Advanced Analytics Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Comprehensive performance insights and learning patterns
-            </p>
+            <h1 className="text-3xl font-bold tracking-tight">Advanced Analytics Dashboard</h1>
+            <p className="text-muted-foreground mt-2">Comprehensive performance insights and learning patterns</p>
           </div>
           <div className="flex gap-4 items-center">
             <Select value={selectedUser} onValueChange={handleUserChange}>
@@ -313,74 +252,48 @@ export default function Analytics() {
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {userProfile.totalExamsTaken ?? 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {analyticsData.examAnalytics.length} completed
-              </p>
+              <div className="text-2xl font-bold">{userProfile.totalExamsTaken ?? 0}</div>
+              <p className="text-xs text-muted-foreground">{analyticsData.examAnalytics.length} completed</p>
             </CardContent>
           </Card>
 
           {/* Average Score */}
           <Card>
             <CardHeader className="flex justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Average Score
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Average Score</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {averageScore.toFixed(1)}%
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {userProfile.totalQuestionsAnswered ?? 0} answered
-              </p>
+              <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
+              <p className="text-xs text-muted-foreground">{userProfile.totalQuestionsAnswered ?? 0} answered</p>
             </CardContent>
           </Card>
 
           {/* Total Time Spent */}
           <Card>
             <CardHeader className="flex justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Time Spent
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Total Time Spent</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {Math.floor(analyticsData.metrics.totalTimeSpent / 3600)}h
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {analyticsData.metrics.averageTimePerQuestion.toFixed(1)}s avg
-              </p>
+              <div className="text-2xl font-bold">{Math.floor(analyticsData.metrics.totalTimeSpent / 3600)}h</div>
+              <p className="text-xs text-muted-foreground">{analyticsData.metrics.averageTimePerQuestion.toFixed(1)}s avg</p>
             </CardContent>
           </Card>
 
           {/* Answer Accuracy */}
           <Card>
             <CardHeader className="flex justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Answer Accuracy
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">Answer Accuracy</CardTitle>
               <Brain className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {analyticsData.answerHistory.length > 0
-                  ? (
-                      (analyticsData.answerHistory.filter((a) => a.isCorrect)
-                        .length /
-                        analyticsData.answerHistory.length) *
-                      100
-                    ).toFixed(1)
-                  : "0.0"}
-                %
+                  ? ((analyticsData.answerHistory.filter(a => a.isCorrect).length / analyticsData.answerHistory.length) * 100).toFixed(1)
+                  : '0.0'}%
               </div>
-              <p className="text-xs text-muted-foreground">
-                {analyticsData.answerHistory.length} answers
-              </p>
+              <p className="text-xs text-muted-foreground">{analyticsData.answerHistory.length} answers</p>
             </CardContent>
           </Card>
         </div>

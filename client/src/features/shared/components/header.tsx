@@ -1,6 +1,6 @@
 "use client"; // RSC directive for client-side navigation and authentication state
 
-import { useSecuredAuth } from "../../auth/secured-auth-system";
+import { useAuth } from "../../auth/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "../../../components/ui/button";
 import {
@@ -14,28 +14,24 @@ import {
 import { Badge } from "../../../components/ui/badge";
 import UnifiedAuthModal from "../../auth/unified-auth-modal";
 import { useState } from "react";
-import {
-  ChevronDown,
-  Home,
-  BarChart3,
-  BookOpen,
-  Award,
+import { 
+  ChevronDown, 
+  Home, 
+  BarChart3, 
+  BookOpen, 
+  Award, 
   User,
   Settings,
   LogOut,
   Menu,
-  GraduationCap,
+  GraduationCap
 } from "lucide-react";
 
 export default function Header() {
-  const { user, isAuthenticated, signOut } = useSecuredAuth();
+  const { isSignedIn, userName, signOut } = useAuth();
   const [location] = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Compatibility properties for existing code
-  const isSignedIn = isAuthenticated;
-  const userName = user?.username || user?.firstName || user?.email || "User";
 
   const navigationItems = [
     { href: "/", label: "Home", icon: Home },
@@ -45,21 +41,9 @@ export default function Header() {
   ];
 
   const subjectCategories = [
-    {
-      label: "Professional Certifications",
-      icon: Award,
-      items: ["PMP", "AWS", "CompTIA", "Cisco", "Microsoft"],
-    },
-    {
-      label: "Computer Science",
-      icon: BookOpen,
-      items: ["Programming", "Data Structures", "Algorithms"],
-    },
-    {
-      label: "University Subjects",
-      icon: GraduationCap,
-      items: ["Mathematics", "Physics", "Chemistry", "Biology"],
-    },
+    { label: "Professional Certifications", icon: Award, items: ["PMP", "AWS", "CompTIA", "Cisco", "Microsoft"] },
+    { label: "Computer Science", icon: BookOpen, items: ["Programming", "Data Structures", "Algorithms"] },
+    { label: "University Subjects", icon: GraduationCap, items: ["Mathematics", "Physics", "Chemistry", "Biology"] },
   ];
 
   return (
@@ -69,30 +53,21 @@ export default function Header() {
           <div className="flex justify-between items-center py-4">
             {/* Logo and Main Navigation */}
             <div className="flex items-center space-x-8">
-              <Link
-                href="/"
-                className="text-xl font-bold text-gray-900 hover:text-primary flex items-center space-x-2"
-              >
+              <Link href="/" className="text-xl font-bold text-gray-900 hover:text-primary flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 <span>Brainliest</span>
               </Link>
-
+              
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center space-x-6">
                 {navigationItems.map((item) => {
                   const IconComponent = item.icon;
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center space-x-1 text-sm font-medium hover:text-primary transition-colors ${
-                        location === item.href
-                          ? "text-primary"
-                          : "text-gray-700"
-                      }`}
-                    >
+                    <Link key={item.href} href={item.href} className={`flex items-center space-x-1 text-sm font-medium hover:text-primary transition-colors ${
+                      location === item.href ? "text-primary" : "text-gray-700"
+                    }`}>
                       <IconComponent className="w-4 h-4" />
                       <span>{item.label}</span>
                     </Link>
@@ -102,10 +77,7 @@ export default function Header() {
                 {/* Subjects Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="text-sm font-medium text-gray-700 hover:text-primary"
-                    >
+                    <Button variant="ghost" className="text-sm font-medium text-gray-700 hover:text-primary">
                       Subjects
                       <ChevronDown className="w-4 h-4 ml-1" />
                     </Button>
@@ -122,10 +94,7 @@ export default function Header() {
                             {category.label}
                           </DropdownMenuItem>
                           {category.items.map((item) => (
-                            <DropdownMenuItem
-                              key={item}
-                              className="pl-8 text-sm text-gray-600"
-                            >
+                            <DropdownMenuItem key={item} className="pl-8 text-sm text-gray-600">
                               {item}
                             </DropdownMenuItem>
                           ))}
@@ -133,9 +102,9 @@ export default function Header() {
                         </div>
                       );
                     })}
-                    <DropdownMenuItem
+                    <DropdownMenuItem 
                       className="font-medium text-primary"
-                      onClick={() => (window.location.href = "/subjects")}
+                      onClick={() => window.location.href = "/subjects"}
                     >
                       View All Subjects →
                     </DropdownMenuItem>
@@ -152,20 +121,15 @@ export default function Header() {
                   <Badge variant="secondary" className="hidden sm:flex">
                     Welcome back!
                   </Badge>
-
+                  
                   {/* User Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center space-x-2"
-                      >
+                      <Button variant="ghost" className="flex items-center space-x-2">
                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                           <User className="w-4 h-4 text-white" />
                         </div>
-                        <span className="hidden sm:block text-sm font-medium">
-                          {userName}
-                        </span>
+                        <span className="hidden sm:block text-sm font-medium">{userName}</span>
                         <ChevronDown className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -185,10 +149,7 @@ export default function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={signOut}
-                        className="text-red-600"
-                      >
+                      <DropdownMenuItem onClick={signOut} className="text-red-600">
                         <LogOut className="w-4 h-4 mr-2" />
                         Sign Out
                       </DropdownMenuItem>
@@ -196,19 +157,16 @@ export default function Header() {
                   </DropdownMenu>
                 </div>
               ) : (
-                <Button
-                  onClick={() => setShowAuthModal(true)}
-                  className="flex items-center space-x-2"
-                >
+                <Button onClick={() => setShowAuthModal(true)} className="flex items-center space-x-2">
                   <User className="w-4 h-4" />
                   <span>Sign In</span>
                 </Button>
               )}
 
               {/* Mobile Menu Button */}
-              <Button
-                variant="ghost"
-                size="sm"
+              <Button 
+                variant="ghost" 
+                size="sm" 
                 className="md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
@@ -224,12 +182,12 @@ export default function Header() {
                 {navigationItems.map((item) => {
                   const IconComponent = item.icon;
                   return (
-                    <Link
-                      key={item.href}
+                    <Link 
+                      key={item.href} 
                       href={item.href}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
-                        location === item.href
-                          ? "bg-primary/10 text-primary"
+                        location === item.href 
+                          ? "bg-primary/10 text-primary" 
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                       onClick={() => setMobileMenuOpen(false)}
@@ -245,7 +203,7 @@ export default function Header() {
         </div>
       </header>
 
-      <UnifiedAuthModal
+      <UnifiedAuthModal 
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
