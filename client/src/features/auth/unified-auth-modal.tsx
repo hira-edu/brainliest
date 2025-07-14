@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import RecaptchaProvider from "./recaptcha-provider";
+import { authAPI } from "./auth-api";
 
 interface UnifiedAuthModalProps {
   isOpen: boolean;
@@ -86,14 +87,29 @@ function UnifiedAuthModalContent({
 
   const { signIn } = useSecuredAuth();
 
-  // Compatibility methods for features not yet implemented in secured auth
-  const signUp = async (email: string, password: string, username: string) => {
-    toast({
-      title: "Registration Temporarily Disabled",
-      description: "Please contact admin for account creation.",
-      variant: "destructive",
-    });
-    throw new Error("Registration not implemented");
+  // Registration method using authAPI
+  const signUp = async (
+    email: string,
+    password: string,
+    userData?: {
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+    },
+    recaptchaToken?: string
+  ) => {
+    try {
+      const response = await authAPI.register(
+        email,
+        password,
+        userData,
+        recaptchaToken
+      );
+      return response;
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
   };
 
   const signInWithGoogle = async () => {
