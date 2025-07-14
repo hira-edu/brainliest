@@ -5,28 +5,30 @@
 
 "use client"; // Fixed: RSC directive for Vercel compatibility
 
-import React, { useState, useCallback } from 'react';
-import { z } from 'zod';
-import { useAuth } from '../../features/auth/AuthContext';
-import { useQuestionLimit } from '../../features/shared/QuestionLimitContext';
-import { useToast } from '../../features/shared/hooks/use-toast';
-import { apiRequest } from '../../services/queryClient';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { LoadingIcon } from '../icons/base-icon';
-import { Icon } from '../icons/icon';
+import React, { useState, useCallback } from "react";
+import { z } from "zod";
+import { useSecuredAuth } from "../../features/auth/secured-auth-system";
+import { useQuestionLimit } from "../../features/shared/QuestionLimitContext";
+import { useToast } from "../../features/shared/hooks/use-toast";
+import { apiRequest } from "../../services/queryClient";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { LoadingIcon } from "../icons/base-icon";
+import { Icon } from "../icons/icon";
 
 // Fixed: Comprehensive validation schemas
-const EmailSchema = z.string()
-  .email('Please enter a valid email address')
-  .min(1, 'Email is required');
+const EmailSchema = z
+  .string()
+  .email("Please enter a valid email address")
+  .min(1, "Email is required");
 
-const VerificationCodeSchema = z.string()
-  .regex(/^\d{6}$/, 'Verification code must be exactly 6 digits')
-  .min(6, 'Verification code is required');
+const VerificationCodeSchema = z
+  .string()
+  .regex(/^\d{6}$/, "Verification code must be exactly 6 digits")
+  .min(6, "Verification code is required");
 
 // Fixed: API response type definitions
 interface SendCodeResponse {
@@ -55,20 +57,20 @@ const handleApiError = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
   }
-  
-  if (typeof error === 'object' && error !== null) {
+
+  if (typeof error === "object" && error !== null) {
     const errorData = error as AuthErrorData;
-    return errorData.message || 'An unexpected error occurred';
+    return errorData.message || "An unexpected error occurred";
   }
-  
-  return 'An unexpected error occurred';
+
+  return "An unexpected error occurred";
 };
 
 // Fixed: Centralized validation utility
 const validateAndShowError = (
   value: string,
   schema: z.ZodSchema,
-  toast: ReturnType<typeof useToast>['toast']
+  toast: ReturnType<typeof useToast>["toast"]
 ): boolean => {
   const result = schema.safeParse(value);
   if (!result.success) {
@@ -82,7 +84,10 @@ const validateAndShowError = (
   return true;
 };
 
-export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimitModalProps) {
+export default function QuestionLimitModal({
+  open,
+  onOpenChange,
+}: QuestionLimitModalProps) {
   const [email, setEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [isEmailSent, setIsEmailSent] = useState(false);
@@ -90,8 +95,27 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
   const [isVerificationLoading, setIsVerificationLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [authTab, setAuthTab] = useState("email");
-  
-  const { signInWithGoogle, verifyEmail } = useAuth();
+
+  const { signIn } = useSecuredAuth();
+
+  // Compatibility methods for features not yet implemented in secured auth
+  const signInWithGoogle = async () => {
+    toast({
+      title: "Google Sign-In Temporarily Disabled",
+      description: "Please use email/password authentication.",
+      variant: "destructive",
+    });
+    throw new Error("Google sign-in not implemented");
+  };
+
+  const verifyEmail = async (token: string) => {
+    toast({
+      title: "Email Verification Temporarily Disabled",
+      description: "Please contact admin if you need assistance.",
+      variant: "destructive",
+    });
+    throw new Error("Email verification not implemented");
+  };
   const { resetViewedQuestions } = useQuestionLimit();
   const { toast } = useToast();
 
@@ -122,8 +146,8 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
     try {
       // Fixed: Use apiRequest for consistency
       const response = await apiRequest("POST", "/api/send-code", { email });
-      const data = await response.json() as SendCodeResponse;
-      
+      const data = (await response.json()) as SendCodeResponse;
+
       if (data.success) {
         setIsEmailSent(true);
         toast({
@@ -131,7 +155,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
           description: "Check your email for the verification code",
         });
       } else {
-        throw new Error(data.message || 'Failed to send verification code');
+        throw new Error(data.message || "Failed to send verification code");
       }
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);
@@ -147,40 +171,48 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
 
   // Fixed: Enhanced code verification with proper token handling
   const handleVerifyCode = async () => {
-    if (!validateAndShowError(verificationCode, VerificationCodeSchema, toast)) {
+    if (
+      !validateAndShowError(verificationCode, VerificationCodeSchema, toast)
+    ) {
       return;
     }
 
     setIsVerificationLoading(true);
     try {
       // Fixed: Use apiRequest with proper typing
-      const response = await apiRequest("POST", "/api/verify-code", { email, code: verificationCode });
-      const data = await response.json() as VerifyCodeResponse;
+      const response = await apiRequest("POST", "/api/verify-code", {
+        email,
+        code: verificationCode,
+      });
+      const data = (await response.json()) as VerifyCodeResponse;
 
       if (data.success) {
         // Fixed: Tie reset to successful verification only
         let verificationSuccess = false;
-        
+
         if (data.token) {
           const verifyResult = await verifyEmail(data.token);
           if (verifyResult.success) {
             verificationSuccess = true;
           } else {
-            throw new Error(verifyResult.message || "Email verification failed");
+            throw new Error(
+              verifyResult.message || "Email verification failed"
+            );
           }
         } else {
           verificationSuccess = true;
         }
-        
+
         // Only reset question count after successful verification
         if (verificationSuccess) {
           await resetViewedQuestions();
-          
+
           toast({
             title: "Welcome!",
-            description: "Successfully signed in! Continue practicing unlimited questions.",
+            description:
+              "Successfully signed in! Continue practicing unlimited questions.",
           });
-          
+
           handleCloseModal();
         }
       } else {
@@ -203,21 +235,28 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
     setIsGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      
-      if (result && typeof result === 'object' && 'success' in result && (result as any).success) {
+
+      if (
+        result &&
+        typeof result === "object" &&
+        "success" in result &&
+        (result as any).success
+      ) {
         // Only reset question count after successful authentication
         await resetViewedQuestions();
-        
+
         toast({
           title: "Welcome!",
-          description: "Successfully signed in with Google! Continue practicing unlimited questions.",
+          description:
+            "Successfully signed in with Google! Continue practicing unlimited questions.",
         });
-        
+
         handleCloseModal();
       } else {
-        const errorMessage = (result && typeof result === 'object' && 'message' in result) 
-          ? String(result.message) 
-          : "Google sign-in failed";
+        const errorMessage =
+          result && typeof result === "object" && "message" in result
+            ? String(result.message)
+            : "Google sign-in failed";
         throw new Error(errorMessage);
       }
     } catch (error: unknown) {
@@ -243,7 +282,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
         <DialogHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
             {/* Fixed: Use proper Icon component with BaseIcon integration */}
-            <Icon 
+            <Icon
               name="lock"
               size="lg"
               color="primary"
@@ -276,20 +315,23 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !isEmailButtonDisabled) {
+                      if (e.key === "Enter" && !isEmailButtonDisabled) {
                         handleSendCode();
                       }
                     }}
                     disabled={isEmailLoading}
                     aria-describedby="email-description"
                   />
-                  <p id="email-description" className="text-xs text-muted-foreground">
+                  <p
+                    id="email-description"
+                    className="text-xs text-muted-foreground"
+                  >
                     We'll send you a verification code
                   </p>
                 </div>
 
-                <Button 
-                  onClick={handleSendCode} 
+                <Button
+                  onClick={handleSendCode}
                   disabled={isEmailButtonDisabled}
                   className="w-full"
                 >
@@ -315,11 +357,13 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
                     value={verificationCode}
                     onChange={(e) => {
                       // Fixed: Only allow numeric input and limit to 6 digits
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      const value = e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 6);
                       setVerificationCode(value);
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !isVerifyButtonDisabled) {
+                      if (e.key === "Enter" && !isVerifyButtonDisabled) {
                         handleVerifyCode();
                       }
                     }}
@@ -327,14 +371,17 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
                     disabled={isVerificationLoading}
                     aria-describedby="code-description"
                   />
-                  <p id="code-description" className="text-xs text-muted-foreground">
+                  <p
+                    id="code-description"
+                    className="text-xs text-muted-foreground"
+                  >
                     Check your email for the verification code
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Button 
-                    onClick={handleVerifyCode} 
+                  <Button
+                    onClick={handleVerifyCode}
                     disabled={isVerifyButtonDisabled}
                     className="w-full"
                   >
@@ -346,7 +393,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
                     ) : (
                       <>
                         {/* Fixed: Use proper Icon component */}
-                        <Icon 
+                        <Icon
                           name="check-circle"
                           size="sm"
                           className="mr-2"
@@ -357,8 +404,8 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
                     )}
                   </Button>
 
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     onClick={() => setIsEmailSent(false)}
                     className="w-full"
                     disabled={isVerificationLoading}
@@ -375,9 +422,9 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
               <p className="text-sm text-muted-foreground">
                 Sign in with your Google account to continue
               </p>
-              
-              <Button 
-                onClick={handleGoogleSignIn} 
+
+              <Button
+                onClick={handleGoogleSignIn}
                 disabled={isGoogleButtonDisabled}
                 variant="outline"
                 className="w-full"
@@ -390,7 +437,7 @@ export default function QuestionLimitModal({ open, onOpenChange }: QuestionLimit
                 ) : (
                   <>
                     {/* Fixed: Use proper Icon component for Google */}
-                    <Icon 
+                    <Icon
                       name="chrome"
                       size="sm"
                       className="mr-2"

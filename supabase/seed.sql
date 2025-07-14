@@ -75,22 +75,8 @@ ARRAY['Ensuring data accuracy', 'Preventing unauthorized disclosure', 'Maintaini
 'Security Fundamentals', 'Beginner', 1)
 ON CONFLICT DO NOTHING;
 
--- Create a default admin user profile (for testing)
--- Note: This would typically be created through Supabase Auth signup
-INSERT INTO user_profiles (id, username, first_name, last_name, role, is_active) 
-SELECT 
-    '00000000-0000-0000-0000-000000000000'::uuid,
-    'admin',
-    'System',
-    'Administrator',
-    'super_admin',
-    true
-WHERE NOT EXISTS (
-    SELECT 1 FROM user_profiles WHERE id = '00000000-0000-0000-0000-000000000000'::uuid
-);
-
--- Grant necessary permissions for the admin user
--- This is a placeholder - in production, this would be handled through Supabase Auth
+-- Note: User profiles will be automatically created through Supabase Auth signup process
+-- via the handle_new_user() trigger function defined in the migration
 
 COMMENT ON TABLE categories IS 'Content categories with slug-based hierarchy';
 COMMENT ON TABLE subcategories IS 'Content subcategories linked to parent categories';

@@ -34,7 +34,7 @@ import {
   type AnonQuestionSession,
   type InsertAnonQuestionSession,
 } from "../../shared/schema";
-import { db } from "./db";
+import { db } from "./supabase-db";
 import { eq, like, and, or, desc, sql, ilike } from "drizzle-orm";
 
 // Lazy import to avoid circular dependencies
@@ -53,36 +53,55 @@ function slugify(text: string): string {
     .toString()
     .toLowerCase()
     .trim()
-    .replace(/[\s\W-]+/g, '-')  // Replace spaces and non-word chars with hyphens
-    .replace(/^-+|-+$/g, '')   // Remove leading/trailing hyphens
-    .replace(/-+/g, '-');      // Replace multiple hyphens with single hyphen
+    .replace(/[\s\W-]+/g, "-") // Replace spaces and non-word chars with hyphens
+    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+    .replace(/-+/g, "-"); // Replace multiple hyphens with single hyphen
 }
 
 // Generate unique slug by checking for conflicts and appending numbers
-async function generateUniqueSlug(baseSlug: string, table: 'subjects' | 'exams' | 'categories' | 'subcategories', excludeSlug?: string): Promise<string> {
+async function generateUniqueSlug(
+  baseSlug: string,
+  table: "subjects" | "exams" | "categories" | "subcategories",
+  excludeSlug?: string
+): Promise<string> {
   let slug = baseSlug;
   let counter = 1;
-  
+
   while (true) {
     // Check if slug exists
     let query: any;
-    if (table === 'subjects') {
-      query = db.select({ slug: subjects.slug }).from(subjects).where(eq(subjects.slug, slug));
-    } else if (table === 'exams') {
-      query = db.select({ slug: exams.slug }).from(exams).where(eq(exams.slug, slug));
-    } else if (table === 'categories') {
-      query = db.select({ slug: categories.slug }).from(categories).where(eq(categories.slug, slug));
+    if (table === "subjects") {
+      query = db
+        .select({ slug: subjects.slug })
+        .from(subjects)
+        .where(eq(subjects.slug, slug));
+    } else if (table === "exams") {
+      query = db
+        .select({ slug: exams.slug })
+        .from(exams)
+        .where(eq(exams.slug, slug));
+    } else if (table === "categories") {
+      query = db
+        .select({ slug: categories.slug })
+        .from(categories)
+        .where(eq(categories.slug, slug));
     } else {
-      query = db.select({ slug: subcategories.slug }).from(subcategories).where(eq(subcategories.slug, slug));
+      query = db
+        .select({ slug: subcategories.slug })
+        .from(subcategories)
+        .where(eq(subcategories.slug, slug));
     }
-    
+
     const existing = await query;
-    
+
     // If no conflict or conflict is with the record being updated, slug is available
-    if (existing.length === 0 || (excludeSlug && existing[0].slug === excludeSlug)) {
+    if (
+      existing.length === 0 ||
+      (excludeSlug && existing[0].slug === excludeSlug)
+    ) {
       return slug;
     }
-    
+
     // Generate next variant
     slug = `${baseSlug}-${counter}`;
     counter++;
@@ -95,7 +114,10 @@ export interface IStorage {
   getCategories(): Promise<Category[]>;
   getCategory(slug: string): Promise<Category | undefined>;
   createCategory(category: InsertCategory): Promise<Category>;
-  updateCategory(slug: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  updateCategory(
+    slug: string,
+    category: Partial<InsertCategory>
+  ): Promise<Category | undefined>;
   deleteCategory(slug: string): Promise<boolean>;
 
   // Subcategories with hierarchical relationships
@@ -103,29 +125,47 @@ export interface IStorage {
   getSubcategoriesByCategory(categorySlug: string): Promise<Subcategory[]>;
   getSubcategory(slug: string): Promise<Subcategory | undefined>;
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
-  updateSubcategory(slug: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
+  updateSubcategory(
+    slug: string,
+    subcategory: Partial<InsertSubcategory>
+  ): Promise<Subcategory | undefined>;
   deleteSubcategory(slug: string): Promise<boolean>;
 
   // Subjects
   getSubjects(): Promise<Subject[]>;
-  getSubjectsPaginated(offset: number, limit: number, search?: string, categorySlug?: string): Promise<{ subjects: Subject[], total: number }>;
+  getSubjectsPaginated(
+    offset: number,
+    limit: number,
+    search?: string,
+    categorySlug?: string
+  ): Promise<{ subjects: Subject[]; total: number }>;
   getSubject(slug: string): Promise<Subject | undefined>;
   getSubjectBySlug(slug: string): Promise<Subject | undefined>;
   createSubject(subject: InsertSubject): Promise<Subject>;
-  updateSubject(slug: string, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
+  updateSubject(
+    slug: string,
+    subject: Partial<InsertSubject>
+  ): Promise<Subject | undefined>;
   deleteSubject(slug: string): Promise<boolean>;
   getSubjectCount(): Promise<number>;
 
   // Exams
   getExams(): Promise<Exam[]>;
-  getExamsPaginated(offset: number, limit: number, subjectSlug?: string): Promise<{ exams: Exam[], total: number }>;
+  getExamsPaginated(
+    offset: number,
+    limit: number,
+    subjectSlug?: string
+  ): Promise<{ exams: Exam[]; total: number }>;
   getExamsBySubject(subjectSlug: string): Promise<Exam[]>;
   getExamsBySubcategory(subcategorySlug: string): Promise<Exam[]>;
   getExam(slug: string): Promise<Exam | undefined>;
   getExamBySlug(slug: string): Promise<Exam | undefined>;
   getExamById(id: number): Promise<Exam | undefined>;
   createExam(exam: InsertExam): Promise<Exam>;
-  updateExam(slug: string, exam: Partial<InsertExam>): Promise<Exam | undefined>;
+  updateExam(
+    slug: string,
+    exam: Partial<InsertExam>
+  ): Promise<Exam | undefined>;
   deleteExam(slug: string): Promise<boolean>;
   getExamCount(): Promise<number>;
   getQuestionCountByExam(examSlug: string): Promise<number>;
@@ -133,20 +173,37 @@ export interface IStorage {
 
   // Questions
   getQuestions(): Promise<Question[]>;
-  getQuestionsPaginated(offset: number, limit: number, filters?: { subjectSlug?: string, examSlug?: string, difficulty?: string, search?: string }): Promise<{ questions: Question[], total: number }>;
+  getQuestionsPaginated(
+    offset: number,
+    limit: number,
+    filters?: {
+      subjectSlug?: string;
+      examSlug?: string;
+      difficulty?: string;
+      search?: string;
+    }
+  ): Promise<{ questions: Question[]; total: number }>;
   getQuestionsByExam(examSlug: string): Promise<Question[]>;
   getQuestion(id: number): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
-  updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined>;
+  updateQuestion(
+    id: number,
+    question: Partial<InsertQuestion>
+  ): Promise<Question | undefined>;
   deleteQuestion(id: number): Promise<boolean>;
   getQuestionCount(): Promise<number>;
-  batchCreateQuestions(questions: InsertQuestion[]): Promise<{ created: number, failed: number, errors: string[] }>;
+  batchCreateQuestions(
+    questions: InsertQuestion[]
+  ): Promise<{ created: number; failed: number; errors: string[] }>;
 
   // Exam Sessions
   getExamSessions(): Promise<ExamSession[]>;
   getExamSession(id: number): Promise<ExamSession | undefined>;
   createExamSession(session: InsertExamSession): Promise<ExamSession>;
-  updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined>;
+  updateExamSession(
+    id: number,
+    session: Partial<InsertExamSession>
+  ): Promise<ExamSession | undefined>;
   deleteExamSession(id: number): Promise<boolean>;
 
   // Comments
@@ -154,7 +211,10 @@ export interface IStorage {
   getCommentsByQuestion(questionId: number): Promise<Comment[]>;
   getComment(id: number): Promise<Comment | undefined>;
   createComment(comment: InsertComment): Promise<Comment>;
-  updateComment(id: number, comment: Partial<InsertComment>): Promise<Comment | undefined>;
+  updateComment(
+    id: number,
+    comment: Partial<InsertComment>
+  ): Promise<Comment | undefined>;
   deleteComment(id: number): Promise<boolean>;
 
   // Users
@@ -181,10 +241,17 @@ export interface IStorage {
 
   // Upload management
   getUploads(): Promise<Upload[]>;
-  getUploadsPaginated(offset: number, limit: number, fileType?: string): Promise<{ uploads: Upload[], total: number }>;
+  getUploadsPaginated(
+    offset: number,
+    limit: number,
+    fileType?: string
+  ): Promise<{ uploads: Upload[]; total: number }>;
   getUpload(id: number): Promise<Upload | undefined>;
   createUpload(upload: InsertUpload): Promise<Upload>;
-  updateUpload(id: number, upload: Partial<InsertUpload>): Promise<Upload | undefined>;
+  updateUpload(
+    id: number,
+    upload: Partial<InsertUpload>
+  ): Promise<Upload | undefined>;
   deleteUpload(id: number): Promise<boolean>;
   getUploadsByType(fileType: string): Promise<Upload[]>;
   getUploadsByUser(userId: number): Promise<Upload[]>;
@@ -200,23 +267,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCategory(slug: string): Promise<Category | undefined> {
-    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, slug));
     return category;
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
     // Generate slug if not provided
     if (!category.slug) {
-      category.slug = await generateUniqueSlug(slugify(category.name), 'categories');
+      category.slug = await generateUniqueSlug(
+        slugify(category.name),
+        "categories"
+      );
     }
-    const [newCategory] = await db.insert(categories).values(category).returning();
+    const [newCategory] = await db
+      .insert(categories)
+      .values(category)
+      .returning();
     return newCategory;
   }
 
-  async updateCategory(slug: string, category: Partial<InsertCategory>): Promise<Category | undefined> {
+  async updateCategory(
+    slug: string,
+    category: Partial<InsertCategory>
+  ): Promise<Category | undefined> {
     // Generate new slug if name is being updated
     if (category.name && !category.slug) {
-      category.slug = await generateUniqueSlug(slugify(category.name), 'categories', slug);
+      category.slug = await generateUniqueSlug(
+        slugify(category.name),
+        "categories",
+        slug
+      );
     }
     const [updatedCategory] = await db
       .update(categories)
@@ -236,28 +319,51 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(subcategories);
   }
 
-  async getSubcategoriesByCategory(categorySlug: string): Promise<Subcategory[]> {
-    return await db.select().from(subcategories).where(eq(subcategories.categorySlug, categorySlug));
+  async getSubcategoriesByCategory(
+    categorySlug: string
+  ): Promise<Subcategory[]> {
+    return await db
+      .select()
+      .from(subcategories)
+      .where(eq(subcategories.categorySlug, categorySlug));
   }
 
   async getSubcategory(slug: string): Promise<Subcategory | undefined> {
-    const [subcategory] = await db.select().from(subcategories).where(eq(subcategories.slug, slug));
+    const [subcategory] = await db
+      .select()
+      .from(subcategories)
+      .where(eq(subcategories.slug, slug));
     return subcategory;
   }
 
-  async createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory> {
+  async createSubcategory(
+    subcategory: InsertSubcategory
+  ): Promise<Subcategory> {
     // Generate slug if not provided
     if (!subcategory.slug) {
-      subcategory.slug = await generateUniqueSlug(slugify(subcategory.name), 'subcategories');
+      subcategory.slug = await generateUniqueSlug(
+        slugify(subcategory.name),
+        "subcategories"
+      );
     }
-    const [newSubcategory] = await db.insert(subcategories).values(subcategory).returning();
+    const [newSubcategory] = await db
+      .insert(subcategories)
+      .values(subcategory)
+      .returning();
     return newSubcategory;
   }
 
-  async updateSubcategory(slug: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined> {
+  async updateSubcategory(
+    slug: string,
+    subcategory: Partial<InsertSubcategory>
+  ): Promise<Subcategory | undefined> {
     // Generate new slug if name is being updated
     if (subcategory.name && !subcategory.slug) {
-      subcategory.slug = await generateUniqueSlug(slugify(subcategory.name), 'subcategories', slug);
+      subcategory.slug = await generateUniqueSlug(
+        slugify(subcategory.name),
+        "subcategories",
+        slug
+      );
     }
     const [updatedSubcategory] = await db
       .update(subcategories)
@@ -268,45 +374,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSubcategory(slug: string): Promise<boolean> {
-    const result = await db.delete(subcategories).where(eq(subcategories.slug, slug));
+    const result = await db
+      .delete(subcategories)
+      .where(eq(subcategories.slug, slug));
     return (result.rowCount || 0) > 0;
   }
 
   // Subjects - OPTIMIZED: Specify required columns instead of SELECT *
   async getSubjects(): Promise<Subject[]> {
-    return await db.select({
-      slug: subjects.slug,
-      name: subjects.name,
-      description: subjects.description,
-      icon: subjects.icon,
-      color: subjects.color,
-      categorySlug: subjects.categorySlug,
-      subcategorySlug: subjects.subcategorySlug,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      isActive: subjects.isActive,
-      createdAt: subjects.createdAt,
-      updatedAt: subjects.updatedAt,
-      color: subjects.color,
-      categorySlug: subjects.categorySlug,
-      subcategorySlug: subjects.subcategorySlug,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount
-    }).from(subjects);
+    return await db
+      .select({
+        slug: subjects.slug,
+        name: subjects.name,
+        description: subjects.description,
+        icon: subjects.icon,
+        color: subjects.color,
+        categorySlug: subjects.categorySlug,
+        subcategorySlug: subjects.subcategorySlug,
+        examCount: subjects.examCount,
+        questionCount: subjects.questionCount,
+        isActive: subjects.isActive,
+        createdAt: subjects.createdAt,
+        updatedAt: subjects.updatedAt,
+      })
+      .from(subjects);
   }
 
   async getSubject(slug: string): Promise<Subject | undefined> {
-    const [subject] = await db.select({
-      slug: subjects.slug,
-      name: subjects.name,
-      description: subjects.description,
-      icon: subjects.icon,
-      color: subjects.color,
-      categorySlug: subjects.categorySlug,
-      subcategorySlug: subjects.subcategorySlug,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount
-    }).from(subjects).where(eq(subjects.slug, slug));
+    const [subject] = await db
+      .select({
+        slug: subjects.slug,
+        name: subjects.name,
+        description: subjects.description,
+        icon: subjects.icon,
+        color: subjects.color,
+        categorySlug: subjects.categorySlug,
+        subcategorySlug: subjects.subcategorySlug,
+        examCount: subjects.examCount,
+        questionCount: subjects.questionCount,
+      })
+      .from(subjects)
+      .where(eq(subjects.slug, slug));
     return subject;
   }
 
@@ -319,11 +427,11 @@ export class DatabaseStorage implements IStorage {
     // Auto-generate slug if not provided
     if (!subject.slug) {
       const baseSlug = slugify(subject.name);
-      subject.slug = await generateUniqueSlug(baseSlug, 'subjects');
+      subject.slug = await generateUniqueSlug(baseSlug, "subjects");
     }
-    
+
     const [newSubject] = await db.insert(subjects).values(subject).returning();
-    
+
     // Invalidate sitemap cache after creating subject
     try {
       const sitemap = await getSitemapService();
@@ -331,25 +439,28 @@ export class DatabaseStorage implements IStorage {
         await sitemap.invalidateSitemapCache();
       }
     } catch (error) {
-      console.error('Failed to invalidate sitemap cache:', error);
+      console.error("Failed to invalidate sitemap cache:", error);
     }
-    
+
     return newSubject;
   }
 
-  async updateSubject(slug: string, subject: Partial<InsertSubject>): Promise<Subject | undefined> {
+  async updateSubject(
+    slug: string,
+    subject: Partial<InsertSubject>
+  ): Promise<Subject | undefined> {
     // Auto-regenerate slug whenever name is being updated (unless custom slug is explicitly provided)
     if (subject.name && !subject.slug) {
       const baseSlug = slugify(subject.name);
-      subject.slug = await generateUniqueSlug(baseSlug, 'subjects', slug);
+      subject.slug = await generateUniqueSlug(baseSlug, "subjects", slug);
     }
-    
+
     const [updatedSubject] = await db
       .update(subjects)
       .set(subject)
       .where(eq(subjects.slug, slug))
       .returning();
-    
+
     // Invalidate sitemap cache after updating subject
     if (updatedSubject) {
       try {
@@ -358,10 +469,10 @@ export class DatabaseStorage implements IStorage {
           await sitemap.invalidateSitemapCache();
         }
       } catch (error) {
-        console.error('Failed to invalidate sitemap cache:', error);
+        console.error("Failed to invalidate sitemap cache:", error);
       }
     }
-    
+
     return updatedSubject;
   }
 
@@ -380,61 +491,71 @@ export class DatabaseStorage implements IStorage {
 
   // Exams - OPTIMIZED: Specify required columns and add pagination support
   async getExams(): Promise<Exam[]> {
-    return await db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      icon: exams.icon,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams);
+    return await db
+      .select({
+        slug: exams.slug,
+        subjectSlug: exams.subjectSlug,
+        title: exams.title,
+        description: exams.description,
+        icon: exams.icon,
+        questionCount: exams.questionCount,
+        duration: exams.duration,
+        difficulty: exams.difficulty,
+        isActive: exams.isActive,
+      })
+      .from(exams);
   }
 
   async getExamsBySubject(subjectSlug: string): Promise<Exam[]> {
-    return await db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      icon: exams.icon,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams).where(eq(exams.subjectSlug, subjectSlug));
+    return await db
+      .select({
+        slug: exams.slug,
+        subjectSlug: exams.subjectSlug,
+        title: exams.title,
+        description: exams.description,
+        icon: exams.icon,
+        questionCount: exams.questionCount,
+        duration: exams.duration,
+        difficulty: exams.difficulty,
+        isActive: exams.isActive,
+      })
+      .from(exams)
+      .where(eq(exams.subjectSlug, subjectSlug));
   }
 
   async getExamsBySubcategory(subcategorySlug: string): Promise<Exam[]> {
-    return await db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      icon: exams.icon,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams)
-    .innerJoin(subjects, eq(exams.subjectSlug, subjects.slug))
-    .where(eq(subjects.subcategorySlug, subcategorySlug));
+    return await db
+      .select({
+        slug: exams.slug,
+        subjectSlug: exams.subjectSlug,
+        title: exams.title,
+        description: exams.description,
+        icon: exams.icon,
+        questionCount: exams.questionCount,
+        duration: exams.duration,
+        difficulty: exams.difficulty,
+        isActive: exams.isActive,
+      })
+      .from(exams)
+      .innerJoin(subjects, eq(exams.subjectSlug, subjects.slug))
+      .where(eq(subjects.subcategorySlug, subcategorySlug));
   }
 
   async getExam(slug: string): Promise<Exam | undefined> {
-    const [exam] = await db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      icon: exams.icon,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams).where(eq(exams.slug, slug));
+    const [exam] = await db
+      .select({
+        slug: exams.slug,
+        subjectSlug: exams.subjectSlug,
+        title: exams.title,
+        description: exams.description,
+        icon: exams.icon,
+        questionCount: exams.questionCount,
+        duration: exams.duration,
+        difficulty: exams.difficulty,
+        isActive: exams.isActive,
+      })
+      .from(exams)
+      .where(eq(exams.slug, slug));
     return exam;
   }
 
@@ -450,9 +571,12 @@ export class DatabaseStorage implements IStorage {
 
   // Dynamic question counting methods
   async getQuestionCountByExam(examSlug: string): Promise<number> {
-    const [result] = await db.select({ 
-      count: sql<number>`COUNT(*)` 
-    }).from(questions).where(eq(questions.examSlug, examSlug));
+    const [result] = await db
+      .select({
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(questions)
+      .where(eq(questions.examSlug, examSlug));
     return Number(result.count);
   }
 
@@ -467,19 +591,19 @@ export class DatabaseStorage implements IStorage {
     // Auto-generate slug if not provided
     if (!exam.slug) {
       const baseSlug = slugify(exam.title);
-      exam.slug = await generateUniqueSlug(baseSlug, 'exams');
+      exam.slug = await generateUniqueSlug(baseSlug, "exams");
     }
-    
+
     const [newExam] = await db.insert(exams).values(exam).returning();
-    
+
     // Update subject exam count
     await db
       .update(subjects)
       .set({
-        examCount: sql`${subjects.examCount} + 1`
+        examCount: sql`${subjects.examCount} + 1`,
       })
       .where(eq(subjects.slug, exam.subjectSlug));
-    
+
     // Invalidate sitemap cache after creating exam
     try {
       const sitemap = await getSitemapService();
@@ -487,25 +611,28 @@ export class DatabaseStorage implements IStorage {
         await sitemap.invalidateSitemapCache();
       }
     } catch (error) {
-      console.error('Failed to invalidate sitemap cache:', error);
+      console.error("Failed to invalidate sitemap cache:", error);
     }
-    
+
     return newExam;
   }
 
-  async updateExam(slug: string, exam: Partial<InsertExam>): Promise<Exam | undefined> {
+  async updateExam(
+    slug: string,
+    exam: Partial<InsertExam>
+  ): Promise<Exam | undefined> {
     // Auto-regenerate slug whenever title is being updated (unless custom slug is explicitly provided)
     if (exam.title && !exam.slug) {
       const baseSlug = slugify(exam.title);
-      exam.slug = await generateUniqueSlug(baseSlug, 'exams', slug);
+      exam.slug = await generateUniqueSlug(baseSlug, "exams", slug);
     }
-    
+
     const [updatedExam] = await db
       .update(exams)
       .set(exam)
       .where(eq(exams.slug, slug))
       .returning();
-    
+
     // Invalidate sitemap cache after updating exam
     if (updatedExam) {
       try {
@@ -514,10 +641,10 @@ export class DatabaseStorage implements IStorage {
           await sitemap.invalidateSitemapCache();
         }
       } catch (error) {
-        console.error('Failed to invalidate sitemap cache:', error);
+        console.error("Failed to invalidate sitemap cache:", error);
       }
     }
-    
+
     return updatedExam;
   }
 
@@ -525,15 +652,15 @@ export class DatabaseStorage implements IStorage {
     // Get the exam before deleting to know which subject to update
     const [exam] = await db.select().from(exams).where(eq(exams.slug, slug));
     if (!exam) return false;
-    
+
     const result = await db.delete(exams).where(eq(exams.slug, slug));
-    
+
     if ((result.rowCount || 0) > 0) {
       // Update subject exam count
       await db
         .update(subjects)
         .set({
-          examCount: sql`GREATEST(${subjects.examCount} - 1, 0)`
+          examCount: sql`GREATEST(${subjects.examCount} - 1, 0)`,
         })
         .where(eq(subjects.slug, exam.subjectSlug));
       return true;
@@ -542,120 +669,142 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getExamCount(): Promise<number> {
-    const [result] = await db.select({ count: sql<number>`count(*)` }).from(exams);
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(exams);
     return result.count;
   }
 
   // Questions - OPTIMIZED: Specify required columns and add pagination support
   async getQuestions(): Promise<Question[]> {
-    return await db.select({
-      id: questions.id,
-      text: questions.text,
-      options: questions.options,
-      correctAnswer: questions.correctAnswer,
-      correctAnswers: questions.correctAnswers,
-      allowMultipleAnswers: questions.allowMultipleAnswers,
-      explanation: questions.explanation,
-      difficulty: questions.difficulty,
-      domain: questions.domain,
-      order: questions.order,
-      subjectSlug: questions.subjectSlug,
-      examSlug: questions.examSlug
-    }).from(questions);
+    return await db
+      .select({
+        id: questions.id,
+        text: questions.text,
+        options: questions.options,
+        correctAnswer: questions.correctAnswer,
+        correctAnswers: questions.correctAnswers,
+        allowMultipleAnswers: questions.allowMultipleAnswers,
+        explanation: questions.explanation,
+        difficulty: questions.difficulty,
+        domain: questions.domain,
+        order: questions.order,
+        subjectSlug: questions.subjectSlug,
+        examSlug: questions.examSlug,
+      })
+      .from(questions);
   }
 
   async getQuestionsByExam(examSlug: string): Promise<Question[]> {
-    return await db.select({
-      id: questions.id,
-      text: questions.text,
-      options: questions.options,
-      correctAnswer: questions.correctAnswer,
-      correctAnswers: questions.correctAnswers,
-      allowMultipleAnswers: questions.allowMultipleAnswers,
-      explanation: questions.explanation,
-      difficulty: questions.difficulty,
-      domain: questions.domain,
-      order: questions.order,
-      subjectSlug: questions.subjectSlug,
-      examSlug: questions.examSlug
-    }).from(questions).where(eq(questions.examSlug, examSlug));
+    return await db
+      .select({
+        id: questions.id,
+        text: questions.text,
+        options: questions.options,
+        correctAnswer: questions.correctAnswer,
+        correctAnswers: questions.correctAnswers,
+        allowMultipleAnswers: questions.allowMultipleAnswers,
+        explanation: questions.explanation,
+        difficulty: questions.difficulty,
+        domain: questions.domain,
+        order: questions.order,
+        subjectSlug: questions.subjectSlug,
+        examSlug: questions.examSlug,
+      })
+      .from(questions)
+      .where(eq(questions.examSlug, examSlug));
   }
 
   async getQuestion(id: number): Promise<Question | undefined> {
-    const [question] = await db.select({
-      id: questions.id,
-      text: questions.text,
-      options: questions.options,
-      correctAnswer: questions.correctAnswer,
-      correctAnswers: questions.correctAnswers,
-      allowMultipleAnswers: questions.allowMultipleAnswers,
-      explanation: questions.explanation,
-      difficulty: questions.difficulty,
-      domain: questions.domain,
-      order: questions.order,
-      subjectSlug: questions.subjectSlug,
-      examSlug: questions.examSlug
-    }).from(questions).where(eq(questions.id, id));
+    const [question] = await db
+      .select({
+        id: questions.id,
+        text: questions.text,
+        options: questions.options,
+        correctAnswer: questions.correctAnswer,
+        correctAnswers: questions.correctAnswers,
+        allowMultipleAnswers: questions.allowMultipleAnswers,
+        explanation: questions.explanation,
+        difficulty: questions.difficulty,
+        domain: questions.domain,
+        order: questions.order,
+        subjectSlug: questions.subjectSlug,
+        examSlug: questions.examSlug,
+      })
+      .from(questions)
+      .where(eq(questions.id, id));
     return question;
   }
 
   // PERFORMANCE OPTIMIZED: Use transaction for atomic operations
   async createQuestion(question: InsertQuestion): Promise<Question> {
     return await db.transaction(async (tx) => {
-      const [newQuestion] = await tx.insert(questions).values(question).returning();
-      
+      const [newQuestion] = await tx
+        .insert(questions)
+        .values(question)
+        .returning();
+
       // Atomically update subject question count
       await tx
         .update(subjects)
         .set({
-          questionCount: sql`${subjects.questionCount} + 1`
+          questionCount: sql`${subjects.questionCount} + 1`,
         })
         .where(eq(subjects.slug, question.subjectSlug));
-      
+
       return newQuestion;
     });
   }
 
-  async updateQuestion(id: number, question: Partial<InsertQuestion>): Promise<Question | undefined> {
+  async updateQuestion(
+    id: number,
+    question: Partial<InsertQuestion>
+  ): Promise<Question | undefined> {
     // FIXED: Handle subject/exam slug changes by updating counts
     const originalQuestion = await this.getQuestion(id);
-    
+
     const [updatedQuestion] = await db
       .update(questions)
       .set(question)
       .where(eq(questions.id, id))
       .returning();
-    
+
     // If subject or exam changed, update counts
-    if (updatedQuestion && originalQuestion && 
-        (question.subjectSlug !== originalQuestion.subjectSlug || 
-         question.examSlug !== originalQuestion.examSlug)) {
-      
+    if (
+      updatedQuestion &&
+      originalQuestion &&
+      (question.subjectSlug !== originalQuestion.subjectSlug ||
+        question.examSlug !== originalQuestion.examSlug)
+    ) {
       // Decrement old counts
       if (originalQuestion.subjectSlug) {
-        await db.update(subjects)
+        await db
+          .update(subjects)
           .set({ questionCount: sql`${subjects.questionCount} - 1` })
           .where(eq(subjects.slug, originalQuestion.subjectSlug));
       }
       if (originalQuestion.examSlug) {
-        await db.update(exams)
+        await db
+          .update(exams)
           .set({ questionCount: sql`${exams.questionCount} - 1` })
           .where(eq(exams.slug, originalQuestion.examSlug));
       }
-      
+
       // Increment new counts
       if (updatedQuestion.subjectSlug) {
-        await db.update(subjects)
+        await db
+          .update(subjects)
           .set({ questionCount: sql`${subjects.questionCount} + 1` })
           .where(eq(subjects.slug, updatedQuestion.subjectSlug));
       }
       if (updatedQuestion.examSlug) {
-        await db.update(exams)
+        await db
+          .update(exams)
           .set({ questionCount: sql`${exams.questionCount} + 1` })
           .where(eq(exams.slug, updatedQuestion.examSlug));
       }
     }
-    
+
     return updatedQuestion;
   }
 
@@ -663,17 +812,20 @@ export class DatabaseStorage implements IStorage {
   async deleteQuestion(id: number): Promise<boolean> {
     return await db.transaction(async (tx) => {
       // Get the question before deleting to know which subject to update
-      const [question] = await tx.select().from(questions).where(eq(questions.id, id));
+      const [question] = await tx
+        .select()
+        .from(questions)
+        .where(eq(questions.id, id));
       if (!question) return false;
-      
+
       const result = await tx.delete(questions).where(eq(questions.id, id));
-      
+
       if ((result.rowCount || 0) > 0) {
         // Atomically update subject question count
         await tx
           .update(subjects)
           .set({
-            questionCount: sql`GREATEST(${subjects.questionCount} - 1, 0)`
+            questionCount: sql`GREATEST(${subjects.questionCount} - 1, 0)`,
           })
           .where(eq(subjects.slug, question.subjectSlug));
         return true;
@@ -692,44 +844,77 @@ export class DatabaseStorage implements IStorage {
 
   // Exam Sessions - Enhanced with hierarchical relationships
   async getExamSessions(): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).orderBy(desc(examSessions.createdAt));
+    return await db
+      .select()
+      .from(examSessions)
+      .orderBy(desc(examSessions.createdAt));
   }
 
   async getExamSession(id: number): Promise<ExamSession | undefined> {
-    const [session] = await db.select().from(examSessions).where(eq(examSessions.id, id));
+    const [session] = await db
+      .select()
+      .from(examSessions)
+      .where(eq(examSessions.id, id));
     return session;
   }
 
-  async getExamSessionBySessionKey(sessionKey: string): Promise<ExamSession | undefined> {
-    const [session] = await db.select().from(examSessions).where(eq(examSessions.sessionKey, sessionKey));
+  async getExamSessionBySessionKey(
+    sessionKey: string
+  ): Promise<ExamSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(examSessions)
+      .where(eq(examSessions.sessionKey, sessionKey));
     return session;
   }
 
   async getUserExamSessions(userName: string): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.userName, userName)).orderBy(desc(examSessions.createdAt));
+    return await db
+      .select()
+      .from(examSessions)
+      .where(eq(examSessions.userName, userName))
+      .orderBy(desc(examSessions.createdAt));
   }
 
   async getExamSessionsByExam(examSlug: string): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.examSlug, examSlug)).orderBy(desc(examSessions.createdAt));
+    return await db
+      .select()
+      .from(examSessions)
+      .where(eq(examSessions.examSlug, examSlug))
+      .orderBy(desc(examSessions.createdAt));
   }
 
   async getExamSessionsBySubject(subjectSlug: string): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.subjectSlug, subjectSlug)).orderBy(desc(examSessions.createdAt));
+    return await db
+      .select()
+      .from(examSessions)
+      .where(eq(examSessions.subjectSlug, subjectSlug))
+      .orderBy(desc(examSessions.createdAt));
   }
 
   async getActiveExamSessions(): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.isCompleted, false)).orderBy(desc(examSessions.createdAt));
+    return await db
+      .select()
+      .from(examSessions)
+      .where(eq(examSessions.isCompleted, false))
+      .orderBy(desc(examSessions.createdAt));
   }
 
   async createExamSession(session: InsertExamSession): Promise<ExamSession> {
-    const [newSession] = await db.insert(examSessions).values(session).returning();
+    const [newSession] = await db
+      .insert(examSessions)
+      .values(session)
+      .returning();
     return newSession;
   }
 
-  async updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined> {
+  async updateExamSession(
+    id: number,
+    session: Partial<InsertExamSession>
+  ): Promise<ExamSession | undefined> {
     const updatedSession = {
       ...session,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
     const [updated] = await db
       .update(examSessions)
@@ -739,7 +924,11 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async completeExamSession(id: number, score: number, isPassed: boolean): Promise<ExamSession | undefined> {
+  async completeExamSession(
+    id: number,
+    score: number,
+    isPassed: boolean
+  ): Promise<ExamSession | undefined> {
     const [completed] = await db
       .update(examSessions)
       .set({
@@ -747,7 +936,7 @@ export class DatabaseStorage implements IStorage {
         isPassed: isPassed,
         score: score,
         completedAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(examSessions.id, id))
       .returning();
@@ -761,42 +950,52 @@ export class DatabaseStorage implements IStorage {
 
   // Comments - OPTIMIZED: Specify required columns and add ordering
   async getComments(): Promise<Comment[]> {
-    return await db.select({
-      id: comments.id,
-      questionId: comments.questionId,
-      authorName: comments.authorName,
-      content: comments.content,
-      createdAt: comments.createdAt,
-      parentId: comments.parentId,
-      isEdited: comments.isEdited,
-      editedAt: comments.editedAt
-    }).from(comments).orderBy(desc(comments.createdAt));
+    return await db
+      .select({
+        id: comments.id,
+        questionId: comments.questionId,
+        authorName: comments.authorName,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        parentId: comments.parentId,
+        isEdited: comments.isEdited,
+        editedAt: comments.editedAt,
+      })
+      .from(comments)
+      .orderBy(desc(comments.createdAt));
   }
 
   async getCommentsByQuestion(questionId: number): Promise<Comment[]> {
-    return await db.select({
-      id: comments.id,
-      questionId: comments.questionId,
-      authorName: comments.authorName,
-      content: comments.content,
-      createdAt: comments.createdAt,
-      parentId: comments.parentId,
-      isEdited: comments.isEdited,
-      editedAt: comments.editedAt
-    }).from(comments).where(eq(comments.questionId, questionId)).orderBy(desc(comments.createdAt));
+    return await db
+      .select({
+        id: comments.id,
+        questionId: comments.questionId,
+        authorName: comments.authorName,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        parentId: comments.parentId,
+        isEdited: comments.isEdited,
+        editedAt: comments.editedAt,
+      })
+      .from(comments)
+      .where(eq(comments.questionId, questionId))
+      .orderBy(desc(comments.createdAt));
   }
 
   async getComment(id: number): Promise<Comment | undefined> {
-    const [comment] = await db.select({
-      id: comments.id,
-      questionId: comments.questionId,
-      authorName: comments.authorName,
-      content: comments.content,
-      createdAt: comments.createdAt,
-      parentId: comments.parentId,
-      isEdited: comments.isEdited,
-      editedAt: comments.editedAt
-    }).from(comments).where(eq(comments.id, id));
+    const [comment] = await db
+      .select({
+        id: comments.id,
+        questionId: comments.questionId,
+        authorName: comments.authorName,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        parentId: comments.parentId,
+        isEdited: comments.isEdited,
+        editedAt: comments.editedAt,
+      })
+      .from(comments)
+      .where(eq(comments.id, id));
     return comment;
   }
 
@@ -805,7 +1004,10 @@ export class DatabaseStorage implements IStorage {
     return newComment;
   }
 
-  async updateComment(id: number, comment: Partial<InsertComment>): Promise<Comment | undefined> {
+  async updateComment(
+    id: number,
+    comment: Partial<InsertComment>
+  ): Promise<Comment | undefined> {
     const [updatedComment] = await db
       .update(comments)
       .set(comment)
@@ -821,123 +1023,8 @@ export class DatabaseStorage implements IStorage {
 
   // Users - OPTIMIZED: Specify required columns for security (exclude sensitive fields by default)
   async getUsers(): Promise<User[]> {
-    return await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      profileImage: users.profileImage,
-      role: users.role,
-      isActive: users.isActive,
-      isBanned: users.isBanned,
-      banReason: users.banReason,
-      emailVerified: users.emailVerified,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt,
-      lastLoginIp: users.lastLoginIp,
-      registrationIp: users.registrationIp,
-      loginCount: users.loginCount,
-      failedLoginAttempts: users.failedLoginAttempts,
-      lockedUntil: users.lockedUntil,
-      passwordHash: users.passwordHash,
-      emailVerificationToken: users.emailVerificationToken,
-      emailVerificationExpires: users.emailVerificationExpires,
-      passwordResetToken: users.passwordResetToken,
-      passwordResetExpires: users.passwordResetExpires,
-      metadata: users.metadata
-    }).from(users);
-  }
-
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
-  }
-
-  async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
-    return newUser;
-  }
-
-  async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ ...user, updatedAt: new Date() })
-      .where(eq(users.id, id))
-      .returning();
-    return updatedUser;
-  }
-
-  async deleteUser(id: number): Promise<boolean> {
-    const result = await db.delete(users).where(eq(users.id, id));
-    return (result.rowCount || 0) > 0;
-  }
-
-  async banUser(id: number, reason: string): Promise<boolean> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ 
-        isBanned: true,
-        metadata: JSON.stringify({ banReason: reason, bannedAt: new Date().toISOString() }),
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return !!updatedUser;
-  }
-
-  async unbanUser(id: number): Promise<boolean> {
-    const [updatedUser] = await db
-      .update(users)
-      .set({ 
-        isBanned: false,
-        metadata: JSON.stringify({ unbannedAt: new Date().toISOString() }),
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return !!updatedUser;
-  }
-
-  async getUsersWithFilters(filters: {
-    role?: string;
-    isActive?: boolean;
-    isBanned?: boolean;
-    search?: string;
-  }): Promise<User[]> {
-    const conditions = [];
-
-    if (filters.role) {
-      conditions.push(eq(users.role, filters.role as 'admin' | 'user' | 'moderator'));
-    }
-    if (filters.isActive !== undefined) {
-      conditions.push(eq(users.isActive, filters.isActive));
-    }
-    if (filters.isBanned !== undefined) {
-      conditions.push(eq(users.isBanned, filters.isBanned));
-    }
-    if (filters.search) {
-      conditions.push(
-        or(
-          like(users.username, `%${filters.search}%`),
-          like(users.email, `%${filters.search}%`)
-        )
-      );
-    }
-
-    if (conditions.length > 0) {
-      return await db.select({
+    return await db
+      .select({
         id: users.id,
         username: users.username,
         email: users.email,
@@ -962,84 +1049,231 @@ export class DatabaseStorage implements IStorage {
         emailVerificationExpires: users.emailVerificationExpires,
         passwordResetToken: users.passwordResetToken,
         passwordResetExpires: users.passwordResetExpires,
-        metadata: users.metadata
-      }).from(users).where(and(...conditions));
+        metadata: users.metadata,
+      })
+      .from(users);
+  }
+
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async updateUser(
+    id: number,
+    user: Partial<InsertUser>
+  ): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ ...user, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async banUser(id: number, reason: string): Promise<boolean> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        isBanned: true,
+        metadata: JSON.stringify({
+          banReason: reason,
+          bannedAt: new Date().toISOString(),
+        }),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return !!updatedUser;
+  }
+
+  async unbanUser(id: number): Promise<boolean> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        isBanned: false,
+        metadata: JSON.stringify({ unbannedAt: new Date().toISOString() }),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return !!updatedUser;
+  }
+
+  async getUsersWithFilters(filters: {
+    role?: string;
+    isActive?: boolean;
+    isBanned?: boolean;
+    search?: string;
+  }): Promise<User[]> {
+    const conditions = [];
+
+    if (filters.role) {
+      conditions.push(
+        eq(users.role, filters.role as "admin" | "user" | "moderator")
+      );
+    }
+    if (filters.isActive !== undefined) {
+      conditions.push(eq(users.isActive, filters.isActive));
+    }
+    if (filters.isBanned !== undefined) {
+      conditions.push(eq(users.isBanned, filters.isBanned));
+    }
+    if (filters.search) {
+      conditions.push(
+        or(
+          like(users.username, `%${filters.search}%`),
+          like(users.email, `%${filters.search}%`)
+        )
+      );
     }
 
-    return await db.select({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      profileImage: users.profileImage,
-      role: users.role,
-      isActive: users.isActive,
-      isBanned: users.isBanned,
-      banReason: users.banReason,
-      emailVerified: users.emailVerified,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      lastLoginAt: users.lastLoginAt,
-      lastLoginIp: users.lastLoginIp,
-      registrationIp: users.registrationIp,
-      loginCount: users.loginCount,
-      failedLoginAttempts: users.failedLoginAttempts,
-      lockedUntil: users.lockedUntil,
-      passwordHash: users.passwordHash,
-      emailVerificationToken: users.emailVerificationToken,
-      emailVerificationExpires: users.emailVerificationExpires,
-      passwordResetToken: users.passwordResetToken,
-      passwordResetExpires: users.passwordResetExpires,
-      metadata: users.metadata
-    }).from(users);
+    if (conditions.length > 0) {
+      return await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImage: users.profileImage,
+          role: users.role,
+          isActive: users.isActive,
+          isBanned: users.isBanned,
+          banReason: users.banReason,
+          emailVerified: users.emailVerified,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          lastLoginAt: users.lastLoginAt,
+          lastLoginIp: users.lastLoginIp,
+          registrationIp: users.registrationIp,
+          loginCount: users.loginCount,
+          failedLoginAttempts: users.failedLoginAttempts,
+          lockedUntil: users.lockedUntil,
+          passwordHash: users.passwordHash,
+          emailVerificationToken: users.emailVerificationToken,
+          emailVerificationExpires: users.emailVerificationExpires,
+          passwordResetToken: users.passwordResetToken,
+          passwordResetExpires: users.passwordResetExpires,
+          metadata: users.metadata,
+        })
+        .from(users)
+        .where(and(...conditions));
+    }
+
+    return await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImage: users.profileImage,
+        role: users.role,
+        isActive: users.isActive,
+        isBanned: users.isBanned,
+        banReason: users.banReason,
+        emailVerified: users.emailVerified,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        lastLoginAt: users.lastLoginAt,
+        lastLoginIp: users.lastLoginIp,
+        registrationIp: users.registrationIp,
+        loginCount: users.loginCount,
+        failedLoginAttempts: users.failedLoginAttempts,
+        lockedUntil: users.lockedUntil,
+        passwordHash: users.passwordHash,
+        emailVerificationToken: users.emailVerificationToken,
+        emailVerificationExpires: users.emailVerificationExpires,
+        passwordResetToken: users.passwordResetToken,
+        passwordResetExpires: users.passwordResetExpires,
+        metadata: users.metadata,
+      })
+      .from(users);
   }
 
   // Audit Logs - FIXED: Match actual table columns
   async getAuditLogs(): Promise<AuditLog[]> {
-    return await db.select({
-      id: auditLogs.id,
-      adminId: auditLogs.adminId,
-      adminEmail: auditLogs.adminEmail,
-      action: auditLogs.action,
-      resourceType: auditLogs.resourceType,
-      resourceId: auditLogs.resourceId,
-      changes: auditLogs.changes,
-      timestamp: auditLogs.timestamp,
-      ipAddress: auditLogs.ipAddress,
-      userAgent: auditLogs.userAgent
-    }).from(auditLogs).orderBy(desc(auditLogs.timestamp)).limit(100); // Limit for performance
+    return await db
+      .select({
+        id: auditLogs.id,
+        adminId: auditLogs.adminId,
+        adminEmail: auditLogs.adminEmail,
+        action: auditLogs.action,
+        resourceType: auditLogs.resourceType,
+        resourceId: auditLogs.resourceId,
+        changes: auditLogs.changes,
+        timestamp: auditLogs.timestamp,
+        ipAddress: auditLogs.ipAddress,
+        userAgent: auditLogs.userAgent,
+      })
+      .from(auditLogs)
+      .orderBy(desc(auditLogs.timestamp))
+      .limit(100); // Limit for performance
   }
 
   async getAuditLog(id: number): Promise<AuditLog | undefined> {
-    const [result] = await db.select({
-      id: auditLogs.id,
-      adminId: auditLogs.adminId,
-      adminEmail: auditLogs.adminEmail,
-      action: auditLogs.action,
-      resourceType: auditLogs.resourceType,
-      resourceId: auditLogs.resourceId,
-      changes: auditLogs.changes,
-      timestamp: auditLogs.timestamp,
-      ipAddress: auditLogs.ipAddress,
-      userAgent: auditLogs.userAgent
-    }).from(auditLogs).where(eq(auditLogs.id, id));
+    const [result] = await db
+      .select({
+        id: auditLogs.id,
+        adminId: auditLogs.adminId,
+        adminEmail: auditLogs.adminEmail,
+        action: auditLogs.action,
+        resourceType: auditLogs.resourceType,
+        resourceId: auditLogs.resourceId,
+        changes: auditLogs.changes,
+        timestamp: auditLogs.timestamp,
+        ipAddress: auditLogs.ipAddress,
+        userAgent: auditLogs.userAgent,
+      })
+      .from(auditLogs)
+      .where(eq(auditLogs.id, id));
     return result;
   }
 
   // PERFORMANCE OPTIMIZED: Paginated methods with efficient queries
-  async getSubjectsPaginated(offset: number, limit: number, search?: string, categorySlug?: string): Promise<{ subjects: Subject[], total: number }> {
-    let query = db.select({
-      slug: subjects.slug,
-      name: subjects.name,
-      description: subjects.description,
-      icon: subjects.icon,
-      color: subjects.color,
-      categorySlug: subjects.categorySlug,
-      subcategorySlug: subjects.subcategorySlug,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount
-    }).from(subjects);
+  async getSubjectsPaginated(
+    offset: number,
+    limit: number,
+    search?: string,
+    categorySlug?: string
+  ): Promise<{ subjects: Subject[]; total: number }> {
+    let query = db
+      .select({
+        slug: subjects.slug,
+        name: subjects.name,
+        description: subjects.description,
+        icon: subjects.icon,
+        color: subjects.color,
+        categorySlug: subjects.categorySlug,
+        subcategorySlug: subjects.subcategorySlug,
+        examCount: subjects.examCount,
+        questionCount: subjects.questionCount,
+      })
+      .from(subjects);
 
     const conditions = [];
     if (search) {
@@ -1056,28 +1290,36 @@ export class DatabaseStorage implements IStorage {
 
     const [subjectsResult, totalResult] = await Promise.all([
       query.limit(limit).offset(offset),
-      db.select({ count: sql<number>`COUNT(*)` }).from(subjects)
-        .where(conditions.length > 0 ? and(...conditions) : sql`TRUE`)
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(subjects)
+        .where(conditions.length > 0 ? and(...conditions) : sql`TRUE`),
     ]);
 
     return {
       subjects: subjectsResult,
-      total: totalResult[0].count
+      total: totalResult[0].count,
     };
   }
 
-  async getExamsPaginated(offset: number, limit: number, subjectSlug?: string): Promise<{ exams: Exam[], total: number }> {
-    let query = db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      icon: exams.icon,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams);
+  async getExamsPaginated(
+    offset: number,
+    limit: number,
+    subjectSlug?: string
+  ): Promise<{ exams: Exam[]; total: number }> {
+    let query = db
+      .select({
+        slug: exams.slug,
+        subjectSlug: exams.subjectSlug,
+        title: exams.title,
+        description: exams.description,
+        icon: exams.icon,
+        questionCount: exams.questionCount,
+        duration: exams.duration,
+        difficulty: exams.difficulty,
+        isActive: exams.isActive,
+      })
+      .from(exams);
 
     if (subjectSlug) {
       query = query.where(eq(exams.subjectSlug, subjectSlug));
@@ -1085,28 +1327,41 @@ export class DatabaseStorage implements IStorage {
 
     const [examsResult, totalResult] = await Promise.all([
       query.limit(limit).offset(offset),
-      db.select({ count: sql<number>`COUNT(*)` }).from(exams)
-        .where(subjectSlug ? eq(exams.subjectSlug, subjectSlug) : sql`TRUE`)
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(exams)
+        .where(subjectSlug ? eq(exams.subjectSlug, subjectSlug) : sql`TRUE`),
     ]);
 
     return {
       exams: examsResult,
-      total: totalResult[0].count
+      total: totalResult[0].count,
     };
   }
 
-  async getQuestionsPaginated(offset: number, limit: number, filters?: { subjectSlug?: string, examSlug?: string, difficulty?: string, search?: string }): Promise<{ questions: Question[], total: number }> {
-    let query = db.select({
-      id: questions.id,
-      text: questions.text,
-      options: questions.options,
-      correctAnswer: questions.correctAnswer,
-      explanation: questions.explanation,
-      difficulty: questions.difficulty,
-      domain: questions.domain,
-      subjectSlug: questions.subjectSlug,
-      examSlug: questions.examSlug
-    }).from(questions);
+  async getQuestionsPaginated(
+    offset: number,
+    limit: number,
+    filters?: {
+      subjectSlug?: string;
+      examSlug?: string;
+      difficulty?: string;
+      search?: string;
+    }
+  ): Promise<{ questions: Question[]; total: number }> {
+    let query = db
+      .select({
+        id: questions.id,
+        text: questions.text,
+        options: questions.options,
+        correctAnswer: questions.correctAnswer,
+        explanation: questions.explanation,
+        difficulty: questions.difficulty,
+        domain: questions.domain,
+        subjectSlug: questions.subjectSlug,
+        examSlug: questions.examSlug,
+      })
+      .from(questions);
 
     const conditions = [];
     if (filters?.subjectSlug) {
@@ -1116,7 +1371,16 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(questions.examSlug, filters.examSlug));
     }
     if (filters?.difficulty) {
-      conditions.push(eq(questions.difficulty, filters.difficulty as 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'));
+      conditions.push(
+        eq(
+          questions.difficulty,
+          filters.difficulty as
+            | "Beginner"
+            | "Intermediate"
+            | "Advanced"
+            | "Expert"
+        )
+      );
     }
     if (filters?.search) {
       // FIXED: searchVector column doesn't exist, use ILIKE search instead
@@ -1129,18 +1393,22 @@ export class DatabaseStorage implements IStorage {
 
     const [questionsResult, totalResult] = await Promise.all([
       query.limit(limit).offset(offset),
-      db.select({ count: sql<number>`COUNT(*)` }).from(questions)
-        .where(conditions.length > 0 ? and(...conditions) : sql`TRUE`)
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(questions)
+        .where(conditions.length > 0 ? and(...conditions) : sql`TRUE`),
     ]);
 
     return {
       questions: questionsResult,
-      total: totalResult[0].count
+      total: totalResult[0].count,
     };
   }
 
   // PERFORMANCE OPTIMIZED: Batch operations for bulk data handling
-  async batchCreateQuestions(questionsData: InsertQuestion[]): Promise<{ created: number, failed: number, errors: string[] }> {
+  async batchCreateQuestions(
+    questionsData: InsertQuestion[]
+  ): Promise<{ created: number; failed: number; errors: string[] }> {
     return await db.transaction(async (tx) => {
       let created = 0;
       let failed = 0;
@@ -1150,15 +1418,24 @@ export class DatabaseStorage implements IStorage {
       const chunkSize = 50;
       for (let i = 0; i < questionsData.length; i += chunkSize) {
         const chunk = questionsData.slice(i, i + chunkSize);
-        
+
         try {
-          const insertedQuestions = await tx.insert(questions).values(chunk).returning({ id: questions.id, subjectSlug: questions.subjectSlug });
+          const insertedQuestions = await tx
+            .insert(questions)
+            .values(chunk)
+            .returning({
+              id: questions.id,
+              subjectSlug: questions.subjectSlug,
+            });
           created += insertedQuestions.length;
 
           // Update subject question counts in batch
           const subjectCounts = new Map<string, number>();
-          insertedQuestions.forEach(q => {
-            subjectCounts.set(q.subjectSlug, (subjectCounts.get(q.subjectSlug) || 0) + 1);
+          insertedQuestions.forEach((q) => {
+            subjectCounts.set(
+              q.subjectSlug,
+              (subjectCounts.get(q.subjectSlug) || 0) + 1
+            );
           });
 
           for (const [subjectSlug, count] of subjectCounts) {
@@ -1169,7 +1446,11 @@ export class DatabaseStorage implements IStorage {
           }
         } catch (error) {
           failed += chunk.length;
-          errors.push(`Batch ${i / chunkSize + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Batch ${i / chunkSize + 1}: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
         }
       }
 
@@ -1187,22 +1468,28 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(uploads).orderBy(desc(uploads.createdAt));
   }
 
-  async getUploadsPaginated(offset: number, limit: number, fileType?: string): Promise<{ uploads: Upload[], total: number }> {
+  async getUploadsPaginated(
+    offset: number,
+    limit: number,
+    fileType?: string
+  ): Promise<{ uploads: Upload[]; total: number }> {
     let query = db.select().from(uploads);
-    
+
     if (fileType) {
       query = query.where(eq(uploads.fileType, fileType));
     }
 
     const [uploadsResult, totalResult] = await Promise.all([
       query.limit(limit).offset(offset).orderBy(desc(uploads.createdAt)),
-      db.select({ count: sql<number>`COUNT(*)` }).from(uploads)
-        .where(fileType ? eq(uploads.fileType, fileType) : sql`TRUE`)
+      db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(uploads)
+        .where(fileType ? eq(uploads.fileType, fileType) : sql`TRUE`),
     ]);
 
     return {
       uploads: uploadsResult,
-      total: totalResult[0].count
+      total: totalResult[0].count,
     };
   }
 
@@ -1216,7 +1503,10 @@ export class DatabaseStorage implements IStorage {
     return newUpload;
   }
 
-  async updateUpload(id: number, upload: Partial<InsertUpload>): Promise<Upload | undefined> {
+  async updateUpload(
+    id: number,
+    upload: Partial<InsertUpload>
+  ): Promise<Upload | undefined> {
     const [updatedUpload] = await db
       .update(uploads)
       .set({ ...upload, updatedAt: new Date() })
@@ -1231,13 +1521,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUploadsByType(fileType: string): Promise<Upload[]> {
-    return await db.select().from(uploads)
+    return await db
+      .select()
+      .from(uploads)
       .where(eq(uploads.fileType, fileType))
       .orderBy(desc(uploads.createdAt));
   }
 
   async getUploadsByUser(userId: number): Promise<Upload[]> {
-    return await db.select().from(uploads)
+    return await db
+      .select()
+      .from(uploads)
       .where(eq(uploads.uploadedBy, userId))
       .orderBy(desc(uploads.createdAt));
   }
@@ -1246,33 +1540,42 @@ export class DatabaseStorage implements IStorage {
   async backfillSlugsForExistingRecords(): Promise<void> {
     try {
       // Check for subjects without slugs
-      const subjectsWithoutSlugs = await db.select().from(subjects).where(or(eq(subjects.slug, ''), eq(subjects.slug, null)));
-      
+      const subjectsWithoutSlugs = await db
+        .select()
+        .from(subjects)
+        .where(or(eq(subjects.slug, ""), eq(subjects.slug, null)));
+
       for (const subject of subjectsWithoutSlugs) {
         const baseSlug = slugify(subject.name);
-        const uniqueSlug = await generateUniqueSlug(baseSlug, 'subjects');
-        await db.update(subjects)
+        const uniqueSlug = await generateUniqueSlug(baseSlug, "subjects");
+        await db
+          .update(subjects)
           .set({ slug: uniqueSlug })
           .where(eq(subjects.slug, subject.slug));
       }
 
       // Check for exams without slugs
-      const examsWithoutSlugs = await db.select().from(exams).where(or(eq(exams.slug, ''), eq(exams.slug, null)));
-      
+      const examsWithoutSlugs = await db
+        .select()
+        .from(exams)
+        .where(or(eq(exams.slug, ""), eq(exams.slug, null)));
+
       for (const exam of examsWithoutSlugs) {
         const baseSlug = slugify(exam.title);
-        const uniqueSlug = await generateUniqueSlug(baseSlug, 'exams');
-        await db.update(exams)
+        const uniqueSlug = await generateUniqueSlug(baseSlug, "exams");
+        await db
+          .update(exams)
           .set({ slug: uniqueSlug })
           .where(eq(exams.slug, exam.slug));
       }
 
-      console.log(`✓ Backfilled slugs for ${subjectsWithoutSlugs.length} subjects and ${examsWithoutSlugs.length} exams`);
+      console.log(
+        `✓ Backfilled slugs for ${subjectsWithoutSlugs.length} subjects and ${examsWithoutSlugs.length} exams`
+      );
     } catch (error) {
-      console.error('Error backfilling slugs:', error);
+      console.error("Error backfilling slugs:", error);
     }
   }
-
 }
 
 // Initialize with seed data
@@ -1295,43 +1598,47 @@ async function seedDatabase() {
       {
         name: "PMP Certification",
         slug: "pmp-certification",
-        description: "Project Management Professional certification preparation",
-        icon: "project-diagram"
+        description:
+          "Project Management Professional certification preparation",
+        icon: "project-diagram",
       },
       {
         name: "AWS Certified Solutions Architect",
         slug: "aws-certified-solutions-architect",
         description: "Amazon Web Services cloud architecture certification",
-        icon: "cloud"
+        icon: "cloud",
       },
       {
         name: "CompTIA Security+",
         slug: "comptia-security",
         description: "Cybersecurity fundamentals and best practices",
-        icon: "shield"
+        icon: "shield",
       },
       {
         name: "AP Statistics",
         slug: "ap-statistics",
         description: "Advanced Placement Statistics course preparation",
-        icon: "chart-bar"
+        icon: "chart-bar",
       },
       {
         name: "Calculus",
         slug: "calculus",
         description: "Differential and integral calculus",
-        icon: "function"
-      }
+        icon: "function",
+      },
     ];
 
     console.log(`Inserting ${subjectData.length} subjects...`);
-    const insertedSubjects = await db.insert(subjects).values(subjectData).returning();
+    const insertedSubjects = await db
+      .insert(subjects)
+      .values(subjectData)
+      .returning();
     console.log(`✓ Inserted ${insertedSubjects.length} subjects`);
 
     // Seed some sample exams for the first subject
     if (insertedSubjects.length > 0) {
       const subject = insertedSubjects[0];
-      
+
       const examData: InsertExam[] = [
         {
           subjectSlug: subject.slug,
@@ -1340,12 +1647,14 @@ async function seedDatabase() {
           description: `Comprehensive practice exam covering ${subject.name} concepts`,
           questionCount: 5,
           duration: 90,
-          difficulty: 'Intermediate'
-        }
+          difficulty: "Intermediate",
+        },
       ];
 
       const insertedExams = await db.insert(exams).values(examData).returning();
-      console.log(`✓ Inserted ${insertedExams.length} exams for ${subject.name}`);
+      console.log(
+        `✓ Inserted ${insertedExams.length} exams for ${subject.name}`
+      );
 
       // Create sample questions for the exam
       if (insertedExams.length > 0) {
@@ -1359,23 +1668,27 @@ async function seedDatabase() {
               `Option A for question 1`,
               `Option B for question 1`,
               `Option C for question 1`,
-              `Option D for question 1`
+              `Option D for question 1`,
             ],
             correctAnswer: 0,
             explanation: `This is the explanation for question 1, explaining why the correct answer is option A.`,
             domain: `Domain 1`,
-            difficulty: 'Intermediate',
-            order: 1
-          }
+            difficulty: "Intermediate",
+            order: 1,
+          },
         ];
 
-        const insertedQuestions = await db.insert(questions).values(questionData).returning();
-        console.log(`✓ Inserted ${insertedQuestions.length} sample questions for ${firstExam.title}`);
+        const insertedQuestions = await db
+          .insert(questions)
+          .values(questionData)
+          .returning();
+        console.log(
+          `✓ Inserted ${insertedQuestions.length} sample questions for ${firstExam.title}`
+        );
       }
     }
 
     console.log("✅ Database seeding completed successfully!");
-
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;

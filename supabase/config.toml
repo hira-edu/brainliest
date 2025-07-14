@@ -31,9 +31,6 @@ api_url = "http://localhost:54321"
 enabled = true
 # Port to use for the email testing server web interface
 port = 54324
-# Uncomment to expose additional ports for testing user applications that send emails
-# smtp_port = 54325
-# pop3_port = 54326
 
 [storage]
 enabled = true
@@ -63,21 +60,7 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
 
-# Use pre-defined map of claims
-[auth.jwt]
-default_group_name = "authenticated"
-admin_group_name = "service_role"
-# List of claim names to be included in the JWT token
-claims = ["aud", "exp", "iat", "iss", "sub", "email", "phone", "app_metadata", "user_metadata", "role"]
-
 [edge_runtime]
 enabled = true
 # Configure one of the supported Node.js versions: 18, 20
 inspector_port = 8083
-
-[functions]
-# A mapping of function names to their corresponding Docker image.
-[functions._env]
-SUPABASE_URL = "http://localhost:54321"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuanBqZndkY3lkanJhYWdkbHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwOTczODcsImV4cCI6MjA2NzY3MzM4N30.wGjJgPlRp0VxUIsIeFMg_NjJeK3GXUjlrYvr2apftEA"
-SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuanBqZndkY3lkanJhYWdkbHhiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjA5NzM4NywiZXhwIjoyMDY3NjczMzg3fQ.K4LjF9EzxsYoRPCiSnuNKfnbrLXfZ3KElrUVB68GJAg"
