@@ -1,4 +1,4 @@
-"use client"; // RSC directive for client-side cookie management and preferences
+ // RSC directive for client-side cookie management and preferences
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/button';

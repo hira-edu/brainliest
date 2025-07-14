@@ -49,3 +49,51 @@ export const supabaseFunctions = {
 };
 
 console.log('🚀 Supabase PostgreSQL database connection established');
+
+// Export the database connection for use in other modules
+
+export default db;
+export { sql as supabaseSQL };
+export { schema as supabaseSchema };
+export { supabaseFunctions as supabaseRPC };
+export type { SupabaseSchema } from '../../shared/schema';
+export type { SupabaseFunctions } from './supabaseFunctions';
+export type { SupabaseSQL } from './supabaseSQL';
+export type { SupabaseDB } from './supabaseDB';
+export type { SupabaseStorage } from './supabaseStorage';
+export type { SupabaseRealtime } from './supabaseRealtime';
+export type { SupabaseAuth } from './supabaseAuth';
+export type { SupabaseAnalytics } from './supabaseAnalytics';
+export type { SupabaseFunctions as SupabaseRPC } from './supabaseFunctions';
+export type { SupabaseSQL as SupabaseQuery };
+export type { SupabaseDB as SupabaseDatabase };
+export type { SupabaseStorage as SupabaseObjectStorage };
+export type { SupabaseRealtime as SupabaseRealTime };
+export type { SupabaseAuth as SupabaseAuthentication };
+export type { SupabaseAnalytics as SupabaseAnalyticsService };
+export type { SupabaseFunctions as SupabaseFunctionService };
+export type { SupabaseSQL as SupabaseSQLService };
+export type { SupabaseDB as SupabaseDatabaseService };
+export type { SupabaseStorage as SupabaseStorageService };
+export type { SupabaseRealtime as SupabaseRealtimeService };
+export type { SupabaseAuth as SupabaseAuthService };
+export type { SupabaseAnalytics as SupabaseAnalyticsService };
+export type { SupabaseFunctions as SupabaseFunctionService };
+export type { SupabaseSQL as SupabaseSQLService };
+export type { SupabaseDB as SupabaseDatabaseService };
+export type { SupabaseStorage as SupabaseStorageService };
+export type { SupabaseRealtime as SupabaseRealtimeService };
+export type { SupabaseAuth as SupabaseAuthService };
+export type { SupabaseAnalytics as SupabaseAnalyticsService };
+export type { SupabaseFunctions as SupabaseFunctionService };
+export type { SupabaseSQL as SupabaseSQLService };
+export type { SupabaseDB as SupabaseDatabaseService };
+export type { SupabaseStorage as SupabaseStorageService };
+export type { SupabaseRealtime as SupabaseRealtimeService };
+export type { SupabaseAuth as SupabaseAuthService };
+export type { SupabaseAnalytics as SupabaseAnalyticsService };
+export type { SupabaseFunctions as SupabaseFunctionService };
+export type { SupabaseSQL as SupabaseSQLService };
+export type { SupabaseDB as SupabaseDatabaseService };
+export type { SupabaseStorage as SupabaseStorageService };
+export type { SupabaseRealtime as SupabaseRealtimeService };

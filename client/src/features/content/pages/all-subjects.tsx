@@ -1,4 +1,4 @@
-"use client"; // RSC directive for client-side interactivity and Vercel compatibility
+ // RSC directive for client-side interactivity and Vercel compatibility
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -88,7 +88,7 @@ function SubjectCard({ subject, onClick }: SubjectCardProps) {
 
   return (
     <Card 
-      className="group hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/20 h-full active:scale-95 hover:bg-gray-50/50"
+      className="group hover:shadow-lg transition-all duration-200 cursor-pointer border hover:border-primary/20 h-full"
       onClick={handleClick}
       role="button" // Fixed: Enhanced accessibility
       tabIndex={0}

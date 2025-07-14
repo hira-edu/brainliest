@@ -98,9 +98,8 @@ export interface IStorage {
   updateCategory(slug: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
   deleteCategory(slug: string): Promise<boolean>;
 
-  // Subcategories with hierarchical relationships
+  // Subcategories
   getSubcategories(): Promise<Subcategory[]>;
-  getSubcategoriesByCategory(categorySlug: string): Promise<Subcategory[]>;
   getSubcategory(slug: string): Promise<Subcategory | undefined>;
   createSubcategory(subcategory: InsertSubcategory): Promise<Subcategory>;
   updateSubcategory(slug: string, subcategory: Partial<InsertSubcategory>): Promise<Subcategory | undefined>;
@@ -120,7 +119,6 @@ export interface IStorage {
   getExams(): Promise<Exam[]>;
   getExamsPaginated(offset: number, limit: number, subjectSlug?: string): Promise<{ exams: Exam[], total: number }>;
   getExamsBySubject(subjectSlug: string): Promise<Exam[]>;
-  getExamsBySubcategory(subcategorySlug: string): Promise<Exam[]>;
   getExam(slug: string): Promise<Exam | undefined>;
   getExamBySlug(slug: string): Promise<Exam | undefined>;
   getExamById(id: number): Promise<Exam | undefined>;
@@ -231,13 +229,9 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  // Subcategories with hierarchical relationships
+  // Subcategories
   async getSubcategories(): Promise<Subcategory[]> {
     return await db.select().from(subcategories);
-  }
-
-  async getSubcategoriesByCategory(categorySlug: string): Promise<Subcategory[]> {
-    return await db.select().from(subcategories).where(eq(subcategories.categorySlug, categorySlug));
   }
 
   async getSubcategory(slug: string): Promise<Subcategory | undefined> {
@@ -279,14 +273,6 @@ export class DatabaseStorage implements IStorage {
       name: subjects.name,
       description: subjects.description,
       icon: subjects.icon,
-      color: subjects.color,
-      categorySlug: subjects.categorySlug,
-      subcategorySlug: subjects.subcategorySlug,
-      examCount: subjects.examCount,
-      questionCount: subjects.questionCount,
-      isActive: subjects.isActive,
-      createdAt: subjects.createdAt,
-      updatedAt: subjects.updatedAt,
       color: subjects.color,
       categorySlug: subjects.categorySlug,
       subcategorySlug: subjects.subcategorySlug,
@@ -407,22 +393,6 @@ export class DatabaseStorage implements IStorage {
     }).from(exams).where(eq(exams.subjectSlug, subjectSlug));
   }
 
-  async getExamsBySubcategory(subcategorySlug: string): Promise<Exam[]> {
-    return await db.select({
-      slug: exams.slug,
-      subjectSlug: exams.subjectSlug,
-      title: exams.title,
-      description: exams.description,
-      icon: exams.icon,
-      questionCount: exams.questionCount,
-      duration: exams.duration,
-      difficulty: exams.difficulty,
-      isActive: exams.isActive
-    }).from(exams)
-    .innerJoin(subjects, eq(exams.subjectSlug, subjects.slug))
-    .where(eq(subjects.subcategorySlug, subcategorySlug));
-  }
-
   async getExam(slug: string): Promise<Exam | undefined> {
     const [exam] = await db.select({
       slug: exams.slug,
@@ -443,9 +413,9 @@ export class DatabaseStorage implements IStorage {
     return this.getExam(slug);
   }
 
-  async getExamById(id: string | number): Promise<Exam | undefined> {
+  async getExamById(slug: string): Promise<Exam | undefined> {
     // Since we're using slug-based system, this method now uses slug
-    return this.getExam(id.toString());
+    return this.getExam(slug);
   }
 
   // Dynamic question counting methods
@@ -456,9 +426,9 @@ export class DatabaseStorage implements IStorage {
     return Number(result.count);
   }
 
-  async getQuestionCountByExamId(examId: number | string): Promise<number> {
+  async getQuestionCountByExamId(examId: number): Promise<number> {
     // First get the exam slug by ID
-    const exam = await this.getExamById(examId.toString());
+    const exam = await this.getExamById(examId);
     if (!exam) return 0;
     return this.getQuestionCountByExam(exam.slug);
   }
@@ -690,35 +660,36 @@ export class DatabaseStorage implements IStorage {
     return result.count;
   }
 
-  // Exam Sessions - Enhanced with hierarchical relationships
+  // Exam Sessions - OPTIMIZED: Specify required columns and add ordering
   async getExamSessions(): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).orderBy(desc(examSessions.createdAt));
+    return await db.select({
+      id: examSessions.id,
+      userName: examSessions.userName,
+      examSlug: examSessions.examSlug,
+      currentQuestionIndex: examSessions.currentQuestionIndex,
+      score: examSessions.score,
+      startedAt: examSessions.startedAt,
+      completedAt: examSessions.completedAt,
+      answers: examSessions.answers,
+      timeSpent: examSessions.timeSpent,
+      isCompleted: examSessions.isCompleted
+    }).from(examSessions).orderBy(desc(examSessions.startedAt));
   }
 
   async getExamSession(id: number): Promise<ExamSession | undefined> {
-    const [session] = await db.select().from(examSessions).where(eq(examSessions.id, id));
+    const [session] = await db.select({
+      id: examSessions.id,
+      userName: examSessions.userName,
+      examSlug: examSessions.examSlug,
+      currentQuestionIndex: examSessions.currentQuestionIndex,
+      score: examSessions.score,
+      startedAt: examSessions.startedAt,
+      completedAt: examSessions.completedAt,
+      answers: examSessions.answers,
+      timeSpent: examSessions.timeSpent,
+      isCompleted: examSessions.isCompleted
+    }).from(examSessions).where(eq(examSessions.id, id));
     return session;
-  }
-
-  async getExamSessionBySessionKey(sessionKey: string): Promise<ExamSession | undefined> {
-    const [session] = await db.select().from(examSessions).where(eq(examSessions.sessionKey, sessionKey));
-    return session;
-  }
-
-  async getUserExamSessions(userName: string): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.userName, userName)).orderBy(desc(examSessions.createdAt));
-  }
-
-  async getExamSessionsByExam(examSlug: string): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.examSlug, examSlug)).orderBy(desc(examSessions.createdAt));
-  }
-
-  async getExamSessionsBySubject(subjectSlug: string): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.subjectSlug, subjectSlug)).orderBy(desc(examSessions.createdAt));
-  }
-
-  async getActiveExamSessions(): Promise<ExamSession[]> {
-    return await db.select().from(examSessions).where(eq(examSessions.isCompleted, false)).orderBy(desc(examSessions.createdAt));
   }
 
   async createExamSession(session: InsertExamSession): Promise<ExamSession> {
@@ -727,31 +698,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExamSession(id: number, session: Partial<InsertExamSession>): Promise<ExamSession | undefined> {
-    const updatedSession = {
-      ...session,
-      updatedAt: new Date()
-    };
-    const [updated] = await db
+    const [updatedSession] = await db
       .update(examSessions)
-      .set(updatedSession)
+      .set(session)
       .where(eq(examSessions.id, id))
       .returning();
-    return updated;
-  }
-
-  async completeExamSession(id: number, score: number, isPassed: boolean): Promise<ExamSession | undefined> {
-    const [completed] = await db
-      .update(examSessions)
-      .set({
-        isCompleted: true,
-        isPassed: isPassed,
-        score: score,
-        completedAt: new Date(),
-        updatedAt: new Date()
-      })
-      .where(eq(examSessions.id, id))
-      .returning();
-    return completed;
+    return updatedSession;
   }
 
   async deleteExamSession(id: number): Promise<boolean> {

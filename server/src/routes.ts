@@ -66,7 +66,7 @@ interface GoogleUserInfo {
 // Extend Request interface for enterprise session management
 declare module 'express' {
   interface Request {
-    adminSession?: import('./services/enterprise-admin-session-manager').AdminSession;
+    adminSession?: import('./enterprise-admin-session-manager').AdminSession;
     sessionId?: string;
   }
 }
@@ -247,21 +247,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get subcategory by slug
-  app.get("/api/subcategories/:slug", async (req, res) => {
-    try {
-      const { slug } = req.params;
-      const subcategory = await storage.getSubcategory(slug);
-      if (!subcategory) {
-        return res.status(404).json({ message: "Subcategory not found" });
-      }
-      res.json(subcategory);
-    } catch (error) {
-      console.error("Error fetching subcategory:", error);
-      res.status(500).json({ error: "Failed to fetch subcategory" });
-    }
-  });
-
   app.post("/api/subcategories", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
     try {
       const validation = insertSubcategorySchema.safeParse(req.body);
@@ -308,164 +293,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin relationship management - assign subcategory to category
-  app.post('/api/admin/relationships/subcategory-to-category', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
-    try {
-      const { subcategorySlug, categorySlug } = req.body;
-      
-      if (!subcategorySlug || !categorySlug) {
-        return res.status(400).json({ message: 'Both subcategorySlug and categorySlug are required' });
-      }
-
-      // Verify both exist
-      const subcategory = await storage.getSubcategory(subcategorySlug);
-      const category = await storage.getCategory(categorySlug);
-      
-      if (!subcategory) {
-        return res.status(404).json({ message: 'Subcategory not found' });
-      }
-      if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
-      }
-
-      // Update the subcategory's category relationship
-      const updatedSubcategory = await storage.updateSubcategory(subcategorySlug, {
-        categorySlug: categorySlug
-      });
-
-      res.json({
-        success: true,
-        message: 'Subcategory assigned to category successfully',
-        subcategory: updatedSubcategory
-      });
-    } catch (error) {
-      console.error('Error assigning subcategory to category:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Admin relationship management - assign subject to category/subcategory
-  app.post('/api/admin/relationships/subject-to-category', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
-    try {
-      const { subjectSlug, categorySlug, subcategorySlug } = req.body;
-      
-      if (!subjectSlug || (!categorySlug && !subcategorySlug)) {
-        return res.status(400).json({ message: 'subjectSlug and either categorySlug or subcategorySlug are required' });
-      }
-
-      // Verify subject exists
-      const subject = await storage.getSubject(subjectSlug);
-      if (!subject) {
-        return res.status(404).json({ message: 'Subject not found' });
-      }
-
-      // Verify category/subcategory exists
-      if (categorySlug) {
-        const category = await storage.getCategory(categorySlug);
-        if (!category) {
-          return res.status(404).json({ message: 'Category not found' });
-        }
-      }
-      
-      if (subcategorySlug) {
-        const subcategory = await storage.getSubcategory(subcategorySlug);
-        if (!subcategory) {
-          return res.status(404).json({ message: 'Subcategory not found' });
-        }
-      }
-
-      // Update the subject's category/subcategory relationship
-      const updatedSubject = await storage.updateSubject(subjectSlug, {
-        categorySlug: categorySlug || null,
-        subcategorySlug: subcategorySlug || null
-      });
-
-      res.json({
-        success: true,
-        message: 'Subject assigned to category/subcategory successfully',
-        subject: updatedSubject
-      });
-    } catch (error) {
-      console.error('Error assigning subject to category/subcategory:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Admin relationship management - assign exam to subject
-  app.post('/api/admin/relationships/exam-to-subject', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
-    try {
-      const { examSlug, subjectSlug } = req.body;
-      
-      if (!examSlug || !subjectSlug) {
-        return res.status(400).json({ message: 'Both examSlug and subjectSlug are required' });
-      }
-
-      // Verify both exist
-      const exam = await storage.getExam(examSlug);
-      const subject = await storage.getSubject(subjectSlug);
-      
-      if (!exam) {
-        return res.status(404).json({ message: 'Exam not found' });
-      }
-      if (!subject) {
-        return res.status(404).json({ message: 'Subject not found' });
-      }
-
-      // Update the exam's subject relationship
-      const updatedExam = await storage.updateExam(examSlug, {
-        subjectSlug: subjectSlug
-      });
-
-      res.json({
-        success: true,
-        message: 'Exam assigned to subject successfully',
-        exam: updatedExam
-      });
-    } catch (error) {
-      console.error('Error assigning exam to subject:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  // Get hierarchical relationships overview
-  app.get('/api/admin/relationships/overview', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
-    try {
-      const categories = await storage.getCategories();
-      const subcategories = await storage.getSubcategories();
-      const subjects = await storage.getSubjects();
-      const exams = await storage.getExams();
-
-      // Build hierarchical structure
-      const hierarchicalData = categories.map(category => ({
-        ...category,
-        subcategories: subcategories.filter(sub => sub.categorySlug === category.slug).map(subcategory => ({
-          ...subcategory,
-          subjects: subjects.filter(subj => subj.subcategorySlug === subcategory.slug).map(subject => ({
-            ...subject,
-            exams: exams.filter(exam => exam.subjectSlug === subject.slug)
-          }))
-        })),
-        directSubjects: subjects.filter(subj => subj.categorySlug === category.slug && !subj.subcategorySlug).map(subject => ({
-          ...subject,
-          exams: exams.filter(exam => exam.subjectSlug === subject.slug)
-        }))
-      }));
-
-      res.json({
-        hierarchicalData,
-        counts: {
-          categories: categories.length,
-          subcategories: subcategories.length,
-          subjects: subjects.length,
-          exams: exams.length
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching relationship overview:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
   // Subject routes - specific routes first to prevent shadowing
   // Subject slug-based route
   app.get("/api/subjects/slug/:slug", async (req, res) => {
@@ -503,10 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/subjects", async (req, res) => {
     try {
-      const subcategorySlug = req.query.subcategorySlug as string;
-      const subjects = subcategorySlug 
-        ? await storage.getSubjects().then(subjects => subjects.filter(s => s.subcategorySlug === subcategorySlug))
-        : await storage.getSubjects();
+      const subjects = await storage.getSubjects();
       res.json(subjects);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch subjects" });
@@ -588,28 +412,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to fetch exams:", error);
       res.status(500).json({ message: "Failed to fetch exams" });
-    }
-  });
-
-  // Get exams by subcategory
-  app.get("/api/exams/subcategory/:subcategorySlug", async (req, res) => {
-    try {
-      const { subcategorySlug } = req.params;
-      const exams = await storage.getExamsBySubcategory(subcategorySlug);
-      // Dynamically calculate question count for each exam
-      const examsWithQuestionCount = await Promise.all(
-        exams.map(async (exam) => {
-          const actualQuestionCount = await storage.getQuestionCountByExam(exam.slug);
-          return {
-            ...exam,
-            questionCount: actualQuestionCount
-          };
-        })
-      );
-      res.json(examsWithQuestionCount);
-    } catch (error) {
-      console.error("Error fetching exams by subcategory:", error);
-      res.status(500).json({ error: "Failed to fetch exams by subcategory" });
     }
   });
 

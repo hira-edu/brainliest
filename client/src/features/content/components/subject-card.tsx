@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, field validation, accessibility, error handling
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility with DynamicIcon
+ // Fixed: RSC directive for Vercel compatibility with DynamicIcon
 
 import { Subject } from "../../../../../shared/schema";
 import { DynamicIcon } from "../../../utils/dynamic-icon";
@@ -33,7 +33,7 @@ export default function SubjectCard({ subject, onClick }: SubjectCardProps) {
 
   return (
     <div 
-      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group border-2 border-transparent hover:border-primary/20 active:scale-95"
+      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer group"
       onClick={handleClick}
       role="button" // Fixed: Accessibility - ARIA role for clickable card
       tabIndex={0} // Fixed: Accessibility - keyboard navigation

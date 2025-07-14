@@ -4,7 +4,7 @@
  * Fixed: reCAPTCHA token handling, password validation, resend logic, debouncing, error handling
  */
 
-"use client"; // RSC directive for client-side authentication and Vercel compatibility with reCAPTCHA and dialog functionality
+ // RSC directive for client-side authentication and Vercel compatibility with reCAPTCHA and dialog functionality
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../../components/ui/button";

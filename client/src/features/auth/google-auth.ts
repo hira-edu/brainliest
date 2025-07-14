@@ -4,7 +4,7 @@
  * Fixed: SSR compatibility, error typing, field alignment, popup cleanup, JWT validation
  */
 
-"use client"; // Fixed: RSC directive for Vercel compatibility with window and document APIs
+ // Fixed: RSC directive for Vercel compatibility with window and document APIs
 
 // Fixed: Enhanced window typing for Google APIs
 declare global {

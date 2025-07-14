@@ -1,4 +1,4 @@
-"use client"; // Fixed: RSC directive for Vercel compatibility
+ // Fixed: RSC directive for Vercel compatibility
 
 import { useState } from "react";
 import { AlertCircle, RefreshCw, Loader2 } from "lucide-react";

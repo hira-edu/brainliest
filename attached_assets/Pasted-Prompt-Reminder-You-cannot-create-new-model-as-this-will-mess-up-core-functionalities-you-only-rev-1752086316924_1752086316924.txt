@@ -3,113 +3,149 @@ Core Functionalities (to preserve):Manages authentication state (isSignedIn, use
 Handles sign-in, sign-up, Google OAuth, sign-out, email verification, and password reset via authAPI.
 Processes OAuth callback parameters and initializes Google auth.
 Updates state based on API responses and user actions.
-UI: None (no UI changes needed).
+
+UI: None (no UI changes needed).
 Dependencies:React (react@18.3.1): createContext, useContext, useState, useEffect.
 authAPI, authUtils, TokenStorage, AuthUser from ./auth-api (aligned with auth.ts).
 googleAuthService from ./google-auth (unknown implementation).
-TypeScript Errors (assumed):TS18046 (error is unknown) in initAuth, signIn, signUp, signInWithGoogle, signOut, verifyEmail, requestPasswordReset, and resetPassword catch blocks.
+
+TypeScript Errors (assumed):TS18046 (error is unknown) in initAuth, signIn, signUp, signInWithGoogle, signOut, verifyEmail, requestPasswordReset, and resetPassword catch blocks.
 Potential issues with untyped googleAuthService or import.meta.env.
-Deployment Context:Vercel: Requires CSR due to window.location, window.open, and localStorage usage via TokenStorage.
+
+Deployment Context:Vercel: Requires CSR due to window.location, window.open, and localStorage usage via TokenStorage.
 Neon: Used indirectly via authAPI (e.g., /api/auth/login) for user data.
 Icons: No icons used, but must align with lucide-react@0.48.0 in consumers (e.g., AdminLoginModal.tsx).
-Audit FindingsPrompt Reminder: You cannot create new model as this will mess up core functionalities, you only review the previous code and fix changes carefully, dont change any UI or change core functionalities.1. Runtime ErrorsSSR Compatibility:Issue: Uses window.location.search, window.history, and window.open without checking for window availability, risking SSR errors in Vercel’s Next.js.
+
+Audit FindingsPrompt Reminder: You cannot create new model as this will mess up core functionalities, you only review the previous code and fix changes carefully, dont change any UI or change core functionalities.1. Runtime ErrorsSSR Compatibility:Issue: Uses window.location.search, window.history, and window.open without checking for window availability, risking SSR errors in Vercel’s Next.js.
 Impact: Breaks in SSR environments.
 Fix: Add typeof window !== 'undefined' checks (minimal change, preserves functionality).
-Error Typing:Issue: error in catch blocks (initAuth, signIn, signUp, etc.) is untyped, causing TS18046.
+
+Error Typing:Issue: error in catch blocks (initAuth, signIn, signUp, etc.) is untyped, causing TS18046.
 Impact: Type safety issues.
 Fix: Type error as Error (minimal change).
-Google Client ID:Issue: import.meta.env.VITE_GOOGLE_CLIENT_ID may be undefined if not set in Vercel environment variables.
+
+Google Client ID:Issue: import.meta.env.VITE_GOOGLE_CLIENT_ID may be undefined if not set in Vercel environment variables.
 Impact: signInWithGoogle throws without fallback.
 Fix: Add fallback error message (minimal change).
-Popup Handling:Issue: No cleanup for messageHandler if the popup closes unexpectedly, risking memory leaks.
+
+Popup Handling:Issue: No cleanup for messageHandler if the popup closes unexpectedly, risking memory leaks.
 Impact: Event listener persists after component unmounts.
 Fix: Return cleanup in useEffect (minimal change).
-OAuth Callback Parameters:Issue: Assumes authStatus, userEmail, error, and message in URL params without validation.
+
+OAuth Callback Parameters:Issue: Assumes authStatus, userEmail, error, and message in URL params without validation.
 Impact: Potential runtime errors if params are malformed.
 Fix: Add basic validation (minimal change).
-2. Conflictsauth.ts Integration:Issue: Uses authAPI, authUtils, and TokenStorage, but AdminContext.tsx defines a separate admin auth system with admin_token.
+
+2. Conflictsauth.ts Integration:Issue: Uses authAPI, authUtils, and TokenStorage, but AdminContext.tsx defines a separate admin auth system with admin_token.
 Impact: Potential token conflicts in admin flows (e.g., AdminLoginModal.tsx, AdminUsers.tsx).
 Fix: Add comment to clarify TokenStorage vs. admin_token usage (no code change).
-AuthCallback.tsx:Issue: signInWithGoogle opens a popup that triggers AuthCallback.tsx, which sends GOOGLE_AUTH_SUCCESS with fields (email, firstName, lastName, profileImage, googleId) aligned with authAPI.googleOAuth. However, AuthContext.tsx doesn’t handle these messages directly.
+
+AuthCallback.tsx:Issue: signInWithGoogle opens a popup that triggers AuthCallback.tsx, which sends GOOGLE_AUTH_SUCCESS with fields (email, firstName, lastName, profileImage, googleId) aligned with authAPI.googleOAuth. However, AuthContext.tsx doesn’t handle these messages directly.
 Impact: Parent window must process messages correctly.
 Fix: Add comment to verify AuthCallback.tsx integration (no code change).
-AdminContext.tsx:Issue: Overlaps with signIn, signOut, and token management, but uses admin_token instead of TokenStorage.
+
+AdminContext.tsx:Issue: Overlaps with signIn, signOut, and token management, but uses admin_token instead of TokenStorage.
 Impact: Redundant auth systems.
 Fix: Suggest AdminContext.tsx use authAPI and TokenStorage (no change in AuthContext.tsx).
-API Routes:Issue: Assumes /api/auth/* routes exist, but no guarantee they align with AdminContext.tsx’s /api/admin/auth/*.
+
+API Routes:Issue: Assumes /api/auth/* routes exist, but no guarantee they align with AdminContext.tsx’s /api/admin/auth/*.
 Impact: Potential 404 errors.
 Fix: Add comment to verify routes (no code change).
-3. Duplicate CodeError Handling:Issue: console.error calls in signIn, signUp, signOut, etc., duplicate error logging logic from auth.ts’s logAuthError.
+
+3. Duplicate CodeError Handling:Issue: console.error calls in signIn, signUp, signOut, etc., duplicate error logging logic from auth.ts’s logAuthError.
 Impact: Inconsistent logging.
 Fix: Keep as is to preserve functionality; suggest using logAuthError (no change).
-Token Management:Issue: setUser, setUserName, and setIsSignedIn duplicate logic in authUtils.handleAuthSuccess.
+
+Token Management:Issue: setUser, setUserName, and setIsSignedIn duplicate logic in authUtils.handleAuthSuccess.
 Impact: Redundant state updates.
 Fix: Keep as is to preserve functionality; suggest consolidating in authUtils (no change).
-Google OAuth URL:Issue: signInWithGoogle constructs OAuth URL manually, which could be shared with AuthCallback.tsx or other components.
+
+Google OAuth URL:Issue: signInWithGoogle constructs OAuth URL manually, which could be shared with AuthCallback.tsx or other components.
 Impact: Minor code repetition.
 Fix: Keep as is to preserve functionality; suggest shared utility (no change).
-4. Logical IssuesOAuth Callback Handling:Issue: initAuth checks URL params (auth, user, error, message) but doesn’t validate or sanitize them.
+
+4. Logical IssuesOAuth Callback Handling:Issue: initAuth checks URL params (auth, user, error, message) but doesn’t validate or sanitize them.
 Impact: Potential security risks or errors.
 Fix: Add basic validation for params (minimal change).
-SignOut Google Handling:Issue: signOut calls googleAuthService.signOut if user.oauthProvider === 'google', but doesn’t check if googleAuthService is initialized.
+
+SignOut Google Handling:Issue: signOut calls googleAuthService.signOut if user.oauthProvider === 'google', but doesn’t check if googleAuthService is initialized.
 Impact: Potential errors if service isn’t ready.
 Fix: Add initialization check (minimal change).
-Error Suppression:Issue: initAuth suppresses errors with a commented console.error, risking silent failures.
+
+Error Suppression:Issue: initAuth suppresses errors with a commented console.error, risking silent failures.
 Impact: Hard to debug.
 Fix: Use logAuthError from auth.ts (minimal change).
-Popup Timeout:Issue: signInWithGoogle has a 5-minute timeout, which may be too long or short.
-Impact: Poor UX if timeout occurs.
+
+Popup Timeout:Issue: signInWithGoogle has a 5-minute timeout, which may be too long or short.
+Impact: Pmeout occurs.
 Fix: Keep as is to preserve functionality; add comment for review (no change).
-State Reset:Issue: signOut resets state unconditionally, even if authUtils.handleLogout fails.
+
+State Reset:Issue: signOut resets state unconditionally, even if authUtils.handleLogout fails.
 Impact: Inconsistent state if logout fails.
 Fix: Reset state only on success (minimal change).
-5. TypeScript ErrorsTS18046 (error is unknown):Issue: error in catch blocks is untyped.
+
+5. TypeScript ErrorsTS18046 (error is unknown):Issue: error in catch blocks is untyped.
 Impact: Type safety issues.
 Fix: Type as Error (minimal change).
-googleAuthService Typing:Issue: googleAuthService is untyped, risking runtime errors.
+
+googleAuthService Typing:Issue: googleAuthService is untyped, risking runtime errors.
 Impact: Potential method call failures.
 Fix: Add comment to verify typing (no code change).
-URLSearchParams:Issue: window.location.search access assumes window exists.
+
+URLSearchParams:Issue: window.location.search access assumes window exists.
 Impact: Type errors in SSR.
 Fix: Add typeof window check (minimal change).
-AuthUser Optionals:Issue: userName uses firstName, username, or email, but these are optional in AuthUser.
+
+AuthUser Optionals:Issue: userName uses firstName, username, or email, but these are optional in AuthUser.
 Impact: Potential undefined errors.
 Fix: Add fallbacks (minimal change).
-6. Vercel CompatibilityRSC Directive:Issue: Missing "use client" for window APIs and useEffect.
+
+6. Vercel CompatibilityRSC Directive:Issue: Missing "use client" for window APIs and useEffect.
 Impact: SSR errors in Next.js.
 Fix: Add "use client" (minimal change).
-API Routes:Issue: Relies on /api/auth/* routes, which must be Vercel Functions.
+
+API Routes:Issue: Relies on /api/auth/* routes, which must be Vercel Functions.
 Impact: Potential 404 errors.
 Fix: Add comment to verify routes (no code change).
-Environment Variables:Issue: VITE_GOOGLE_CLIENT_ID may not be prefixed correctly for Vercel (NEXT_PUBLIC_).
+
+Environment Variables:Issue: VITE_GOOGLE_CLIENT_ID may not be prefixed correctly for Vercel (NEXT_PUBLIC_).
 Impact: Missing client ID.
 Fix: Update to NEXT_PUBLIC_GOOGLE_CLIENT_ID (minimal change).
-7. Neon CompatibilityQuery Optimization:Issue: authAPI routes (e.g., /api/auth/login) likely query Neon, but no optimization for frequent calls.
+
+7. Neon CompatibilityQuery Optimization:Issue: authAPI routes (e.g., /api/auth/login) likely query Neon, but no optimization for frequent calls.
 Impact: Performance issues.
 Fix: Add comment to optimize Neon queries (no change).
-Token Storage:Issue: Uses TokenStorage (client-side), consistent with auth.ts.
+
+Token Storage:Issue: Uses TokenStorage (client-side), consistent with auth.ts.
 Impact: Secure, but localStorage is less safe than cookies.
 Fix: Keep as is; note cookie alternative (no change).
-8. Icon System AlignmentIssue: No icons used, but consumers (e.g., AdminLoginModal.tsx) use lucide-react.
+
+8. Icon System AlignmentIssue: No icons used, but consumers (e.g., AdminLoginModal.tsx) use lucide-react.
 Impact: No conflict.
 Fix: No change needed.
 
 9. Integration with Other Filesauth.ts:Issue: Uses authAPI, authUtils, and TokenStorage correctly, but AdminContext.tsx duplicates auth logic with admin_token.
 Fix: Suggest AdminContext.tsx use authAPI and TokenStorage (no change in AuthContext.tsx).
-AuthCallback.tsx:Issue: signInWithGoogle opens a popup handled by AuthCallback.tsx, which sends GOOGLE_AUTH_SUCCESS. AuthContext.tsx doesn’t process these messages directly.
+
+AuthCallback.tsx:Issue: signInWithGoogle opens a popup handled by AuthCallback.tsx, which sends GOOGLE_AUTH_SUCCESS. AuthContext.tsx doesn’t process these messages directly.
 Fix: Add comment to verify parent handling (no change).
-AdminLoginModal.tsx:Issue: Likely uses signIn or signInWithGoogle via useAuth.
+
+AdminLoginModal.tsx:Issue: Likely uses signIn or signInWithGoogle via useAuth.
 Fix: Ensure AdminLoginModal.tsx uses useAuth (no change in AuthContext.tsx).
-AdminContext.tsx:Issue: Overlaps with signIn, signOut, and token management.
+
+AdminContext.tsx:Issue: Overlaps with signIn, signOut, and token management.
 Fix: Suggest consolidating auth systems (no change).
-SecurityErrorBoundary:Issue: No error boundary, risking uncaught errors.
+
+SecurityErrorBoundary:Issue: No error boundary, risking uncaught errors.
 Fix: Suggest wrapping consumers:typescript
 
 import { SecurityErrorBoundary } from './SecurityErrorBoundary';
 <SecurityErrorBoundary>
   <AuthProvider>{children}</AuthProvider>
 </SecurityErrorBoundary>
-Note: No change in AuthContext.tsx.
-QuestionLimitModal:Issue: Not relevant, but could inspire rate limiting for signIn.
+
+Note: No change in AuthContext.tsx.
+
+QuestionLimitModal:Issue: Not relevant, but could inspire rate limiting for signIn.
 Fix: Add comment for rate limiting (no change).
-
+

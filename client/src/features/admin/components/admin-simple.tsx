@@ -1,4 +1,4 @@
-"use client"; // RSC directive for admin panel client-side functionality
+ // RSC directive for admin panel client-side functionality
 
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -76,7 +76,6 @@ import { apiRequest, queryClient } from "../../../services/queryClient";
 import { useToast } from "../../shared/hooks/use-toast";
 
 import AdminUsers from "./admin-users";
-import RelationshipManager from "./relationship-manager";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
@@ -3033,14 +3032,13 @@ export default function AdminSimple() {
             {/* Dashboard Sub-tabs for Content Management - Moved to Top */}
             <div>
               <Tabs defaultValue="overview" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-7 h-11 p-1 bg-gray-100">
+                <TabsList className="grid w-full grid-cols-6 h-11 p-1 bg-gray-100">
                   <TabsTrigger value="overview" className="text-xs font-medium py-2 px-4">Overview</TabsTrigger>
                   <TabsTrigger value="categories" className="text-xs font-medium py-2 px-4">Categories</TabsTrigger>
                   <TabsTrigger value="subcategories" className="text-xs font-medium py-2 px-4">Subcategories</TabsTrigger>
                   <TabsTrigger value="subjects" className="text-xs font-medium py-2 px-4">Subjects</TabsTrigger>
                   <TabsTrigger value="exams" className="text-xs font-medium py-2 px-4">Exams</TabsTrigger>
                   <TabsTrigger value="questions" className="text-xs font-medium py-2 px-4">Questions</TabsTrigger>
-                  <TabsTrigger value="relationships" className="text-xs font-medium py-2 px-4">Relationships</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="overview">
@@ -3065,10 +3063,6 @@ export default function AdminSimple() {
                 
                 <TabsContent value="questions">
                   <QuestionManager />
-                </TabsContent>
-                
-                <TabsContent value="relationships">
-                  <RelationshipManager />
                 </TabsContent>
               </Tabs>
             </div>

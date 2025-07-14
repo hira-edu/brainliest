@@ -1,12 +1,10 @@
-import { pgTable, text, serial, integer, boolean, timestamp, index, pgEnum, jsonb, numeric, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, index, pgEnum, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
 // Fixed: Define difficulty enum for type safety and constraint enforcement
 export const difficultyEnum = pgEnum("difficulty", ["Beginner", "Intermediate", "Advanced", "Expert"]);
 
-// Categories table - top level hierarchy
 export const categories = pgTable("categories", {
   slug: text("slug").primaryKey(),
   name: text("name").notNull(),
@@ -16,13 +14,11 @@ export const categories = pgTable("categories", {
   isActive: boolean("is_active").default(true),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Subcategories table - belongs to categories
 export const subcategories = pgTable("subcategories", {
   slug: text("slug").primaryKey(),
-  categorySlug: text("category_slug").notNull().references(() => categories.slug, { onDelete: "cascade" }),
+  categorySlug: text("category_slug").notNull(),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
@@ -30,45 +26,37 @@ export const subcategories = pgTable("subcategories", {
   isActive: boolean("is_active").default(true),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Subjects table - belongs to categories and subcategories
 export const subjects = pgTable("subjects", {
   slug: text("slug").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
   icon: text("icon"),
   color: text("color"),
-  categorySlug: text("category_slug").references(() => categories.slug, { onDelete: "set null" }),
-  subcategorySlug: text("subcategory_slug").references(() => subcategories.slug, { onDelete: "set null" }),
+  categorySlug: text("category_slug"),
+  subcategorySlug: text("subcategory_slug"),
   examCount: integer("exam_count").default(0),
   questionCount: integer("question_count").default(0),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Exams table - belongs to subjects
 export const exams = pgTable("exams", {
   slug: text("slug").primaryKey(),
-  subjectSlug: text("subject_slug").notNull().references(() => subjects.slug, { onDelete: "cascade" }),
+  subjectSlug: text("subject_slug").notNull(),
   title: text("title").notNull(),
   description: text("description"),
   icon: text("icon"),
   questionCount: integer("question_count").notNull(),
   duration: integer("duration"), // in minutes
+  // Fixed: Use difficulty enum for type safety and constraint enforcement
   difficulty: difficultyEnum("difficulty").notNull(),
   isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Questions table - belongs to exams and subjects
 export const questions = pgTable("questions", {
   id: serial("id").primaryKey(),
-  examSlug: text("exam_slug").notNull().references(() => exams.slug, { onDelete: "cascade" }),
-  subjectSlug: text("subject_slug").notNull().references(() => subjects.slug, { onDelete: "cascade" }),
+  examSlug: text("exam_slug").notNull(),
+  subjectSlug: text("subject_slug").notNull(),
   text: text("text").notNull(),
   options: text("options").array().notNull(), // Array of option texts
   correctAnswer: integer("correct_answer").notNull(), // Index of correct option (0-based) or multiple if multipleCorrect is true
@@ -76,119 +64,34 @@ export const questions = pgTable("questions", {
   allowMultipleAnswers: boolean("allow_multiple_answers").default(false), // Whether question allows multiple selections
   explanation: text("explanation"),
   domain: text("domain"), // For PMP: 'Initiating', 'Planning', etc.
+  // Fixed: Use difficulty enum for type safety and constraint enforcement
   difficulty: difficultyEnum("difficulty").notNull(),
   order: integer("order").default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Exam sessions table - tracks user exam attempts
-export const examSessions = pgTable("exam_sessions", {
+export const examSessions = pgTable("user_sessions", {
   id: serial("id").primaryKey(),
-  examSlug: text("exam_slug").notNull().references(() => exams.slug, { onDelete: "cascade" }),
-  subjectSlug: text("subject_slug").notNull().references(() => subjects.slug, { onDelete: "cascade" }),
-  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
-  userName: text("user_name"), // For anonymous users
-  sessionKey: text("session_key").notNull(), // Unique session identifier
+  examSlug: text("exam_slug").notNull(),
+  userName: text("user_name"), // Add userName field for compatibility
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   currentQuestionIndex: integer("current_question_index").default(0),
-  answers: jsonb("answers").default("{}"), // Store answers as JSON
-  score: numeric("score", { precision: 5, scale: 2 }),
+  answers: text("answers").array().default([]), // Array of user answers
+  score: integer("score"),
   timeSpent: integer("time_spent"), // in seconds
   isCompleted: boolean("is_completed").default(false),
-  isPassed: boolean("is_passed").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
-
-// Define Drizzle relations for proper joins and nested queries
-export const categoriesRelations = relations(categories, ({ many }) => ({
-  subcategories: many(subcategories),
-  subjects: many(subjects),
-}));
-
-export const subcategoriesRelations = relations(subcategories, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [subcategories.categorySlug],
-    references: [categories.slug],
-  }),
-  subjects: many(subjects),
-}));
-
-export const subjectsRelations = relations(subjects, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [subjects.categorySlug],
-    references: [categories.slug],
-  }),
-  subcategory: one(subcategories, {
-    fields: [subjects.subcategorySlug],
-    references: [subcategories.slug],
-  }),
-  exams: many(exams),
-  questions: many(questions),
-  examSessions: many(examSessions),
-}));
-
-export const examsRelations = relations(exams, ({ one, many }) => ({
-  subject: one(subjects, {
-    fields: [exams.subjectSlug],
-    references: [subjects.slug],
-  }),
-  questions: many(questions),
-  examSessions: many(examSessions),
-}));
-
-export const questionsRelations = relations(questions, ({ one, many }) => ({
-  exam: one(exams, {
-    fields: [questions.examSlug],
-    references: [exams.slug],
-  }),
-  subject: one(subjects, {
-    fields: [questions.subjectSlug],
-    references: [subjects.slug],
-  }),
-  comments: many(comments),
-}));
-
-export const examSessionsRelations = relations(examSessions, ({ one }) => ({
-  exam: one(exams, {
-    fields: [examSessions.examSlug],
-    references: [exams.slug],
-  }),
-  subject: one(subjects, {
-    fields: [examSessions.subjectSlug],
-    references: [subjects.slug],
-  }),
-  user: one(users, {
-    fields: [examSessions.userId],
-    references: [users.id],
-  }),
-}));
 
 export const comments = pgTable("comments", {
   id: serial("id").primaryKey(),
-  questionId: integer("question_id").notNull().references(() => questions.id, { onDelete: "cascade" }),
+  questionId: integer("question_id").notNull(),
   authorName: text("author_name").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   parentId: integer("parent_id"), // For nested replies
   isEdited: boolean("is_edited").default(false),
   editedAt: timestamp("edited_at"),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
-
-export const commentsRelations = relations(comments, ({ one, many }) => ({
-  question: one(questions, {
-    fields: [comments.questionId],
-    references: [questions.id],
-  }),
-  parent: one(comments, {
-    fields: [comments.parentId],
-    references: [comments.id],
-  }),
-  replies: many(comments),
-}));
 
 // Admin uploads table for managing icon files and assets
 export const uploads = pgTable("uploads", {
@@ -199,18 +102,11 @@ export const uploads = pgTable("uploads", {
   mimeType: text("mime_type").notNull(),
   fileType: text("file_type").notNull(), // 'icon', 'image', 'document'
   uploadPath: text("upload_path").notNull(),
-  uploadedBy: integer("uploaded_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  uploadedBy: integer("uploaded_by").notNull(),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
-
-export const uploadsRelations = relations(uploads, ({ one }) => ({
-  uploadedByUser: one(users, {
-    fields: [uploads.uploadedBy],
-    references: [users.id],
-  }),
-}));
 
 // Define user roles as an enum for type safety and constraint enforcement
 export const userRoles = pgEnum("user_roles", ["user", "admin", "moderator"]);
@@ -266,11 +162,6 @@ export const users = pgTable("users", {
   // Store arbitrary JSON metadata in a native JSONB column
   metadata: jsonb("metadata").notNull().default("{}"),
 });
-
-export const usersRelations = relations(users, ({ many }) => ({
-  examSessions: many(examSessions),
-  uploads: many(uploads),
-}));
 
 
 
