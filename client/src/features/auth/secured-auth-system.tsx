@@ -35,7 +35,16 @@ interface AuthContextType {
   isLoading: boolean;
 
   // Authentication methods
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (
+    email: string,
+    password: string,
+    recaptchaToken?: string
+  ) => Promise<{
+    success: boolean;
+    message?: string;
+    requiresEmailVerification?: boolean;
+    user?: SecuredUser;
+  }>;
   signOut: () => Promise<void>;
 
   // Authorization methods
@@ -139,7 +148,10 @@ function ManualSignInForm() {
     setError("");
 
     try {
-      await auth.signIn(email, password);
+      const result = await auth.signIn(email, password);
+      if (!result.success) {
+        setError(result.message || "Sign in failed");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -212,46 +224,67 @@ export function SecuredAuthProvider({
   const [isLoading, setIsLoading] = useState(false); // Start as false - no auto-check
 
   // Explicit sign-in method - no auto-login
-  const signIn = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
+  const signIn = useCallback(
+    async (email: string, password: string, recaptchaToken?: string) => {
+      setIsLoading(true);
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, recaptchaToken }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Sign in failed");
+        const data = await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            message: data.message || "Sign in failed",
+          };
+        }
+
+        if (!data.success) {
+          return {
+            success: false,
+            message: data.message || "Invalid response from server",
+            requiresEmailVerification: data.requiresEmailVerification,
+          };
+        }
+
+        if (data.user) {
+          // Verify user has proper permissions
+          const authenticatedUser: SecuredUser = {
+            ...data.user,
+            permissions: data.user.permissions || [],
+          };
+
+          // Store token securely
+          if (data.accessToken) {
+            sessionStorage.setItem("auth_token", data.accessToken);
+          }
+
+          setUser(authenticatedUser);
+        }
+
+        return {
+          success: true,
+          message: data.message || "Sign in successful",
+          requiresEmailVerification: data.requiresEmailVerification,
+          user: data.user,
+        };
+      } catch (error) {
+        console.error("Sign in error:", error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : "Sign in failed",
+        };
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await response.json();
-
-      if (!data.success || !data.user) {
-        throw new Error("Invalid response from server");
-      }
-
-      // Verify user has proper permissions
-      const authenticatedUser: SecuredUser = {
-        ...data.user,
-        permissions: data.user.permissions || [],
-      };
-
-      // Store token securely
-      if (data.token) {
-        sessionStorage.setItem("auth_token", data.token);
-      }
-
-      setUser(authenticatedUser);
-    } catch (error) {
-      console.error("Sign in error:", error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   // Sign out method
   const signOut = useCallback(async () => {

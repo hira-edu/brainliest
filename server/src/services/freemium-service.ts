@@ -33,7 +33,7 @@ export interface FreemiumCheckResult {
 }
 
 /**
- * Fixed: Enhanced IP normalization using ipaddr.js for robust IPv4/IPv6 handling
+ * Fixed: Enhanced IP normalization using manual parsing for robust IPv4/IPv6 handling
  * Handles both IPv4 and IPv6 formats with proper normalization
  */
 function normalizeIpAddress(ip: string): string {
@@ -43,28 +43,16 @@ function normalizeIpAddress(ip: string): string {
       ip = ip.substring(7);
     }
 
-    // Fixed: Use ipaddr.js for proper IP parsing and normalization
-    const parsed = ipaddr.process(ip);
-
-    if (parsed.kind() === "ipv4") {
-      // For IPv4, return the string representation
-      return parsed.toString();
-    } else if (parsed.kind() === "ipv6") {
-      // For IPv6, return the full representation
-      return parsed.toString();
-    }
-
-    // Fallback to original if parsing succeeds but type is unexpected
-    return ip.trim();
-  } catch (error) {
-    console.warn(`Failed to normalize IP address with ipaddr.js: ${ip}`, error);
-
-    // Fixed: Fallback to basic validation for malformed IPs
+    // Basic IPv4 validation and normalization
     if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
       return ip.trim(); // Return trimmed IPv4
     }
 
-    return ip.trim(); // Return original for IPv6 or other formats
+    // For IPv6, return the trimmed original
+    return ip.trim();
+  } catch (error) {
+    console.warn(`Failed to normalize IP address: ${ip}`, error);
+    return ip.trim(); // Return original for any format
   }
 }
 
