@@ -208,7 +208,7 @@ export interface IStorage {
 
   // Comments
   getComments(): Promise<Comment[]>;
-  getCommentsByQuestion(questionId: number): Promise<Comment[]>;
+  getCommentsByQuestion(questionId: string): Promise<Comment[]>;
   getComment(id: number): Promise<Comment | undefined>;
   createComment(comment: InsertComment): Promise<Comment>;
   updateComment(
@@ -957,15 +957,14 @@ export class DatabaseStorage implements IStorage {
         authorName: comments.authorName,
         content: comments.content,
         createdAt: comments.createdAt,
-        parentId: comments.parentId,
-        isEdited: comments.isEdited,
-        editedAt: comments.editedAt,
+        isApproved: comments.isApproved,
+        updatedAt: comments.updatedAt,
       })
       .from(comments)
       .orderBy(desc(comments.createdAt));
   }
 
-  async getCommentsByQuestion(questionId: number): Promise<Comment[]> {
+  async getCommentsByQuestion(questionId: string): Promise<Comment[]> {
     return await db
       .select({
         id: comments.id,
@@ -973,9 +972,8 @@ export class DatabaseStorage implements IStorage {
         authorName: comments.authorName,
         content: comments.content,
         createdAt: comments.createdAt,
-        parentId: comments.parentId,
-        isEdited: comments.isEdited,
-        editedAt: comments.editedAt,
+        isApproved: comments.isApproved,
+        updatedAt: comments.updatedAt,
       })
       .from(comments)
       .where(eq(comments.questionId, questionId))
@@ -990,9 +988,8 @@ export class DatabaseStorage implements IStorage {
         authorName: comments.authorName,
         content: comments.content,
         createdAt: comments.createdAt,
-        parentId: comments.parentId,
-        isEdited: comments.isEdited,
-        editedAt: comments.editedAt,
+        isApproved: comments.isApproved,
+        updatedAt: comments.updatedAt,
       })
       .from(comments)
       .where(eq(comments.id, id));

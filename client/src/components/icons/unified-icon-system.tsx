@@ -328,3 +328,4 @@ function getCategoryIconName(categoryName: string): string {
 // Export the main components
 export { UnifiedIcon as Icon, SubjectIcon, CategoryIcon };
 export default UnifiedIcon;
+ 

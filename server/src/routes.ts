@@ -6,22 +6,32 @@ import { getQuestionHelp, explainAnswer } from "./services/ai";
 import { emailService } from "./services/email-service";
 import { authService } from "./services/auth-service";
 import { adminAuthService } from "./services/admin-auth-service";
-import { adminUserService } from './services/admin-user-management';
-import { tokenAdminAuth } from './services/token-admin-auth';
+import { adminUserService } from "./services/admin-user-management";
+import { tokenAdminAuth } from "./services/token-admin-auth";
 import { extractClientInfo } from "./middleware/admin-auth";
-import { enforceFreemiumLimit, recordFreemiumQuestionView, checkFreemiumStatus } from "./middleware/freemium";
+import {
+  enforceFreemiumLimit,
+  recordFreemiumQuestionView,
+  checkFreemiumStatus,
+} from "./middleware/freemium";
 import { seoService } from "./services/seo-service";
 import { recaptchaService } from "./services/recaptcha-service";
 import { trendingService } from "./services/trending-service";
 import { sitemapService } from "./services/sitemap-service";
 import { geolocationService } from "./services/geolocation-service";
-import { parseId, parseOptionalId, sanitizeString, validatePassword } from './security/input-sanitizer';
-import { z } from 'zod';
-import { validateEmail } from './services/auth-service';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs/promises';
-import { logAdminAction } from './middleware/auth';
+import {
+  parseId,
+  parseOptionalId,
+  parseOptionalUUID,
+  sanitizeString,
+  validatePassword,
+} from "./security/input-sanitizer";
+import { z } from "zod";
+import { validateEmail } from "./services/auth-service";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
+import { logAdminAction } from "./middleware/auth";
 import { 
   insertSubjectSchema, 
   insertExamSchema, 
@@ -33,7 +43,7 @@ import {
   insertUserSchema,
   insertCategorySchema,
   insertSubcategorySchema,
-  insertUploadSchema
+  insertUploadSchema,
 } from "../../shared/schema";
 
 // Store verification codes temporarily (in production, use Redis)
@@ -64,9 +74,9 @@ interface GoogleUserInfo {
 }
 
 // Extend Request interface for enterprise session management
-declare module 'express' {
+declare module "express" {
   interface Request {
-    adminSession?: import('./services/enterprise-admin-session-manager').AdminSession;
+    adminSession?: import("./services/enterprise-admin-session-manager").AdminSession;
     sessionId?: string;
   }
 }
@@ -74,58 +84,69 @@ declare module 'express' {
 // Exchange authorization code for user information
 async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
   try {
-    console.log('🔄 Exchanging OAuth code for tokens...');
+    console.log("🔄 Exchanging OAuth code for tokens...");
     
     // Determine the correct redirect URI based on environment
-    const redirectUri = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:5000/api/auth/google/callback'
-      : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/google/callback`;
+    const redirectUri =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:5000/api/auth/google/callback"
+        : `https://${
+            process.env.REPL_SLUG || "app"
+          }.replit.app/api/auth/google/callback`;
     
-    console.log('🔗 Using redirect URI:', redirectUri);
+    console.log("🔗 Using redirect URI:", redirectUri);
     
     // Step 1: Exchange code for tokens
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID!,
-        client_secret: GOOGLE_CLIENT_SECRET || '',
+        client_secret: GOOGLE_CLIENT_SECRET || "",
         code,
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
         redirect_uri: redirectUri,
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Token exchange failed:', errorText);
-      throw new Error(`Token exchange failed: ${tokenResponse.status} - ${errorText}`);
+      console.error("❌ Token exchange failed:", errorText);
+      throw new Error(
+        `Token exchange failed: ${tokenResponse.status} - ${errorText}`
+      );
     }
 
     const tokens: GoogleTokenResponse = await tokenResponse.json();
-    console.log('✅ Tokens received successfully');
+    console.log("✅ Tokens received successfully");
 
     // Step 2: Get user info using access token
-    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    const userResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
       headers: {
-        'Authorization': `Bearer ${tokens.access_token}`,
+          Authorization: `Bearer ${tokens.access_token}`,
       },
-    });
+      }
+    );
 
     if (!userResponse.ok) {
-      console.error('❌ User info fetch failed:', userResponse.status);
+      console.error("❌ User info fetch failed:", userResponse.status);
       throw new Error(`User info fetch failed: ${userResponse.status}`);
     }
 
     const userInfo: GoogleUserInfo = await userResponse.json();
-    console.log('✅ User info retrieved:', { email: userInfo.email, name: userInfo.name });
+    console.log("✅ User info retrieved:", {
+      email: userInfo.email,
+      name: userInfo.name,
+    });
 
     return userInfo;
   } catch (error) {
-    console.error('❌ OAuth code exchange error:', error);
-    throw new Error('Failed to authenticate with Google');
+    console.error("❌ OAuth code exchange error:", error);
+    throw new Error("Failed to authenticate with Google");
   }
 }
 
@@ -167,14 +188,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "healthy", 
         timestamp: new Date().toISOString(),
         database: "connected",
-        version: "1.0.0"
+        version: "1.0.0",
       });
     } catch (error) {
       res.status(503).json({ 
         status: "unhealthy", 
         timestamp: new Date().toISOString(),
         database: "disconnected",
-        error: "Database connection failed"
+        error: "Database connection failed",
       });
     }
   });
@@ -190,11 +211,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/categories", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.post(
+    "/api/categories",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const validation = insertCategorySchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid category data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid category data",
+            errors: validation.error.errors,
+          });
       }
       const category = await storage.createCategory(validation.data);
       res.status(201).json(category);
@@ -202,14 +230,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to create category:", error);
       res.status(500).json({ message: "Failed to create category" });
     }
-  });
+    }
+  );
 
-  app.put("/api/categories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.put(
+    "/api/categories/:slug",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug as string);
       const validation = insertCategorySchema.partial().safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid category data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid category data",
+            errors: validation.error.errors,
+          });
       }
       const category = await storage.updateCategory(slug, validation.data);
       if (!category) {
@@ -220,9 +256,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to update category:", error);
       res.status(500).json({ message: "Failed to update category" });
     }
-  });
+    }
+  );
 
-  app.delete("/api/categories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.delete(
+    "/api/categories/:slug",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug as string);
       const deleted = await storage.deleteCategory(slug);
@@ -234,7 +275,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to delete category:", error);
       res.status(500).json({ message: "Failed to delete category" });
     }
-  });
+    }
+  );
 
   // Subcategory routes
   app.get("/api/subcategories", async (req, res) => {
@@ -262,11 +304,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subcategories", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.post(
+    "/api/subcategories",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const validation = insertSubcategorySchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid subcategory data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid subcategory data",
+            errors: validation.error.errors,
+          });
       }
       const subcategory = await storage.createSubcategory(validation.data);
       res.status(201).json(subcategory);
@@ -274,16 +323,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to create subcategory:", error);
       res.status(500).json({ message: "Failed to create subcategory" });
     }
-  });
+    }
+  );
 
-  app.put("/api/subcategories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.put(
+    "/api/subcategories/:slug",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug as string);
-      const validation = insertSubcategorySchema.partial().safeParse(req.body);
+        const validation = insertSubcategorySchema
+          .partial()
+          .safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid subcategory data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid subcategory data",
+            errors: validation.error.errors,
+          });
       }
-      const subcategory = await storage.updateSubcategory(slug, validation.data);
+        const subcategory = await storage.updateSubcategory(
+          slug,
+          validation.data
+        );
       if (!subcategory) {
         return res.status(404).json({ message: "Subcategory not found" });
       }
@@ -292,9 +354,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to update subcategory:", error);
       res.status(500).json({ message: "Failed to update subcategory" });
     }
-  });
+    }
+  );
 
-  app.delete("/api/subcategories/:slug", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.delete(
+    "/api/subcategories/:slug",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug as string);
       const deleted = await storage.deleteSubcategory(slug);
@@ -306,15 +373,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Failed to delete subcategory:", error);
       res.status(500).json({ message: "Failed to delete subcategory" });
     }
-  });
+    }
+  );
 
   // Admin relationship management - assign subcategory to category
-  app.post('/api/admin/relationships/subcategory-to-category', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.post(
+    "/api/admin/relationships/subcategory-to-category",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const { subcategorySlug, categorySlug } = req.body;
       
       if (!subcategorySlug || !categorySlug) {
-        return res.status(400).json({ message: 'Both subcategorySlug and categorySlug are required' });
+          return res.status(400).json({
+            message: "Both subcategorySlug and categorySlug are required",
+          });
       }
 
       // Verify both exist
@@ -322,82 +395,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const category = await storage.getCategory(categorySlug);
       
       if (!subcategory) {
-        return res.status(404).json({ message: 'Subcategory not found' });
+          return res.status(404).json({ message: "Subcategory not found" });
       }
       if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+          return res.status(404).json({ message: "Category not found" });
       }
 
       // Update the subcategory's category relationship
-      const updatedSubcategory = await storage.updateSubcategory(subcategorySlug, {
-        categorySlug: categorySlug
-      });
+        const updatedSubcategory = await storage.updateSubcategory(
+          subcategorySlug,
+          {
+            categorySlug: categorySlug,
+          }
+        );
 
       res.json({
         success: true,
-        message: 'Subcategory assigned to category successfully',
-        subcategory: updatedSubcategory
+          message: "Subcategory assigned to category successfully",
+          subcategory: updatedSubcategory,
       });
     } catch (error) {
-      console.error('Error assigning subcategory to category:', error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error("Error assigning subcategory to category:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
-  });
+    }
+  );
 
   // Admin relationship management - assign subject to category/subcategory
-  app.post('/api/admin/relationships/subject-to-category', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.post(
+    "/api/admin/relationships/subject-to-category",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const { subjectSlug, categorySlug, subcategorySlug } = req.body;
       
       if (!subjectSlug || (!categorySlug && !subcategorySlug)) {
-        return res.status(400).json({ message: 'subjectSlug and either categorySlug or subcategorySlug are required' });
+          return res.status(400).json({
+            message:
+              "subjectSlug and either categorySlug or subcategorySlug are required",
+          });
       }
 
       // Verify subject exists
       const subject = await storage.getSubject(subjectSlug);
       if (!subject) {
-        return res.status(404).json({ message: 'Subject not found' });
+          return res.status(404).json({ message: "Subject not found" });
       }
 
       // Verify category/subcategory exists
       if (categorySlug) {
         const category = await storage.getCategory(categorySlug);
         if (!category) {
-          return res.status(404).json({ message: 'Category not found' });
+            return res.status(404).json({ message: "Category not found" });
         }
       }
       
       if (subcategorySlug) {
         const subcategory = await storage.getSubcategory(subcategorySlug);
         if (!subcategory) {
-          return res.status(404).json({ message: 'Subcategory not found' });
+            return res.status(404).json({ message: "Subcategory not found" });
         }
       }
 
       // Update the subject's category/subcategory relationship
       const updatedSubject = await storage.updateSubject(subjectSlug, {
         categorySlug: categorySlug || null,
-        subcategorySlug: subcategorySlug || null
+          subcategorySlug: subcategorySlug || null,
       });
 
       res.json({
         success: true,
-        message: 'Subject assigned to category/subcategory successfully',
-        subject: updatedSubject
+          message: "Subject assigned to category/subcategory successfully",
+          subject: updatedSubject,
       });
     } catch (error) {
-      console.error('Error assigning subject to category/subcategory:', error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error(
+          "Error assigning subject to category/subcategory:",
+          error
+        );
+        res.status(500).json({ message: "Internal server error" });
     }
-  });
+    }
+  );
 
   // Admin relationship management - assign exam to subject
-  app.post('/api/admin/relationships/exam-to-subject', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.post(
+    "/api/admin/relationships/exam-to-subject",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const { examSlug, subjectSlug } = req.body;
       
       if (!examSlug || !subjectSlug) {
-        return res.status(400).json({ message: 'Both examSlug and subjectSlug are required' });
+          return res
+            .status(400)
+            .json({ message: "Both examSlug and subjectSlug are required" });
       }
 
       // Verify both exist
@@ -405,30 +497,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subject = await storage.getSubject(subjectSlug);
       
       if (!exam) {
-        return res.status(404).json({ message: 'Exam not found' });
+          return res.status(404).json({ message: "Exam not found" });
       }
       if (!subject) {
-        return res.status(404).json({ message: 'Subject not found' });
+          return res.status(404).json({ message: "Subject not found" });
       }
 
       // Update the exam's subject relationship
       const updatedExam = await storage.updateExam(examSlug, {
-        subjectSlug: subjectSlug
+          subjectSlug: subjectSlug,
       });
 
       res.json({
         success: true,
-        message: 'Exam assigned to subject successfully',
-        exam: updatedExam
+          message: "Exam assigned to subject successfully",
+          exam: updatedExam,
       });
     } catch (error) {
-      console.error('Error assigning exam to subject:', error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error("Error assigning exam to subject:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
-  });
+    }
+  );
 
   // Get hierarchical relationships overview
-  app.get('/api/admin/relationships/overview', tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/admin/relationships/overview",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const categories = await storage.getCategories();
       const subcategories = await storage.getSubcategories();
@@ -436,19 +532,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const exams = await storage.getExams();
 
       // Build hierarchical structure
-      const hierarchicalData = categories.map(category => ({
+        const hierarchicalData = categories.map((category) => ({
         ...category,
-        subcategories: subcategories.filter(sub => sub.categorySlug === category.slug).map(subcategory => ({
+          subcategories: subcategories
+            .filter((sub) => sub.categorySlug === category.slug)
+            .map((subcategory) => ({
           ...subcategory,
-          subjects: subjects.filter(subj => subj.subcategorySlug === subcategory.slug).map(subject => ({
+              subjects: subjects
+                .filter((subj) => subj.subcategorySlug === subcategory.slug)
+                .map((subject) => ({
             ...subject,
-            exams: exams.filter(exam => exam.subjectSlug === subject.slug)
-          }))
+                  exams: exams.filter(
+                    (exam) => exam.subjectSlug === subject.slug
+                  ),
+                })),
         })),
-        directSubjects: subjects.filter(subj => subj.categorySlug === category.slug && !subj.subcategorySlug).map(subject => ({
+          directSubjects: subjects
+            .filter(
+              (subj) =>
+                subj.categorySlug === category.slug && !subj.subcategorySlug
+            )
+            .map((subject) => ({
           ...subject,
-          exams: exams.filter(exam => exam.subjectSlug === subject.slug)
-        }))
+              exams: exams.filter((exam) => exam.subjectSlug === subject.slug),
+            })),
       }));
 
       res.json({
@@ -457,21 +564,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           categories: categories.length,
           subcategories: subcategories.length,
           subjects: subjects.length,
-          exams: exams.length
-        }
+            exams: exams.length,
+          },
       });
     } catch (error) {
-      console.error('Error fetching relationship overview:', error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error("Error fetching relationship overview:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
-  });
+    }
+  );
 
   // Subject routes - specific routes first to prevent shadowing
   // Subject slug-based route
   app.get("/api/subjects/slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
-      if (!slug || typeof slug !== 'string') {
+      if (!slug || typeof slug !== "string") {
         return res.status(400).json({ message: "Invalid subject slug" });
       }
       const subject = await storage.getSubjectBySlug(slug);
@@ -488,7 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/subjects/by-slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
-      if (!slug || typeof slug !== 'string') {
+      if (!slug || typeof slug !== "string") {
         return res.status(400).json({ message: "Invalid subject slug" });
       }
       const subject = await storage.getSubjectBySlug(slug);
@@ -505,7 +613,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const subcategorySlug = req.query.subcategorySlug as string;
       const subjects = subcategorySlug 
-        ? await storage.getSubjects().then(subjects => subjects.filter(s => s.subcategorySlug === subcategorySlug))
+        ? await storage
+            .getSubjects()
+            .then((subjects) =>
+              subjects.filter((s) => s.subcategorySlug === subcategorySlug)
+            )
         : await storage.getSubjects();
       res.json(subjects);
     } catch (error) {
@@ -515,7 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/subjects/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'subject ID');
+      const id = parseId(req.params.id, "subject ID");
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ message: "Invalid subject ID" });
       }
@@ -529,28 +641,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subjects", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.post(
+    "/api/subjects",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const validation = insertSubjectSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid subject data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid subject data",
+            errors: validation.error.errors,
+          });
       }
       const subject = await storage.createSubject(validation.data);
       res.status(201).json(subject);
     } catch (error) {
       res.status(500).json({ message: "Failed to create subject" });
     }
-  });
+    }
+  );
 
-  app.put("/api/subjects/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.put(
+    "/api/subjects/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'subject ID');
+        const id = parseId(req.params.id, "subject ID");
       if (isNaN(id) || id <= 0) {
         return res.status(400).json({ message: "Invalid subject ID" });
       }
       const validation = insertSubjectSchema.partial().safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid subject data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid subject data",
+            errors: validation.error.errors,
+          });
       }
       const subject = await storage.updateSubject(id, validation.data);
       if (!subject) {
@@ -560,7 +687,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to update subject" });
     }
-  });
+    }
+  );
 
   // Exam routes with dynamic question counts
   app.get("/api/exams", async (req, res) => {
@@ -574,16 +702,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Fetching question counts for ${exams.length} exams...`);
       const examsWithCounts = await Promise.all(
         exams.map(async (exam) => {
-          const actualQuestionCount = await storage.getQuestionCountByExam(exam.slug);
+          const actualQuestionCount = await storage.getQuestionCountByExam(
+            exam.slug
+          );
           console.log(`Exam ${exam.slug}: ${actualQuestionCount} questions`);
           return {
             ...exam,
-            questionCount: actualQuestionCount
+            questionCount: actualQuestionCount,
           };
         })
       );
 
-      console.log(`Returning ${examsWithCounts.length} exams with updated question counts`);
+      console.log(
+        `Returning ${examsWithCounts.length} exams with updated question counts`
+      );
       res.json(examsWithCounts);
     } catch (error) {
       console.error("Failed to fetch exams:", error);
@@ -599,10 +731,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Dynamically calculate question count for each exam
       const examsWithQuestionCount = await Promise.all(
         exams.map(async (exam) => {
-          const actualQuestionCount = await storage.getQuestionCountByExam(exam.slug);
+          const actualQuestionCount = await storage.getQuestionCountByExam(
+            exam.slug
+          );
           return {
             ...exam,
-            questionCount: actualQuestionCount
+            questionCount: actualQuestionCount,
           };
         })
       );
@@ -615,7 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/exams/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'exam ID');
+      const id = parseId(req.params.id, "exam ID");
       const exam = await storage.getExamById(id);
       if (!exam) {
         return res.status(404).json({ message: "Exam not found" });
@@ -626,7 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...exam,
-        questionCount: actualQuestionCount
+        questionCount: actualQuestionCount,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exam" });
@@ -637,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exams/slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
-      if (!slug || typeof slug !== 'string') {
+      if (!slug || typeof slug !== "string") {
         return res.status(400).json({ message: "Invalid exam slug" });
       }
       const exam = await storage.getExamBySlug(slug);
@@ -654,7 +788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exams/by-slug/:slug", async (req, res) => {
     try {
       const slug = req.params.slug;
-      if (!slug || typeof slug !== 'string') {
+      if (!slug || typeof slug !== "string") {
         return res.status(400).json({ message: "Invalid exam slug" });
       }
       const exam = await storage.getExamBySlug(slug);
@@ -667,35 +801,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...exam,
-        questionCount: actualQuestionCount
+        questionCount: actualQuestionCount,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch exam" });
     }
   });
 
-  app.post("/api/exams", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.post(
+    "/api/exams",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const validation = insertExamSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid exam data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid exam data",
+            errors: validation.error.errors,
+          });
       }
       const exam = await storage.createExam(validation.data);
       res.status(201).json(exam);
     } catch (error) {
       res.status(500).json({ message: "Failed to create exam" });
     }
-  });
+    }
+  );
 
   // Question routes
   app.get("/api/questions", checkFreemiumStatus(), async (req, res) => {
     try {
       // Schema-first validation for query parameters
-      const querySchema = z.object({
-        examSlug: z.string().regex(/^[a-z0-9-]+$/, 'Exam slug must be lowercase letters, numbers, or hyphens').optional(),
-        examId: z.string().regex(/^\d+$/, 'Exam ID must be a positive integer').optional()
-      }).refine(data => !data.examSlug || !data.examId, {
-        message: "Cannot specify both examSlug and examId"
+      const querySchema = z
+        .object({
+          examSlug: z
+            .string()
+            .regex(
+              /^[a-z0-9-]+$/,
+              "Exam slug must be lowercase letters, numbers, or hyphens"
+            )
+            .optional(),
+          examId: z
+            .string()
+            .regex(/^\d+$/, "Exam ID must be a positive integer")
+            .optional(),
+        })
+        .refine((data) => !data.examSlug || !data.examId, {
+          message: "Cannot specify both examSlug and examId",
       });
 
       let validatedQuery;
@@ -704,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (validationError) {
         return res.status(400).json({ 
           message: "Invalid query parameters", 
-          errors: validationError.errors 
+          errors: validationError.errors,
         });
       }
 
@@ -725,19 +878,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add freemium session info to response for frontend
       const responseData = {
         questions,
-        freemiumSession: req.freemiumSession
+        freemiumSession: req.freemiumSession,
       };
       
       res.json(responseData);
     } catch (error) {
-      console.error('Questions API error:', error);
+      console.error("Questions API error:", error);
       res.status(500).json({ message: "Failed to fetch questions" });
     }
   });
 
-  app.get("/api/questions/:id", enforceFreemiumLimit(), recordFreemiumQuestionView(), async (req, res) => {
+  app.get(
+    "/api/questions/:id",
+    enforceFreemiumLimit(),
+    recordFreemiumQuestionView(),
+    async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'question ID');
+        const id = parseId(req.params.id, "question ID");
       const question = await storage.getQuestion(id);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
@@ -746,34 +903,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add freemium session info to response
       const responseData = {
         ...question,
-        freemiumSession: req.freemiumSession
+          freemiumSession: req.freemiumSession,
       };
       
       res.json(responseData);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch question" });
     }
-  });
+    }
+  );
 
-  app.post("/api/questions", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.post(
+    "/api/questions",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const validation = insertQuestionSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid question data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid question data",
+            errors: validation.error.errors,
+          });
       }
       const question = await storage.createQuestion(validation.data);
       res.status(201).json(question);
     } catch (error) {
       res.status(500).json({ message: "Failed to create question" });
     }
-  });
+    }
+  );
 
-  app.put("/api/questions/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.put(
+    "/api/questions/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'question ID');
+        const id = parseId(req.params.id, "question ID");
       const validation = insertQuestionSchema.partial().safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid question data", errors: validation.error.errors });
+          return res.status(400).json({
+            message: "Invalid question data",
+            errors: validation.error.errors,
+          });
       }
       const question = await storage.updateQuestion(id, validation.data);
       if (!question) {
@@ -783,23 +956,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to update question" });
     }
-  });
+    }
+  );
 
-  app.delete("/api/questions/all", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.delete(
+    "/api/questions/all",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const questions = await storage.getQuestions();
       for (const question of questions) {
         await storage.deleteQuestion(question.id);
       }
-      res.json({ message: "All questions deleted successfully", count: questions.length });
+        res.json({
+          message: "All questions deleted successfully",
+          count: questions.length,
+        });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete all questions" });
     }
-  });
+    }
+  );
 
-  app.delete("/api/questions/:id", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.delete(
+    "/api/questions/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'question ID');
+        const id = parseId(req.params.id, "question ID");
       const deleted = await storage.deleteQuestion(id);
       if (!deleted) {
         return res.status(404).json({ message: "Question not found" });
@@ -808,10 +994,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to delete question" });
     }
-  });
+    }
+  );
 
   // Bulk question operations for CSV import - ADMIN PROTECTED
-  app.post("/api/questions/bulk", tokenAdminAuth.createAuthMiddleware(), logAdminAction, async (req, res) => {
+  app.post(
+    "/api/questions/bulk",
+    tokenAdminAuth.createAuthMiddleware(),
+    logAdminAction,
+    async (req, res) => {
     try {
       const { questions } = req.body;
       if (!Array.isArray(questions) || questions.length === 0) {
@@ -834,14 +1025,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ 
         message: `Successfully imported ${createdQuestions.length} questions`,
         created: createdQuestions.length,
-        total: questions.length
+          total: questions.length,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to import questions" });
     }
-  });
-
-
+    }
+  );
 
   // Analytics routes
   app.get("/api/analytics/overview/:userName", async (req, res) => {
@@ -858,15 +1048,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const answerHistory = await analyticsService.getAnswerHistory(userName);
       
       // Get performance trends
-      const performanceTrends = await analyticsService.getPerformanceTrends(userName);
+      const performanceTrends = await analyticsService.getPerformanceTrends(
+        userName
+      );
       
       // Calculate additional metrics
-      const totalTimeSpent = examAnalytics.reduce((sum, exam) => sum + (exam.timeSpent || 0), 0);
-      const averageTimePerQuestion = answerHistory.length > 0 ? totalTimeSpent / answerHistory.length : 0;
+      const totalTimeSpent = examAnalytics.reduce(
+        (sum, exam) => sum + (exam.timeSpent || 0),
+        0
+      );
+      const averageTimePerQuestion =
+        answerHistory.length > 0 ? totalTimeSpent / answerHistory.length : 0;
       
       // Calculate accuracy by difficulty
       const difficultyAnalysis = answerHistory.reduce((acc, answer) => {
-        const difficulty = answer.difficulty || 'Unknown';
+        const difficulty = answer.difficulty || "Unknown";
         if (!acc[difficulty]) {
           acc[difficulty] = { correct: 0, total: 0 };
         }
@@ -884,7 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalTimeSpent,
           averageTimePerQuestion,
           difficultyAnalysis,
-        }
+        },
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch analytics overview" });
@@ -895,7 +1091,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validation = insertDetailedAnswerSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid answer data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid answer data",
+          errors: validation.error.errors,
+        });
       }
       const answer = await analyticsService.recordAnswer(validation.data);
       res.status(201).json(answer);
@@ -908,14 +1107,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validation = insertExamAnalyticsSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid exam analytics data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid exam analytics data",
+          errors: validation.error.errors,
+        });
       }
-      const analytics = await analyticsService.createExamAnalytics(validation.data);
+      const analytics = await analyticsService.createExamAnalytics(
+        validation.data
+      );
       
       // Update user profile
       await analyticsService.createOrUpdateUserProfile(req.body.userName, {
         score: req.body.score,
-        totalQuestions: req.body.totalQuestions
+        totalQuestions: req.body.totalQuestions,
       });
       
       res.status(201).json(analytics);
@@ -934,15 +1138,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/analytics/study-recommendations/:userName", async (req, res) => {
+  app.get(
+    "/api/analytics/study-recommendations/:userName",
+    async (req, res) => {
     try {
       const { userName } = req.params;
-      const recommendations = await analyticsService.getStudyRecommendations(userName);
+        const recommendations = await analyticsService.getStudyRecommendations(
+          userName
+        );
       res.json(recommendations);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch study recommendations" });
+        res
+          .status(500)
+          .json({ message: "Failed to fetch study recommendations" });
     }
-  });
+    }
+  );
 
   // Contact form route
   app.post("/api/contact", async (req, res) => {
@@ -972,12 +1183,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject,
         category,
         message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       res.status(201).json({ 
         message: "Contact form submitted successfully",
-        id: Math.random().toString(36).substr(2, 9) // Generate simple ID
+        id: Math.random().toString(36).substr(2, 9), // Generate simple ID
       });
     } catch (error) {
       console.error("Contact form error:", error);
@@ -990,7 +1201,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validation = insertExamSessionSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid session data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid session data",
+          errors: validation.error.errors,
+        });
       }
       const session = await storage.createExamSession(validation.data);
       res.status(201).json(session);
@@ -1001,7 +1215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/sessions/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'session ID');
+      const id = parseId(req.params.id, "session ID");
       const session = await storage.getExamSession(id);
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
@@ -1014,10 +1228,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/sessions/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'session ID');
+      const id = parseId(req.params.id, "session ID");
       const validation = insertExamSessionSchema.partial().safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid session data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid session data",
+          errors: validation.error.errors,
+        });
       }
       const session = await storage.updateExamSession(id, validation.data);
       if (!session) {
@@ -1032,7 +1249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comment routes
   app.get("/api/comments", async (req, res) => {
     try {
-      const questionId = parseOptionalId(req.query.questionId as string);
+      const questionId = parseOptionalUUID(req.query.questionId as string);
       const comments = questionId 
         ? await storage.getCommentsByQuestion(questionId)
         : await storage.getComments();
@@ -1047,7 +1264,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validation = insertCommentSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid comment data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid comment data",
+          errors: validation.error.errors,
+        });
       }
       const comment = await storage.createComment(validation.data);
       res.status(201).json(comment);
@@ -1058,7 +1278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/comments/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'comment ID');
+      const id = parseId(req.params.id, "comment ID");
       const deleted = await storage.deleteComment(id);
       if (!deleted) {
         return res.status(404).json({ message: "Comment not found" });
@@ -1081,7 +1301,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subject = await storage.getSubject(question.subjectId);
       const subjectName = subject?.name || "certification";
 
-      const help = await getQuestionHelp(question.text, question.options, subjectName);
+      const help = await getQuestionHelp(
+        question.text,
+        question.options,
+        subjectName
+      );
       res.json({ help });
     } catch (error) {
       res.status(500).json({ message: "Failed to get AI help" });
@@ -1091,7 +1315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/explain-answer", async (req, res) => {
     try {
       const { questionId, userAnswer } = req.body;
-      console.log(`AI explanation request for question ${questionId}, user answer: ${userAnswer}`);
+      console.log(
+        `AI explanation request for question ${questionId}, user answer: ${userAnswer}`
+      );
       
       const question = await storage.getQuestion(questionId);
       if (!question) {
@@ -1132,7 +1358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio: "Passionate about learning and professional development.",
         location: "San Francisco, CA",
         dateOfBirth: "1990-01-15",
-        website: "https://johndoe.com"
+        website: "https://johndoe.com",
       };
       res.json(profile);
     } catch (error) {
@@ -1142,12 +1368,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/settings/profile", async (req, res) => {
     try {
-      const { firstName, lastName, email, phone, bio, location, dateOfBirth, website } = req.body;
+      const {
+        firstName,
+        lastName,
+        email,
+        phone,
+        bio,
+        location,
+        dateOfBirth,
+        website,
+      } = req.body;
       
       // Here you would update the user profile in the database
       res.json({ 
         message: "Profile updated successfully",
-        success: true 
+        success: true,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to update profile" });
@@ -1159,17 +1394,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { currentPassword, newPassword } = req.body;
       
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({ message: "Current and new password are required" });
+        return res
+          .status(400)
+          .json({ message: "Current and new password are required" });
       }
 
       if (newPassword.length < 8) {
-        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+        return res
+          .status(400)
+          .json({ message: "Password must be at least 8 characters long" });
       }
       
       // Here you would verify current password and update to new password
       res.json({ 
         message: "Password changed successfully",
-        success: true 
+        success: true,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to change password" });
@@ -1185,11 +1424,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         progressUpdates: true,
         marketingEmails: false,
         weeklyDigest: true,
-        practiceReminders: true
+        practiceReminders: true,
       };
       res.json(notifications);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch notification settings" });
+      res
+        .status(500)
+        .json({ message: "Failed to fetch notification settings" });
     }
   });
 
@@ -1198,10 +1439,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Here you would update notification preferences in the database
       res.json({ 
         message: "Notification settings updated successfully",
-        success: true 
+        success: true,
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to update notification settings" });
+      res
+        .status(500)
+        .json({ message: "Failed to update notification settings" });
     }
   });
 
@@ -1209,8 +1452,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Here you would generate and send export data
       res.json({ 
-        message: "Data export requested. You will receive an email with download link.",
-        success: true 
+        message:
+          "Data export requested. You will receive an email with download link.",
+        success: true,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to export data" });
@@ -1221,8 +1465,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Here you would mark account for deletion
       res.json({ 
-        message: "Account deletion requested. Your account will be deleted within 24 hours.",
-        success: true 
+        message:
+          "Account deletion requested. Your account will be deleted within 24 hours.",
+        success: true,
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to process account deletion" });
@@ -1235,8 +1480,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { role, isActive, isBanned, search } = req.query;
       const filters = {
         role: role as string,
-        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
-        isBanned: isBanned === 'true' ? true : isBanned === 'false' ? false : undefined,
+        isActive:
+          isActive === "true" ? true : isActive === "false" ? false : undefined,
+        isBanned:
+          isBanned === "true" ? true : isBanned === "false" ? false : undefined,
         search: search as string,
       };
       
@@ -1249,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'user ID');
+      const id = parseId(req.params.id, "user ID");
       const user = await storage.getUser(id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -1264,7 +1511,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validation = insertUserSchema.safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid user data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid user data",
+          errors: validation.error.errors,
+        });
       }
       const user = await storage.createUser(validation.data);
       res.status(201).json(user);
@@ -1275,10 +1525,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/users/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'user ID');
+      const id = parseId(req.params.id, "user ID");
       const validation = insertUserSchema.partial().safeParse(req.body);
       if (!validation.success) {
-        return res.status(400).json({ message: "Invalid user data", errors: validation.error.errors });
+        return res.status(400).json({
+          message: "Invalid user data",
+          errors: validation.error.errors,
+        });
       }
       const user = await storage.updateUser(id, validation.data);
       if (!user) {
@@ -1292,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'user ID');
+      const id = parseId(req.params.id, "user ID");
       const deleted = await storage.deleteUser(id);
       if (!deleted) {
         return res.status(404).json({ message: "User not found" });
@@ -1305,7 +1558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users/:id/ban", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'user ID');
+      const id = parseId(req.params.id, "user ID");
       const { reason } = req.body;
       if (!reason) {
         return res.status(400).json({ message: "Ban reason is required" });
@@ -1322,7 +1575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/users/:id/unban", async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'user ID');
+      const id = parseId(req.params.id, "user ID");
       const success = await storage.unbanUser(id);
       if (!success) {
         return res.status(404).json({ message: "User not found" });
@@ -1338,39 +1591,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { role, isActive, isBanned, search } = req.query;
       const filters = {
         role: role as string,
-        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
-        isBanned: isBanned === 'true' ? true : isBanned === 'false' ? false : undefined,
+        isActive:
+          isActive === "true" ? true : isActive === "false" ? false : undefined,
+        isBanned:
+          isBanned === "true" ? true : isBanned === "false" ? false : undefined,
         search: search as string,
       };
       
       const users = await storage.getUsersWithFilters(filters);
       
       // Convert to CSV format
-      const csvHeader = "ID,Email,Username,First Name,Last Name,Role,Active,Banned,Ban Reason,Last Login,Last Login IP,Registration IP,Created At,Updated At\n";
-      const csvRows = users.map(user => {
-        const formatDate = (date: Date | null) => date ? date.toISOString() : '';
+      const csvHeader =
+        "ID,Email,Username,First Name,Last Name,Role,Active,Banned,Ban Reason,Last Login,Last Login IP,Registration IP,Created At,Updated At\n";
+      const csvRows = users
+        .map((user) => {
+          const formatDate = (date: Date | null) =>
+            date ? date.toISOString() : "";
         return [
           user.id,
           user.email,
           user.username,
-          user.firstName || '',
-          user.lastName || '',
+            user.firstName || "",
+            user.lastName || "",
           user.role,
           user.isActive,
           user.isBanned,
-          user.banReason || '',
+            user.banReason || "",
           formatDate(user.lastLoginAt),
-          user.lastLoginIp || '',
-          user.registrationIp || '',
+            user.lastLoginIp || "",
+            user.registrationIp || "",
           formatDate(user.createdAt),
-          formatDate(user.updatedAt)
-        ].map(field => `"${field}"`).join(',');
-      }).join('\n');
+            formatDate(user.updatedAt),
+          ]
+            .map((field) => `"${field}"`)
+            .join(",");
+        })
+        .join("\n");
       
       const csv = csvHeader + csvRows;
       
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="users.csv"');
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", 'attachment; filename="users.csv"');
       res.send(csv);
     } catch (error) {
       res.status(500).json({ message: "Failed to export users" });
@@ -1388,15 +1649,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract admin token and verify
       const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Admin authentication required' });
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res
+          .status(401)
+          .json({ message: "Admin authentication required" });
       }
       
       const token = authHeader.substring(7);
-      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(
+        token
+      );
       
       if (!valid || !adminUser) {
-        return res.status(401).json({ message: 'Invalid admin token' });
+        return res.status(401).json({ message: "Invalid admin token" });
       }
       
       // Extract user data from request
@@ -1405,13 +1670,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate required fields
       if (!email || !role || !password) {
         return res.status(400).json({ 
-          message: 'Missing required fields: email, role, and password are required' 
+          message:
+            "Missing required fields: email, role, and password are required",
         });
       }
       
       // Get client IP and user agent for audit logging
       const ipAddress = req.ip || req.socket.remoteAddress;
-      const userAgent = req.headers['user-agent'];
+      const userAgent = req.headers["user-agent"];
       
       // Create user via admin service
       const newUser = await adminUserService.createUser(
@@ -1424,15 +1690,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({
         success: true,
-        message: 'User created successfully',
-        user: newUser
+        message: "User created successfully",
+        user: newUser,
       });
-      
     } catch (error) {
-      console.error('Admin create user error:', error);
+      console.error("Admin create user error:", error);
       res.status(500).json({ 
-        message: error.message || 'Failed to create user',
-        success: false
+        message: error.message || "Failed to create user",
+        success: false,
       });
     }
   });
@@ -1445,31 +1710,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract admin token and verify
       const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Admin authentication required' });
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res
+          .status(401)
+          .json({ message: "Admin authentication required" });
       }
       
       const token = authHeader.substring(7);
-      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(
+        token
+      );
       
       if (!valid || !adminUser) {
-        return res.status(401).json({ message: 'Invalid admin token' });
+        return res.status(401).json({ message: "Invalid admin token" });
       }
       
       // Get user ID from params
-      const userId = parseId(req.params.id, 'user ID');
+      const userId = parseId(req.params.id, "user ID");
       
       // Extract update data from request
-      const { email, role, password, firstName, lastName, isActive, isBanned, banReason } = req.body;
+      const {
+        email,
+        role,
+        password,
+        firstName,
+        lastName,
+        isActive,
+        isBanned,
+        banReason,
+      } = req.body;
       
       // Get client IP and user agent for audit logging
       const ipAddress = req.ip || req.socket.remoteAddress;
-      const userAgent = req.headers['user-agent'];
+      const userAgent = req.headers["user-agent"];
       
       // Update user via admin service
       const updatedUser = await adminUserService.updateUser(
         userId,
-        { email, role, password, firstName, lastName, isActive, isBanned, banReason },
+        {
+          email,
+          role,
+          password,
+          firstName,
+          lastName,
+          isActive,
+          isBanned,
+          banReason,
+        },
         adminUser.id,
         adminUser.email,
         ipAddress,
@@ -1478,15 +1765,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         success: true,
-        message: 'User updated successfully',
-        user: updatedUser
+        message: "User updated successfully",
+        user: updatedUser,
       });
-      
     } catch (error) {
-      console.error('Admin update user error:', error);
+      console.error("Admin update user error:", error);
       res.status(500).json({ 
-        message: error.message || 'Failed to update user',
-        success: false
+        message: error.message || "Failed to update user",
+        success: false,
       });
     }
   });
@@ -1499,23 +1785,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract admin token and verify
       const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Admin authentication required' });
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res
+          .status(401)
+          .json({ message: "Admin authentication required" });
       }
       
       const token = authHeader.substring(7);
-      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(
+        token
+      );
       
       if (!valid || !adminUser) {
-        return res.status(401).json({ message: 'Invalid admin token' });
+        return res.status(401).json({ message: "Invalid admin token" });
       }
       
       // Get user ID from params
-      const userId = parseId(req.params.id, 'user ID');
+      const userId = parseId(req.params.id, "user ID");
       
       // Get client IP and user agent for audit logging
       const ipAddress = req.ip || req.socket.remoteAddress;
-      const userAgent = req.headers['user-agent'];
+      const userAgent = req.headers["user-agent"];
       
       // Delete user via admin service
       const result = await adminUserService.deleteUser(
@@ -1527,12 +1817,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       res.json(result);
-      
     } catch (error) {
-      console.error('Admin delete user error:', error);
+      console.error("Admin delete user error:", error);
       res.status(500).json({ 
-        message: error.message || 'Failed to delete user',
-        success: false
+        message: error.message || "Failed to delete user",
+        success: false,
       });
     }
   });
@@ -1545,15 +1834,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract admin token and verify
       const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Admin authentication required' });
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res
+          .status(401)
+          .json({ message: "Admin authentication required" });
       }
       
       const token = authHeader.substring(7);
-      const { valid, user: adminUser } = await adminAuthService.verifyToken(token);
+      const { valid, user: adminUser } = await adminAuthService.verifyToken(
+        token
+      );
       
       if (!valid || !adminUser) {
-        return res.status(401).json({ message: 'Invalid admin token' });
+        return res.status(401).json({ message: "Invalid admin token" });
       }
       
       // Get pagination parameters
@@ -1569,15 +1862,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pagination: {
           limit,
           offset,
-          total: logs.length
-        }
+          total: logs.length,
+        },
       });
-      
     } catch (error) {
-      console.error('Admin audit logs error:', error);
+      console.error("Admin audit logs error:", error);
       res.status(500).json({ 
-        message: 'Failed to fetch audit logs',
-        success: false
+        message: "Failed to fetch audit logs",
+        success: false,
       });
     }
   });
@@ -1588,10 +1880,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ip = req.params.ip;
       
       // Validate IP format (basic validation)
-      if (!ip || ip === 'undefined' || ip === 'null') {
+      if (!ip || ip === "undefined" || ip === "null") {
         return res.status(400).json({ 
           message: "Valid IP address is required",
-          ip: ip
+          ip: ip,
         });
       }
 
@@ -1603,13 +1895,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         location,
         formatted: geolocationService.formatLocation(location),
         flag: geolocationService.getCountryFlag(location.countryCode),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Geolocation error:', error);
+      console.error("Geolocation error:", error);
       res.status(500).json({ 
         message: "Failed to get location data",
-        success: false
+        success: false,
       });
     }
   });
@@ -1621,14 +1913,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!Array.isArray(ips) || ips.length === 0) {
         return res.status(400).json({ 
           message: "Array of IP addresses is required",
-          example: { ips: ["192.168.1.1", "8.8.8.8"] }
+          example: { ips: ["192.168.1.1", "8.8.8.8"] },
         });
       }
 
       // Limit to 50 IPs per request to prevent abuse
       if (ips.length > 50) {
         return res.status(400).json({ 
-          message: "Maximum 50 IP addresses allowed per request"
+          message: "Maximum 50 IP addresses allowed per request",
         });
       }
 
@@ -1640,20 +1932,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ip,
         location,
         formatted: geolocationService.formatLocation(location),
-        flag: geolocationService.getCountryFlag(location.countryCode)
+        flag: geolocationService.getCountryFlag(location.countryCode),
       }));
       
       res.json({
         success: true,
         results,
         total: results.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Bulk geolocation error:', error);
+      console.error("Bulk geolocation error:", error);
       res.status(500).json({ 
         message: "Failed to get bulk location data",
-        success: false
+        success: false,
       });
     }
   });
@@ -1663,10 +1955,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = geolocationService.getStatistics();
       res.json(stats);
     } catch (error) {
-      console.error('Geolocation stats error:', error);
+      console.error("Geolocation stats error:", error);
       res.status(500).json({ 
         message: "Failed to get geolocation stats",
-        success: false
+        success: false,
       });
     }
   });
@@ -1677,8 +1969,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { role, isActive, isBanned, search } = req.query;
       const filters = {
         role: role as string,
-        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
-        isBanned: isBanned === 'true' ? true : isBanned === 'false' ? false : undefined,
+        isActive:
+          isActive === "true" ? true : isActive === "false" ? false : undefined,
+        isBanned:
+          isBanned === "true" ? true : isBanned === "false" ? false : undefined,
         search: search as string,
       };
       
@@ -1687,51 +1981,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Extract unique IP addresses
       const loginIPs = users
-        .map(user => user.lastLoginIp)
-        .filter(ip => ip && ip !== '::1' && ip !== '127.0.0.1');
+        .map((user) => user.lastLoginIp)
+        .filter((ip) => ip && ip !== "::1" && ip !== "127.0.0.1");
       
       const registrationIPs = users
-        .map(user => user.registrationIp)
-        .filter(ip => ip && ip !== '::1' && ip !== '127.0.0.1');
+        .map((user) => user.registrationIp)
+        .filter((ip) => ip && ip !== "::1" && ip !== "127.0.0.1");
       
       const allIPs = [...new Set([...loginIPs, ...registrationIPs])];
       
       // Get location data for all unique IPs
-      const locations = allIPs.length > 0 
+      const locations =
+        allIPs.length > 0
         ? await geolocationService.getLocationsForIPs(allIPs)
         : new Map();
       
       // Enhanced users with location data
-      const usersWithLocations = users.map(user => ({
+      const usersWithLocations = users.map((user) => ({
         ...user,
         locationData: {
-          lastLogin: user.lastLoginIp ? {
+          lastLogin: user.lastLoginIp
+            ? {
             ip: user.lastLoginIp,
             location: locations.get(user.lastLoginIp),
             formatted: locations.get(user.lastLoginIp) 
-              ? geolocationService.formatLocation(locations.get(user.lastLoginIp)!)
-              : 'Unknown',
+                  ? geolocationService.formatLocation(
+                      locations.get(user.lastLoginIp)!
+                    )
+                  : "Unknown",
             flag: locations.get(user.lastLoginIp)
-              ? geolocationService.getCountryFlag(locations.get(user.lastLoginIp)!.countryCode)
-              : '🌍'
-          } : null,
-          registration: user.registrationIp ? {
+                  ? geolocationService.getCountryFlag(
+                      locations.get(user.lastLoginIp)!.countryCode
+                    )
+                  : "🌍",
+              }
+            : null,
+          registration: user.registrationIp
+            ? {
             ip: user.registrationIp,
             location: locations.get(user.registrationIp),
             formatted: locations.get(user.registrationIp)
-              ? geolocationService.formatLocation(locations.get(user.registrationIp)!)
-              : 'Unknown',
+                  ? geolocationService.formatLocation(
+                      locations.get(user.registrationIp)!
+                    )
+                  : "Unknown",
             flag: locations.get(user.registrationIp)
-              ? geolocationService.getCountryFlag(locations.get(user.registrationIp)!.countryCode)
-              : '🌍'
-          } : null
-        }
+                  ? geolocationService.getCountryFlag(
+                      locations.get(user.registrationIp)!.countryCode
+                    )
+                  : "🌍",
+              }
+            : null,
+        },
       }));
       
       res.json(usersWithLocations);
     } catch (error) {
-      console.error('Users with locations error:', error);
-      res.status(500).json({ message: "Failed to fetch users with location data" });
+      console.error("Users with locations error:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to fetch users with location data" });
     }
   });
 
@@ -1761,12 +2070,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const emailSent = await emailService.sendAuthenticationCode(email, code);
       
       if (!emailSent) {
-        return res.status(500).json({ message: "Failed to send verification code" });
+        return res
+          .status(500)
+          .json({ message: "Failed to send verification code" });
       }
 
       res.json({ 
         message: "Verification code sent successfully",
-        success: true
+        success: true,
       });
     } catch (error) {
       console.error("Send code error:", error);
@@ -1785,12 +2096,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if code exists and hasn't expired
       const storedData = verificationCodes.get(email);
       if (!storedData) {
-        return res.status(400).json({ message: "No verification code found for this email" });
+        return res
+          .status(400)
+          .json({ message: "No verification code found for this email" });
       }
 
       if (Date.now() > storedData.expires) {
         verificationCodes.delete(email);
-        return res.status(400).json({ message: "Verification code has expired" });
+        return res
+          .status(400)
+          .json({ message: "Verification code has expired" });
       }
 
       if (storedData.code !== code) {
@@ -1801,7 +2116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       verificationCodes.delete(email);
 
       // Extract username from email (simple approach)
-      const username = email.split('@')[0];
+      const username = email.split("@")[0];
 
       // Try to find existing user
       let user = await storage.getUserByEmail(email);
@@ -1813,7 +2128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username,
           firstName: null,
           lastName: null,
-          role: 'user',
+          role: "user",
           isActive: true,
         });
       }
@@ -1827,7 +2142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user.username,
           firstName: user.firstName,
           lastName: user.lastName,
-        }
+        },
       });
     } catch (error) {
       console.error("Verify code error:", error);
@@ -1851,32 +2166,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register with email/password
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, username, firstName, lastName, recaptchaToken } = req.body;
+      const { email, password, username, firstName, lastName, recaptchaToken } =
+        req.body;
       
       // Debug: Log the incoming request body (without password for security)
-      console.log('Registration request body:', {
+      console.log("Registration request body:", {
         email,
         firstName,
         lastName,
         username,
         hasPassword: !!password,
-        hasRecaptcha: !!recaptchaToken
+        hasRecaptcha: !!recaptchaToken,
       });
       
       // Validate required fields
       if (!email || !password) {
-        return res.status(400).json({ success: false, message: "Email and password are required" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Email and password are required" });
       }
       
       // Validate first and last name for signup
       if (!firstName || !lastName) {
-        console.log('Missing name fields:', { firstName, lastName });
-        return res.status(400).json({ success: false, message: "First name and last name are required" });
+        console.log("Missing name fields:", { firstName, lastName });
+        return res.status(400).json({
+          success: false,
+          message: "First name and last name are required",
+        });
       }
       
       // Validate email format
       if (!validateEmail(email)) {
-        return res.status(400).json({ success: false, message: "Invalid email format" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid email format" });
       }
       
       // Validate password strength
@@ -1885,29 +2208,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         return res.status(400).json({ 
           success: false, 
-          message: error?.message || "Password validation failed"
+          message: error?.message || "Password validation failed",
         });
       }
       
       // Log reCAPTCHA token presence (without logging the actual token for security)
-      console.log('Registration with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
+      console.log(
+        "Registration with reCAPTCHA:",
+        recaptchaToken ? "Token present" : "No token"
+      );
       
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
         try {
-          const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'signup');
+          const recaptchaResult = await recaptchaService.verifyToken(
+            recaptchaToken,
+            "signup"
+          );
           if (!recaptchaResult.success) {
-            console.warn('reCAPTCHA verification failed for registration:', recaptchaResult['error-codes']);
+            console.warn(
+              "reCAPTCHA verification failed for registration:",
+              recaptchaResult["error-codes"]
+            );
             return res.status(400).json({ 
               success: false, 
-              message: "reCAPTCHA verification failed. Please try again." 
+              message: "reCAPTCHA verification failed. Please try again.",
             });
           }
-          console.log(`reCAPTCHA verified for registration: score ${recaptchaResult.score}`);
+          console.log(
+            `reCAPTCHA verified for registration: score ${recaptchaResult.score}`
+          );
         } catch (error) {
-          console.error('reCAPTCHA verification error:', error);
+          console.error("reCAPTCHA verification error:", error);
           // Continue without reCAPTCHA if service fails
-          console.log('Continuing registration without reCAPTCHA due to service error');
+          console.log(
+            "Continuing registration without reCAPTCHA due to service error"
+          );
         }
       }
       
@@ -1917,7 +2253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName,
         lastName,
         req.ip,
-        req.get('User-Agent')
+        req.get("User-Agent")
       );
       
       res.json(result);
@@ -1934,33 +2270,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate required fields
       if (!email || !password) {
-        return res.status(400).json({ success: false, message: "Email and password are required" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Email and password are required" });
       }
       
       // Validate email format
       if (!validateEmail(email)) {
-        return res.status(400).json({ success: false, message: "Invalid email format" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid email format" });
       }
       
       // Log reCAPTCHA token presence (without logging the actual token for security)
-      console.log('Login with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
+      console.log(
+        "Login with reCAPTCHA:",
+        recaptchaToken ? "Token present" : "No token"
+      );
       
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
         try {
-          const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'login');
+          const recaptchaResult = await recaptchaService.verifyToken(
+            recaptchaToken,
+            "login"
+          );
           if (!recaptchaResult.success) {
-            console.warn('reCAPTCHA verification failed for login:', recaptchaResult['error-codes']);
+            console.warn(
+              "reCAPTCHA verification failed for login:",
+              recaptchaResult["error-codes"]
+            );
             return res.status(400).json({ 
               success: false, 
-              message: "reCAPTCHA verification failed. Please try again." 
+              message: "reCAPTCHA verification failed. Please try again.",
             });
           }
-          console.log(`reCAPTCHA verified for login: score ${recaptchaResult.score}`);
+          console.log(
+            `reCAPTCHA verified for login: score ${recaptchaResult.score}`
+          );
         } catch (error) {
-          console.error('reCAPTCHA verification error:', error);
+          console.error("reCAPTCHA verification error:", error);
           // Continue without reCAPTCHA if service fails
-          console.log('Continuing login without reCAPTCHA due to service error');
+          console.log(
+            "Continuing login without reCAPTCHA due to service error"
+          );
         }
       }
       
@@ -1968,7 +2321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email, 
         password, 
         req.ip, 
-        req.get('User-Agent')
+        req.get("User-Agent")
       );
       
       res.json(result);
@@ -1981,29 +2334,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google OAuth initiate flow
   app.get("/api/auth/google/start", (req, res) => {
     try {
-      console.log('🚀 Starting Google OAuth flow...');
+      console.log("🚀 Starting Google OAuth flow...");
       
       // Determine the correct redirect URI based on environment
-      const redirectUri = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:5000/api/auth/google/callback'
-        : `https://${process.env.REPL_SLUG || 'app'}.replit.app/api/auth/google/callback`;
+      const redirectUri =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:5000/api/auth/google/callback"
+          : `https://${
+              process.env.REPL_SLUG || "app"
+            }.replit.app/api/auth/google/callback`;
       
       const params = new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID!,
         redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: 'openid email profile',
-        access_type: 'offline',
-        prompt: 'select_account'
+        response_type: "code",
+        scope: "openid email profile",
+        access_type: "offline",
+        prompt: "select_account",
       });
       
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
-      console.log('🔗 Redirecting to Google OAuth:', authUrl);
+      console.log("🔗 Redirecting to Google OAuth:", authUrl);
       
       res.redirect(authUrl);
     } catch (error) {
-      console.error('❌ OAuth start error:', error);
-      res.status(500).json({ success: false, message: 'Failed to start OAuth flow' });
+      console.error("❌ OAuth start error:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to start OAuth flow" });
     }
   });
 
@@ -2012,16 +2370,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { code, error } = req.query;
       
-      console.log('🔍 Google OAuth callback received:', { code: code ? 'present' : 'missing', error });
+      console.log("🔍 Google OAuth callback received:", {
+        code: code ? "present" : "missing",
+        error,
+      });
       
       if (error) {
-        console.error('❌ Google OAuth error:', error);
-        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=${encodeURIComponent(error as string)}`);
+        console.error("❌ Google OAuth error:", error);
+        return res.redirect(
+          `${
+            process.env.NODE_ENV === "development"
+              ? "http://localhost:5000"
+              : `https://${process.env.REPL_SLUG || "app"}.replit.app`
+          }?error=oauth_error&message=${encodeURIComponent(error as string)}`
+        );
       }
       
       if (!code) {
-        console.error('❌ No authorization code received');
-        return res.redirect(`${process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : `https://${process.env.REPL_SLUG || 'app'}.replit.app`}?error=oauth_error&message=No+authorization+code+received`);
+        console.error("❌ No authorization code received");
+        return res.redirect(
+          `${
+            process.env.NODE_ENV === "development"
+              ? "http://localhost:5000"
+              : `https://${process.env.REPL_SLUG || "app"}.replit.app`
+          }?error=oauth_error&message=No+authorization+code+received`
+        );
       }
       
       // Exchange authorization code for tokens
@@ -2029,25 +2402,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process OAuth login through existing auth service
       const result = await authService.oauthLogin(
-        'google',
+        "google",
         googleUser.id,
         googleUser.email,
         googleUser.given_name,
         googleUser.family_name,
         googleUser.picture,
         req.ip,
-        req.get('User-Agent')
+        req.get("User-Agent")
       );
       
       if (result.success && result.accessToken) {
-        console.log('✅ Google OAuth login successful');
+        console.log("✅ Google OAuth login successful");
         
         // Set session cookie with JWT token
-        res.cookie('session', result.accessToken, {
+        res.cookie("session", result.accessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
         
         // Send HTML page that notifies parent window and closes popup
@@ -2086,7 +2459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           </html>
         `);
       } else {
-        console.error('❌ OAuth login failed:', result.message);
+        console.error("❌ OAuth login failed:", result.message);
         
         // Send HTML page that notifies parent window of error
         res.setHeader("Content-Type", "text/html");
@@ -2108,7 +2481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <body>
               <div class="error">
                 <h2>❌ Authentication Failed</h2>
-                <p>${result.message || 'Login failed'}</p>
+                <p>${result.message || "Login failed"}</p>
                 <p>You can close this window and try again.</p>
               </div>
               <script>
@@ -2116,7 +2489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (window.opener) {
                   window.opener.postMessage({
                     type: 'GOOGLE_AUTH_ERROR',
-                    error: '${result.message || 'Login failed'}'
+                    error: '${result.message || "Login failed"}'
                   }, window.location.origin);
                 }
                 setTimeout(() => window.close(), 3000);
@@ -2170,33 +2543,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OAuth Google login (legacy endpoint for direct user data)
   app.post("/api/auth/oauth/google", async (req, res) => {
     try {
-      const { email, googleId, firstName, lastName, profileImage, recaptchaToken } = req.body;
+      const {
+        email,
+        googleId,
+        firstName,
+        lastName,
+        profileImage,
+        recaptchaToken,
+      } = req.body;
       
       // Log reCAPTCHA token presence (without logging the actual token for security)
-      console.log('Google OAuth with reCAPTCHA:', recaptchaToken ? 'Token present' : 'No token');
+      console.log(
+        "Google OAuth with reCAPTCHA:",
+        recaptchaToken ? "Token present" : "No token"
+      );
       
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
-        const recaptchaResult = await recaptchaService.verifyToken(recaptchaToken, 'google_oauth');
+        const recaptchaResult = await recaptchaService.verifyToken(
+          recaptchaToken,
+          "google_oauth"
+        );
         if (!recaptchaResult.success) {
-          console.warn('reCAPTCHA verification failed for Google OAuth:', recaptchaResult['error-codes']);
+          console.warn(
+            "reCAPTCHA verification failed for Google OAuth:",
+            recaptchaResult["error-codes"]
+          );
           return res.status(400).json({ 
             success: false, 
-            message: "reCAPTCHA verification failed. Please try again." 
+            message: "reCAPTCHA verification failed. Please try again.",
           });
         }
-        console.log(`reCAPTCHA verified for Google OAuth: score ${recaptchaResult.score}`);
+        console.log(
+          `reCAPTCHA verified for Google OAuth: score ${recaptchaResult.score}`
+        );
       }
       
       const result = await authService.oauthLogin(
-        'google',
+        "google",
         googleId,
         email,
         firstName,
         lastName,
         profileImage,
         req.ip,
-        req.get('User-Agent')
+        req.get("User-Agent")
       );
       
       res.json(result);
@@ -2214,7 +2605,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Email verification error:", error);
-      res.status(500).json({ success: false, message: "Email verification failed" });
+      res
+        .status(500)
+        .json({ success: false, message: "Email verification failed" });
     }
   });
 
@@ -2226,13 +2619,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await authService.requestPasswordReset(
         email, 
         req.ip, 
-        req.get('User-Agent')
+        req.get("User-Agent")
       );
       
       res.json(result);
     } catch (error) {
       console.error("Password reset request error:", error);
-      res.status(500).json({ success: false, message: "Password reset request failed" });
+      res
+        .status(500)
+        .json({ success: false, message: "Password reset request failed" });
     }
   });
 
@@ -2244,7 +2639,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Password reset error:", error);
-      res.status(500).json({ success: false, message: "Password reset failed" });
+      res
+        .status(500)
+        .json({ success: false, message: "Password reset failed" });
     }
   });
 
@@ -2256,7 +2653,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Token verification error:", error);
-      res.status(500).json({ valid: false, message: "Token verification failed" });
+      res
+        .status(500)
+        .json({ valid: false, message: "Token verification failed" });
     }
   });
 
@@ -2309,7 +2708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email || !password) {
         return res.status(400).json({ 
           success: false, 
-          message: "Email and password are required for admin access" 
+          message: "Email and password are required for admin access",
         });
       }
       
@@ -2318,7 +2717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!emailRegex.test(email)) {
         return res.status(400).json({ 
           success: false, 
-          message: "Invalid email format" 
+          message: "Invalid email format",
         });
       }
       
@@ -2331,7 +2730,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Admin login error:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Admin authentication system error" 
+        message: "Admin authentication system error",
       });
     }
   });
@@ -2345,7 +2744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!token) {
         return res.status(401).json({
           valid: false,
-          message: "No admin token provided"
+          message: "No admin token provided",
         });
       }
       
@@ -2355,20 +2754,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({
           valid: true,
           user: verification.user,
-          message: "Admin token valid"
+          message: "Admin token valid",
         });
       } else {
         res.status(401).json({
           valid: false,
           expired: verification.expired,
-          message: verification.expired ? "Admin session expired" : "Invalid admin token"
+          message: verification.expired
+            ? "Admin session expired"
+            : "Invalid admin token",
         });
       }
     } catch (error) {
       console.error("Admin token verification error:", error);
       res.status(500).json({ 
         valid: false, 
-        message: "Token verification error" 
+        message: "Token verification error",
       });
     }
   });
@@ -2384,40 +2785,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Admin logout error:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Logout system error" 
+        message: "Logout system error",
       });
     }
   });
   
-
-  
   // ==================== CLEAN TOKEN-ONLY ADMIN SYSTEM ====================
 
   // Token verification endpoint
-  app.get("/api/admin/token/verify", 
+  app.get(
+    "/api/admin/token/verify",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
       try {
-        console.log('🔍 Route handler: adminUser =', (req as any).adminUser);
+        console.log("🔍 Route handler: adminUser =", (req as any).adminUser);
         const adminUser = (req as any).adminUser;
         
         if (!adminUser) {
           return res.status(401).json({
             success: false,
-            message: "Admin user not found in request"
+            message: "Admin user not found in request",
           });
         }
         
         res.json({
           success: true,
           user: adminUser,
-          message: "Admin authenticated successfully"
+          message: "Admin authenticated successfully",
         });
       } catch (error) {
         console.error("Session status error:", error);
         res.status(500).json({
           success: false,
-          message: "Failed to retrieve session status"
+          message: "Failed to retrieve session status",
         });
       }
     }
@@ -2432,7 +2832,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Admin logout error:", error);
       res.status(500).json({
         success: false,
-        message: "Logout failed"
+        message: "Logout failed",
       });
     }
   });
@@ -2449,32 +2849,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         emailServiceWorking: testResult,
         resendConfigured: !!process.env.RESEND_API_KEY,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Email test error:", error);
       res.status(500).json({ 
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         emailServiceWorking: false,
-        resendConfigured: !!process.env.RESEND_API_KEY
+        resendConfigured: !!process.env.RESEND_API_KEY,
       });
     }
   });
 
   // Audit Log endpoints
-  app.get("/api/audit-logs", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/audit-logs",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const auditLogs = await storage.getAuditLogs();
       res.json(auditLogs);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch audit logs" });
     }
-  });
+    }
+  );
 
-  app.get("/api/audit-logs/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/audit-logs/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const id = parseId(req.params.id, 'audit log ID');
+        const id = parseId(req.params.id, "audit log ID");
       const auditLog = await storage.getAuditLog(id);
       if (!auditLog) {
         return res.status(404).json({ message: "Audit log not found" });
@@ -2483,52 +2890,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch audit log" });
     }
-  });
+    }
+  );
 
   // This route is deprecated - use /api/admin/auth/login instead
 
   // Unified CSV endpoints
-  app.get("/api/csv/unified-template", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/csv/unified-template",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { CSVService } = await import('./services/csv-service');
+        const { CSVService } = await import("./services/csv-service");
       const csvService = new CSVService(storage);
       
       const csvContent = await csvService.generateUnifiedTemplate();
       
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="brainliest_complete_platform_template.csv"');
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          'attachment; filename="brainliest_complete_platform_template.csv"'
+        );
       res.send(csvContent);
     } catch (error) {
-      console.error('Unified CSV template generation error:', error);
+        console.error("Unified CSV template generation error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Template generation failed' 
+          message:
+            error instanceof Error
+              ? error.message
+              : "Template generation failed",
       });
     }
-  });
+    }
+  );
 
-  app.get("/api/csv/unified-export", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/csv/unified-export",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { CSVService } = await import('./services/csv-service');
+        const { CSVService } = await import("./services/csv-service");
       const csvService = new CSVService(storage);
       
       const csvContent = await csvService.exportUnifiedData();
       
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="brainliest_complete_platform_export.csv"');
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          'attachment; filename="brainliest_complete_platform_export.csv"'
+        );
       res.send(csvContent);
     } catch (error) {
-      console.error('Unified CSV export error:', error);
+        console.error("Unified CSV export error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Export failed' 
+          message: error instanceof Error ? error.message : "Export failed",
       });
     }
-  });
+    }
+  );
 
-  app.post("/api/csv/unified-import", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.post(
+    "/api/csv/unified-import",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { CSVService } = await import('./services/csv-service');
+        const { CSVService } = await import("./services/csv-service");
       const csvService = new CSVService(storage);
       
       const csvContent = req.body.csvContent;
@@ -2536,71 +2964,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!csvContent) {
         return res.status(400).json({ 
           success: false, 
-          message: 'CSV content is required' 
+            message: "CSV content is required",
         });
       }
 
       const result = await csvService.importUnifiedData(csvContent);
       res.json(result);
     } catch (error) {
-      console.error('Unified CSV import error:', error);
+        console.error("Unified CSV import error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Import failed' 
+          message: error instanceof Error ? error.message : "Import failed",
       });
     }
-  });
+    }
+  );
 
   // CSV Import/Export endpoints
-  app.get("/api/csv/template/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/csv/template/:entityType",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { CSVService } = await import('./services/csv-service');
+        const { CSVService } = await import("./services/csv-service");
       const csvService = new CSVService(storage);
       
       const entityType = req.params.entityType as any;
       const csvContent = await csvService.generateTemplate(entityType);
       
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${entityType}_template.csv"`);
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${entityType}_template.csv"`
+        );
       res.send(csvContent);
     } catch (error) {
-      console.error('CSV template generation error:', error);
+        console.error("CSV template generation error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Template generation failed' 
+          message:
+            error instanceof Error
+              ? error.message
+              : "Template generation failed",
       });
     }
-  });
+    }
+  );
 
-  app.get("/api/csv/export/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/csv/export/:entityType",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { CSVService } = await import('./services/csv-service');
+        const { CSVService } = await import("./services/csv-service");
       const csvService = new CSVService(storage);
       
       const entityType = req.params.entityType as any;
-      const includeRelationshipNames = req.query.includeNames === 'true';
-      const includeMetadata = req.query.includeMetadata === 'true';
+        const includeRelationshipNames = req.query.includeNames === "true";
+        const includeMetadata = req.query.includeMetadata === "true";
       
       const csvContent = await csvService.exportData(entityType, {
         includeRelationshipNames,
-        includeMetadata
+          includeMetadata,
       });
       
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="${entityType}_export.csv"`);
+        res.setHeader("Content-Type", "text/csv");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${entityType}_export.csv"`
+        );
       res.send(csvContent);
     } catch (error) {
-      console.error('CSV export error:', error);
+        console.error("CSV export error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Export failed' 
+          message: error instanceof Error ? error.message : "Export failed",
       });
     }
-  });
+    }
+  );
 
-  app.post("/api/csv/import/:entityType", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.post(
+    "/api/csv/import/:entityType",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { CSVService } = await import('./services/csv-service');
+        const { CSVService } = await import("./services/csv-service");
       const csvService = new CSVService(storage);
       
       const entityType = req.params.entityType as any;
@@ -2609,7 +3058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!csvContent) {
         return res.status(400).json({ 
           success: false, 
-          message: 'CSV content is required' 
+            message: "CSV content is required",
         });
       }
 
@@ -2621,162 +3070,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json(result);
       }
     } catch (error) {
-      console.error('CSV import error:', error);
+        console.error("CSV import error:", error);
       res.status(500).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Import failed',
+          message: error instanceof Error ? error.message : "Import failed",
         totalRows: 0,
         processedRows: 0,
         createdCount: 0,
         updatedCount: 0,
         deletedCount: 0,
-        errors: []
+          errors: [],
       });
     }
-  });
+    }
+  );
 
   // JSON Import/Export endpoints
-  app.get("/api/json/template", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/json/template",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { JSONService } = await import('./services/json-service');
+        const { JSONService } = await import("./services/json-service");
       const jsonService = new JSONService(storage);
       
       const templateData = jsonService.generateTemplate();
-      const jsonContent = jsonService.formatJSONForDownload(templateData, { prettyFormat: true });
+        const jsonContent = jsonService.formatJSONForDownload(templateData, {
+          prettyFormat: true,
+        });
       
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', 'attachment; filename="brainliest_template.json"');
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader(
+          "Content-Disposition",
+          'attachment; filename="brainliest_template.json"'
+        );
       res.send(jsonContent);
     } catch (error) {
-      console.error('JSON template generation error:', error);
+        console.error("JSON template generation error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Template generation failed' 
+          message:
+            error instanceof Error
+              ? error.message
+              : "Template generation failed",
       });
     }
-  });
+    }
+  );
 
-  app.get("/api/json/export/:subjectSlug", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/json/export/:subjectSlug",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { JSONService } = await import('./services/json-service');
+        const { JSONService } = await import("./services/json-service");
       const jsonService = new JSONService(storage);
       
       const subjectSlug = req.params.subjectSlug;
-      if (!subjectSlug || typeof subjectSlug !== 'string') {
+        if (!subjectSlug || typeof subjectSlug !== "string") {
         return res.status(400).json({ 
           success: false, 
-          message: 'Invalid subject slug' 
+            message: "Invalid subject slug",
         });
       }
       
       const exportData = await jsonService.exportSubjectToJSON(subjectSlug, { 
         includeMetadata: true, 
-        prettyFormat: true 
+          prettyFormat: true,
       });
       
-      const jsonContent = jsonService.formatJSONForDownload(exportData, { prettyFormat: true });
+        const jsonContent = jsonService.formatJSONForDownload(exportData, {
+          prettyFormat: true,
+        });
       
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="subject_${subjectSlug}_export.json"`);
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="subject_${subjectSlug}_export.json"`
+        );
       res.send(jsonContent);
     } catch (error) {
-      console.error('JSON export error:', error);
+        console.error("JSON export error:", error);
       res.status(400).json({ 
         success: false, 
-        message: error instanceof Error ? error.message : 'Export failed' 
+          message: error instanceof Error ? error.message : "Export failed",
       });
     }
-  });
+    }
+  );
 
-  app.post("/api/json/import", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.post(
+    "/api/json/import",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
-      const { JSONService } = await import('./services/json-service');
+        const { JSONService } = await import("./services/json-service");
       const jsonService = new JSONService(storage);
       
       let jsonData = req.body;
       
       // Enhanced logging and data structure handling
-      console.log('JSON Import - Raw request body type:', typeof jsonData);
-      console.log('JSON Import - Raw request body keys:', Object.keys(jsonData || {}));
+        console.log("JSON Import - Raw request body type:", typeof jsonData);
+        console.log(
+          "JSON Import - Raw request body keys:",
+          Object.keys(jsonData || {})
+        );
       
       if (!jsonData) {
-        console.log('JSON Import - Error: No JSON data provided');
+          console.log("JSON Import - Error: No JSON data provided");
         return res.status(400).json({ 
           success: false, 
-          message: 'JSON data is required',
-          debug: 'Request body is empty or null'
+            message: "JSON data is required",
+            debug: "Request body is empty or null",
         });
       }
 
       // Handle nested structure from frontend: { jsonData: actualData }
       if (jsonData.jsonData) {
-        console.log('JSON Import - Detected nested jsonData structure, extracting...');
+          console.log(
+            "JSON Import - Detected nested jsonData structure, extracting..."
+          );
         jsonData = jsonData.jsonData;
         
         // After extraction, ensure the data has the proper wrapper structure
         // The validation function expects { subject: {...} } format
         if (!jsonData.subject && jsonData.name) {
-          console.log('JSON Import - Restructuring extracted data to add subject wrapper');
+            console.log(
+              "JSON Import - Restructuring extracted data to add subject wrapper"
+            );
           jsonData = { subject: jsonData };
         }
       }
 
       // Log the actual data structure being processed
-      console.log('JSON Import - Processing data structure:');
-      console.log('- Has subject:', !!jsonData.subject);
-      console.log('- Subject type:', typeof jsonData.subject);
+        console.log("JSON Import - Processing data structure:");
+        console.log("- Has subject:", !!jsonData.subject);
+        console.log("- Subject type:", typeof jsonData.subject);
       if (jsonData.subject) {
-        console.log('- Subject name:', jsonData.subject.name);
-        console.log('- Subject exams count:', Array.isArray(jsonData.subject.exams) ? jsonData.subject.exams.length : 'not array');
+          console.log("- Subject name:", jsonData.subject.name);
+          console.log(
+            "- Subject exams count:",
+            Array.isArray(jsonData.subject.exams)
+              ? jsonData.subject.exams.length
+              : "not array"
+          );
       }
 
       const result = await jsonService.processJSONImport(jsonData);
       
       // Enhanced logging for validation errors
       if (!result.success && result.errors.length > 0) {
-        console.log('JSON Import - Validation errors found:');
+          console.log("JSON Import - Validation errors found:");
         result.errors.forEach((error, index) => {
-          console.log(`  ${index + 1}. Path: ${error.path}, Field: ${error.field}, Message: ${error.message}`);
+            console.log(
+              `  ${index + 1}. Path: ${error.path}, Field: ${
+                error.field
+              }, Message: ${error.message}`
+            );
           console.log(`     Value: ${JSON.stringify(error.value)}`);
         });
       }
       
       if (result.success) {
-        console.log('JSON Import - Success:', result.message);
+          console.log("JSON Import - Success:", result.message);
         res.json(result);
       } else {
-        console.log('JSON Import - Failed:', result.message);
+          console.log("JSON Import - Failed:", result.message);
         res.status(400).json(result);
       }
     } catch (error) {
-      console.error('JSON import error:', error);
+        console.error("JSON import error:", error);
       res.status(500).json({ 
         success: false, 
         subjectId: undefined,
         examIds: [],
         questionIds: [],
         createdCounts: { subjects: 0, exams: 0, questions: 0 },
-        errors: [{
-          path: 'import',
-          field: 'general',
+          errors: [
+            {
+              path: "import",
+              field: "general",
           value: null,
-          message: error instanceof Error ? error.message : 'Import failed'
-        }],
-        message: 'Import process failed'
+              message: error instanceof Error ? error.message : "Import failed",
+            },
+          ],
+          message: "Import process failed",
       });
     }
-  });
+    }
+  );
 
   // Freemium API routes
   app.get("/api/freemium/status", checkFreemiumStatus(), async (req, res) => {
     try {
       const sessionInfo = req.freemiumSession;
       if (!sessionInfo) {
-        return res.status(500).json({ error: "Failed to get freemium session info" });
+        return res
+          .status(500)
+          .json({ error: "Failed to get freemium session info" });
       }
       res.json(sessionInfo);
     } catch (error) {
-      console.error('Error fetching freemium status:', error);
+      console.error("Error fetching freemium status:", error);
       res.status(500).json({ error: "Failed to fetch freemium status" });
     }
   });
@@ -2787,19 +3282,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [subjectCount, examCount, questionCount] = await Promise.all([
         storage.getSubjectCount(),
         storage.getExamCount(), 
-        storage.getQuestionCount()
+        storage.getQuestionCount(),
       ]);
 
       const stats = {
         subjects: subjectCount,
         exams: examCount,
         questions: questionCount,
-        successRate: 95 // This could be calculated from user sessions in the future
+        successRate: 95, // This could be calculated from user sessions in the future
       };
 
       res.json(stats);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
       res.status(500).json({ error: "Failed to fetch statistics" });
     }
   });
@@ -2810,8 +3305,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trending = await trendingService.getTrendingCertifications();
       res.json(trending);
     } catch (error) {
-      console.error('Error fetching trending certifications:', error);
-      res.status(500).json({ error: "Failed to fetch trending certifications" });
+      console.error("Error fetching trending certifications:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to fetch trending certifications" });
     }
   });
 
@@ -2819,7 +3316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { subjectId, interactionType, userId, sessionId } = req.body;
       const ipAddress = req.ip;
-      const userAgent = req.get('User-Agent');
+      const userAgent = req.get("User-Agent");
 
       await trendingService.trackInteraction({
         subjectId,
@@ -2832,7 +3329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ success: true });
     } catch (error) {
-      console.error('Error tracking interaction:', error);
+      console.error("Error tracking interaction:", error);
       res.status(500).json({ error: "Failed to track interaction" });
     }
   });
@@ -2840,7 +3337,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SEO API routes
   app.post("/api/seo/generate", async (req, res) => {
     try {
-      const { type, title, description, content, url, category, subject } = req.body;
+      const { type, title, description, content, url, category, subject } =
+        req.body;
       
       const seoData = await seoService.generatePageSEO({
         type,
@@ -2849,15 +3347,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         url,
         category,
-        subject
+        subject,
       });
       
       res.json(seoData);
     } catch (error) {
-      console.error('SEO generation error:', error);
+      console.error("SEO generation error:", error);
       res.status(500).json({ 
-        error: 'Failed to generate SEO data',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: "Failed to generate SEO data",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
@@ -2871,39 +3369,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         options,
         explanation,
         subject,
-        category
+        category,
       });
       
       res.json(faqs);
     } catch (error) {
-      console.error('FAQ generation error:', error);
+      console.error("FAQ generation error:", error);
       res.status(500).json({ 
-        error: 'Failed to generate FAQs',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: "Failed to generate FAQs",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
   app.post("/api/seo/structured-data", async (req, res) => {
     try {
-      const { question, faqs, type = 'question' } = req.body;
+      const { question, faqs, type = "question" } = req.body;
       
       let structuredData = [];
       
-      if (type === 'question' && question) {
-        structuredData = seoService.generateQuestionStructuredData(question, faqs || []);
-      } else if (type === 'category') {
-        structuredData = seoService.generateCategoryStructuredData(req.body.category);
-      } else if (type === 'breadcrumbs') {
-        structuredData = [seoService.generateBreadcrumbStructuredData(req.body.breadcrumbs)];
+      if (type === "question" && question) {
+        structuredData = seoService.generateQuestionStructuredData(
+          question,
+          faqs || []
+        );
+      } else if (type === "category") {
+        structuredData = seoService.generateCategoryStructuredData(
+          req.body.category
+        );
+      } else if (type === "breadcrumbs") {
+        structuredData = [
+          seoService.generateBreadcrumbStructuredData(req.body.breadcrumbs),
+        ];
       }
       
       res.json(structuredData);
     } catch (error) {
-      console.error('Structured data generation error:', error);
+      console.error("Structured data generation error:", error);
       res.status(500).json({ 
-        error: 'Failed to generate structured data',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: "Failed to generate structured data",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
@@ -2915,15 +3420,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const keywords = await seoService.generateSubjectKeywords({
         name,
         description,
-        category
+        category,
       });
       
       res.json(keywords);
     } catch (error) {
-      console.error('Keyword generation error:', error);
+      console.error("Keyword generation error:", error);
       res.status(500).json({ 
-        error: 'Failed to generate keywords',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: "Failed to generate keywords",
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
@@ -2932,11 +3437,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const xml = await sitemapService.generateXmlSitemap();
-      res.set('Content-Type', 'application/xml');
+      res.set("Content-Type", "application/xml");
       res.send(xml);
     } catch (error) {
-      console.error('Sitemap generation error:', error);
-      res.status(500).send('Error generating sitemap');
+      console.error("Sitemap generation error:", error);
+      res.status(500).send("Error generating sitemap");
     }
   });
 
@@ -2944,11 +3449,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/robots.txt", (req, res) => {
     try {
       const robots = sitemapService.generateRobotsTxt();
-      res.set('Content-Type', 'text/plain');
+      res.set("Content-Type", "text/plain");
       res.send(robots);
     } catch (error) {
-      console.error('Robots.txt generation error:', error);
-      res.status(500).send('Error generating robots.txt');
+      console.error("Robots.txt generation error:", error);
+      res.status(500).send("Error generating robots.txt");
     }
   });
 
@@ -2957,7 +3462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads
   const storage_config = multer.diskStorage({
     destination: async (req, file, cb) => {
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
       try {
         await fs.mkdir(uploadsDir, { recursive: true });
         cb(null, uploadsDir);
@@ -2967,19 +3472,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     filename: (req, file, cb) => {
       // Generate unique filename
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
       const ext = path.extname(file.originalname);
       const basename = path.basename(file.originalname, ext);
       cb(null, `${basename}-${uniqueSuffix}${ext}`);
-    }
+    },
   });
 
   // File filter for image uploads
   const fileFilter = (req: any, file: any, cb: any) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/")) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error("Only image files are allowed"), false);
     }
   };
 
@@ -2988,11 +3493,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB limit
     },
-    fileFilter
+    fileFilter,
   });
 
   // Upload a new file
-  app.post("/api/admin/uploads", tokenAdminAuth.createAuthMiddleware(), upload.single('file'), async (req, res) => {
+  app.post(
+    "/api/admin/uploads",
+    tokenAdminAuth.createAuthMiddleware(),
+    upload.single("file"),
+    async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -3005,10 +3514,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         originalName: req.file.originalname,
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
-        fileType: req.file.mimetype.split('/')[0], // 'image', 'video', etc.
+          fileType: req.file.mimetype.split("/")[0], // 'image', 'video', etc.
         uploadPath: `/uploads/${req.file.filename}`,
         uploadedBy: user.id,
-        isActive: true
+          isActive: true,
       };
 
       const upload = await storage.createUpload(uploadData);
@@ -3022,24 +3531,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadPath: upload.uploadPath,
           fileType: upload.fileType,
           fileSize: upload.fileSize,
-          createdAt: upload.createdAt
-        }
+            createdAt: upload.createdAt,
+          },
       });
     } catch (error) {
       console.error("Upload error:", error);
       res.status(500).json({ message: "Upload failed" });
     }
-  });
+    }
+  );
 
   // Get all uploads with pagination
-  app.get("/api/admin/uploads", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/admin/uploads",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
       const fileType = req.query.fileType as string;
       const offset = (page - 1) * limit;
 
-      const result = await storage.getUploadsPaginated(offset, limit, fileType);
+        const result = await storage.getUploadsPaginated(
+          offset,
+          limit,
+          fileType
+        );
       
       res.json({
         uploads: result.uploads,
@@ -3047,17 +3564,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           page,
           limit,
           total: result.total,
-          pages: Math.ceil(result.total / limit)
-        }
+            pages: Math.ceil(result.total / limit),
+          },
       });
     } catch (error) {
       console.error("Get uploads error:", error);
       res.status(500).json({ message: "Failed to retrieve uploads" });
     }
-  });
+    }
+  );
 
   // Get specific upload
-  app.get("/api/admin/uploads/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.get(
+    "/api/admin/uploads/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const id = parseId(req.params.id);
       const upload = await storage.getUpload(id);
@@ -3071,10 +3592,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Get upload error:", error);
       res.status(500).json({ message: "Failed to retrieve upload" });
     }
-  });
+    }
+  );
 
   // Update upload (mainly for activation/deactivation)
-  app.patch("/api/admin/uploads/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.patch(
+    "/api/admin/uploads/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const id = parseId(req.params.id);
       const { isActive } = req.body;
@@ -3090,10 +3615,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Update upload error:", error);
       res.status(500).json({ message: "Failed to update upload" });
     }
-  });
+    }
+  );
 
   // Delete upload
-  app.delete("/api/admin/uploads/:id", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.delete(
+    "/api/admin/uploads/:id",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const id = parseId(req.params.id);
       const upload = await storage.getUpload(id);
@@ -3103,7 +3632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Delete file from disk
-      const filePath = path.join(process.cwd(), 'public', upload.uploadPath);
+        const filePath = path.join(process.cwd(), "public", upload.uploadPath);
       try {
         await fs.unlink(filePath);
       } catch (error) {
@@ -3121,12 +3650,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Delete upload error:", error);
       res.status(500).json({ message: "Failed to delete upload" });
     }
-  });
+    }
+  );
 
   // ==================== ICON ASSIGNMENT ROUTES ====================
 
   // Update subject icon
-  app.patch("/api/admin/subjects/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.patch(
+    "/api/admin/subjects/:slug/icon",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug);
       const { icon } = req.body;
@@ -3146,10 +3679,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Update subject icon error:", error);
       res.status(500).json({ message: "Failed to update subject icon" });
     }
-  });
+    }
+  );
 
   // Update exam icon
-  app.patch("/api/admin/exams/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.patch(
+    "/api/admin/exams/:slug/icon",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug);
       const { icon } = req.body;
@@ -3169,10 +3706,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Update exam icon error:", error);
       res.status(500).json({ message: "Failed to update exam icon" });
     }
-  });
+    }
+  );
 
   // Update category icon
-  app.patch("/api/admin/categories/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.patch(
+    "/api/admin/categories/:slug/icon",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug);
       const { icon } = req.body;
@@ -3192,10 +3733,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Update category icon error:", error);
       res.status(500).json({ message: "Failed to update category icon" });
     }
-  });
+    }
+  );
 
   // Update subcategory icon
-  app.patch("/api/admin/subcategories/:slug/icon", tokenAdminAuth.createAuthMiddleware(), async (req, res) => {
+  app.patch(
+    "/api/admin/subcategories/:slug/icon",
+    tokenAdminAuth.createAuthMiddleware(),
+    async (req, res) => {
     try {
       const slug = sanitizeString(req.params.slug);
       const { icon } = req.body;
@@ -3210,12 +3755,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Subcategory not found" });
       }
 
-      res.json({ message: "Subcategory icon updated successfully", subcategory });
+        res.json({
+          message: "Subcategory icon updated successfully",
+          subcategory,
+        });
     } catch (error) {
       console.error("Update subcategory icon error:", error);
       res.status(500).json({ message: "Failed to update subcategory icon" });
     }
-  });
+    }
+  );
 
   // ==================== END UPLOAD MANAGEMENT ====================
 
@@ -3227,7 +3776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email) {
         return res.status(400).json({ 
           success: false, 
-          message: "Email address is required" 
+          message: "Email address is required",
         });
       }
 
@@ -3236,7 +3785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!emailRegex.test(email)) {
         return res.status(400).json({ 
           success: false, 
-          message: "Invalid email format" 
+          message: "Invalid email format",
         });
       }
 
@@ -3251,15 +3800,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true, 
           message: `Test email sent successfully to ${email}`,
           service: "Titan Mail",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } else {
         console.log(`❌ Failed to send test email to ${email}`);
         res.status(500).json({ 
           success: false, 
-          message: "Failed to send test email. Please check Titan Email configuration.",
+          message:
+            "Failed to send test email. Please check Titan Email configuration.",
           service: "Titan Mail",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
     } catch (error) {
@@ -3268,7 +3818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Test email failed: " + (error.message || "Unknown error"),
         service: "Titan Mail",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });

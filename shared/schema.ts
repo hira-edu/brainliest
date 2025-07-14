@@ -10,6 +10,7 @@ import {
   jsonb,
   numeric,
   foreignKey,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -208,30 +209,23 @@ export const examSessionsRelations = relations(examSessions, ({ one }) => ({
   }),
 }));
 
-export const comments = pgTable("comments", {
+export const comments = pgTable("question_comments", {
   id: serial("id").primaryKey(),
-  questionId: integer("question_id")
+  questionId: uuid("question_id")
     .notNull()
     .references(() => questions.id, { onDelete: "cascade" }),
   authorName: text("author_name").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-  parentId: integer("parent_id"), // For nested replies
-  isEdited: boolean("is_edited").default(false),
-  editedAt: timestamp("edited_at"),
+  isApproved: boolean("is_approved").default(false),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const commentsRelations = relations(comments, ({ one, many }) => ({
+export const commentsRelations = relations(comments, ({ one }) => ({
   question: one(questions, {
     fields: [comments.questionId],
     references: [questions.id],
   }),
-  parent: one(comments, {
-    fields: [comments.parentId],
-    references: [comments.id],
-  }),
-  replies: many(comments),
 }));
 
 // Admin uploads table for managing icon files and assets
@@ -523,6 +517,8 @@ export const insertExamSessionSchema = createInsertSchema(examSessions, {
 export const insertCommentSchema = createInsertSchema(comments, {
   id: undefined,
   createdAt: undefined,
+  updatedAt: undefined,
+  isApproved: undefined,
 });
 
 export const insertUserSchema = createInsertSchema(users, {

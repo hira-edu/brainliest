@@ -264,9 +264,9 @@ export default function Analytics() {
         questionsAttempted = 0,
         timeSpentMinutes = 0,
       }) => ({
-        week: new Date(createdAt).toLocaleDateString(),
-        score: Number(averageScore) || 0,
-        questionsAttempted,
+      week: new Date(createdAt).toLocaleDateString(),
+      score: Number(averageScore) || 0,
+      questionsAttempted,
         timeSpent: timeSpentMinutes,
       })
     );

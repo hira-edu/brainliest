@@ -27,14 +27,14 @@ import { Textarea } from "../../components/ui/textarea";
 import { Badge } from "../../components/ui/badge";
 import { useToast } from "../shared/hooks/use-toast";
 import { useSecuredAuth } from "../auth/secured-auth-system";
-import {
-  User,
-  Shield,
-  Bell,
-  Palette,
-  Download,
-  Trash2,
-  Eye,
+import { 
+  User, 
+  Shield, 
+  Bell, 
+  Palette, 
+  Download, 
+  Trash2, 
+  Eye, 
   EyeOff,
   Save,
   Check,
@@ -49,7 +49,7 @@ export default function Settings() {
   const { user, signOut } = useSecuredAuth();
   const userName = user?.username || user?.firstName || user?.email || "User";
   const { toast } = useToast();
-
+  
   // Profile settings
   const [profile, setProfile] = useState({
     firstName: "John",
@@ -216,7 +216,7 @@ export default function Settings() {
     const confirmed = window.confirm(
       "Are you sure you want to delete your account? This action cannot be undone."
     );
-
+    
     if (!confirmed) return;
 
     setIsLoading(true);

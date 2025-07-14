@@ -168,22 +168,22 @@ PORT=3001 npm run dev
 ```
 
 #### **4. Missing Dependencies**
-```bash
+   ```bash
 # Error: "Cannot find package '@supabase/supabase-js'"
 # Solution: Install dependencies
 npm install @supabase/supabase-js postgres
-```
+   ```
 
 #### **5. Build Errors**
-```bash
+   ```bash
 # Clean build
 rm -rf dist/ node_modules/
-npm install
+   npm install
 npm run build
-```
+   ```
 
 ### **macOS Specific Issues**
-```bash
+   ```bash
 # Error: "listen ENOTSUP: operation not supported on socket"
 # ✅ FIXED: Server now binds to 127.0.0.1 in development
 ```
@@ -219,7 +219,7 @@ brainliest/
 ## 🚀 **Deployment**
 
 ### **Vercel Deployment**
-```bash
+   ```bash
 # Install Vercel CLI
 npm install -g vercel
 

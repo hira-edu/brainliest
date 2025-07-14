@@ -22,13 +22,13 @@ export default function QuestionInterface() {
   // Routing: prefer slug, fallback to ID with proper validation
   const [slugMatch, slugParams] = useRoute("/exam/:slug");
   const [idMatch, idParams] = useRoute("/exam/id/:id");
-
+  
   const slugOrId =
     slugMatch && slugParams?.slug
-      ? slugParams.slug
-      : idMatch && idParams?.id
-      ? parseInt(idParams.id, 10)
-      : null;
+    ? slugParams.slug 
+    : idMatch && idParams?.id 
+    ? parseInt(idParams.id, 10) 
+    : null;
 
   // Industrial-grade data loading with error handling
   const { exam, subject, questions, isLoading, isError, error, refetch } =
@@ -147,13 +147,13 @@ export default function QuestionInterface() {
             contact support if you believe this is an error.
           </p>
           <div className="space-y-3">
-            <button
+            <button 
               onClick={() => setLocation(`/subject/${exam.subjectSlug}`)}
               className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Back to {subject?.name || "Subject"} Exams
             </button>
-            <button
+            <button 
               onClick={() => setLocation("/")}
               className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
             >

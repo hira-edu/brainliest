@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Question, ExamSession } from "../../../../../shared/schema";
-import { useAuth } from "../../auth/AuthContext";
+import { useSecuredAuth } from "../../auth/secured-auth-system";
 import { useQuestionLimit } from "../../shared/QuestionLimitContext";
 
 interface UseQuestionNavigationProps {
@@ -32,15 +32,15 @@ export function useQuestionNavigation({
   questions,
   session,
   updateSession,
-  onFinishExam
+  onFinishExam,
 }: UseQuestionNavigationProps): QuestionNavigationState {
-  const { isSignedIn } = useAuth();
+  const { isAuthenticated } = useSecuredAuth();
   const {
     canViewMoreQuestions,
     addViewedQuestion,
     isQuestionViewed,
     showAuthModal,
-    setShowAuthModal
+    setShowAuthModal,
   } = useQuestionLimit();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -51,11 +51,18 @@ export function useQuestionNavigation({
 
   // Memoized preview check to avoid recalculations
   const shouldBlurQuestion = useMemo(() => {
-    return !isSignedIn &&
-           currentQuestion &&
-           !isQuestionViewed(currentQuestion.id) &&
-           !canViewMoreQuestions;
-  }, [isSignedIn, currentQuestion, isQuestionViewed, canViewMoreQuestions]);
+    return (
+      !isAuthenticated &&
+      currentQuestion &&
+      !isQuestionViewed(currentQuestion.id) &&
+      !canViewMoreQuestions
+    );
+  }, [
+    isAuthenticated,
+    currentQuestion,
+    isQuestionViewed,
+    canViewMoreQuestions,
+  ]);
 
   const canGoPrevious = currentQuestionIndex > 0;
   const canGoNext = currentQuestionIndex < questions.length - 1;
@@ -63,12 +70,22 @@ export function useQuestionNavigation({
 
   // Track free-preview views with proper dependency array
   useEffect(() => {
-    if (!isSignedIn && currentQuestion && !isQuestionViewed(currentQuestion.id)) {
+    if (
+      !isAuthenticated &&
+      currentQuestion &&
+      !isQuestionViewed(currentQuestion.id)
+    ) {
       if (canViewMoreQuestions) {
         addViewedQuestion(currentQuestion.id);
       }
     }
-  }, [currentQuestion?.id, isSignedIn, canViewMoreQuestions, addViewedQuestion, isQuestionViewed]);
+  }, [
+    currentQuestion?.id,
+    isAuthenticated,
+    canViewMoreQuestions,
+    addViewedQuestion,
+    isQuestionViewed,
+  ]);
 
   // Restore answer from session when question changes
   useEffect(() => {
@@ -81,13 +98,16 @@ export function useQuestionNavigation({
     setShowFeedback(false);
   }, [currentQuestionIndex, session?.answers]);
 
-  const handleAnswer = useCallback((answerIndex: number) => {
-    if (shouldBlurQuestion) {
-      setShowAuthModal(true);
-      return;
-    }
-    setSelectedAnswer(answerIndex);
-  }, [shouldBlurQuestion, setShowAuthModal]);
+  const handleAnswer = useCallback(
+    (answerIndex: number) => {
+      if (shouldBlurQuestion) {
+        setShowAuthModal(true);
+        return;
+      }
+      setSelectedAnswer(answerIndex);
+    },
+    [shouldBlurQuestion, setShowAuthModal]
+  );
 
   const handleSubmitAnswer = useCallback(async () => {
     if (shouldBlurQuestion) {
@@ -107,7 +127,7 @@ export function useQuestionNavigation({
 
         await updateSession({
           answers: updatedAnswers,
-          currentQuestionIndex
+          currentQuestionIndex,
         });
       }
 
@@ -118,27 +138,45 @@ export function useQuestionNavigation({
       // Show user-friendly error
       alert("Failed to save your answer. Please try again.");
     }
-  }, [shouldBlurQuestion, selectedAnswer, session, currentQuestionIndex, updateSession, setShowAuthModal]);
+  }, [
+    shouldBlurQuestion,
+    selectedAnswer,
+    session,
+    currentQuestionIndex,
+    updateSession,
+    setShowAuthModal,
+  ]);
 
   const handleNextQuestion = useCallback(() => {
     setShowFeedback(false);
-    
+
     if (canGoNext) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
-      
+
       // Check if next question should be blurred
       const nextQuestion = questions[nextIndex];
-      if (!isSignedIn && 
-          nextQuestion && 
-          !isQuestionViewed(nextQuestion.id) && 
-          !canViewMoreQuestions) {
+      if (
+        !isAuthenticated &&
+        nextQuestion &&
+        !isQuestionViewed(nextQuestion.id) &&
+        !canViewMoreQuestions
+      ) {
         setShowAuthModal(true);
       }
     } else {
       onFinishExam();
     }
-  }, [canGoNext, currentQuestionIndex, questions, isSignedIn, isQuestionViewed, canViewMoreQuestions, onFinishExam, setShowAuthModal]);
+  }, [
+    canGoNext,
+    currentQuestionIndex,
+    questions,
+    isAuthenticated,
+    isQuestionViewed,
+    canViewMoreQuestions,
+    onFinishExam,
+    setShowAuthModal,
+  ]);
 
   const handlePreviousQuestion = useCallback(() => {
     if (canGoPrevious) {
@@ -147,21 +185,32 @@ export function useQuestionNavigation({
     }
   }, [canGoPrevious, currentQuestionIndex]);
 
-  const goToQuestion = useCallback((index: number) => {
-    if (index >= 0 && index < questions.length) {
-      setCurrentQuestionIndex(index);
-      setShowFeedback(false);
-      
-      // Check preview limits for the target question
-      const targetQuestion = questions[index];
-      if (!isSignedIn && 
-          targetQuestion && 
-          !isQuestionViewed(targetQuestion.id) && 
-          !canViewMoreQuestions) {
-        setShowAuthModal(true);
+  const goToQuestion = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < questions.length) {
+        setCurrentQuestionIndex(index);
+        setShowFeedback(false);
+
+        // Check preview limits for the target question
+        const targetQuestion = questions[index];
+        if (
+          !isAuthenticated &&
+          targetQuestion &&
+          !isQuestionViewed(targetQuestion.id) &&
+          !canViewMoreQuestions
+        ) {
+          setShowAuthModal(true);
+        }
       }
-    }
-  }, [questions.length, isSignedIn, isQuestionViewed, canViewMoreQuestions, setShowAuthModal]);
+    },
+    [
+      questions.length,
+      isAuthenticated,
+      isQuestionViewed,
+      canViewMoreQuestions,
+      setShowAuthModal,
+    ]
+  );
 
   return {
     currentQuestionIndex,
@@ -178,6 +227,6 @@ export function useQuestionNavigation({
     handleSubmitAnswer,
     handleNextQuestion,
     handlePreviousQuestion,
-    goToQuestion
+    goToQuestion,
   };
 }

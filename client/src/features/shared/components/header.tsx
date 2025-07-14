@@ -14,12 +14,12 @@ import {
 import { Badge } from "../../../components/ui/badge";
 import UnifiedAuthModal from "../../auth/unified-auth-modal";
 import { useState } from "react";
-import {
-  ChevronDown,
-  Home,
-  BarChart3,
-  BookOpen,
-  Award,
+import { 
+  ChevronDown, 
+  Home, 
+  BarChart3, 
+  BookOpen, 
+  Award, 
   User,
   Settings,
   LogOut,
@@ -78,7 +78,7 @@ export default function Header() {
                 </div>
                 <span>Brainliest</span>
               </Link>
-
+              
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center space-x-6">
                 {navigationItems.map((item) => {
@@ -133,7 +133,7 @@ export default function Header() {
                         </div>
                       );
                     })}
-                    <DropdownMenuItem
+                    <DropdownMenuItem 
                       className="font-medium text-primary"
                       onClick={() => (window.location.href = "/subjects")}
                     >
@@ -152,7 +152,7 @@ export default function Header() {
                   <Badge variant="secondary" className="hidden sm:flex">
                     Welcome back!
                   </Badge>
-
+                  
                   {/* User Dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -206,9 +206,9 @@ export default function Header() {
               )}
 
               {/* Mobile Menu Button */}
-              <Button
-                variant="ghost"
-                size="sm"
+              <Button 
+                variant="ghost" 
+                size="sm" 
                 className="md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
@@ -224,12 +224,12 @@ export default function Header() {
                 {navigationItems.map((item) => {
                   const IconComponent = item.icon;
                   return (
-                    <Link
-                      key={item.href}
+                    <Link 
+                      key={item.href} 
                       href={item.href}
                       className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
-                        location === item.href
-                          ? "bg-primary/10 text-primary"
+                        location === item.href 
+                          ? "bg-primary/10 text-primary" 
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                       onClick={() => setMobileMenuOpen(false)}
@@ -245,7 +245,7 @@ export default function Header() {
         </div>
       </header>
 
-      <UnifiedAuthModal
+      <UnifiedAuthModal 
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
       />
