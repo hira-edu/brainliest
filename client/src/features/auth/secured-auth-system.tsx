@@ -291,13 +291,13 @@ export function SecuredAuthProvider({
     try {
       const token = sessionStorage.getItem("auth_token");
       if (token) {
-        // Inform server of logout
+        // Inform server of logout - send token in request body
         await fetch("/api/auth/logout", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ token }),
         });
       }
     } catch (error) {

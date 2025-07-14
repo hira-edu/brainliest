@@ -32,9 +32,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
 import { logAdminAction } from "./middleware/auth";
-import { 
-  insertSubjectSchema, 
-  insertExamSchema, 
+import {
+  insertSubjectSchema,
+  insertExamSchema,
   insertQuestionSchema,
   insertExamSessionSchema,
   insertCommentSchema,
@@ -85,7 +85,7 @@ declare module "express" {
 async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
   try {
     console.log("🔄 Exchanging OAuth code for tokens...");
-    
+
     // Determine the correct redirect URI based on environment
     const redirectUri =
       process.env.NODE_ENV === "development"
@@ -93,9 +93,9 @@ async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
         : `https://${
             process.env.REPL_SLUG || "app"
           }.replit.app/api/auth/google/callback`;
-    
+
     console.log("🔗 Using redirect URI:", redirectUri);
-    
+
     // Step 1: Exchange code for tokens
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -126,9 +126,9 @@ async function exchangeCodeForUserInfo(code: string): Promise<GoogleUserInfo> {
     const userResponse = await fetch(
       "https://www.googleapis.com/oauth2/v2/userinfo",
       {
-      headers: {
+        headers: {
           Authorization: `Bearer ${tokens.access_token}`,
-      },
+        },
       }
     );
 
@@ -157,12 +157,12 @@ function generateVerificationCode(): string {
 
 /**
  * API Routes Configuration for Brainliest Platform
- * 
+ *
  * Route Structure:
  * - /api/auth/* - Authentication endpoints (login, register, OAuth)
  * - /api/admin/* - Admin panel endpoints with token verification
  * - /api/subjects/* - Subject management (slug-based routing)
- * - /api/exams/* - Exam management (slug-based routing)  
+ * - /api/exams/* - Exam management (slug-based routing)
  * - /api/questions/* - Question management (ID-based routing for cards)
  * - /api/categories/* - Category management (slug-based routing)
  * - /api/subcategories/* - Subcategory management (slug-based routing)
@@ -170,7 +170,7 @@ function generateVerificationCode(): string {
  * - /api/trending/* - Trending subjects and certifications
  * - /api/sitemap/* - SEO sitemap generation
  * - /api/stats/* - Platform statistics
- * 
+ *
  * Navigation Logic:
  * - Subjects/Exams/Categories: Use slug-based routing for SEO optimization
  * - Questions: Use ID-based routing for question cards and navigation
@@ -184,15 +184,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Test database connection by fetching one subject
       await storage.getSubjects();
-      res.json({ 
-        status: "healthy", 
+      res.json({
+        status: "healthy",
         timestamp: new Date().toISOString(),
         database: "connected",
         version: "1.0.0",
       });
     } catch (error) {
-      res.status(503).json({ 
-        status: "unhealthy", 
+      res.status(503).json({
+        status: "unhealthy",
         timestamp: new Date().toISOString(),
         database: "disconnected",
         error: "Database connection failed",
@@ -216,20 +216,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const validation = insertCategorySchema.safeParse(req.body);
-      if (!validation.success) {
+      try {
+        const validation = insertCategorySchema.safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid category data",
             errors: validation.error.errors,
           });
+        }
+        const category = await storage.createCategory(validation.data);
+        res.status(201).json(category);
+      } catch (error) {
+        console.error("Failed to create category:", error);
+        res.status(500).json({ message: "Failed to create category" });
       }
-      const category = await storage.createCategory(validation.data);
-      res.status(201).json(category);
-    } catch (error) {
-      console.error("Failed to create category:", error);
-      res.status(500).json({ message: "Failed to create category" });
-    }
     }
   );
 
@@ -238,24 +238,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug as string);
-      const validation = insertCategorySchema.partial().safeParse(req.body);
-      if (!validation.success) {
+      try {
+        const slug = sanitizeString(req.params.slug as string);
+        const validation = insertCategorySchema.partial().safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid category data",
             errors: validation.error.errors,
           });
+        }
+        const category = await storage.updateCategory(slug, validation.data);
+        if (!category) {
+          return res.status(404).json({ message: "Category not found" });
+        }
+        res.json(category);
+      } catch (error) {
+        console.error("Failed to update category:", error);
+        res.status(500).json({ message: "Failed to update category" });
       }
-      const category = await storage.updateCategory(slug, validation.data);
-      if (!category) {
-        return res.status(404).json({ message: "Category not found" });
-      }
-      res.json(category);
-    } catch (error) {
-      console.error("Failed to update category:", error);
-      res.status(500).json({ message: "Failed to update category" });
-    }
     }
   );
 
@@ -264,17 +264,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug as string);
-      const deleted = await storage.deleteCategory(slug);
-      if (!deleted) {
-        return res.status(404).json({ message: "Category not found" });
+      try {
+        const slug = sanitizeString(req.params.slug as string);
+        const deleted = await storage.deleteCategory(slug);
+        if (!deleted) {
+          return res.status(404).json({ message: "Category not found" });
+        }
+        res.status(204).send();
+      } catch (error) {
+        console.error("Failed to delete category:", error);
+        res.status(500).json({ message: "Failed to delete category" });
       }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Failed to delete category:", error);
-      res.status(500).json({ message: "Failed to delete category" });
-    }
     }
   );
 
@@ -309,20 +309,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const validation = insertSubcategorySchema.safeParse(req.body);
-      if (!validation.success) {
+      try {
+        const validation = insertSubcategorySchema.safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid subcategory data",
             errors: validation.error.errors,
           });
+        }
+        const subcategory = await storage.createSubcategory(validation.data);
+        res.status(201).json(subcategory);
+      } catch (error) {
+        console.error("Failed to create subcategory:", error);
+        res.status(500).json({ message: "Failed to create subcategory" });
       }
-      const subcategory = await storage.createSubcategory(validation.data);
-      res.status(201).json(subcategory);
-    } catch (error) {
-      console.error("Failed to create subcategory:", error);
-      res.status(500).json({ message: "Failed to create subcategory" });
-    }
     }
   );
 
@@ -331,29 +331,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug as string);
+      try {
+        const slug = sanitizeString(req.params.slug as string);
         const validation = insertSubcategorySchema
           .partial()
           .safeParse(req.body);
-      if (!validation.success) {
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid subcategory data",
             errors: validation.error.errors,
           });
-      }
+        }
         const subcategory = await storage.updateSubcategory(
           slug,
           validation.data
         );
-      if (!subcategory) {
-        return res.status(404).json({ message: "Subcategory not found" });
+        if (!subcategory) {
+          return res.status(404).json({ message: "Subcategory not found" });
+        }
+        res.json(subcategory);
+      } catch (error) {
+        console.error("Failed to update subcategory:", error);
+        res.status(500).json({ message: "Failed to update subcategory" });
       }
-      res.json(subcategory);
-    } catch (error) {
-      console.error("Failed to update subcategory:", error);
-      res.status(500).json({ message: "Failed to update subcategory" });
-    }
     }
   );
 
@@ -362,17 +362,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug as string);
-      const deleted = await storage.deleteSubcategory(slug);
-      if (!deleted) {
-        return res.status(404).json({ message: "Subcategory not found" });
+      try {
+        const slug = sanitizeString(req.params.slug as string);
+        const deleted = await storage.deleteSubcategory(slug);
+        if (!deleted) {
+          return res.status(404).json({ message: "Subcategory not found" });
+        }
+        res.status(204).send();
+      } catch (error) {
+        console.error("Failed to delete subcategory:", error);
+        res.status(500).json({ message: "Failed to delete subcategory" });
       }
-      res.status(204).send();
-    } catch (error) {
-      console.error("Failed to delete subcategory:", error);
-      res.status(500).json({ message: "Failed to delete subcategory" });
-    }
     }
   );
 
@@ -381,27 +381,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/relationships/subcategory-to-category",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const { subcategorySlug, categorySlug } = req.body;
-      
-      if (!subcategorySlug || !categorySlug) {
+      try {
+        const { subcategorySlug, categorySlug } = req.body;
+
+        if (!subcategorySlug || !categorySlug) {
           return res.status(400).json({
             message: "Both subcategorySlug and categorySlug are required",
           });
-      }
+        }
 
-      // Verify both exist
-      const subcategory = await storage.getSubcategory(subcategorySlug);
-      const category = await storage.getCategory(categorySlug);
-      
-      if (!subcategory) {
+        // Verify both exist
+        const subcategory = await storage.getSubcategory(subcategorySlug);
+        const category = await storage.getCategory(categorySlug);
+
+        if (!subcategory) {
           return res.status(404).json({ message: "Subcategory not found" });
-      }
-      if (!category) {
+        }
+        if (!category) {
           return res.status(404).json({ message: "Category not found" });
-      }
+        }
 
-      // Update the subcategory's category relationship
+        // Update the subcategory's category relationship
         const updatedSubcategory = await storage.updateSubcategory(
           subcategorySlug,
           {
@@ -409,15 +409,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         );
 
-      res.json({
-        success: true,
+        res.json({
+          success: true,
           message: "Subcategory assigned to category successfully",
           subcategory: updatedSubcategory,
-      });
-    } catch (error) {
+        });
+      } catch (error) {
         console.error("Error assigning subcategory to category:", error);
         res.status(500).json({ message: "Internal server error" });
-    }
+      }
     }
   );
 
@@ -426,55 +426,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/relationships/subject-to-category",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const { subjectSlug, categorySlug, subcategorySlug } = req.body;
-      
-      if (!subjectSlug || (!categorySlug && !subcategorySlug)) {
+      try {
+        const { subjectSlug, categorySlug, subcategorySlug } = req.body;
+
+        if (!subjectSlug || (!categorySlug && !subcategorySlug)) {
           return res.status(400).json({
             message:
               "subjectSlug and either categorySlug or subcategorySlug are required",
           });
-      }
+        }
 
-      // Verify subject exists
-      const subject = await storage.getSubject(subjectSlug);
-      if (!subject) {
+        // Verify subject exists
+        const subject = await storage.getSubject(subjectSlug);
+        if (!subject) {
           return res.status(404).json({ message: "Subject not found" });
-      }
+        }
 
-      // Verify category/subcategory exists
-      if (categorySlug) {
-        const category = await storage.getCategory(categorySlug);
-        if (!category) {
+        // Verify category/subcategory exists
+        if (categorySlug) {
+          const category = await storage.getCategory(categorySlug);
+          if (!category) {
             return res.status(404).json({ message: "Category not found" });
+          }
         }
-      }
-      
-      if (subcategorySlug) {
-        const subcategory = await storage.getSubcategory(subcategorySlug);
-        if (!subcategory) {
+
+        if (subcategorySlug) {
+          const subcategory = await storage.getSubcategory(subcategorySlug);
+          if (!subcategory) {
             return res.status(404).json({ message: "Subcategory not found" });
+          }
         }
-      }
 
-      // Update the subject's category/subcategory relationship
-      const updatedSubject = await storage.updateSubject(subjectSlug, {
-        categorySlug: categorySlug || null,
+        // Update the subject's category/subcategory relationship
+        const updatedSubject = await storage.updateSubject(subjectSlug, {
+          categorySlug: categorySlug || null,
           subcategorySlug: subcategorySlug || null,
-      });
+        });
 
-      res.json({
-        success: true,
+        res.json({
+          success: true,
           message: "Subject assigned to category/subcategory successfully",
           subject: updatedSubject,
-      });
-    } catch (error) {
+        });
+      } catch (error) {
         console.error(
           "Error assigning subject to category/subcategory:",
           error
         );
         res.status(500).json({ message: "Internal server error" });
-    }
+      }
     }
   );
 
@@ -483,40 +483,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/relationships/exam-to-subject",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const { examSlug, subjectSlug } = req.body;
-      
-      if (!examSlug || !subjectSlug) {
+      try {
+        const { examSlug, subjectSlug } = req.body;
+
+        if (!examSlug || !subjectSlug) {
           return res
             .status(400)
             .json({ message: "Both examSlug and subjectSlug are required" });
-      }
+        }
 
-      // Verify both exist
-      const exam = await storage.getExam(examSlug);
-      const subject = await storage.getSubject(subjectSlug);
-      
-      if (!exam) {
+        // Verify both exist
+        const exam = await storage.getExam(examSlug);
+        const subject = await storage.getSubject(subjectSlug);
+
+        if (!exam) {
           return res.status(404).json({ message: "Exam not found" });
-      }
-      if (!subject) {
+        }
+        if (!subject) {
           return res.status(404).json({ message: "Subject not found" });
-      }
+        }
 
-      // Update the exam's subject relationship
-      const updatedExam = await storage.updateExam(examSlug, {
+        // Update the exam's subject relationship
+        const updatedExam = await storage.updateExam(examSlug, {
           subjectSlug: subjectSlug,
-      });
+        });
 
-      res.json({
-        success: true,
+        res.json({
+          success: true,
           message: "Exam assigned to subject successfully",
           exam: updatedExam,
-      });
-    } catch (error) {
+        });
+      } catch (error) {
         console.error("Error assigning exam to subject:", error);
         res.status(500).json({ message: "Internal server error" });
-    }
+      }
     }
   );
 
@@ -525,52 +525,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/relationships/overview",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const categories = await storage.getCategories();
-      const subcategories = await storage.getSubcategories();
-      const subjects = await storage.getSubjects();
-      const exams = await storage.getExams();
+      try {
+        const categories = await storage.getCategories();
+        const subcategories = await storage.getSubcategories();
+        const subjects = await storage.getSubjects();
+        const exams = await storage.getExams();
 
-      // Build hierarchical structure
+        // Build hierarchical structure
         const hierarchicalData = categories.map((category) => ({
-        ...category,
+          ...category,
           subcategories: subcategories
             .filter((sub) => sub.categorySlug === category.slug)
             .map((subcategory) => ({
-          ...subcategory,
+              ...subcategory,
               subjects: subjects
                 .filter((subj) => subj.subcategorySlug === subcategory.slug)
                 .map((subject) => ({
-            ...subject,
+                  ...subject,
                   exams: exams.filter(
                     (exam) => exam.subjectSlug === subject.slug
                   ),
                 })),
-        })),
+            })),
           directSubjects: subjects
             .filter(
               (subj) =>
                 subj.categorySlug === category.slug && !subj.subcategorySlug
             )
             .map((subject) => ({
-          ...subject,
+              ...subject,
               exams: exams.filter((exam) => exam.subjectSlug === subject.slug),
             })),
-      }));
+        }));
 
-      res.json({
-        hierarchicalData,
-        counts: {
-          categories: categories.length,
-          subcategories: subcategories.length,
-          subjects: subjects.length,
+        res.json({
+          hierarchicalData,
+          counts: {
+            categories: categories.length,
+            subcategories: subcategories.length,
+            subjects: subjects.length,
             exams: exams.length,
           },
-      });
-    } catch (error) {
+        });
+      } catch (error) {
         console.error("Error fetching relationship overview:", error);
         res.status(500).json({ message: "Internal server error" });
-    }
+      }
     }
   );
 
@@ -612,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/subjects", async (req, res) => {
     try {
       const subcategorySlug = req.query.subcategorySlug as string;
-      const subjects = subcategorySlug 
+      const subjects = subcategorySlug
         ? await storage
             .getSubjects()
             .then((subjects) =>
@@ -646,19 +646,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const validation = insertSubjectSchema.safeParse(req.body);
-      if (!validation.success) {
+      try {
+        const validation = insertSubjectSchema.safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid subject data",
             errors: validation.error.errors,
           });
+        }
+        const subject = await storage.createSubject(validation.data);
+        res.status(201).json(subject);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to create subject" });
       }
-      const subject = await storage.createSubject(validation.data);
-      res.status(201).json(subject);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create subject" });
-    }
     }
   );
 
@@ -667,26 +667,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
+      try {
         const id = parseId(req.params.id, "subject ID");
-      if (isNaN(id) || id <= 0) {
-        return res.status(400).json({ message: "Invalid subject ID" });
-      }
-      const validation = insertSubjectSchema.partial().safeParse(req.body);
-      if (!validation.success) {
+        if (isNaN(id) || id <= 0) {
+          return res.status(400).json({ message: "Invalid subject ID" });
+        }
+        const validation = insertSubjectSchema.partial().safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid subject data",
             errors: validation.error.errors,
           });
+        }
+        const subject = await storage.updateSubject(id, validation.data);
+        if (!subject) {
+          return res.status(404).json({ message: "Subject not found" });
+        }
+        res.json(subject);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to update subject" });
       }
-      const subject = await storage.updateSubject(id, validation.data);
-      if (!subject) {
-        return res.status(404).json({ message: "Subject not found" });
-      }
-      res.json(subject);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update subject" });
-    }
     }
   );
 
@@ -694,7 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/exams", async (req, res) => {
     try {
       const subjectSlug = req.query.subjectSlug as string;
-      const exams = subjectSlug 
+      const exams = subjectSlug
         ? await storage.getExamsBySubject(subjectSlug)
         : await storage.getExams();
 
@@ -813,19 +813,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const validation = insertExamSchema.safeParse(req.body);
-      if (!validation.success) {
+      try {
+        const validation = insertExamSchema.safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid exam data",
             errors: validation.error.errors,
           });
+        }
+        const exam = await storage.createExam(validation.data);
+        res.status(201).json(exam);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to create exam" });
       }
-      const exam = await storage.createExam(validation.data);
-      res.status(201).json(exam);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create exam" });
-    }
     }
   );
 
@@ -849,14 +849,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .refine((data) => !data.examSlug || !data.examId, {
           message: "Cannot specify both examSlug and examId",
-      });
+        });
 
       let validatedQuery;
       try {
         validatedQuery = querySchema.parse(req.query);
       } catch (validationError) {
-        return res.status(400).json({ 
-          message: "Invalid query parameters", 
+        return res.status(400).json({
+          message: "Invalid query parameters",
           errors: validationError.errors,
         });
       }
@@ -874,13 +874,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // No filter, return all questions
         questions = await storage.getQuestions();
       }
-      
+
       // Add freemium session info to response for frontend
       const responseData = {
         questions,
         freemiumSession: req.freemiumSession,
       };
-      
+
       res.json(responseData);
     } catch (error) {
       console.error("Questions API error:", error);
@@ -893,23 +893,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     enforceFreemiumLimit(),
     recordFreemiumQuestionView(),
     async (req, res) => {
-    try {
+      try {
         const id = parseId(req.params.id, "question ID");
-      const question = await storage.getQuestion(id);
-      if (!question) {
-        return res.status(404).json({ message: "Question not found" });
-      }
-      
-      // Add freemium session info to response
-      const responseData = {
-        ...question,
+        const question = await storage.getQuestion(id);
+        if (!question) {
+          return res.status(404).json({ message: "Question not found" });
+        }
+
+        // Add freemium session info to response
+        const responseData = {
+          ...question,
           freemiumSession: req.freemiumSession,
-      };
-      
-      res.json(responseData);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch question" });
-    }
+        };
+
+        res.json(responseData);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to fetch question" });
+      }
     }
   );
 
@@ -918,19 +918,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const validation = insertQuestionSchema.safeParse(req.body);
-      if (!validation.success) {
+      try {
+        const validation = insertQuestionSchema.safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid question data",
             errors: validation.error.errors,
           });
+        }
+        const question = await storage.createQuestion(validation.data);
+        res.status(201).json(question);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to create question" });
       }
-      const question = await storage.createQuestion(validation.data);
-      res.status(201).json(question);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create question" });
-    }
     }
   );
 
@@ -939,23 +939,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
+      try {
         const id = parseId(req.params.id, "question ID");
-      const validation = insertQuestionSchema.partial().safeParse(req.body);
-      if (!validation.success) {
+        const validation = insertQuestionSchema.partial().safeParse(req.body);
+        if (!validation.success) {
           return res.status(400).json({
             message: "Invalid question data",
             errors: validation.error.errors,
           });
+        }
+        const question = await storage.updateQuestion(id, validation.data);
+        if (!question) {
+          return res.status(404).json({ message: "Question not found" });
+        }
+        res.json(question);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to update question" });
       }
-      const question = await storage.updateQuestion(id, validation.data);
-      if (!question) {
-        return res.status(404).json({ message: "Question not found" });
-      }
-      res.json(question);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update question" });
-    }
     }
   );
 
@@ -964,18 +964,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const questions = await storage.getQuestions();
-      for (const question of questions) {
-        await storage.deleteQuestion(question.id);
-      }
+      try {
+        const questions = await storage.getQuestions();
+        for (const question of questions) {
+          await storage.deleteQuestion(question.id);
+        }
         res.json({
           message: "All questions deleted successfully",
           count: questions.length,
         });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete all questions" });
-    }
+      } catch (error) {
+        res.status(500).json({ message: "Failed to delete all questions" });
+      }
     }
   );
 
@@ -984,16 +984,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
+      try {
         const id = parseId(req.params.id, "question ID");
-      const deleted = await storage.deleteQuestion(id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Question not found" });
+        const deleted = await storage.deleteQuestion(id);
+        if (!deleted) {
+          return res.status(404).json({ message: "Question not found" });
+        }
+        res.status(204).send();
+      } catch (error) {
+        res.status(500).json({ message: "Failed to delete question" });
       }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete question" });
-    }
     }
   );
 
@@ -1003,33 +1003,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     logAdminAction,
     async (req, res) => {
-    try {
-      const { questions } = req.body;
-      if (!Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ message: "Invalid questions data" });
-      }
+      try {
+        const { questions } = req.body;
+        if (!Array.isArray(questions) || questions.length === 0) {
+          return res.status(400).json({ message: "Invalid questions data" });
+        }
 
-      const createdQuestions = [];
-      for (const questionData of questions) {
-        const validation = insertQuestionSchema.safeParse(questionData);
-        if (validation.success) {
-          try {
-            const question = await storage.createQuestion(validation.data);
-            createdQuestions.push(question);
-          } catch (error) {
-            console.error("Failed to create question:", error);
+        const createdQuestions = [];
+        for (const questionData of questions) {
+          const validation = insertQuestionSchema.safeParse(questionData);
+          if (validation.success) {
+            try {
+              const question = await storage.createQuestion(validation.data);
+              createdQuestions.push(question);
+            } catch (error) {
+              console.error("Failed to create question:", error);
+            }
           }
         }
-      }
 
-      res.status(201).json({ 
-        message: `Successfully imported ${createdQuestions.length} questions`,
-        created: createdQuestions.length,
+        res.status(201).json({
+          message: `Successfully imported ${createdQuestions.length} questions`,
+          created: createdQuestions.length,
           total: questions.length,
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to import questions" });
-    }
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Failed to import questions" });
+      }
     }
   );
 
@@ -1037,21 +1037,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/overview/:userName", async (req, res) => {
     try {
       const { userName } = req.params;
-      
+
       // Get user profile
       const userProfile = await analyticsService.getUserProfile(userName);
-      
+
       // Get exam analytics
       const examAnalytics = await analyticsService.getExamAnalytics(userName);
-      
+
       // Get answer history for detailed analysis
       const answerHistory = await analyticsService.getAnswerHistory(userName);
-      
+
       // Get performance trends
       const performanceTrends = await analyticsService.getPerformanceTrends(
         userName
       );
-      
+
       // Calculate additional metrics
       const totalTimeSpent = examAnalytics.reduce(
         (sum, exam) => sum + (exam.timeSpent || 0),
@@ -1059,7 +1059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       const averageTimePerQuestion =
         answerHistory.length > 0 ? totalTimeSpent / answerHistory.length : 0;
-      
+
       // Calculate accuracy by difficulty
       const difficultyAnalysis = answerHistory.reduce((acc, answer) => {
         const difficulty = answer.difficulty || "Unknown";
@@ -1115,13 +1115,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const analytics = await analyticsService.createExamAnalytics(
         validation.data
       );
-      
+
       // Update user profile
       await analyticsService.createOrUpdateUserProfile(req.body.userName, {
         score: req.body.score,
         totalQuestions: req.body.totalQuestions,
       });
-      
+
       res.status(201).json(analytics);
     } catch (error) {
       res.status(500).json({ message: "Failed to record exam completion" });
@@ -1141,17 +1141,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     "/api/analytics/study-recommendations/:userName",
     async (req, res) => {
-    try {
-      const { userName } = req.params;
+      try {
+        const { userName } = req.params;
         const recommendations = await analyticsService.getStudyRecommendations(
           userName
         );
-      res.json(recommendations);
-    } catch (error) {
+        res.json(recommendations);
+      } catch (error) {
         res
           .status(500)
           .json({ message: "Failed to fetch study recommendations" });
-    }
+      }
     }
   );
 
@@ -1159,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contact", async (req, res) => {
     try {
       const { name, email, subject, category, message } = req.body;
-      
+
       // Validate required fields
       if (!name || !email || !subject || !category || !message) {
         return res.status(400).json({ message: "All fields are required" });
@@ -1176,7 +1176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 2. Send email notification to support team
       // 3. Send confirmation email to user
       // For now, we'll just log and return success
-      
+
       console.log("Contact form submission:", {
         name,
         email,
@@ -1186,7 +1186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString(),
       });
 
-      res.status(201).json({ 
+      res.status(201).json({
         message: "Contact form submitted successfully",
         id: Math.random().toString(36).substr(2, 9), // Generate simple ID
       });
@@ -1250,7 +1250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/comments", async (req, res) => {
     try {
       const questionId = parseOptionalUUID(req.query.questionId as string);
-      const comments = questionId 
+      const comments = questionId
         ? await storage.getCommentsByQuestion(questionId)
         : await storage.getComments();
       res.json(comments);
@@ -1318,7 +1318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(
         `AI explanation request for question ${questionId}, user answer: ${userAnswer}`
       );
-      
+
       const question = await storage.getQuestion(questionId);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
@@ -1327,17 +1327,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get subject by slug (not ID)
       const subject = await storage.getSubjectBySlug(question.subjectSlug);
       const subjectName = subject?.name || "certification";
-      
+
       console.log(`Generating explanation for ${subjectName} question`);
 
       const explanation = await explainAnswer(
-        question.text, 
-        question.options, 
-        question.correctAnswer, 
-        userAnswer, 
+        question.text,
+        question.options,
+        question.correctAnswer,
+        userAnswer,
         subjectName
       );
-      
+
       console.log(`Generated explanation: ${explanation.substring(0, 100)}...`);
       res.json({ explanation });
     } catch (error) {
@@ -1352,7 +1352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mock user profile data
       const profile = {
         firstName: "John",
-        lastName: "Doe", 
+        lastName: "Doe",
         email: "john.doe@example.com",
         phone: "+1 (555) 123-4567",
         bio: "Passionate about learning and professional development.",
@@ -1378,9 +1378,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateOfBirth,
         website,
       } = req.body;
-      
+
       // Here you would update the user profile in the database
-      res.json({ 
+      res.json({
         message: "Profile updated successfully",
         success: true,
       });
@@ -1392,7 +1392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/settings/change-password", async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
-      
+
       if (!currentPassword || !newPassword) {
         return res
           .status(400)
@@ -1404,9 +1404,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .status(400)
           .json({ message: "Password must be at least 8 characters long" });
       }
-      
+
       // Here you would verify current password and update to new password
-      res.json({ 
+      res.json({
         message: "Password changed successfully",
         success: true,
       });
@@ -1437,7 +1437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/settings/notifications", async (req, res) => {
     try {
       // Here you would update notification preferences in the database
-      res.json({ 
+      res.json({
         message: "Notification settings updated successfully",
         success: true,
       });
@@ -1451,7 +1451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/settings/export-data", async (req, res) => {
     try {
       // Here you would generate and send export data
-      res.json({ 
+      res.json({
         message:
           "Data export requested. You will receive an email with download link.",
         success: true,
@@ -1464,7 +1464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/settings/delete-account", async (req, res) => {
     try {
       // Here you would mark account for deletion
-      res.json({ 
+      res.json({
         message:
           "Account deletion requested. Your account will be deleted within 24 hours.",
         success: true,
@@ -1486,7 +1486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isBanned === "true" ? true : isBanned === "false" ? false : undefined,
         search: search as string,
       };
-      
+
       const users = await storage.getUsersWithFilters(filters);
       res.json(users);
     } catch (error) {
@@ -1597,9 +1597,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isBanned === "true" ? true : isBanned === "false" ? false : undefined,
         search: search as string,
       };
-      
+
       const users = await storage.getUsersWithFilters(filters);
-      
+
       // Convert to CSV format
       const csvHeader =
         "ID,Email,Username,First Name,Last Name,Role,Active,Banned,Ban Reason,Last Login,Last Login IP,Registration IP,Created At,Updated At\n";
@@ -1607,29 +1607,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map((user) => {
           const formatDate = (date: Date | null) =>
             date ? date.toISOString() : "";
-        return [
-          user.id,
-          user.email,
-          user.username,
+          return [
+            user.id,
+            user.email,
+            user.username,
             user.firstName || "",
             user.lastName || "",
-          user.role,
-          user.isActive,
-          user.isBanned,
+            user.role,
+            user.isActive,
+            user.isBanned,
             user.banReason || "",
-          formatDate(user.lastLoginAt),
+            formatDate(user.lastLoginAt),
             user.lastLoginIp || "",
             user.registrationIp || "",
-          formatDate(user.createdAt),
+            formatDate(user.createdAt),
             formatDate(user.updatedAt),
           ]
             .map((field) => `"${field}"`)
             .join(",");
         })
         .join("\n");
-      
+
       const csv = csvHeader + csvRows;
-      
+
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", 'attachment; filename="users.csv"');
       res.send(csv);
@@ -1640,7 +1640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ADMIN USER MANAGEMENT ROUTES - Enterprise-grade admin controls
   // Secure admin-only routes with separate authentication
-  
+
   /**
    * Create new user (Admin-only endpoint)
    * POST /api/admin/users
@@ -1654,31 +1654,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .status(401)
           .json({ message: "Admin authentication required" });
       }
-      
+
       const token = authHeader.substring(7);
       const { valid, user: adminUser } = await adminAuthService.verifyToken(
         token
       );
-      
+
       if (!valid || !adminUser) {
         return res.status(401).json({ message: "Invalid admin token" });
       }
-      
+
       // Extract user data from request
       const { email, role, password, firstName, lastName, username } = req.body;
-      
+
       // Validate required fields
       if (!email || !role || !password) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message:
             "Missing required fields: email, role, and password are required",
         });
       }
-      
+
       // Get client IP and user agent for audit logging
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.headers["user-agent"];
-      
+
       // Create user via admin service
       const newUser = await adminUserService.createUser(
         { email, role, password, firstName, lastName, username },
@@ -1687,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress,
         userAgent
       );
-      
+
       res.status(201).json({
         success: true,
         message: "User created successfully",
@@ -1695,13 +1695,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Admin create user error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: error.message || "Failed to create user",
         success: false,
       });
     }
   });
-  
+
   /**
    * Update existing user (Admin-only endpoint)
    * PUT /api/admin/users/:id
@@ -1715,19 +1715,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .status(401)
           .json({ message: "Admin authentication required" });
       }
-      
+
       const token = authHeader.substring(7);
       const { valid, user: adminUser } = await adminAuthService.verifyToken(
         token
       );
-      
+
       if (!valid || !adminUser) {
         return res.status(401).json({ message: "Invalid admin token" });
       }
-      
+
       // Get user ID from params
       const userId = parseId(req.params.id, "user ID");
-      
+
       // Extract update data from request
       const {
         email,
@@ -1739,11 +1739,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isBanned,
         banReason,
       } = req.body;
-      
+
       // Get client IP and user agent for audit logging
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.headers["user-agent"];
-      
+
       // Update user via admin service
       const updatedUser = await adminUserService.updateUser(
         userId,
@@ -1762,7 +1762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress,
         userAgent
       );
-      
+
       res.json({
         success: true,
         message: "User updated successfully",
@@ -1770,13 +1770,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Admin update user error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: error.message || "Failed to update user",
         success: false,
       });
     }
   });
-  
+
   /**
    * Delete user (Admin-only endpoint)
    * DELETE /api/admin/users/:id
@@ -1790,23 +1790,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .status(401)
           .json({ message: "Admin authentication required" });
       }
-      
+
       const token = authHeader.substring(7);
       const { valid, user: adminUser } = await adminAuthService.verifyToken(
         token
       );
-      
+
       if (!valid || !adminUser) {
         return res.status(401).json({ message: "Invalid admin token" });
       }
-      
+
       // Get user ID from params
       const userId = parseId(req.params.id, "user ID");
-      
+
       // Get client IP and user agent for audit logging
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.headers["user-agent"];
-      
+
       // Delete user via admin service
       const result = await adminUserService.deleteUser(
         userId,
@@ -1815,17 +1815,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress,
         userAgent
       );
-      
+
       res.json(result);
     } catch (error) {
       console.error("Admin delete user error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: error.message || "Failed to delete user",
         success: false,
       });
     }
   });
-  
+
   /**
    * Get admin audit logs (Admin-only endpoint)
    * GET /api/admin/audit-logs
@@ -1839,23 +1839,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .status(401)
           .json({ message: "Admin authentication required" });
       }
-      
+
       const token = authHeader.substring(7);
       const { valid, user: adminUser } = await adminAuthService.verifyToken(
         token
       );
-      
+
       if (!valid || !adminUser) {
         return res.status(401).json({ message: "Invalid admin token" });
       }
-      
+
       // Get pagination parameters
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
-      
+
       // Get audit logs
       const logs = await adminUserService.getAdminAuditLogs(limit, offset);
-      
+
       res.json({
         success: true,
         logs,
@@ -1867,7 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Admin audit logs error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to fetch audit logs",
         success: false,
       });
@@ -1878,10 +1878,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/geolocation/ip/:ip", async (req, res) => {
     try {
       const ip = req.params.ip;
-      
+
       // Validate IP format (basic validation)
       if (!ip || ip === "undefined" || ip === "null") {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Valid IP address is required",
           ip: ip,
         });
@@ -1889,7 +1889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get location data using geolocation service
       const location = await geolocationService.getLocationForIP(ip);
-      
+
       res.json({
         success: true,
         location,
@@ -1899,7 +1899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Geolocation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to get location data",
         success: false,
       });
@@ -1909,9 +1909,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/geolocation/bulk", async (req, res) => {
     try {
       const { ips } = req.body;
-      
+
       if (!Array.isArray(ips) || ips.length === 0) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Array of IP addresses is required",
           example: { ips: ["192.168.1.1", "8.8.8.8"] },
         });
@@ -1919,14 +1919,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Limit to 50 IPs per request to prevent abuse
       if (ips.length > 50) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Maximum 50 IP addresses allowed per request",
         });
       }
 
       // Get location data for all IPs
       const locations = await geolocationService.getLocationsForIPs(ips);
-      
+
       // Format response
       const results = Array.from(locations.entries()).map(([ip, location]) => ({
         ip,
@@ -1934,7 +1934,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         formatted: geolocationService.formatLocation(location),
         flag: geolocationService.getCountryFlag(location.countryCode),
       }));
-      
+
       res.json({
         success: true,
         results,
@@ -1943,7 +1943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Bulk geolocation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to get bulk location data",
         success: false,
       });
@@ -1956,7 +1956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error("Geolocation stats error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to get geolocation stats",
         success: false,
       });
@@ -1975,41 +1975,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isBanned === "true" ? true : isBanned === "false" ? false : undefined,
         search: search as string,
       };
-      
+
       // Get users
       const users = await storage.getUsersWithFilters(filters);
-      
+
       // Extract unique IP addresses
       const loginIPs = users
         .map((user) => user.lastLoginIp)
         .filter((ip) => ip && ip !== "::1" && ip !== "127.0.0.1");
-      
+
       const registrationIPs = users
         .map((user) => user.registrationIp)
         .filter((ip) => ip && ip !== "::1" && ip !== "127.0.0.1");
-      
+
       const allIPs = [...new Set([...loginIPs, ...registrationIPs])];
-      
+
       // Get location data for all unique IPs
       const locations =
         allIPs.length > 0
-        ? await geolocationService.getLocationsForIPs(allIPs)
-        : new Map();
-      
+          ? await geolocationService.getLocationsForIPs(allIPs)
+          : new Map();
+
       // Enhanced users with location data
       const usersWithLocations = users.map((user) => ({
         ...user,
         locationData: {
           lastLogin: user.lastLoginIp
             ? {
-            ip: user.lastLoginIp,
-            location: locations.get(user.lastLoginIp),
-            formatted: locations.get(user.lastLoginIp) 
+                ip: user.lastLoginIp,
+                location: locations.get(user.lastLoginIp),
+                formatted: locations.get(user.lastLoginIp)
                   ? geolocationService.formatLocation(
                       locations.get(user.lastLoginIp)!
                     )
                   : "Unknown",
-            flag: locations.get(user.lastLoginIp)
+                flag: locations.get(user.lastLoginIp)
                   ? geolocationService.getCountryFlag(
                       locations.get(user.lastLoginIp)!.countryCode
                     )
@@ -2018,14 +2018,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : null,
           registration: user.registrationIp
             ? {
-            ip: user.registrationIp,
-            location: locations.get(user.registrationIp),
-            formatted: locations.get(user.registrationIp)
+                ip: user.registrationIp,
+                location: locations.get(user.registrationIp),
+                formatted: locations.get(user.registrationIp)
                   ? geolocationService.formatLocation(
                       locations.get(user.registrationIp)!
                     )
                   : "Unknown",
-            flag: locations.get(user.registrationIp)
+                flag: locations.get(user.registrationIp)
                   ? geolocationService.getCountryFlag(
                       locations.get(user.registrationIp)!.countryCode
                     )
@@ -2034,7 +2034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : null,
         },
       }));
-      
+
       res.json(usersWithLocations);
     } catch (error) {
       console.error("Users with locations error:", error);
@@ -2048,7 +2048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/send-code", async (req, res) => {
     try {
       const { email } = req.body;
-      
+
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
@@ -2068,14 +2068,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send email
       const emailSent = await emailService.sendAuthenticationCode(email, code);
-      
+
       if (!emailSent) {
         return res
           .status(500)
           .json({ message: "Failed to send verification code" });
       }
 
-      res.json({ 
+      res.json({
         message: "Verification code sent successfully",
         success: true,
       });
@@ -2088,7 +2088,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/verify-code", async (req, res) => {
     try {
       const { email, code } = req.body;
-      
+
       if (!email || !code) {
         return res.status(400).json({ message: "Email and code are required" });
       }
@@ -2120,7 +2120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Try to find existing user
       let user = await storage.getUserByEmail(email);
-      
+
       if (!user) {
         // Create new user
         user = await storage.createUser({
@@ -2133,7 +2133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json({ 
+      res.json({
         message: "Authentication successful",
         success: true,
         user: {
@@ -2162,13 +2162,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }, 5 * 60 * 1000); // Clean up every 5 minutes
 
   // ==================== ENHANCED AUTHENTICATION ROUTES ====================
-  
+
   // Register with email/password
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, username, firstName, lastName, recaptchaToken } =
         req.body;
-      
+
       // Debug: Log the incoming request body (without password for security)
       console.log("Registration request body:", {
         email,
@@ -2178,14 +2178,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasPassword: !!password,
         hasRecaptcha: !!recaptchaToken,
       });
-      
+
       // Validate required fields
       if (!email || !password) {
         return res
           .status(400)
           .json({ success: false, message: "Email and password are required" });
       }
-      
+
       // Validate first and last name for signup
       if (!firstName || !lastName) {
         console.log("Missing name fields:", { firstName, lastName });
@@ -2194,30 +2194,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "First name and last name are required",
         });
       }
-      
+
       // Validate email format
       if (!validateEmail(email)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid email format" });
       }
-      
+
       // Validate password strength
       try {
         validatePassword(password);
       } catch (error) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: error?.message || "Password validation failed",
         });
       }
-      
+
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log(
         "Registration with reCAPTCHA:",
         recaptchaToken ? "Token present" : "No token"
       );
-      
+
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
         try {
@@ -2230,8 +2230,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "reCAPTCHA verification failed for registration:",
               recaptchaResult["error-codes"]
             );
-            return res.status(400).json({ 
-              success: false, 
+            return res.status(400).json({
+              success: false,
               message: "reCAPTCHA verification failed. Please try again.",
             });
           }
@@ -2246,16 +2246,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
         }
       }
-      
+
       const result = await authService.register(
-        email, 
-        password, 
+        email,
+        password,
         firstName,
         lastName,
         req.ip,
         req.get("User-Agent")
       );
-      
+
       res.json(result);
     } catch (error) {
       console.error("Registration error:", error);
@@ -2267,27 +2267,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password, recaptchaToken } = req.body;
-      
+
       // Validate required fields
       if (!email || !password) {
         return res
           .status(400)
           .json({ success: false, message: "Email and password are required" });
       }
-      
+
       // Validate email format
       if (!validateEmail(email)) {
         return res
           .status(400)
           .json({ success: false, message: "Invalid email format" });
       }
-      
+
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log(
         "Login with reCAPTCHA:",
         recaptchaToken ? "Token present" : "No token"
       );
-      
+
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
         try {
@@ -2300,8 +2300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "reCAPTCHA verification failed for login:",
               recaptchaResult["error-codes"]
             );
-            return res.status(400).json({ 
-              success: false, 
+            return res.status(400).json({
+              success: false,
               message: "reCAPTCHA verification failed. Please try again.",
             });
           }
@@ -2316,14 +2316,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
         }
       }
-      
+
       const result = await authService.login(
-        email, 
-        password, 
-        req.ip, 
+        email,
+        password,
+        req.ip,
         req.get("User-Agent")
       );
-      
+
       res.json(result);
     } catch (error) {
       console.error("Login error:", error);
@@ -2335,7 +2335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/google/start", (req, res) => {
     try {
       console.log("🚀 Starting Google OAuth flow...");
-      
+
       // Determine the correct redirect URI based on environment
       const redirectUri =
         process.env.NODE_ENV === "development"
@@ -2343,7 +2343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : `https://${
               process.env.REPL_SLUG || "app"
             }.replit.app/api/auth/google/callback`;
-      
+
       const params = new URLSearchParams({
         client_id: GOOGLE_CLIENT_ID!,
         redirect_uri: redirectUri,
@@ -2352,10 +2352,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         access_type: "offline",
         prompt: "select_account",
       });
-      
+
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
       console.log("🔗 Redirecting to Google OAuth:", authUrl);
-      
+
       res.redirect(authUrl);
     } catch (error) {
       console.error("❌ OAuth start error:", error);
@@ -2369,12 +2369,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/google/callback", async (req, res) => {
     try {
       const { code, error } = req.query;
-      
+
       console.log("🔍 Google OAuth callback received:", {
         code: code ? "present" : "missing",
         error,
       });
-      
+
       if (error) {
         console.error("❌ Google OAuth error:", error);
         return res.redirect(
@@ -2385,7 +2385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }?error=oauth_error&message=${encodeURIComponent(error as string)}`
         );
       }
-      
+
       if (!code) {
         console.error("❌ No authorization code received");
         return res.redirect(
@@ -2396,10 +2396,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }?error=oauth_error&message=No+authorization+code+received`
         );
       }
-      
+
       // Exchange authorization code for tokens
       const googleUser = await exchangeCodeForUserInfo(code as string);
-      
+
       // Process OAuth login through existing auth service
       const result = await authService.oauthLogin(
         "google",
@@ -2411,10 +2411,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.ip,
         req.get("User-Agent")
       );
-      
+
       if (result.success && result.accessToken) {
         console.log("✅ Google OAuth login successful");
-        
+
         // Set session cookie with JWT token
         res.cookie("session", result.accessToken, {
           httpOnly: true,
@@ -2422,7 +2422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sameSite: "lax",
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
-        
+
         // Send HTML page that notifies parent window and closes popup
         res.setHeader("Content-Type", "text/html");
         res.send(`
@@ -2460,7 +2460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
       } else {
         console.error("❌ OAuth login failed:", result.message);
-        
+
         // Send HTML page that notifies parent window of error
         res.setHeader("Content-Type", "text/html");
         res.send(`
@@ -2500,7 +2500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("OAuth callback error:", error);
-      
+
       // Send HTML page that notifies parent window of error
       res.setHeader("Content-Type", "text/html");
       res.send(`
@@ -2551,13 +2551,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImage,
         recaptchaToken,
       } = req.body;
-      
+
       // Log reCAPTCHA token presence (without logging the actual token for security)
       console.log(
         "Google OAuth with reCAPTCHA:",
         recaptchaToken ? "Token present" : "No token"
       );
-      
+
       // Verify reCAPTCHA token if present
       if (recaptchaToken) {
         const recaptchaResult = await recaptchaService.verifyToken(
@@ -2569,8 +2569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             "reCAPTCHA verification failed for Google OAuth:",
             recaptchaResult["error-codes"]
           );
-          return res.status(400).json({ 
-            success: false, 
+          return res.status(400).json({
+            success: false,
             message: "reCAPTCHA verification failed. Please try again.",
           });
         }
@@ -2578,7 +2578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `reCAPTCHA verified for Google OAuth: score ${recaptchaResult.score}`
         );
       }
-      
+
       const result = await authService.oauthLogin(
         "google",
         googleId,
@@ -2589,7 +2589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.ip,
         req.get("User-Agent")
       );
-      
+
       res.json(result);
     } catch (error) {
       console.error("OAuth login error:", error);
@@ -2615,13 +2615,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/request-password-reset", async (req, res) => {
     try {
       const { email } = req.body;
-      
+
       const result = await authService.requestPasswordReset(
-        email, 
-        req.ip, 
+        email,
+        req.ip,
         req.get("User-Agent")
       );
-      
+
       res.json(result);
     } catch (error) {
       console.error("Password reset request error:", error);
@@ -2645,7 +2645,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Verify token and get user
+  // Verify token and get user (Authorization header)
+  app.get("/api/auth/verify", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({
+          success: false,
+          message: "Authorization header required",
+        });
+      }
+
+      const token = authHeader.substring(7);
+      const result = await authService.verifyToken(token);
+      res.json(result);
+    } catch (error) {
+      console.error("Token verification error:", error);
+      res
+        .status(500)
+        .json({ valid: false, message: "Token verification failed" });
+    }
+  });
+
+  // Verify token and get user (request body)
   app.post("/api/auth/verify-token", async (req, res) => {
     try {
       const { token } = req.body;
@@ -2659,7 +2681,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Refresh token
+  // Refresh token (Authorization header)
+  app.post("/api/auth/refresh", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({
+          success: false,
+          message: "Authorization header required",
+        });
+      }
+
+      const token = authHeader.substring(7);
+      const result = await authService.refreshToken(token);
+      res.json(result);
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      res.status(500).json({ success: false, message: "Token refresh failed" });
+    }
+  });
+
+  // Refresh token (request body)
   app.post("/api/auth/refresh-token", async (req, res) => {
     try {
       const { refreshToken } = req.body;
@@ -2698,58 +2740,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ==================== END ENHANCED AUTHENTICATION ====================
 
   // ==================== ADMIN AUTHENTICATION ROUTES (TOKEN-ONLY SYSTEM) ====================
-  
+
   // Token-only admin login - NO COOKIES
   app.post("/api/admin/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       // Validate required fields
       if (!email || !password) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: "Email and password are required for admin access",
         });
       }
-      
+
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: "Invalid email format",
         });
       }
-      
+
       // Use token-only admin auth service (NO COOKIES)
       const result = await tokenAdminAuth.login(email, password);
-      
+
       // Return token in response body only (no cookies)
       res.json(result);
     } catch (error) {
       console.error("Admin login error:", error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "Admin authentication system error",
       });
     }
   });
-  
+
   // Admin token verification (token-only)
   app.get("/api/admin/auth/verify", async (req, res) => {
     try {
       // Extract token from Authorization header only
       const token = tokenAdminAuth.extractTokenFromRequest(req);
-      
+
       if (!token) {
         return res.status(401).json({
           valid: false,
           message: "No admin token provided",
         });
       }
-      
+
       const verification = await tokenAdminAuth.verifyToken(token);
-      
+
       if (verification.valid) {
         res.json({
           valid: true,
@@ -2767,29 +2809,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Admin token verification error:", error);
-      res.status(500).json({ 
-        valid: false, 
+      res.status(500).json({
+        valid: false,
         message: "Token verification error",
       });
     }
   });
-  
+
   // Admin logout (token-only)
   app.post("/api/admin/auth/logout", async (req, res) => {
     try {
       // Token-only logout (client discards token)
       const result = await tokenAdminAuth.logout();
-      
+
       res.json(result);
     } catch (error) {
       console.error("Admin logout error:", error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "Logout system error",
       });
     }
   });
-  
+
   // ==================== CLEAN TOKEN-ONLY ADMIN SYSTEM ====================
 
   // Token verification endpoint
@@ -2800,14 +2842,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log("🔍 Route handler: adminUser =", (req as any).adminUser);
         const adminUser = (req as any).adminUser;
-        
+
         if (!adminUser) {
           return res.status(401).json({
             success: false,
             message: "Admin user not found in request",
           });
         }
-        
+
         res.json({
           success: true,
           user: adminUser,
@@ -2838,14 +2880,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== END TOKEN-ONLY ADMIN AUTHENTICATION ====================
-  
+
   // ==================== END ADMIN AUTHENTICATION ====================
 
   // Email service test endpoint
   app.get("/api/email-test", async (req, res) => {
     try {
       const testResult = await emailService.testConnection();
-      res.json({ 
+      res.json({
         success: true,
         emailServiceWorking: testResult,
         resendConfigured: !!process.env.RESEND_API_KEY,
@@ -2853,7 +2895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Email test error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
         emailServiceWorking: false,
@@ -2867,12 +2909,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/audit-logs",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const auditLogs = await storage.getAuditLogs();
-      res.json(auditLogs);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch audit logs" });
-    }
+      try {
+        const auditLogs = await storage.getAuditLogs();
+        res.json(auditLogs);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to fetch audit logs" });
+      }
     }
   );
 
@@ -2880,16 +2922,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/audit-logs/:id",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const id = parseId(req.params.id, "audit log ID");
-      const auditLog = await storage.getAuditLog(id);
-      if (!auditLog) {
-        return res.status(404).json({ message: "Audit log not found" });
+        const auditLog = await storage.getAuditLog(id);
+        if (!auditLog) {
+          return res.status(404).json({ message: "Audit log not found" });
+        }
+        res.json(auditLog);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to fetch audit log" });
       }
-      res.json(auditLog);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch audit log" });
-    }
     }
   );
 
@@ -2900,28 +2942,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/csv/unified-template",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { CSVService } = await import("./services/csv-service");
-      const csvService = new CSVService(storage);
-      
-      const csvContent = await csvService.generateUnifiedTemplate();
-      
+        const csvService = new CSVService(storage);
+
+        const csvContent = await csvService.generateUnifiedTemplate();
+
         res.setHeader("Content-Type", "text/csv");
         res.setHeader(
           "Content-Disposition",
           'attachment; filename="brainliest_complete_platform_template.csv"'
         );
-      res.send(csvContent);
-    } catch (error) {
+        res.send(csvContent);
+      } catch (error) {
         console.error("Unified CSV template generation error:", error);
-      res.status(400).json({ 
-        success: false, 
+        res.status(400).json({
+          success: false,
           message:
             error instanceof Error
               ? error.message
               : "Template generation failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -2929,25 +2971,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/csv/unified-export",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { CSVService } = await import("./services/csv-service");
-      const csvService = new CSVService(storage);
-      
-      const csvContent = await csvService.exportUnifiedData();
-      
+        const csvService = new CSVService(storage);
+
+        const csvContent = await csvService.exportUnifiedData();
+
         res.setHeader("Content-Type", "text/csv");
         res.setHeader(
           "Content-Disposition",
           'attachment; filename="brainliest_complete_platform_export.csv"'
         );
-      res.send(csvContent);
-    } catch (error) {
+        res.send(csvContent);
+      } catch (error) {
         console.error("Unified CSV export error:", error);
-      res.status(400).json({ 
-        success: false, 
+        res.status(400).json({
+          success: false,
           message: error instanceof Error ? error.message : "Export failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -2955,28 +2997,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/csv/unified-import",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { CSVService } = await import("./services/csv-service");
-      const csvService = new CSVService(storage);
-      
-      const csvContent = req.body.csvContent;
-      
-      if (!csvContent) {
-        return res.status(400).json({ 
-          success: false, 
+        const csvService = new CSVService(storage);
+
+        const csvContent = req.body.csvContent;
+
+        if (!csvContent) {
+          return res.status(400).json({
+            success: false,
             message: "CSV content is required",
+          });
+        }
+
+        const result = await csvService.importUnifiedData(csvContent);
+        res.json(result);
+      } catch (error) {
+        console.error("Unified CSV import error:", error);
+        res.status(400).json({
+          success: false,
+          message: error instanceof Error ? error.message : "Import failed",
         });
       }
-
-      const result = await csvService.importUnifiedData(csvContent);
-      res.json(result);
-    } catch (error) {
-        console.error("Unified CSV import error:", error);
-      res.status(400).json({ 
-        success: false, 
-          message: error instanceof Error ? error.message : "Import failed",
-      });
-    }
     }
   );
 
@@ -2985,29 +3027,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/csv/template/:entityType",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { CSVService } = await import("./services/csv-service");
-      const csvService = new CSVService(storage);
-      
-      const entityType = req.params.entityType as any;
-      const csvContent = await csvService.generateTemplate(entityType);
-      
+        const csvService = new CSVService(storage);
+
+        const entityType = req.params.entityType as any;
+        const csvContent = await csvService.generateTemplate(entityType);
+
         res.setHeader("Content-Type", "text/csv");
         res.setHeader(
           "Content-Disposition",
           `attachment; filename="${entityType}_template.csv"`
         );
-      res.send(csvContent);
-    } catch (error) {
+        res.send(csvContent);
+      } catch (error) {
         console.error("CSV template generation error:", error);
-      res.status(400).json({ 
-        success: false, 
+        res.status(400).json({
+          success: false,
           message:
             error instanceof Error
               ? error.message
               : "Template generation failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -3015,32 +3057,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/csv/export/:entityType",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { CSVService } = await import("./services/csv-service");
-      const csvService = new CSVService(storage);
-      
-      const entityType = req.params.entityType as any;
+        const csvService = new CSVService(storage);
+
+        const entityType = req.params.entityType as any;
         const includeRelationshipNames = req.query.includeNames === "true";
         const includeMetadata = req.query.includeMetadata === "true";
-      
-      const csvContent = await csvService.exportData(entityType, {
-        includeRelationshipNames,
+
+        const csvContent = await csvService.exportData(entityType, {
+          includeRelationshipNames,
           includeMetadata,
-      });
-      
+        });
+
         res.setHeader("Content-Type", "text/csv");
         res.setHeader(
           "Content-Disposition",
           `attachment; filename="${entityType}_export.csv"`
         );
-      res.send(csvContent);
-    } catch (error) {
+        res.send(csvContent);
+      } catch (error) {
         console.error("CSV export error:", error);
-      res.status(400).json({ 
-        success: false, 
+        res.status(400).json({
+          success: false,
           message: error instanceof Error ? error.message : "Export failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -3048,40 +3090,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/csv/import/:entityType",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { CSVService } = await import("./services/csv-service");
-      const csvService = new CSVService(storage);
-      
-      const entityType = req.params.entityType as any;
-      const csvContent = req.body.csvContent;
-      
-      if (!csvContent) {
-        return res.status(400).json({ 
-          success: false, 
+        const csvService = new CSVService(storage);
+
+        const entityType = req.params.entityType as any;
+        const csvContent = req.body.csvContent;
+
+        if (!csvContent) {
+          return res.status(400).json({
+            success: false,
             message: "CSV content is required",
+          });
+        }
+
+        const result = await csvService.importData(entityType, csvContent);
+
+        if (result.success) {
+          res.json(result);
+        } else {
+          res.status(400).json(result);
+        }
+      } catch (error) {
+        console.error("CSV import error:", error);
+        res.status(500).json({
+          success: false,
+          message: error instanceof Error ? error.message : "Import failed",
+          totalRows: 0,
+          processedRows: 0,
+          createdCount: 0,
+          updatedCount: 0,
+          deletedCount: 0,
+          errors: [],
         });
       }
-
-      const result = await csvService.importData(entityType, csvContent);
-      
-      if (result.success) {
-        res.json(result);
-      } else {
-        res.status(400).json(result);
-      }
-    } catch (error) {
-        console.error("CSV import error:", error);
-      res.status(500).json({ 
-        success: false, 
-          message: error instanceof Error ? error.message : "Import failed",
-        totalRows: 0,
-        processedRows: 0,
-        createdCount: 0,
-        updatedCount: 0,
-        deletedCount: 0,
-          errors: [],
-      });
-    }
     }
   );
 
@@ -3090,31 +3132,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/json/template",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { JSONService } = await import("./services/json-service");
-      const jsonService = new JSONService(storage);
-      
-      const templateData = jsonService.generateTemplate();
+        const jsonService = new JSONService(storage);
+
+        const templateData = jsonService.generateTemplate();
         const jsonContent = jsonService.formatJSONForDownload(templateData, {
           prettyFormat: true,
         });
-      
+
         res.setHeader("Content-Type", "application/json");
         res.setHeader(
           "Content-Disposition",
           'attachment; filename="brainliest_template.json"'
         );
-      res.send(jsonContent);
-    } catch (error) {
+        res.send(jsonContent);
+      } catch (error) {
         console.error("JSON template generation error:", error);
-      res.status(400).json({ 
-        success: false, 
+        res.status(400).json({
+          success: false,
           message:
             error instanceof Error
               ? error.message
               : "Template generation failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -3122,40 +3164,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/json/export/:subjectSlug",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { JSONService } = await import("./services/json-service");
-      const jsonService = new JSONService(storage);
-      
-      const subjectSlug = req.params.subjectSlug;
+        const jsonService = new JSONService(storage);
+
+        const subjectSlug = req.params.subjectSlug;
         if (!subjectSlug || typeof subjectSlug !== "string") {
-        return res.status(400).json({ 
-          success: false, 
+          return res.status(400).json({
+            success: false,
             message: "Invalid subject slug",
-        });
-      }
-      
-      const exportData = await jsonService.exportSubjectToJSON(subjectSlug, { 
-        includeMetadata: true, 
+          });
+        }
+
+        const exportData = await jsonService.exportSubjectToJSON(subjectSlug, {
+          includeMetadata: true,
           prettyFormat: true,
-      });
-      
+        });
+
         const jsonContent = jsonService.formatJSONForDownload(exportData, {
           prettyFormat: true,
         });
-      
+
         res.setHeader("Content-Type", "application/json");
         res.setHeader(
           "Content-Disposition",
           `attachment; filename="subject_${subjectSlug}_export.json"`
         );
-      res.send(jsonContent);
-    } catch (error) {
+        res.send(jsonContent);
+      } catch (error) {
         console.error("JSON export error:", error);
-      res.status(400).json({ 
-        success: false, 
+        res.status(400).json({
+          success: false,
           message: error instanceof Error ? error.message : "Export failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -3163,50 +3205,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/json/import",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
+      try {
         const { JSONService } = await import("./services/json-service");
-      const jsonService = new JSONService(storage);
-      
-      let jsonData = req.body;
-      
-      // Enhanced logging and data structure handling
+        const jsonService = new JSONService(storage);
+
+        let jsonData = req.body;
+
+        // Enhanced logging and data structure handling
         console.log("JSON Import - Raw request body type:", typeof jsonData);
         console.log(
           "JSON Import - Raw request body keys:",
           Object.keys(jsonData || {})
         );
-      
-      if (!jsonData) {
+
+        if (!jsonData) {
           console.log("JSON Import - Error: No JSON data provided");
-        return res.status(400).json({ 
-          success: false, 
+          return res.status(400).json({
+            success: false,
             message: "JSON data is required",
             debug: "Request body is empty or null",
-        });
-      }
+          });
+        }
 
-      // Handle nested structure from frontend: { jsonData: actualData }
-      if (jsonData.jsonData) {
+        // Handle nested structure from frontend: { jsonData: actualData }
+        if (jsonData.jsonData) {
           console.log(
             "JSON Import - Detected nested jsonData structure, extracting..."
           );
-        jsonData = jsonData.jsonData;
-        
-        // After extraction, ensure the data has the proper wrapper structure
-        // The validation function expects { subject: {...} } format
-        if (!jsonData.subject && jsonData.name) {
+          jsonData = jsonData.jsonData;
+
+          // After extraction, ensure the data has the proper wrapper structure
+          // The validation function expects { subject: {...} } format
+          if (!jsonData.subject && jsonData.name) {
             console.log(
               "JSON Import - Restructuring extracted data to add subject wrapper"
             );
-          jsonData = { subject: jsonData };
+            jsonData = { subject: jsonData };
+          }
         }
-      }
 
-      // Log the actual data structure being processed
+        // Log the actual data structure being processed
         console.log("JSON Import - Processing data structure:");
         console.log("- Has subject:", !!jsonData.subject);
         console.log("- Subject type:", typeof jsonData.subject);
-      if (jsonData.subject) {
+        if (jsonData.subject) {
           console.log("- Subject name:", jsonData.subject.name);
           console.log(
             "- Subject exams count:",
@@ -3214,49 +3256,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? jsonData.subject.exams.length
               : "not array"
           );
-      }
+        }
 
-      const result = await jsonService.processJSONImport(jsonData);
-      
-      // Enhanced logging for validation errors
-      if (!result.success && result.errors.length > 0) {
+        const result = await jsonService.processJSONImport(jsonData);
+
+        // Enhanced logging for validation errors
+        if (!result.success && result.errors.length > 0) {
           console.log("JSON Import - Validation errors found:");
-        result.errors.forEach((error, index) => {
+          result.errors.forEach((error, index) => {
             console.log(
               `  ${index + 1}. Path: ${error.path}, Field: ${
                 error.field
               }, Message: ${error.message}`
             );
-          console.log(`     Value: ${JSON.stringify(error.value)}`);
-        });
-      }
-      
-      if (result.success) {
+            console.log(`     Value: ${JSON.stringify(error.value)}`);
+          });
+        }
+
+        if (result.success) {
           console.log("JSON Import - Success:", result.message);
-        res.json(result);
-      } else {
+          res.json(result);
+        } else {
           console.log("JSON Import - Failed:", result.message);
-        res.status(400).json(result);
-      }
-    } catch (error) {
+          res.status(400).json(result);
+        }
+      } catch (error) {
         console.error("JSON import error:", error);
-      res.status(500).json({ 
-        success: false, 
-        subjectId: undefined,
-        examIds: [],
-        questionIds: [],
-        createdCounts: { subjects: 0, exams: 0, questions: 0 },
+        res.status(500).json({
+          success: false,
+          subjectId: undefined,
+          examIds: [],
+          questionIds: [],
+          createdCounts: { subjects: 0, exams: 0, questions: 0 },
           errors: [
             {
               path: "import",
               field: "general",
-          value: null,
+              value: null,
               message: error instanceof Error ? error.message : "Import failed",
             },
           ],
           message: "Import process failed",
-      });
-    }
+        });
+      }
     }
   );
 
@@ -3281,7 +3323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const [subjectCount, examCount, questionCount] = await Promise.all([
         storage.getSubjectCount(),
-        storage.getExamCount(), 
+        storage.getExamCount(),
         storage.getQuestionCount(),
       ]);
 
@@ -3339,7 +3381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { type, title, description, content, url, category, subject } =
         req.body;
-      
+
       const seoData = await seoService.generatePageSEO({
         type,
         title,
@@ -3349,11 +3391,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category,
         subject,
       });
-      
+
       res.json(seoData);
     } catch (error) {
       console.error("SEO generation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to generate SEO data",
         message: error instanceof Error ? error.message : "Unknown error",
       });
@@ -3363,7 +3405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/seo/faqs", async (req, res) => {
     try {
       const { text, options, explanation, subject, category } = req.body;
-      
+
       const faqs = await seoService.generateQuestionFAQs({
         text,
         options,
@@ -3371,11 +3413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subject,
         category,
       });
-      
+
       res.json(faqs);
     } catch (error) {
       console.error("FAQ generation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to generate FAQs",
         message: error instanceof Error ? error.message : "Unknown error",
       });
@@ -3385,9 +3427,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/seo/structured-data", async (req, res) => {
     try {
       const { question, faqs, type = "question" } = req.body;
-      
+
       let structuredData = [];
-      
+
       if (type === "question" && question) {
         structuredData = seoService.generateQuestionStructuredData(
           question,
@@ -3402,11 +3444,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           seoService.generateBreadcrumbStructuredData(req.body.breadcrumbs),
         ];
       }
-      
+
       res.json(structuredData);
     } catch (error) {
       console.error("Structured data generation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to generate structured data",
         message: error instanceof Error ? error.message : "Unknown error",
       });
@@ -3416,17 +3458,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/seo/keywords", async (req, res) => {
     try {
       const { name, description, category } = req.body;
-      
+
       const keywords = await seoService.generateSubjectKeywords({
         name,
         description,
         category,
       });
-      
+
       res.json(keywords);
     } catch (error) {
       console.error("Keyword generation error:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to generate keywords",
         message: error instanceof Error ? error.message : "Unknown error",
       });
@@ -3458,7 +3500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== UPLOAD MANAGEMENT ROUTES ====================
-  
+
   // Configure multer for file uploads
   const storage_config = multer.diskStorage({
     destination: async (req, file, cb) => {
@@ -3502,42 +3544,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     tokenAdminAuth.createAuthMiddleware(),
     upload.single("file"),
     async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
+      try {
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded" });
+        }
 
-      const user = req.user as { id: number; email: string };
-      
-      const uploadData = {
-        fileName: req.file.filename,
-        originalName: req.file.originalname,
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
+        const user = req.user as { id: number; email: string };
+
+        const uploadData = {
+          fileName: req.file.filename,
+          originalName: req.file.originalname,
+          fileSize: req.file.size,
+          mimeType: req.file.mimetype,
           fileType: req.file.mimetype.split("/")[0], // 'image', 'video', etc.
-        uploadPath: `/uploads/${req.file.filename}`,
-        uploadedBy: user.id,
+          uploadPath: `/uploads/${req.file.filename}`,
+          uploadedBy: user.id,
           isActive: true,
-      };
+        };
 
-      const upload = await storage.createUpload(uploadData);
-      
-      res.json({
-        success: true,
-        upload: {
-          id: upload.id,
-          fileName: upload.fileName,
-          originalName: upload.originalName,
-          uploadPath: upload.uploadPath,
-          fileType: upload.fileType,
-          fileSize: upload.fileSize,
+        const upload = await storage.createUpload(uploadData);
+
+        res.json({
+          success: true,
+          upload: {
+            id: upload.id,
+            fileName: upload.fileName,
+            originalName: upload.originalName,
+            uploadPath: upload.uploadPath,
+            fileType: upload.fileType,
+            fileSize: upload.fileSize,
             createdAt: upload.createdAt,
           },
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ message: "Upload failed" });
-    }
+        });
+      } catch (error) {
+        console.error("Upload error:", error);
+        res.status(500).json({ message: "Upload failed" });
+      }
     }
   );
 
@@ -3546,31 +3588,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/uploads",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
-      const fileType = req.query.fileType as string;
-      const offset = (page - 1) * limit;
+      try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const fileType = req.query.fileType as string;
+        const offset = (page - 1) * limit;
 
         const result = await storage.getUploadsPaginated(
           offset,
           limit,
           fileType
         );
-      
-      res.json({
-        uploads: result.uploads,
-        pagination: {
-          page,
-          limit,
-          total: result.total,
+
+        res.json({
+          uploads: result.uploads,
+          pagination: {
+            page,
+            limit,
+            total: result.total,
             pages: Math.ceil(result.total / limit),
           },
-      });
-    } catch (error) {
-      console.error("Get uploads error:", error);
-      res.status(500).json({ message: "Failed to retrieve uploads" });
-    }
+        });
+      } catch (error) {
+        console.error("Get uploads error:", error);
+        res.status(500).json({ message: "Failed to retrieve uploads" });
+      }
     }
   );
 
@@ -3579,19 +3621,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/uploads/:id",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const id = parseId(req.params.id);
-      const upload = await storage.getUpload(id);
-      
-      if (!upload) {
-        return res.status(404).json({ message: "Upload not found" });
-      }
+      try {
+        const id = parseId(req.params.id);
+        const upload = await storage.getUpload(id);
 
-      res.json(upload);
-    } catch (error) {
-      console.error("Get upload error:", error);
-      res.status(500).json({ message: "Failed to retrieve upload" });
-    }
+        if (!upload) {
+          return res.status(404).json({ message: "Upload not found" });
+        }
+
+        res.json(upload);
+      } catch (error) {
+        console.error("Get upload error:", error);
+        res.status(500).json({ message: "Failed to retrieve upload" });
+      }
     }
   );
 
@@ -3600,21 +3642,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/uploads/:id",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const id = parseId(req.params.id);
-      const { isActive } = req.body;
-      
-      const upload = await storage.updateUpload(id, { isActive });
-      
-      if (!upload) {
-        return res.status(404).json({ message: "Upload not found" });
-      }
+      try {
+        const id = parseId(req.params.id);
+        const { isActive } = req.body;
 
-      res.json(upload);
-    } catch (error) {
-      console.error("Update upload error:", error);
-      res.status(500).json({ message: "Failed to update upload" });
-    }
+        const upload = await storage.updateUpload(id, { isActive });
+
+        if (!upload) {
+          return res.status(404).json({ message: "Upload not found" });
+        }
+
+        res.json(upload);
+      } catch (error) {
+        console.error("Update upload error:", error);
+        res.status(500).json({ message: "Failed to update upload" });
+      }
     }
   );
 
@@ -3623,33 +3665,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/uploads/:id",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const id = parseId(req.params.id);
-      const upload = await storage.getUpload(id);
-      
-      if (!upload) {
-        return res.status(404).json({ message: "Upload not found" });
-      }
-
-      // Delete file from disk
-        const filePath = path.join(process.cwd(), "public", upload.uploadPath);
       try {
-        await fs.unlink(filePath);
-      } catch (error) {
-        console.warn("Failed to delete file:", error);
-      }
+        const id = parseId(req.params.id);
+        const upload = await storage.getUpload(id);
 
-      const success = await storage.deleteUpload(id);
-      
-      if (success) {
-        res.json({ message: "Upload deleted successfully" });
-      } else {
+        if (!upload) {
+          return res.status(404).json({ message: "Upload not found" });
+        }
+
+        // Delete file from disk
+        const filePath = path.join(process.cwd(), "public", upload.uploadPath);
+        try {
+          await fs.unlink(filePath);
+        } catch (error) {
+          console.warn("Failed to delete file:", error);
+        }
+
+        const success = await storage.deleteUpload(id);
+
+        if (success) {
+          res.json({ message: "Upload deleted successfully" });
+        } else {
+          res.status(500).json({ message: "Failed to delete upload" });
+        }
+      } catch (error) {
+        console.error("Delete upload error:", error);
         res.status(500).json({ message: "Failed to delete upload" });
       }
-    } catch (error) {
-      console.error("Delete upload error:", error);
-      res.status(500).json({ message: "Failed to delete upload" });
-    }
     }
   );
 
@@ -3660,25 +3702,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/subjects/:slug/icon",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug);
-      const { icon } = req.body;
-      
-      if (!icon) {
-        return res.status(400).json({ message: "Icon is required" });
-      }
+      try {
+        const slug = sanitizeString(req.params.slug);
+        const { icon } = req.body;
 
-      const subject = await storage.updateSubject(slug, { icon });
-      
-      if (!subject) {
-        return res.status(404).json({ message: "Subject not found" });
-      }
+        if (!icon) {
+          return res.status(400).json({ message: "Icon is required" });
+        }
 
-      res.json({ message: "Subject icon updated successfully", subject });
-    } catch (error) {
-      console.error("Update subject icon error:", error);
-      res.status(500).json({ message: "Failed to update subject icon" });
-    }
+        const subject = await storage.updateSubject(slug, { icon });
+
+        if (!subject) {
+          return res.status(404).json({ message: "Subject not found" });
+        }
+
+        res.json({ message: "Subject icon updated successfully", subject });
+      } catch (error) {
+        console.error("Update subject icon error:", error);
+        res.status(500).json({ message: "Failed to update subject icon" });
+      }
     }
   );
 
@@ -3687,25 +3729,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/exams/:slug/icon",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug);
-      const { icon } = req.body;
-      
-      if (!icon) {
-        return res.status(400).json({ message: "Icon is required" });
-      }
+      try {
+        const slug = sanitizeString(req.params.slug);
+        const { icon } = req.body;
 
-      const exam = await storage.updateExam(slug, { icon });
-      
-      if (!exam) {
-        return res.status(404).json({ message: "Exam not found" });
-      }
+        if (!icon) {
+          return res.status(400).json({ message: "Icon is required" });
+        }
 
-      res.json({ message: "Exam icon updated successfully", exam });
-    } catch (error) {
-      console.error("Update exam icon error:", error);
-      res.status(500).json({ message: "Failed to update exam icon" });
-    }
+        const exam = await storage.updateExam(slug, { icon });
+
+        if (!exam) {
+          return res.status(404).json({ message: "Exam not found" });
+        }
+
+        res.json({ message: "Exam icon updated successfully", exam });
+      } catch (error) {
+        console.error("Update exam icon error:", error);
+        res.status(500).json({ message: "Failed to update exam icon" });
+      }
     }
   );
 
@@ -3714,25 +3756,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/categories/:slug/icon",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug);
-      const { icon } = req.body;
-      
-      if (!icon) {
-        return res.status(400).json({ message: "Icon is required" });
-      }
+      try {
+        const slug = sanitizeString(req.params.slug);
+        const { icon } = req.body;
 
-      const category = await storage.updateCategory(slug, { icon });
-      
-      if (!category) {
-        return res.status(404).json({ message: "Category not found" });
-      }
+        if (!icon) {
+          return res.status(400).json({ message: "Icon is required" });
+        }
 
-      res.json({ message: "Category icon updated successfully", category });
-    } catch (error) {
-      console.error("Update category icon error:", error);
-      res.status(500).json({ message: "Failed to update category icon" });
-    }
+        const category = await storage.updateCategory(slug, { icon });
+
+        if (!category) {
+          return res.status(404).json({ message: "Category not found" });
+        }
+
+        res.json({ message: "Category icon updated successfully", category });
+      } catch (error) {
+        console.error("Update category icon error:", error);
+        res.status(500).json({ message: "Failed to update category icon" });
+      }
     }
   );
 
@@ -3741,28 +3783,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/admin/subcategories/:slug/icon",
     tokenAdminAuth.createAuthMiddleware(),
     async (req, res) => {
-    try {
-      const slug = sanitizeString(req.params.slug);
-      const { icon } = req.body;
-      
-      if (!icon) {
-        return res.status(400).json({ message: "Icon is required" });
-      }
+      try {
+        const slug = sanitizeString(req.params.slug);
+        const { icon } = req.body;
 
-      const subcategory = await storage.updateSubcategory(slug, { icon });
-      
-      if (!subcategory) {
-        return res.status(404).json({ message: "Subcategory not found" });
-      }
+        if (!icon) {
+          return res.status(400).json({ message: "Icon is required" });
+        }
+
+        const subcategory = await storage.updateSubcategory(slug, { icon });
+
+        if (!subcategory) {
+          return res.status(404).json({ message: "Subcategory not found" });
+        }
 
         res.json({
           message: "Subcategory icon updated successfully",
           subcategory,
         });
-    } catch (error) {
-      console.error("Update subcategory icon error:", error);
-      res.status(500).json({ message: "Failed to update subcategory icon" });
-    }
+      } catch (error) {
+        console.error("Update subcategory icon error:", error);
+        res.status(500).json({ message: "Failed to update subcategory icon" });
+      }
     }
   );
 
@@ -3772,10 +3814,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/test-email", async (req, res) => {
     try {
       const { email } = req.body;
-      
+
       if (!email) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: "Email address is required",
         });
       }
@@ -3783,29 +3825,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simple email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: "Invalid email format",
         });
       }
 
       console.log(`📧 Sending test email to: ${email}`);
-      
+
       // Send test email using the email service
       const emailSent = await emailService.sendTestEmail(email);
-      
+
       if (emailSent) {
         console.log(`✅ Test email sent successfully to ${email}`);
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           message: `Test email sent successfully to ${email}`,
           service: "Titan Mail",
           timestamp: new Date().toISOString(),
         });
       } else {
         console.log(`❌ Failed to send test email to ${email}`);
-        res.status(500).json({ 
-          success: false, 
+        res.status(500).json({
+          success: false,
           message:
             "Failed to send test email. Please check Titan Email configuration.",
           service: "Titan Mail",
@@ -3814,8 +3856,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Test email error:", error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "Test email failed: " + (error.message || "Unknown error"),
         service: "Titan Mail",
         timestamp: new Date().toISOString(),
