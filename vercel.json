@@ -8,11 +8,31 @@
       "dest": "/api/index.js"
     },
     {
-      "src": "/(admin|subjects|categories|question-interface|analytics|settings|privacy|terms|contact|cookie-settings|our-story)",
+      "src": "/(admin|subjects|categories|question-interface|analytics|settings|privacy-policy|terms-of-service|contact|cookie-settings|our-story)",
       "dest": "/index.html"
     },
     {
       "src": "/categories/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/subcategory/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/subject/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/exam/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/results/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/auth/(.*)",
       "dest": "/index.html"
     },
     {
