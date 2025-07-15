@@ -3,8 +3,11 @@ import express from "express";
 import cors from "cors";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { count, eq } from "drizzle-orm";
+import { count, eq, and } from "drizzle-orm";
 import * as schema from "../shared/schema.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 const app = express();
 app.use(cors());
@@ -32,6 +35,56 @@ const sql = postgres(databaseUrl, {
 const db = drizzle(sql, { schema });
 
 console.log("🔌 PostgreSQL connection initialized for Vercel deployment");
+
+// Admin JWT configuration
+const ADMIN_JWT_SECRET =
+  process.env.ADMIN_JWT_SECRET ||
+  (() => {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "ADMIN_JWT_SECRET environment variable is required in production"
+      );
+    }
+    const devSecret = crypto.randomBytes(64).toString("hex");
+    console.warn(
+      "⚠️  Using auto-generated JWT secret for development. Set ADMIN_JWT_SECRET for production."
+    );
+    return devSecret;
+  })();
+
+const ADMIN_JWT_EXPIRY = "8h";
+const AUTHORIZED_ADMIN_EMAILS = process.env.AUTHORIZED_ADMIN_EMAILS
+  ? process.env.AUTHORIZED_ADMIN_EMAILS.split(",").map((email) => email.trim())
+  : [
+      "admin@brainliest.com",
+      "super.admin@brainliest.com",
+      "platform.admin@brainliest.com",
+    ];
+
+// Generate admin JWT token
+function generateAdminToken(user) {
+  return jwt.sign(
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      isAdmin: true,
+      type: "admin",
+    },
+    ADMIN_JWT_SECRET,
+    { expiresIn: ADMIN_JWT_EXPIRY }
+  );
+}
+
+// Verify admin JWT token
+function verifyAdminToken(token) {
+  try {
+    const decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+    return { valid: true, user: decoded };
+  } catch (error) {
+    return { valid: false, error: error.message };
+  }
+}
 
 // Health check endpoint
 app.get("/api/health", async (req, res) => {
@@ -365,6 +418,237 @@ app.get("/api/stats", async (req, res) => {
   } catch (error) {
     console.error("🔴 Database error in /api/stats:", error);
     res.status(500).json({ message: "Failed to fetch statistics" });
+  }
+});
+
+// Admin authentication endpoints
+app.post("/api/admin/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    // Check if email is authorized
+    if (!AUTHORIZED_ADMIN_EMAILS.includes(email.toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Email not authorized for admin access.",
+      });
+    }
+
+    // Find user in database
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(
+        and(
+          eq(schema.users.email, email.toLowerCase()),
+          eq(schema.users.role, "admin")
+        )
+      )
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin user not found",
+      });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    // Generate token
+    const token = generateAdminToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      token,
+      message: "Admin login successful",
+    });
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Login failed",
+    });
+  }
+});
+
+// Admin user creation endpoint
+app.post("/api/admin/users", async (req, res) => {
+  try {
+    // Extract and verify admin token
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Admin authentication required",
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const verification = verifyAdminToken(token);
+
+    if (!verification.valid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid admin token",
+      });
+    }
+
+    const { email, password, role, firstName, lastName, username } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, password, and role are required",
+      });
+    }
+
+    // Validate role
+    if (!["admin", "moderator", "user"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role",
+      });
+    }
+
+    // Check if user already exists
+    const [existingUser] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "User with this email already exists",
+      });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Generate username if not provided
+    const generatedUsername =
+      username || email.split("@")[0] + Math.random().toString(36).substr(2, 4);
+
+    // Create user
+    const [newUser] = await db
+      .insert(schema.users)
+      .values({
+        email,
+        username: generatedUsername,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        role,
+        passwordHash,
+        emailVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    // Return user without password hash
+    const { passwordHash: _, ...userResponse } = newUser;
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Admin create user error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create user",
+    });
+  }
+});
+
+// Create default admin user if it doesn't exist
+app.post("/api/admin/setup", async (req, res) => {
+  try {
+    // Check if admin user already exists
+    const [existingAdmin] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, "admin@brainliest.com"))
+      .limit(1);
+
+    if (existingAdmin) {
+      return res.json({
+        success: true,
+        message: "Admin user already exists",
+        user: {
+          email: existingAdmin.email,
+          username: existingAdmin.username,
+          role: existingAdmin.role,
+        },
+      });
+    }
+
+    // Create default admin user
+    const passwordHash = await bcrypt.hash("Super.Admin.123!@#", 12);
+
+    const [newAdmin] = await db
+      .insert(schema.users)
+      .values({
+        email: "admin@brainliest.com",
+        username: "admin",
+        firstName: "System",
+        lastName: "Administrator",
+        role: "admin",
+        passwordHash,
+        emailVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    res.json({
+      success: true,
+      message: "Default admin user created successfully",
+      user: {
+        email: newAdmin.email,
+        username: newAdmin.username,
+        role: newAdmin.role,
+      },
+    });
+  } catch (error) {
+    console.error("Admin setup error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to set up admin user",
+    });
   }
 });
 
