@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import * as schema from "../shared/schema.js";
 
 const app = express();
@@ -31,336 +31,342 @@ const sql = postgres(databaseUrl, {
 
 const db = drizzle(sql, { schema });
 
-// Connection monitoring
 console.log("🔌 PostgreSQL connection initialized for Vercel deployment");
 
-// Enhanced health check with database connectivity test
+// Health check endpoint
 app.get("/api/health", async (req, res) => {
   try {
     // Test database connection
-    const result = await db.select().from(schema.subjects).limit(1);
+    await db.select().from(schema.subjects).limit(1);
     res.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
       database: "connected",
-      environment: process.env.NODE_ENV || "development",
-      databaseUrl: process.env.DATABASE_URL ? "set" : "missing",
     });
   } catch (error) {
-    console.error("🔴 Health check database error:", error.message);
-    res.status(500).json({
+    console.error("Database health check failed:", error);
+    res.status(503).json({
       status: "unhealthy",
       timestamp: new Date().toISOString(),
       database: "disconnected",
       error: error.message,
-      environment: process.env.NODE_ENV || "development",
-      databaseUrl: process.env.DATABASE_URL ? "set" : "missing",
     });
   }
 });
 
-// Subjects endpoint with enhanced error logging
+// Get all subjects
 app.get("/api/subjects", async (req, res) => {
   try {
     console.log("🔍 Fetching subjects from database...");
-    const subjects = await db.select().from(schema.subjects);
+    const subcategorySlug = req.query.subcategorySlug;
+
+    let query = db
+      .select({
+        slug: schema.subjects.slug,
+        name: schema.subjects.name,
+        description: schema.subjects.description,
+        icon: schema.subjects.icon,
+        color: schema.subjects.color,
+        categorySlug: schema.subjects.categorySlug,
+        subcategorySlug: schema.subjects.subcategorySlug,
+        examCount: schema.subjects.examCount,
+        questionCount: schema.subjects.questionCount,
+        isActive: schema.subjects.isActive,
+        createdAt: schema.subjects.createdAt,
+        updatedAt: schema.subjects.updatedAt,
+      })
+      .from(schema.subjects);
+
+    if (subcategorySlug) {
+      query = query.where(eq(schema.subjects.subcategorySlug, subcategorySlug));
+    }
+
+    const subjects = await query;
     console.log(`✅ Found ${subjects.length} subjects`);
     res.json(subjects);
   } catch (error) {
-    console.error("🔴 Database error in /api/subjects:", {
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-      stack: error.stack,
-    });
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    console.error("🔴 Database error in /api/subjects:", error);
+    res.status(500).json({ message: "Failed to fetch subjects" });
   }
 });
 
-// Subject by slug endpoint
+// Get subject by slug
 app.get("/api/subjects/by-slug/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
     const subjects = await db
       .select()
       .from(schema.subjects)
-      .where(schema.subjects.slug.eq(slug));
+      .where(eq(schema.subjects.slug, slug));
     if (subjects.length === 0) {
       return res.status(404).json({ message: "Subject not found" });
     }
     res.json(subjects[0]);
   } catch (error) {
     console.error("🔴 Database error in /api/subjects/by-slug:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch subject" });
   }
 });
 
-// Categories endpoint
+// Get all categories
 app.get("/api/categories", async (req, res) => {
   try {
     const categories = await db.select().from(schema.categories);
     res.json(categories);
   } catch (error) {
     console.error("🔴 Database error in /api/categories:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch categories" });
   }
 });
 
-// Subcategories endpoint
+// Get category by slug
+app.get("/api/categories/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const categories = await db
+      .select()
+      .from(schema.categories)
+      .where(eq(schema.categories.slug, slug));
+    if (categories.length === 0) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    res.json(categories[0]);
+  } catch (error) {
+    console.error("🔴 Database error in /api/categories/:slug:", error);
+    res.status(500).json({ message: "Failed to fetch category" });
+  }
+});
+
+// Get all subcategories
 app.get("/api/subcategories", async (req, res) => {
   try {
     const subcategories = await db.select().from(schema.subcategories);
     res.json(subcategories);
   } catch (error) {
     console.error("🔴 Database error in /api/subcategories:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch subcategories" });
   }
 });
 
-// Subcategory by slug endpoint
+// Get subcategory by slug
 app.get("/api/subcategories/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
     const subcategories = await db
       .select()
       .from(schema.subcategories)
-      .where(schema.subcategories.slug.eq(slug));
+      .where(eq(schema.subcategories.slug, slug));
     if (subcategories.length === 0) {
       return res.status(404).json({ message: "Subcategory not found" });
     }
     res.json(subcategories[0]);
   } catch (error) {
     console.error("🔴 Database error in /api/subcategories/:slug:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch subcategory" });
   }
 });
 
-// Exams endpoint
+// Get all exams
 app.get("/api/exams", async (req, res) => {
   try {
-    const { subjectSlug } = req.query;
-    let exams;
+    const subjectSlug = req.query.subjectSlug;
+
+    let query = db
+      .select({
+        slug: schema.exams.slug,
+        subjectSlug: schema.exams.subjectSlug,
+        title: schema.exams.title,
+        description: schema.exams.description,
+        icon: schema.exams.icon,
+        questionCount: schema.exams.questionCount,
+        duration: schema.exams.duration,
+        difficulty: schema.exams.difficulty,
+        isActive: schema.exams.isActive,
+      })
+      .from(schema.exams);
 
     if (subjectSlug) {
-      exams = await db
-        .select()
-        .from(schema.exams)
-        .where(schema.exams.subjectSlug.eq(subjectSlug));
-    } else {
-      exams = await db.select().from(schema.exams);
+      query = query.where(eq(schema.exams.subjectSlug, subjectSlug));
     }
 
-    res.json(exams);
+    const exams = await query;
+
+    // Get actual question counts for each exam
+    const examsWithCounts = await Promise.all(
+      exams.map(async (exam) => {
+        const questionCount = await db
+          .select({ count: count() })
+          .from(schema.questions)
+          .where(eq(schema.questions.examSlug, exam.slug));
+        return {
+          ...exam,
+          questionCount: questionCount[0].count,
+        };
+      })
+    );
+
+    res.json(examsWithCounts);
   } catch (error) {
     console.error("🔴 Database error in /api/exams:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch exams" });
   }
 });
 
-// Exam by slug endpoint
+// Get exam by slug
 app.get("/api/exams/by-slug/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
     const exams = await db
       .select()
       .from(schema.exams)
-      .where(schema.exams.slug.eq(slug));
+      .where(eq(schema.exams.slug, slug));
     if (exams.length === 0) {
       return res.status(404).json({ message: "Exam not found" });
     }
 
-    // Count actual questions for this exam
+    // Get actual question count
     const questionCount = await db
       .select({ count: count() })
       .from(schema.questions)
-      .where(schema.questions.examSlug.eq(slug));
+      .where(eq(schema.questions.examSlug, slug));
 
     res.json({
       ...exams[0],
-      questionCount: questionCount[0]?.count || 0,
+      questionCount: questionCount[0].count,
     });
   } catch (error) {
     console.error("🔴 Database error in /api/exams/by-slug:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch exam" });
   }
 });
 
-// Exams by subcategory endpoint
+// Get exams by subcategory
 app.get("/api/exams/subcategory/:subcategorySlug", async (req, res) => {
   try {
     const { subcategorySlug } = req.params;
-
-    // Get subjects in this subcategory
-    const subjects = await db
-      .select()
-      .from(schema.subjects)
-      .where(schema.subjects.subcategorySlug.eq(subcategorySlug));
-    const subjectSlugs = subjects.map((s) => s.slug);
-
-    // Get exams for these subjects
     const exams = await db
-      .select()
+      .select({
+        slug: schema.exams.slug,
+        subjectSlug: schema.exams.subjectSlug,
+        title: schema.exams.title,
+        description: schema.exams.description,
+        icon: schema.exams.icon,
+        questionCount: schema.exams.questionCount,
+        duration: schema.exams.duration,
+        difficulty: schema.exams.difficulty,
+        isActive: schema.exams.isActive,
+      })
       .from(schema.exams)
-      .where(schema.exams.subjectSlug.in(subjectSlugs));
+      .innerJoin(
+        schema.subjects,
+        eq(schema.exams.subjectSlug, schema.subjects.slug)
+      )
+      .where(eq(schema.subjects.subcategorySlug, subcategorySlug));
 
-    res.json(exams);
+    // Get actual question counts for each exam
+    const examsWithCounts = await Promise.all(
+      exams.map(async (exam) => {
+        const questionCount = await db
+          .select({ count: count() })
+          .from(schema.questions)
+          .where(eq(schema.questions.examSlug, exam.slug));
+        return {
+          ...exam,
+          questionCount: questionCount[0].count,
+        };
+      })
+    );
+
+    res.json(examsWithCounts);
   } catch (error) {
     console.error("🔴 Database error in /api/exams/subcategory:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch exams by subcategory" });
   }
 });
 
-// Questions endpoint
+// Get all questions
 app.get("/api/questions", async (req, res) => {
   try {
-    const { examSlug } = req.query;
-    let questions;
+    const examSlug = req.query.examSlug;
+
+    let query = db
+      .select({
+        id: schema.questions.id,
+        text: schema.questions.text,
+        options: schema.questions.options,
+        correctAnswer: schema.questions.correctAnswer,
+        allowMultipleAnswers: schema.questions.allowMultipleAnswers,
+        explanation: schema.questions.explanation,
+        difficulty: schema.questions.difficulty,
+        domain: schema.questions.domain,
+        order: schema.questions.order,
+        subjectSlug: schema.questions.subjectSlug,
+        examSlug: schema.questions.examSlug,
+      })
+      .from(schema.questions);
 
     if (examSlug) {
-      questions = await db
-        .select()
-        .from(schema.questions)
-        .where(schema.questions.examSlug.eq(examSlug));
-    } else {
-      questions = await db.select().from(schema.questions);
+      query = query.where(eq(schema.questions.examSlug, examSlug));
     }
 
+    const questions = await query;
     res.json({ questions });
   } catch (error) {
     console.error("🔴 Database error in /api/questions:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch questions" });
   }
 });
 
-// Comments endpoint
+// Get question comments
 app.get("/api/comments", async (req, res) => {
   try {
-    const { questionId } = req.query;
-    let comments;
+    const questionId = req.query.questionId;
+
+    let query = db
+      .select({
+        id: schema.comments.id,
+        questionId: schema.comments.questionId,
+        authorName: schema.comments.authorName,
+        content: schema.comments.content,
+        createdAt: schema.comments.createdAt,
+        isApproved: schema.comments.isApproved,
+        updatedAt: schema.comments.updatedAt,
+      })
+      .from(schema.comments)
+      .orderBy(schema.comments.createdAt);
 
     if (questionId) {
-      comments = await db
-        .select()
-        .from(schema.questionComments)
-        .where(schema.questionComments.questionId.eq(questionId));
-    } else {
-      comments = await db.select().from(schema.questionComments);
+      query = query.where(eq(schema.comments.questionId, questionId));
     }
 
+    const comments = await query;
     res.json(comments);
   } catch (error) {
     console.error("🔴 Database error in /api/comments:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(500).json({ message: "Failed to fetch comments" });
   }
 });
 
-// Statistics endpoint - This was missing and causing 404 errors
+// Get statistics
 app.get("/api/stats", async (req, res) => {
   try {
-    console.log("🔍 Fetching statistics from database...");
-
-    // Get counts using count() function
     const [subjectCount, examCount, questionCount] = await Promise.all([
       db.select({ count: count() }).from(schema.subjects),
       db.select({ count: count() }).from(schema.exams),
       db.select({ count: count() }).from(schema.questions),
     ]);
 
-    const stats = {
-      subjects: subjectCount[0]?.count || 0,
-      exams: examCount[0]?.count || 0,
-      questions: questionCount[0]?.count || 0,
-      successRate: 95, // This could be calculated from user sessions in the future
-    };
-
-    console.log("✅ Statistics fetched successfully:", stats);
-    res.json(stats);
+    res.json({
+      subjects: subjectCount[0].count.toString(),
+      exams: examCount[0].count.toString(),
+      questions: questionCount[0].count.toString(),
+      successRate: 95,
+    });
   } catch (error) {
-    console.error("🔴 Database error in /api/stats:", {
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-      stack: error.stack,
-    });
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
+    console.error("🔴 Database error in /api/stats:", error);
+    res.status(500).json({ message: "Failed to fetch statistics" });
   }
 });
 
-// Trending certifications endpoint
-app.get("/api/trending/certifications", async (req, res) => {
-  try {
-    // Get top subjects with exam counts
-    const subjects = await db.select().from(schema.subjects).limit(10);
-
-    // Add exam counts
-    const trending = await Promise.all(
-      subjects.map(async (subject) => {
-        const examCount = await db
-          .select({ count: count() })
-          .from(schema.exams)
-          .where(schema.exams.subjectSlug.eq(subject.slug));
-        return {
-          ...subject,
-          examCount: examCount[0]?.count || 0,
-          trending: Math.floor(Math.random() * 100) + 1, // Mock trending score
-        };
-      })
-    );
-
-    res.json(trending);
-  } catch (error) {
-    console.error("🔴 Database error in /api/trending/certifications:", error);
-    res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-// Export for Vercel
+// Default export for Vercel
 export default app;
