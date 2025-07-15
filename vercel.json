@@ -1,7 +1,7 @@
 {
   "version": 2,
   "buildCommand": "node scripts/vercel-build.js",
-  "outputDirectory": "dist/public",
+  "outputDirectory": "dist",
   "routes": [
     {
       "src": "/api/(.*)",

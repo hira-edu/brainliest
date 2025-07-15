@@ -1,8 +1,8 @@
 // Vercel serverless function wrapper for Express app
 import express from "express";
 import cors from "cors";
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import { count } from "drizzle-orm";
 import * as schema from "../shared/schema.js";
 
@@ -11,18 +11,28 @@ app.use(cors());
 app.use(express.json());
 
 // Database setup with enhanced error handling
-if (!process.env.DATABASE_URL) {
-  console.error("❌ DATABASE_URL environment variable is required");
-  throw new Error("DATABASE_URL environment variable is required");
+const databaseUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error(
+    "❌ POSTGRES_URL or DATABASE_URL environment variable is required"
+  );
+  throw new Error(
+    "POSTGRES_URL or DATABASE_URL environment variable is required"
+  );
 }
 
-// Supabase HTTP connection for Vercel serverless
-const sql = neon(process.env.DATABASE_URL);
+// PostgreSQL connection for Supabase with connection pooling
+const sql = postgres(databaseUrl, {
+  ssl: "require",
+  max: 1, // Serverless functions should use single connections
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 const db = drizzle(sql, { schema });
 
 // Connection monitoring
-console.log("🔌 Supabase HTTP connection initialized for Vercel deployment");
+console.log("🔌 PostgreSQL connection initialized for Vercel deployment");
 
 // Enhanced health check with database connectivity test
 app.get("/api/health", async (req, res) => {

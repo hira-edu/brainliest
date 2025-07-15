@@ -196,7 +196,7 @@ export class FreemiumService {
   }
 
   /**
-   * Fixed: Enhanced question view recording with comprehensive error handling and database transactions
+   * Fixed: Record a question view and check if user is within limits
    */
   async recordQuestionView(req: Request): Promise<FreemiumCheckResult> {
     const clientKey = getClientKey(req);
@@ -205,8 +205,19 @@ export class FreemiumService {
       return {
         allowed: false,
         sessionInfo: this.createEmptySessionInfo(),
-        message: "Unable to determine client identifier",
+        message: "Unable to identify client",
       };
+    }
+
+    // Extract IP and hash from clientKey
+    let ipAddress = clientKey;
+    let userAgentHash = "";
+
+    // If clientKey contains a hash separator, split it
+    if (clientKey.includes(":")) {
+      const [ip, hash] = clientKey.split(":");
+      ipAddress = ip;
+      userAgentHash = hash || "";
     }
 
     try {
@@ -214,17 +225,15 @@ export class FreemiumService {
       const resetThreshold = new Date(
         now.getTime() - RESET_HOURS * 60 * 60 * 1000
       );
-      const userAgent = req.headers["user-agent"] || "";
-      const userAgentHash = createUserAgentHash(userAgent);
 
-      // Fixed: Enhanced database transaction with comprehensive error handling
+      // Use transaction to ensure atomicity
       const result = await db.transaction(async (tx) => {
         try {
           // Check if session exists and needs reset
           const existingSessions = await tx
             .select()
             .from(anonQuestionSessions)
-            .where(eq(anonQuestionSessions.ipAddress, clientKey))
+            .where(eq(anonQuestionSessions.ipAddress, ipAddress))
             .limit(1);
 
           const existingSession = existingSessions[0];
@@ -241,7 +250,7 @@ export class FreemiumService {
                   updatedAt: now,
                   userAgentHash,
                 })
-                .where(eq(anonQuestionSessions.ipAddress, clientKey));
+                .where(eq(anonQuestionSessions.ipAddress, ipAddress));
 
               return { questionsAnswered: 1, wasReset: true };
             } else {
@@ -263,14 +272,14 @@ export class FreemiumService {
                   updatedAt: now,
                   userAgentHash,
                 })
-                .where(eq(anonQuestionSessions.ipAddress, clientKey));
+                .where(eq(anonQuestionSessions.ipAddress, ipAddress));
 
               return { questionsAnswered: newCount, wasReset: false };
             }
           } else {
             // Create new session
             await tx.insert(anonQuestionSessions).values({
-              ipAddress: clientKey,
+              ipAddress,
               questionsAnswered: 1,
               lastReset: now,
               userAgentHash,
@@ -291,7 +300,7 @@ export class FreemiumService {
 
       if (result.overLimit) {
         const sessionInfo = await this.calculateSessionInfo(
-          clientKey,
+          ipAddress,
           resetThreshold
         );
         return {
@@ -303,7 +312,7 @@ export class FreemiumService {
 
       // Get updated session info using consolidated utility
       const sessionInfo = await this.calculateSessionInfo(
-        clientKey,
+        ipAddress,
         resetThreshold
       );
 
@@ -330,10 +339,17 @@ export class FreemiumService {
     resetThreshold: Date
   ): Promise<FreemiumSessionInfo> {
     try {
+      // Extract IP from clientKey if it contains a hash
+      let ipAddress = clientKey;
+      if (clientKey.includes(":")) {
+        const [ip] = clientKey.split(":");
+        ipAddress = ip;
+      }
+
       const sessions = await db
         .select()
         .from(anonQuestionSessions)
-        .where(eq(anonQuestionSessions.ipAddress, clientKey))
+        .where(eq(anonQuestionSessions.ipAddress, ipAddress))
         .limit(1);
 
       const session = sessions[0];
@@ -380,6 +396,13 @@ export class FreemiumService {
    */
   async resetSession(clientKey: string): Promise<boolean> {
     try {
+      // Extract IP from clientKey if it contains a hash
+      let ipAddress = clientKey;
+      if (clientKey.includes(":")) {
+        const [ip] = clientKey.split(":");
+        ipAddress = ip;
+      }
+
       const now = new Date();
       await db
         .update(anonQuestionSessions)
@@ -388,7 +411,7 @@ export class FreemiumService {
           lastReset: now,
           updatedAt: now,
         })
-        .where(eq(anonQuestionSessions.ipAddress, clientKey));
+        .where(eq(anonQuestionSessions.ipAddress, ipAddress));
 
       return true;
     } catch (error) {

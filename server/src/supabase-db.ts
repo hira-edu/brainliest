@@ -1,6 +1,6 @@
 /**
  * Native Supabase Database Connection
- * Replaces Neon adapter with native Supabase client for better integration
+ * Updated for official Supabase-Vercel integration
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -8,48 +8,42 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../../shared/schema";
 
-// Environment validation
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
+// Environment validation - Use new integration variables
+const databaseUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+const supabaseUrl =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!databaseUrl) {
+  throw new Error("POSTGRES_URL or DATABASE_URL must be set");
 }
 
-if (!process.env.SUPABASE_URL) {
+if (!supabaseUrl) {
   throw new Error("SUPABASE_URL must be set");
 }
 
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+if (!serviceRoleKey) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY must be set");
 }
 
 // Native Supabase client for real-time, auth, storage, etc.
-export const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    db: {
-      schema: "public",
-    },
-  }
-);
+export const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
 
-// Postgres.js client for Drizzle ORM (better performance than HTTP)
-const connectionString = process.env.DATABASE_URL!;
-const client = postgres(connectionString, {
-  prepare: false,
-  max: 20,
+// PostgreSQL connection with connection pooling for Vercel
+const connectionString = databaseUrl;
+const sql = postgres(connectionString, {
+  max: 1, // Important for serverless
   idle_timeout: 20,
   connect_timeout: 10,
 });
 
-// Drizzle ORM with postgres.js (faster than HTTP adapter)
-export const db = drizzle(client, {
-  schema,
-  logger: process.env.NODE_ENV === "development",
-});
+// Drizzle ORM with schema
+export const db = drizzle(sql, { schema });
 
 // Enhanced Supabase functions with native client
 export const supabaseOperations = {
