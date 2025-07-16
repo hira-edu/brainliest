@@ -652,5 +652,141 @@ app.post("/api/admin/setup", async (req, res) => {
   }
 });
 
+// Simple admin login without email authorization (for initial setup)
+app.post("/api/admin/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    // Find user in database
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(
+        and(
+          eq(schema.users.email, email.toLowerCase()),
+          eq(schema.users.role, "admin")
+        )
+      )
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin user not found",
+      });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    // Generate token
+    const token = generateAdminToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      },
+      token,
+      message: "Admin login successful",
+    });
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Login failed",
+    });
+  }
+});
+
+// Create a new admin user directly (for your use)
+app.post("/api/admin/create", async (req, res) => {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    // Check if user already exists
+    const [existingUser] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "User with this email already exists",
+      });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Generate username
+    const username =
+      email.split("@")[0] + Math.random().toString(36).substr(2, 4);
+
+    // Create admin user
+    const [newUser] = await db
+      .insert(schema.users)
+      .values({
+        email,
+        username,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        role: "admin",
+        passwordHash,
+        emailVerified: true,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    // Return user without password hash
+    const { passwordHash: _, ...userResponse } = newUser;
+
+    res.status(201).json({
+      success: true,
+      message: "Admin user created successfully",
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Admin create error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create admin user",
+    });
+  }
+});
+
 // Default export for Vercel
 export default app;
