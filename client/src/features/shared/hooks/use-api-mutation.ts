@@ -4,14 +4,18 @@
  */
 "use client";
 
-import { useCallback } from 'react';
-import { useMutation, UseMutationResult, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '../../../services/queryClient';
-import { useToast } from './use-toast';
+import { useCallback } from "react";
+import {
+  useMutation,
+  UseMutationResult,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { apiRequest } from "../../../services/queryClient";
+import { useToast } from "./use-toast";
 
 // Fixed: Enhanced type safety and configuration options
 export interface ApiMutationOptions<TData = any, TVariables = any> {
-  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method: "POST" | "PUT" | "PATCH" | "DELETE";
   url: string | ((variables: TVariables) => string);
   onSuccess?: (data: TData, variables: TVariables) => void;
   onError?: (error: ApiError, variables: TVariables) => void;
@@ -34,9 +38,9 @@ export interface ApiError extends Error {
 export interface ToastConfig {
   title: string;
   description: string;
-  variant?: 'default' | 'destructive';
+  variant?: "default" | "destructive";
   role?: string;
-  'aria-live'?: 'polite' | 'assertive';
+  "aria-live"?: "polite" | "assertive";
 }
 
 // Fixed: Centralized toast utility with accessibility support
@@ -44,8 +48,8 @@ function createAccessibleToast(config: ToastConfig, toast: any) {
   toast({
     ...config,
     // Fixed: Ensure accessibility with ARIA live regions
-    role: config.role || 'alert',
-    'aria-live': config['aria-live'] || 'assertive',
+    role: config.role || "alert",
+    "aria-live": config["aria-live"] || "assertive",
   });
 }
 
@@ -53,76 +57,94 @@ function createAccessibleToast(config: ToastConfig, toast: any) {
 function validateEndpointUrl(url: string): boolean {
   try {
     // Fixed: Validate URL format and prevent empty strings
-    if (!url || typeof url !== 'string' || url.trim() === '') {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('🚨 Invalid API endpoint URL:', url);
+    if (!url || typeof url !== "string" || url.trim() === "") {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("🚨 Invalid API endpoint URL:", url);
       }
       return false;
     }
     // Fixed: Ensure URL starts with / for relative paths or http for absolute
-    return url.startsWith('/') || url.startsWith('http');
+    return url.startsWith("/") || url.startsWith("http");
   } catch {
     return false;
   }
 }
 
 // Fixed: Enhanced JSON parsing with error preservation
-async function parseResponseSafely(response: Response, preserveErrorData: boolean = false): Promise<any> {
+async function parseResponseSafely(
+  response: Response,
+  preserveErrorData: boolean = false
+): Promise<any> {
   try {
     // Fixed: Safe JSON parsing with fallback
     return await response.json();
   } catch (parseError) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('🚨 Failed to parse response JSON:', parseError);
+    if (process.env.NODE_ENV === "development") {
+      console.warn("🚨 Failed to parse response JSON:", parseError);
     }
-    
+
     // Fixed: Return response text or status info if JSON parsing fails
     try {
       const textContent = await response.text();
-      return preserveErrorData ? { 
-        error: textContent || response.statusText,
-        status: response.status,
-        parseError: true
-      } : textContent || response.statusText;
+      return preserveErrorData
+        ? {
+            error: textContent || response.statusText,
+            status: response.status,
+            parseError: true,
+          }
+        : textContent || response.statusText;
     } catch {
-      return preserveErrorData ? {
-        error: response.statusText || 'Unknown error',
-        status: response.status,
-        parseError: true
-      } : response.statusText || 'Unknown error';
+      return preserveErrorData
+        ? {
+            error: response.statusText || "Unknown error",
+            status: response.status,
+            parseError: true,
+          }
+        : response.statusText || "Unknown error";
     }
   }
 }
 
 // Fixed: Enhanced error creation with structured data preservation
-function createApiError(response: Response, errorData: any, preserveErrorData: boolean): ApiError {
+function createApiError(
+  response: Response,
+  errorData: any,
+  preserveErrorData: boolean
+): ApiError {
   const error = new Error() as ApiError;
-  error.name = 'ApiError';
+  error.name = "ApiError";
   error.status = response.status;
-  
-  if (preserveErrorData && typeof errorData === 'object') {
+
+  if (preserveErrorData && typeof errorData === "object") {
     // Fixed: Preserve structured error data for better debugging
     error.data = errorData;
     error.code = errorData.code || errorData.error_code;
-    error.message = errorData.message || errorData.error || `Request failed: ${response.status}`;
+    error.message =
+      errorData.message ||
+      errorData.error ||
+      `Request failed: ${response.status}`;
   } else {
     // Fixed: Create readable error message for non-structured errors
-    error.message = typeof errorData === 'string' 
-      ? `Request failed: ${response.status} ${errorData}`
-      : `Request failed: ${response.status} ${response.statusText}`;
+    error.message =
+      typeof errorData === "string"
+        ? `Request failed: ${response.status} ${errorData}`
+        : `Request failed: ${response.status} ${response.statusText}`;
   }
-  
+
   return error;
 }
 
 // Fixed: Query key validation utility
 function validateQueryKeys(keys: Array<string | readonly string[]>): boolean {
   try {
-    return keys.every(key => {
+    return keys.every((key) => {
       if (Array.isArray(key)) {
-        return key.length > 0 && key.every(k => typeof k === 'string' && k.trim() !== '');
+        return (
+          key.length > 0 &&
+          key.every((k) => typeof k === "string" && k.trim() !== "")
+        );
       }
-      return typeof key === 'string' && key.trim() !== '';
+      return typeof key === "string" && key.trim() !== "";
     });
   } catch {
     return false;
@@ -135,7 +157,10 @@ function validateQueryKeys(keys: Array<string | readonly string[]>): boolean {
  */
 export function useApiMutation<TData = any, TVariables = any>(
   options: ApiMutationOptions<TData, TVariables>
-): UseMutationResult<TData, unknown, TVariables> & { execute: (vars: TVariables) => void; executeAsync: (vars: TVariables) => Promise<TData> } {
+): UseMutationResult<TData, unknown, TVariables> & {
+  execute: (vars: TVariables) => void;
+  executeAsync: (vars: TVariables) => Promise<TData>;
+} {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -143,12 +168,15 @@ export function useApiMutation<TData = any, TVariables = any>(
     // Fixed: Enhanced API call logic with comprehensive error handling
     mutationFn: async (variables: TVariables): Promise<TData> => {
       // Fixed: Determine and validate endpoint URL
-      const endpoint = typeof options.url === 'function' ? options.url(variables) : options.url;
-      
+      const endpoint =
+        typeof options.url === "function"
+          ? options.url(variables)
+          : options.url;
+
       // Fixed: URL validation if enabled
       if (options.validateUrl !== false && !validateEndpointUrl(endpoint)) {
         throw createApiError(
-          { status: 400, statusText: 'Invalid URL' } as Response,
+          { status: 400, statusText: "Invalid URL" } as Response,
           `Invalid API endpoint URL: ${endpoint}`,
           false
         );
@@ -160,22 +188,30 @@ export function useApiMutation<TData = any, TVariables = any>(
 
         // Fixed: Enhanced HTTP error handling with structured error preservation
         if (!response.ok) {
-          const errorData = await parseResponseSafely(response, options.preserveErrorData);
-          throw createApiError(response, errorData, options.preserveErrorData || false);
+          const errorData = await parseResponseSafely(
+            response,
+            options.preserveErrorData
+          );
+          throw createApiError(
+            response,
+            errorData,
+            options.preserveErrorData || false
+          );
         }
 
         // Fixed: Safe JSON parsing for successful responses
         return await parseResponseSafely(response, false);
       } catch (error) {
         // Fixed: Re-throw ApiError instances directly, wrap others
-        if (error instanceof Error && error.name === 'ApiError') {
+        if (error instanceof Error && error.name === "ApiError") {
           throw error;
         }
-        
+
         // Fixed: Handle network/fetch errors with proper typing
         const apiError = new Error() as ApiError;
-        apiError.name = 'ApiError';
-        apiError.message = error instanceof Error ? error.message : 'Network request failed';
+        apiError.name = "ApiError";
+        apiError.message =
+          error instanceof Error ? error.message : "Network request failed";
         apiError.status = 0; // Network error
         throw apiError;
       }
@@ -186,19 +222,26 @@ export function useApiMutation<TData = any, TVariables = any>(
       if (options.invalidateQueries && options.invalidateQueries.length > 0) {
         // Fixed: Validate query keys before invalidation
         if (!validateQueryKeys(options.invalidateQueries)) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('🚨 Invalid query keys detected:', options.invalidateQueries);
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              "🚨 Invalid query keys detected:",
+              options.invalidateQueries
+            );
           }
         }
-        
+
         // Fixed: Invalidate all provided query keys with error handling
         options.invalidateQueries.forEach((key) => {
           try {
             const queryKey = Array.isArray(key) ? key : [key];
             queryClient.invalidateQueries({ queryKey });
           } catch (invalidationError) {
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('🚨 Failed to invalidate query key:', key, invalidationError);
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "🚨 Failed to invalidate query key:",
+                key,
+                invalidationError
+              );
             }
           }
         });
@@ -206,16 +249,20 @@ export function useApiMutation<TData = any, TVariables = any>(
 
       // Fixed: Accessible toast notifications with proper ARIA attributes
       if (options.showToast ?? true) {
-        const message = typeof options.successMessage === 'function'
-          ? options.successMessage(data, variables)
-          : options.successMessage || 'Operation successful';
-        
-        createAccessibleToast({
-          title: 'Success',
-          description: message,
-          variant: 'default',
-          'aria-live': 'polite'
-        }, toast);
+        const message =
+          typeof options.successMessage === "function"
+            ? options.successMessage(data, variables)
+            : options.successMessage || "Operation successful";
+
+        createAccessibleToast(
+          {
+            title: "Success",
+            description: message,
+            variant: "default",
+            "aria-live": "polite",
+          },
+          toast
+        );
       }
 
       options.onSuccess?.(data, variables);
@@ -224,27 +271,37 @@ export function useApiMutation<TData = any, TVariables = any>(
     // Fixed: Enhanced error handler with structured error handling
     onError: (error, variables) => {
       if (options.showToast ?? true) {
-        const message = typeof options.errorMessage === 'function'
-          ? options.errorMessage(error, variables)
-          // Fixed: Extract meaningful error messages from ApiError
-          : (error.message || 'Operation failed');
-        
-        createAccessibleToast({
-          title: 'Error',
-          description: message,
-          variant: 'destructive',
-          'aria-live': 'assertive'
-        }, toast);
+        const message =
+          typeof options.errorMessage === "function"
+            ? options.errorMessage(error, variables)
+            : // Fixed: Extract meaningful error messages from ApiError
+              error.message || "Operation failed";
+
+        createAccessibleToast(
+          {
+            title: "Error",
+            description: message,
+            variant: "destructive",
+            "aria-live": "assertive",
+          },
+          toast
+        );
       }
 
       // Fixed: Pass properly typed ApiError to error handler
       options.onError?.(error, variables);
-    }
+    },
   });
 
   // Fixed: Memoized aliases for consistency and performance
-  const execute = useCallback((vars: TVariables) => mutation.mutate(vars), [mutation]);
-  const executeAsync = useCallback((vars: TVariables) => mutation.mutateAsync(vars), [mutation]);
+  const execute = useCallback(
+    (vars: TVariables) => mutation.mutate(vars),
+    [mutation]
+  );
+  const executeAsync = useCallback(
+    (vars: TVariables) => mutation.mutateAsync(vars),
+    [mutation]
+  );
 
   return { ...mutation, execute, executeAsync };
 }
@@ -256,7 +313,7 @@ export function useApiMutation<TData = any, TVariables = any>(
 
 // Fixed: Factory function for CRUD mutations to eliminate duplicate code
 function createMutationFactory<TData = any, TVariables = any>(
-  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
   entityName: string,
   queryKeys: Array<string | readonly string[]>,
   urlGenerator?: (vars: TVariables) => string,
@@ -264,12 +321,16 @@ function createMutationFactory<TData = any, TVariables = any>(
 ) {
   const baseUrl = `/api/${entityName.toLowerCase()}`;
   const defaultUrl = urlGenerator || (() => baseUrl);
-  
+
   return useApiMutation<TData, TVariables>({
     method,
-    url: method === 'POST' ? baseUrl : defaultUrl,
-    successMessage: customMessage || `${entityName} ${method.toLowerCase()}${method === 'DELETE' ? 'd' : 'd'} successfully`,
-    invalidateQueries: method === 'PUT' ? [...queryKeys, baseUrl] : queryKeys,
+    url: method === "POST" ? baseUrl : defaultUrl,
+    successMessage:
+      customMessage ||
+      `${entityName} ${method.toLowerCase()}${
+        method === "DELETE" ? "d" : "d"
+      } successfully`,
+    invalidateQueries: method === "PUT" ? [...queryKeys, baseUrl] : queryKeys,
     // Fixed: Enable URL validation for all CRUD operations
     validateUrl: true,
     // Fixed: Preserve error data for better debugging in CRUD operations
@@ -282,7 +343,7 @@ export function useCreateMutation<TData = any, TVariables = any>(
   queryKeys: Array<string | readonly string[]>
 ) {
   return createMutationFactory<TData, TVariables>(
-    'POST',
+    "POST",
     entityName,
     queryKeys,
     undefined,
@@ -290,12 +351,12 @@ export function useCreateMutation<TData = any, TVariables = any>(
   );
 }
 
-export function useUpdateMutation<TData = any, TVariables extends { id: number | string }>(
-  entityName: string,
-  queryKeys: Array<string | readonly string[]>
-) {
+export function useUpdateMutation<
+  TData = any,
+  TVariables extends { id: number | string }
+>(entityName: string, queryKeys: Array<string | readonly string[]>) {
   return createMutationFactory<TData, TVariables>(
-    'PUT',
+    "PUT",
     entityName,
     queryKeys,
     (vars) => `/api/${entityName.toLowerCase()}/${vars.id}`,
@@ -308,7 +369,7 @@ export function useDeleteMutation<TVariables extends { id: number | string }>(
   queryKeys: Array<string | readonly string[]>
 ) {
   return createMutationFactory<void, TVariables>(
-    'DELETE',
+    "DELETE",
     entityName,
     queryKeys,
     (vars) => `/api/${entityName.toLowerCase()}/${vars.id}`,
@@ -323,46 +384,46 @@ export function useDeleteMutation<TVariables extends { id: number | string }>(
 export function useAuthMutation() {
   return {
     // Fixed: Enhanced login with proper error preservation and validation
-    login: useApiMutation({ 
-      method: 'POST', 
-      url: '/api/auth/login', 
+    login: useApiMutation({
+      method: "POST",
+      url: "/api/auth/login",
       showToast: false, // UnifiedAuthModal handles toasts
       preserveErrorData: true,
       validateUrl: true,
     }),
-    
+
     // Fixed: Enhanced register with proper error preservation and validation
-    register: useApiMutation({ 
-      method: 'POST', 
-      url: '/api/auth/register', 
+    register: useApiMutation({
+      method: "POST",
+      url: "/api/auth/register",
       showToast: false, // UnifiedAuthModal handles toasts
       preserveErrorData: true,
       validateUrl: true,
     }),
-    
+
     // Fixed: Enhanced logout with comprehensive cache invalidation
     logout: useApiMutation({
-      method: 'POST',
-      url: '/api/auth/logout',
-      invalidateQueries: [['user'], ['session'], ['auth'], ['admin']],
-      successMessage: 'Successfully logged out',
+      method: "POST",
+      url: "/api/auth/logout",
+      invalidateQueries: [["user"], ["session"], ["auth"], ["admin"]],
+      successMessage: "Successfully logged out",
       validateUrl: true,
     }),
-    
+
     // Fixed: Enhanced email verification with proper feedback
-    verifyEmail: useApiMutation({ 
-      method: 'POST', 
-      url: '/api/auth/verify-email',
-      successMessage: 'Email verified successfully',
+    verifyEmail: useApiMutation({
+      method: "POST",
+      url: "/api/auth/verify-email",
+      successMessage: "Email verified successfully",
       preserveErrorData: true,
       validateUrl: true,
     }),
-    
+
     // Fixed: Enhanced password reset with proper feedback
-    resetPassword: useApiMutation({ 
-      method: 'POST', 
-      url: '/api/auth/reset-password',
-      successMessage: 'Password reset email sent',
+    resetPassword: useApiMutation({
+      method: "POST",
+      url: "/api/auth/reset-password",
+      successMessage: "Password reset email sent",
       preserveErrorData: true,
       validateUrl: true,
     }),
