@@ -96,6 +96,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string, recaptchaToken?: string) => {
+      console.log("🔐 Admin login attempt to /api/admin/login"); // Debug log
       setIsLoading(true);
       setError(null);
       const controller = new AbortController();
