@@ -96,7 +96,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string, recaptchaToken?: string) => {
-      console.log("🚀 FIXED ADMIN LOGIN v2.0 - calling /api/admin/login"); // Debug log
+      console.log(
+        "🚀 CACHE-BUSTED ADMIN LOGIN v3.0 - Jan 15 2025 - calling /api/admin/login"
+      ); // Cache-busting debug log
       setIsLoading(true);
       setError(null);
       const controller = new AbortController();

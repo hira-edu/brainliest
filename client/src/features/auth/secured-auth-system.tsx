@@ -227,9 +227,12 @@ export function SecuredAuthProvider({
   const signIn = useCallback(
     async (email: string, password: string, recaptchaToken?: string) => {
       setIsLoading(true);
+      console.log(
+        "🔥 SECURED AUTH SYSTEM v3.0 - Jan 15 2025 - calling /api/admin/login"
+      ); // Debug log
 
       try {
-        const response = await fetch("/api/auth/login", {
+        const response = await fetch("/api/admin/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password, recaptchaToken }),
