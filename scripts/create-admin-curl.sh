@@ -4,7 +4,7 @@
 # Usage: ./scripts/create-admin-curl.sh
 
 # Configuration
-VERCEL_URL="https://brainliest-tapha1-tapha1s-projects.vercel.app"
+VERCEL_URL="https://brainliest-fpttls7q6-tapha1s-projects.vercel.app"
 DEFAULT_ADMIN_EMAIL="admin@brainliest.com"
 DEFAULT_ADMIN_PASSWORD="Super.Admin.123!@#"
 
@@ -45,7 +45,7 @@ echo
 echo "Step 2: Authenticating admin user..."
 echo "-----------------------------------"
 
-login_response=$(curl -s -X POST "$VERCEL_URL/api/admin/auth/login" \
+login_response=$(curl -s -X POST "$VERCEL_URL/api/admin/login" \
     -H "Content-Type: application/json" \
     -d "{\"email\":\"$admin_email\",\"password\":\"$admin_password\"}")
 
