@@ -9,7 +9,7 @@ const options = [
 ];
 
 describe('SearchableSelect', () => {
-  it('filters options based on input and triggers onChange', async () => {
+  it('filters options when typing into the trigger field and selects a value', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
 
@@ -17,11 +17,13 @@ describe('SearchableSelect', () => {
       <SearchableSelect options={options} onChange={onChange} />
     );
 
-    await user.click(screen.getByRole('combobox'));
-    const searchInput = screen.getByRole('combobox', { name: 'Search options' });
-    await user.type(searchInput, 'Cloud');
+    const trigger = screen.getByRole('button', { name: 'Search options' });
+    await user.click(trigger);
 
-    const option = screen.getByText('Cloud Architect');
+    const combobox = screen.getByRole('combobox', { name: 'Search options' });
+    await user.type(combobox, 'Cloud');
+
+    const option = await screen.findByRole('option', { name: 'Cloud Architect' });
     await user.click(option);
 
     expect(onChange).toHaveBeenCalledWith('cloud');

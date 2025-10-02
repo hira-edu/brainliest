@@ -27,16 +27,24 @@ export interface SpinnerProps
 }
 
 export const Spinner = forwardRef<HTMLDivElement, SpinnerProps>(
-  ({ className, size, label = 'Loading...', ...props }, ref) => {
+  (
+    { className, size, label = 'Loading...', role: roleProp, 'aria-hidden': ariaHidden, 'aria-label': ariaLabelProp, ...rest },
+    ref
+  ) => {
+    const isHidden = ariaHidden === true || ariaHidden === 'true';
+    const role = isHidden ? undefined : roleProp ?? 'status';
+    const ariaLabel = isHidden ? undefined : ariaLabelProp ?? label;
+
     return (
       <div
         ref={ref}
-        role="status"
-        aria-label={label}
+        role={role}
+        aria-hidden={ariaHidden}
+        aria-label={ariaLabel}
         className={cn(spinnerVariants({ size }), className)}
-        {...props}
+        {...rest}
       >
-        <span className="sr-only">{label}</span>
+        {isHidden ? null : <span className="sr-only">{label}</span>}
       </div>
     );
   }

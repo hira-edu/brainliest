@@ -8,6 +8,17 @@ const options = [
   { value: 'cloud', label: 'Cloud Architect', description: 'Multi-cloud design patterns' },
 ];
 
+const SearchableSelectPlayground = () => {
+  const [value, setValue] = useState<string | undefined>();
+
+  return (
+    <div className="space-y-3">
+      <SearchableSelect options={options} value={value} onChange={setValue} />
+      <p className="text-sm text-gray-600">Selected: {value ?? 'None'}</p>
+    </div>
+  );
+};
+
 const meta: Meta<typeof SearchableSelect> = {
   title: 'Composites/SearchableSelect',
   component: SearchableSelect,
@@ -19,14 +30,5 @@ export default meta;
 type Story = StoryObj<typeof SearchableSelect>;
 
 export const Playground: Story = {
-  render: () => {
-    const [value, setValue] = useState<string | undefined>();
-
-    return (
-      <div className="space-y-3">
-        <SearchableSelect options={options} value={value} onChange={setValue} />
-        <p className="text-sm text-gray-600">Selected: {value ?? 'None'}</p>
-      </div>
-    );
-  },
+  render: () => <SearchableSelectPlayground />,
 };

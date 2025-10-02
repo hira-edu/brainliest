@@ -17,7 +17,8 @@
     "migrate:apply": "turbo run migrate:apply --filter=@brainliest/db",
     "seed": "turbo run seed --filter=@brainliest/db",
     "depgraph": "dependency-cruiser --config .dependency-cruiser.js src | dot -Tsvg -o docs/dependencies.svg",
-    "playwright": "playwright test --config tests/playwright/playwright.config.ts"
+    "playwright": "playwright test --config tests/playwright/playwright.config.ts",
+    "cleanup:tests-demos": "node scripts/cleanup-tests-demos.js"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

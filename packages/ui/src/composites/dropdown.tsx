@@ -9,6 +9,7 @@ import type {
   Ref,
 } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import type { DropdownMenuItemProps } from '@radix-ui/react-dropdown-menu';
 import { cn } from '../lib/utils';
 import { Button } from '../primitives/button';
 
@@ -20,7 +21,7 @@ export interface DropdownProps extends Omit<HTMLAttributes<HTMLDivElement>, 'chi
   children: ReactNode;
 }
 
-export const Dropdown = ({ trigger, align = 'start', children, className, ...props }: DropdownProps) => (
+export const Dropdown = ({ trigger, align = 'end', children, className, ...props }: DropdownProps) => (
   <DropdownMenu.Root>
     <div className={cn('relative inline-block text-left', className)} {...props}>
       <DropdownMenu.Trigger asChild>
@@ -50,10 +51,11 @@ export interface DropdownItemProps
   icon?: ReactNode;
   shortcut?: ReactNode;
   href?: string;
+  onSelect?: DropdownMenuItemProps['onSelect'];
 }
 
 export const DropdownItem = forwardRef<DropdownItemElement, DropdownItemProps>(
-  ({ className, inset, icon, shortcut, href, disabled, children, ...props }, forwardedRef) => {
+  ({ className, inset, icon, shortcut, href, disabled, children, onSelect, ...props }, forwardedRef) => {
     const baseClasses = cn(
       'flex w-full items-center justify-between rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 data-[highlighted]:bg-primary-50 data-[highlighted]:text-primary-900 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 cursor-pointer',
       inset ? 'pl-8' : 'pl-2',
@@ -76,7 +78,7 @@ export const DropdownItem = forwardRef<DropdownItemElement, DropdownItemProps>(
 
     if (href) {
       return (
-        <DropdownMenu.Item asChild disabled={disabled}>
+        <DropdownMenu.Item asChild disabled={disabled} onSelect={onSelect}>
           <a
             ref={forwardedRef as Ref<HTMLAnchorElement>}
             href={href}
@@ -90,7 +92,7 @@ export const DropdownItem = forwardRef<DropdownItemElement, DropdownItemProps>(
     }
 
     return (
-      <DropdownMenu.Item asChild disabled={disabled}>
+      <DropdownMenu.Item asChild disabled={disabled} onSelect={onSelect}>
         <button
           ref={forwardedRef as Ref<HTMLButtonElement>}
           type="button"

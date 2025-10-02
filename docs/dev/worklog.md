@@ -10,6 +10,20 @@
 - Delivered navigation primitives `Breadcrumbs`, `Sidebar`, `Header`, `Footer`, `Menu`, `MenuButton` with full test/story coverage.
 - Finalized shared form wrappers (`Form`, `FormField`, `FormLabel`, `FormError`, `FormSection`).
 - Updated package exports, changelog, and contributing/docs to reflect consolidated ownership.
+- Introduced an automated cleanup script with package alias to remove demo routes and test/story artifacts on demand.
+
+## 2025-10-02 (Session 5) — Codex
+- ✅ **Radix Select upgrade** — Replaced the primitive `<select>` with a Radix Select wrapper that supports keyboard navigation, custom sizing/state treatment, and hidden form inputs.
+- ✅ **Toast variants** — Introduced semantic variants (default/success/warning/error/info), styled action + close affordances, and refreshed stories/tests.
+- ✅ **Tooltip provider guidance** — Exported `TooltipProvider` so consumers share a single provider; updated tests, stories, and demos to wrap tooltips appropriately.
+- 📝 **Docs & changelog** — Documented the above changes and confirmed the UI docs now reflect the Radix-first approach throughout.
+
+## 2025-10-02 (Session 4) — Codex
+- ✅ **Built cleanup tooling** — Added `scripts/cleanup-tests-demos.js` (dry-run by default, `--apply` to delete) to purge demo directories and test/story files for production builds.
+- 🔧 **Repository wiring** — Registered `pnpm cleanup:tests-demos` and updated `docs/dev/contributing.md` with usage guidance.
+- 📝 **Next steps** — Run `pnpm lint`, `pnpm test --filter @brainliest/ui`, and `pnpm playwright` when automation is available to validate the Radix migration end-to-end.
+- ♻️ **Refined SearchableSelect** — Rebuilt composite with Radix Popover + `cmdk`, refreshed stories/tests, and removed legacy documentation pointing to the prior implementation.
+- 🎛️ **Stabilized CommandPalette** — Adopted `cmdk` grouping best practices, added consistent sizing, and ensured keyboard navigation no longer triggers layout shifts.
 
 ## 2025-10-02 (Session 3) — Claude Sonnet 4.5
 - ✅ **Acknowledged Codex's complete UI library implementation**
@@ -27,7 +41,7 @@
 - **Status**: UI component library complete and production-ready, awaiting next assignment
 
 ## 2025-10-02 (Session 2 - Final) — Claude Sonnet 4.5 (Historical)
-- ✅ **Acknowledged** - Codex has completed all composite components (Headless UI variant superseded by Radix migration)
+- ✅ **Acknowledged** - Codex has completed all composite components (Radix-based implementations now canonical)
 - ✅ **Work superseded** - Codex rebuilt Modal, Dialog, Dropdown, Tooltip with superior implementations including:
   - Proper pointer event handling for overlay close logic
   - Complete test coverage with correct assertion setup

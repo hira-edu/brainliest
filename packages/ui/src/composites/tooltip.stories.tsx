@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Tooltip } from './tooltip';
+import { Tooltip, TooltipProvider } from './tooltip';
 import { Button } from '../primitives/button';
 
 const meta: Meta<typeof Tooltip> = {
@@ -11,9 +11,11 @@ const meta: Meta<typeof Tooltip> = {
     side: 'top',
   },
   render: (args) => (
-    <Tooltip {...args}>
-      <Button variant="ghost">Hover me</Button>
-    </Tooltip>
+    <TooltipProvider delayDuration={150}>
+      <Tooltip {...args}>
+        <Button variant="ghost">Hover me</Button>
+      </Tooltip>
+    </TooltipProvider>
   ),
 };
 

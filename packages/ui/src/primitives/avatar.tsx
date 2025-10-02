@@ -1,4 +1,5 @@
-import { forwardRef } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 
@@ -21,29 +22,45 @@ const avatarVariants = cva(
 );
 
 export interface AvatarProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof avatarVariants> {
   src?: string;
   alt?: string;
-  fallback?: string;
+  fallback?: ReactNode;
 }
 
 export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
   ({ className, size, src, alt, fallback, ...props }, ref) => {
+    const [hasImageError, setHasImageError] = useState(false);
+
+    const handleImageError = useCallback(() => {
+      setHasImageError(true);
+    }, []);
+
+    const showFallback = !src || hasImageError;
+    const accessibleLabel = alt ?? (typeof fallback === 'string' ? fallback : undefined);
+
     return (
       <div
         ref={ref}
         className={cn(avatarVariants({ size }), className)}
+        {...(showFallback && accessibleLabel
+          ? { role: 'img', 'aria-label': accessibleLabel }
+          : showFallback
+            ? { 'aria-hidden': true }
+            : undefined)}
         {...props}
       >
-        {src ? (
+        {!showFallback ? (
           <img
             src={src}
-            alt={alt || 'Avatar'}
+            alt={alt ?? ''}
             className="h-full w-full object-cover"
+            loading="lazy"
+            onError={handleImageError}
           />
         ) : (
-          <span className="font-medium text-gray-600">
+          <span className="font-medium text-gray-700">
             {fallback || '?'}
           </span>
         )}

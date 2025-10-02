@@ -10,6 +10,33 @@ const commands: CommandItem[] = [
   { id: '4', name: 'View analytics', group: 'Navigation' },
 ];
 
+const CommandPalettePlayground = () => {
+  const [open, setOpen] = useState(false);
+  const [lastCommand, setLastCommand] = useState<CommandItem | null>(null);
+
+  const handleSelect = (command: CommandItem) => {
+    setLastCommand(command);
+  };
+
+  const summary = useMemo(
+    () => (lastCommand ? `Selected: ${lastCommand.name}` : 'No command executed yet.'),
+    [lastCommand]
+  );
+
+  return (
+    <div className="space-y-4">
+      <Button onClick={() => setOpen(true)}>Open command palette</Button>
+      <p className="text-sm text-gray-600">{summary}</p>
+      <CommandPalette
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        commands={commands}
+        onSelect={handleSelect}
+      />
+    </div>
+  );
+};
+
 const meta: Meta<typeof CommandPalette> = {
   title: 'Composites/CommandPalette',
   component: CommandPalette,
@@ -21,29 +48,5 @@ export default meta;
 type Story = StoryObj<typeof CommandPalette>;
 
 export const Playground: Story = {
-  render: () => {
-    const [open, setOpen] = useState(false);
-    const [lastCommand, setLastCommand] = useState<CommandItem | null>(null);
-
-    const handleSelect = (command: CommandItem) => {
-      setLastCommand(command);
-    };
-
-    const summary = useMemo(() => (
-      lastCommand ? `Selected: ${lastCommand.name}` : 'No command executed yet.'
-    ), [lastCommand]);
-
-    return (
-      <div className="space-y-4">
-        <Button onClick={() => setOpen(true)}>Open command palette</Button>
-        <p className="text-sm text-gray-600">{summary}</p>
-        <CommandPalette
-          isOpen={open}
-          onClose={() => setOpen(false)}
-          commands={commands}
-          onSelect={handleSelect}
-        />
-      </div>
-    );
-  },
+  render: () => <CommandPalettePlayground />,
 };

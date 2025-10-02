@@ -6,23 +6,31 @@ import { Select } from './select';
 describe('Select', () => {
   it('renders with options', () => {
     render(
-      <Select aria-label="Fruits">
-        <option value="apple">Apple</option>
-        <option value="banana">Banana</option>
-      </Select>
+      <Select
+        ariaLabel="Fruits"
+        options={[
+          { value: 'apple', label: 'Apple' },
+          { value: 'banana', label: 'Banana' },
+        ]}
+      />
     );
 
-    expect(screen.getByLabelText('Fruits')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Fruits' })).toBeInTheDocument();
   });
 
   it('sets aria-invalid when state is error', () => {
     render(
-      <Select aria-label="Status" state="error">
-        <option value="draft">Draft</option>
-      </Select>
+      <Select
+        ariaLabel="Status"
+        state="error"
+        options={[{ value: 'draft', label: 'Draft' }]}
+      />
     );
 
-    expect(screen.getByLabelText('Status')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('combobox', { name: 'Status' })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
   });
 
   it('triggers change handler', async () => {
@@ -30,13 +38,19 @@ describe('Select', () => {
     const handleChange = vi.fn();
 
     render(
-      <Select aria-label="Choices" onChange={handleChange}>
-        <option value="1">One</option>
-        <option value="2">Two</option>
-      </Select>
+      <Select
+        ariaLabel="Choices"
+        onValueChange={handleChange}
+        options={[
+          { value: '1', label: 'One' },
+          { value: '2', label: 'Two' },
+        ]}
+      />
     );
 
-    await user.selectOptions(screen.getByLabelText('Choices'), '2');
-    expect(handleChange).toHaveBeenCalled();
+    await user.click(screen.getByRole('combobox', { name: 'Choices' }));
+    await user.click(screen.getByRole('option', { name: 'Two' }));
+
+    expect(handleChange).toHaveBeenCalledWith('2');
   });
 });

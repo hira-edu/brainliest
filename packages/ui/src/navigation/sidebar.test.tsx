@@ -18,7 +18,7 @@ describe('Sidebar', () => {
     );
 
     expect(screen.getByText('Workspace')).toBeInTheDocument();
-    expect(screen.getByText('Overview')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText('Version 1.0')).toBeInTheDocument();
   });
 });

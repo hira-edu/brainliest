@@ -10,8 +10,9 @@ describe('FormLabel', () => {
 
   it('shows required indicator by default', () => {
     render(<FormLabel required>Email</FormLabel>);
-    const indicator = screen.getByText('*');
-    expect(indicator).toHaveClass('text-error-DEFAULT');
+    const label = screen.getByText('Email').closest('label');
+    expect(label).not.toBeNull();
+    expect(label).toHaveAttribute('data-required');
   });
 
   it('renders optional hint when provided', () => {

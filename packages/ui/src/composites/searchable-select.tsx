@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import {
-  Command as CommandRoot,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from 'cmdk';
-import { Button } from '../primitives/button';
+import { Check, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export interface SearchableSelectOption {
@@ -28,6 +28,8 @@ export interface SearchableSelectProps {
   placeholder?: string;
   emptyState?: ReactNode;
   disabled?: boolean;
+  ariaLabel?: string;
+  searchPlaceholder?: string;
 }
 
 export function SearchableSelect({
@@ -37,84 +39,138 @@ export function SearchableSelect({
   placeholder = 'Select an option',
   emptyState = 'No results found',
   disabled = false,
+  ariaLabel = 'Search options',
+  searchPlaceholder = 'Search...',
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
-  const selected = useMemo(
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const baseId = useId();
+  const listId = `${baseId}-list`;
+
+  const selectedOption = useMemo(
     () => options.find((option) => option.value === value),
     [options, value]
   );
 
+  useEffect(() => {
+    if (!open) {
+      setSearch('');
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+  }, [open]);
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (disabled) {
+        return;
+      }
+
+      setOpen(nextOpen);
+    },
+    [disabled]
+  );
+
+  const handleSelect = useCallback(
+    (optionValue: string) => {
+      const option = options.find((item) => item.value === optionValue);
+      if (!option || option.disabled) {
+        return;
+      }
+
+      onChange(option.value);
+      setOpen(false);
+    },
+    [onChange, options]
+  );
+
+  const triggerLabel = selectedOption?.label ?? placeholder;
+
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open} onOpenChange={handleOpenChange}>
       <Popover.Trigger asChild>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          disabled={disabled}
-          role="combobox"
-          aria-expanded={open}
+          className={cn(
+            'inline-flex w-full min-w-[12rem] items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
+            disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-gray-400'
+          )}
           aria-haspopup="listbox"
-          className="min-w-[12rem] justify-between"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-label={selectedOption ? `Selected ${selectedOption.label}. ${ariaLabel}` : ariaLabel}
+          disabled={disabled}
         >
-          <span className={cn(selected ? 'text-gray-900' : 'text-gray-400')}>
-            {selected ? selected.label : placeholder}
-          </span>
-          <svg
-            className="h-4 w-4 text-gray-400"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
+          <span
+            className={cn(
+              'flex-1 truncate text-left',
+              selectedOption ? 'text-gray-900' : 'text-gray-500'
+            )}
           >
-            <path
-              fillRule="evenodd"
-              d="M5.23 7.21a.75.75 0 011.06.02L10 11.084l3.71-3.853a.75.75 0 111.08 1.04l-4.249 4.41a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </Button>
+            {triggerLabel}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 text-gray-400" aria-hidden="true" />
+        </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="z-dropdown w-72 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
+          className="z-dropdown w-72 rounded-xl border border-gray-200 bg-white shadow-xl"
           sideOffset={8}
+          align="start"
         >
-          <CommandRoot
-            label="Search options"
-            className="flex flex-col"
-            filter={(value, search) =>
-              value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-            }
-          >
+          <Command label={ariaLabel} loop className="flex w-full flex-col bg-transparent">
             <CommandInput
-              placeholder="Search..."
-              className="h-12 border-b border-gray-200 px-3 text-sm focus:outline-none"
+              ref={inputRef}
+              value={search}
+              onValueChange={setSearch}
+              placeholder={searchPlaceholder}
+              aria-label={ariaLabel}
+              aria-controls={listId}
+              aria-expanded={open}
+              role="combobox"
+              className="w-full border-b border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus-visible:outline-none focus-visible:ring-0"
             />
-            <CommandList className="max-h-60 overflow-y-auto py-2">
+            <CommandList id={listId} className="max-h-60 overflow-y-auto py-2">
               <CommandEmpty className="px-3 py-6 text-center text-sm text-gray-500">
                 {emptyState}
               </CommandEmpty>
-              <CommandGroup heading="Options" className="px-2">
+              <CommandGroup className="px-2">
                 {options.map((option) => (
                   <CommandItem
                     key={option.value}
-                    value={option.label}
+                    value={option.value}
                     disabled={option.disabled}
-                    onSelect={() => {
-                      if (option.disabled) return;
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                    className="flex cursor-pointer select-none flex-col gap-1 rounded-lg px-3 py-2 text-sm text-gray-700 data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-50 data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary-900"
+                    keywords={
+                      typeof option.description === 'string'
+                        ? [option.description]
+                        : undefined
+                    }
+                    onSelect={handleSelect}
+                    className="flex w-full cursor-pointer select-none items-start gap-2 rounded-lg px-3 py-2 text-left text-sm text-gray-700 transition data-[disabled=true]:cursor-not-allowed data-[disabled=true]:opacity-40 data-[state=active]:bg-primary-50 data-[state=active]:text-primary-900"
                   >
-                    <span className="font-medium">{option.label}</span>
-                    {option.description ? (
-                      <span className="text-xs text-gray-500">{option.description}</span>
+                    <span className="flex-1">
+                      <span className="block text-sm font-medium text-gray-900">
+                        {option.label}
+                      </span>
+                      {option.description ? (
+                        <span className="text-xs text-gray-500">
+                          {option.description}
+                        </span>
+                      ) : null}
+                    </span>
+                    {option.value === value ? (
+                      <Check className="h-4 w-4 text-primary-600" aria-hidden="true" />
                     ) : null}
                   </CommandItem>
                 ))}
               </CommandGroup>
             </CommandList>
-          </CommandRoot>
+          </Command>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

@@ -1,7 +1,7 @@
 "use client";
 
-import { forwardRef } from 'react';
-import type { ReactNode } from 'react';
+import { forwardRef, useCallback } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn } from '../lib/utils';
 
@@ -23,6 +23,8 @@ export interface ModalProps {
   size?: keyof typeof sizeClasses;
   closeOnOverlayClick?: boolean;
   showCloseButton?: boolean;
+  overlayProps?: ComponentPropsWithoutRef<typeof Dialog.Overlay>;
+  contentProps?: ComponentPropsWithoutRef<typeof Dialog.Content>;
 }
 
 export const Modal = forwardRef<HTMLDivElement, ModalProps>(
@@ -37,42 +39,61 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
       size = 'md',
       closeOnOverlayClick = true,
       showCloseButton = true,
+      overlayProps,
+      contentProps,
     },
     ref
-  ) => (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          data-testid="modal-overlay"
-          className="fixed inset-0 z-modalBackdrop bg-black/50 backdrop-blur-sm transition-opacity duration-200 data-[state=open]:opacity-100 data-[state=closed]:opacity-0"
-          onClick={(event) => {
-            if (!closeOnOverlayClick) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-          }}
-        />
-        <Dialog.Content
-          ref={ref}
-          className={cn(
-            'fixed left-1/2 top-1/2 z-modal w-[90vw] max-h-[85vh] translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl focus:outline-none transition duration-200 data-[state=open]:opacity-100 data-[state=open]:scale-100 data-[state=closed]:opacity-0 data-[state=closed]:scale-95',
-            sizeClasses[size]
-          )}
+  ) => {
+    const handleOpenChange = useCallback(
+      (open: boolean) => {
+        if (!open && isOpen) {
+          onClose();
+        }
+      },
+      [isOpen, onClose]
+    );
+
+    const { className: overlayClassName, ...overlayRest } = overlayProps ?? {};
+    const { className: contentClassName, ...contentRest } = contentProps ?? {};
+
+    return (
+      <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
+        <Dialog.Portal>
+          <Dialog.Overlay
+            className={cn(
+              'fixed inset-0 z-modalBackdrop bg-black/50 backdrop-blur-sm transition-opacity duration-200 data-[state=open]:opacity-100 data-[state=closed]:opacity-0',
+              overlayClassName
+            )}
+            {...overlayRest}
+          />
+          <Dialog.Content
+            ref={ref}
+            className={cn(
+              'fixed left-1/2 top-1/2 z-modal w-[90vw] max-h-[85vh] translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl focus:outline-none transition duration-200 data-[state=open]:opacity-100 data-[state=open]:scale-100 data-[state=closed]:opacity-0 data-[state=closed]:scale-95',
+              sizeClasses[size],
+              contentClassName
+            )}
           onPointerDownOutside={(event) => {
             if (!closeOnOverlayClick) {
               event.preventDefault();
             }
           }}
+          onInteractOutside={(event) => {
+            if (!closeOnOverlayClick) {
+              event.preventDefault();
+            }
+          }}
+          {...contentRest}
         >
           {(title || showCloseButton) && (
             <div className="mb-3 flex items-start justify-between gap-4">
-              {title ? (
-                <Dialog.Title className="text-lg font-semibold text-gray-900">
-                  {title}
-                </Dialog.Title>
-              ) : (
-                <span />
-              )}
+              <div className="flex-1 min-w-0">
+                {title ? (
+                  <Dialog.Title className="text-lg font-semibold text-gray-900">
+                    {title}
+                  </Dialog.Title>
+                ) : null}
+              </div>
               {showCloseButton ? (
                 <Dialog.Close
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
@@ -109,10 +130,11 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
               {footer}
             </div>
           ) : null}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  )
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    );
+  }
 );
 
 Modal.displayName = 'Modal';

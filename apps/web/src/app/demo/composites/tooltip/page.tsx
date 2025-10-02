@@ -1,6 +1,6 @@
 'use client';
 
-import { Tooltip, Button } from '@brainliest/ui';
+import { Tooltip, TooltipProvider, Button } from '@brainliest/ui';
 
 export default function TooltipDemo() {
   return (
@@ -10,14 +10,16 @@ export default function TooltipDemo() {
         Tooltips surface contextual hints on hover and focus to keep advanced users productive.
       </p>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <Tooltip content="Generate AI explanation" side="top">
-          <Button variant="ghost">Top tooltip</Button>
-        </Tooltip>
-        <Tooltip content="Mark as favorite" side="right">
-          <Button variant="ghost">Right tooltip</Button>
-        </Tooltip>
-      </div>
+      <TooltipProvider>
+        <div className="flex flex-wrap items-center gap-4">
+          <Tooltip content="Generate AI explanation" side="top">
+            <Button variant="ghost">Top tooltip</Button>
+          </Tooltip>
+          <Tooltip content="Mark as favorite" side="right" sideOffset={12}>
+            <Button variant="ghost">Right tooltip</Button>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }

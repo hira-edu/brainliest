@@ -59,7 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const resolvedDisabled = Boolean(disabled) || isLoading;
     const spinnerSize = size === 'sm' ? 'xs' : size === 'lg' ? 'md' : 'sm';
     const leadingContent = isLoading ? (
-      <Spinner size={spinnerSize} label="Loading" />
+      <Spinner size={spinnerSize} aria-hidden="true" />
     ) : (
       leftIcon
     );

@@ -4,6 +4,16 @@ import { cn } from '../lib/utils';
 import { FormLabel } from './form-label';
 import { FormError } from './form-error';
 
+type FieldChildProps = {
+  id?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean | 'true' | 'false';
+};
+
+function isFieldChild(element: ReactElement | ReactNode): element is ReactElement<FieldChildProps> {
+  return isValidElement<FieldChildProps>(element);
+}
+
 export interface FormFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   label?: ReactNode;
   description?: ReactNode;
@@ -11,7 +21,7 @@ export interface FormFieldProps extends Omit<HTMLAttributes<HTMLDivElement>, 'ch
   required?: boolean;
   orientation?: 'vertical' | 'horizontal';
   controlId?: string;
-  children: ReactElement;
+  children: ReactNode;
 }
 
 export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
@@ -29,37 +39,40 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
     },
     ref
   ) => {
-    if (!isValidElement(children)) {
-      throw new Error('FormField expects a single React element child.');
-    }
-
     const reactId = useId();
-    const childProps = children.props as { id?: string; 'aria-describedby'?: string; 'aria-invalid'?: boolean };
+    const isEnhancedChild = isFieldChild(children);
+    const childProps: FieldChildProps = isEnhancedChild ? children.props : {};
     const fieldId = controlId ?? childProps.id ?? `${reactId}-field`;
-    const descriptionId = description ? `${fieldId}-description` : undefined;
-    const errorId = error ? `${fieldId}-error` : undefined;
+    const descriptionId = description && isEnhancedChild ? `${fieldId}-description` : undefined;
+    const errorId = error && isEnhancedChild ? `${fieldId}-error` : undefined;
 
-    const existingDescribedBy = childProps['aria-describedby'];
-    const describedBy = [existingDescribedBy, descriptionId, errorId]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    const describedByParts = [childProps['aria-describedby'], descriptionId, errorId].filter(Boolean);
+    const describedBy = describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
-    const control = cloneElement(children, {
-      id: fieldId,
-      'aria-describedby': describedBy,
-      'aria-invalid': error ? true : childProps['aria-invalid'],
-    } as Partial<unknown>);
+    const control = isEnhancedChild
+      ? cloneElement(
+          children,
+          {
+            id: fieldId,
+            'aria-describedby': describedBy,
+            'aria-invalid': error ? true : childProps['aria-invalid'],
+          } satisfies Partial<FieldChildProps>
+        )
+      : children;
 
     const content = (
       <div className="flex flex-col gap-1">
         {control}
         {description ? (
-          <p id={descriptionId} className="text-sm text-gray-500">
+          <p
+            id={isEnhancedChild ? descriptionId : undefined}
+            className="text-sm text-gray-500"
+          >
             {description}
           </p>
         ) : null}
         {error ? (
-          <FormError id={errorId}>{error}</FormError>
+          <FormError id={isEnhancedChild ? errorId : undefined}>{error}</FormError>
         ) : null}
       </div>
     );
@@ -76,7 +89,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
         >
           <div className="md:pt-2">
             {label ? (
-              <FormLabel htmlFor={fieldId} required={required ?? false}>
+              <FormLabel htmlFor={isEnhancedChild ? fieldId : controlId} required={required ?? false}>
                 {label}
               </FormLabel>
             ) : null}
@@ -89,7 +102,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
     return (
       <div ref={ref} className={cn('flex flex-col gap-1', className)} {...props}>
         {label ? (
-          <FormLabel htmlFor={fieldId} required={required ?? false}>
+          <FormLabel htmlFor={isEnhancedChild ? fieldId : controlId} required={required ?? false}>
             {label}
           </FormLabel>
         ) : null}

@@ -9,7 +9,7 @@ export { Textarea } from './primitives/textarea';
 export type { TextareaProps } from './primitives/textarea';
 
 export { Select } from './primitives/select';
-export type { SelectProps } from './primitives/select';
+export type { SelectProps, SelectOption } from './primitives/select';
 
 export { Checkbox } from './primitives/checkbox';
 export type { CheckboxProps } from './primitives/checkbox';
@@ -111,6 +111,7 @@ export {
   ToastClose,
   ToastAction,
 } from './feedback/toast';
+export type { ToastProps } from './feedback/toast';
 
 // Composites
 export { Modal, ModalTrigger, ModalClose } from './composites/modal';
@@ -131,8 +132,8 @@ export type { DropdownProps, DropdownItemProps } from './composites/dropdown';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './composites/tabs';
 export type { TabsProps } from './composites/tabs';
 
-export { Tooltip } from './composites/tooltip';
-export type { TooltipProps } from './composites/tooltip';
+export { Tooltip, TooltipProvider } from './composites/tooltip';
+export type { TooltipProps, TooltipProviderProps } from './composites/tooltip';
 
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './composites/accordion';
 export type { AccordionProps, AccordionItemProps, AccordionTriggerProps, AccordionContentProps } from './composites/accordion';

@@ -6,7 +6,11 @@
     "outDir": "dist",
     "jsx": "react-jsx",
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "vitest",
+      "@testing-library/jest-dom",
+      "@testing-library/react",
+      "@testing-library/user-event"
     ],
     "noEmit": true
   },

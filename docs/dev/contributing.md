@@ -66,6 +66,10 @@
 - Use Slack/Issue tracker for design questions before large changes.
 - Document complex flows in `docs/` or ADRs.
 
+## Utility Scripts
+
+- `pnpm cleanup:tests-demos` — Prints a dry-run plan for removing demo routes and test/story artifacts. Pass `-- --apply` to execute the deletions when preparing a production-only bundle.
+
 ## Active Workstreams & Ownership (2025-10-02)
 
 > ℹ️ Codex currently owns every in-flight implementation stream. Contributions from additional developers require explicit hand-off.

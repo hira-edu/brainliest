@@ -1,17 +1,29 @@
 import { forwardRef, useId } from 'react';
+import type { InputHTMLAttributes, KeyboardEventHandler, ReactNode } from 'react';
 import { cn } from '../lib/utils';
 
-export interface CheckboxProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
-  label?: React.ReactNode;
-  description?: React.ReactNode;
+export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  label?: ReactNode;
+  description?: ReactNode;
 }
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, label, description, id, ...props }, ref) => {
+  ({ className, label, description, id, onKeyDown, ...props }, ref) => {
     const generatedId = useId();
     const checkboxId = id ?? generatedId;
     const descriptionId = description ? `${checkboxId}-description` : undefined;
+    const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (event) => {
+      onKeyDown?.(event);
+
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      if (event.key === ' ' || event.key === 'Space' || event.key === 'Spacebar' || event.code === 'Space') {
+        event.preventDefault();
+        event.currentTarget.click();
+      }
+    };
 
     return (
       <div className="flex items-start gap-3">
@@ -27,6 +39,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
               className
             )}
             aria-describedby={descriptionId}
+            onKeyDown={handleKeyDown}
             {...props}
           />
         </div>

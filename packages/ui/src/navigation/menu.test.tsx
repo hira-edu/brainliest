@@ -13,6 +13,6 @@ describe('Menu', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Primary' });
     expect(nav).toBeInTheDocument();
-    expect(screen.getByText('Home')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
   });
 });

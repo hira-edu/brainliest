@@ -53,7 +53,9 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(
                         {item.icon}
                       </span>
                     ) : null}
-                    <span className="flex-1 truncate">{item.label}</span>
+                    <span className="flex-1 truncate">
+                      {item.label}
+                    </span>
                     {item.badge ? (
                       <span className="text-xs font-medium text-gray-500">{item.badge}</span>
                     ) : null}

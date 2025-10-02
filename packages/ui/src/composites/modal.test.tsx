@@ -14,6 +14,7 @@ describe('Modal', () => {
         title="Invite team"
         description="Send collaborators a link to join this workspace."
         footer={<button type="button">Done</button>}
+        overlayProps={{ 'data-testid': 'modal-overlay' }}
         {...props}
       >
         <p>Body content</p>

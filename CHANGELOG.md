@@ -17,6 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.2] - 2025-10-02
+
+### Added
+- Cleanup utility `scripts/cleanup-tests-demos.js` with dry-run safety to remove demo routes and test/story files for production-only deployments.
+- Workspace script alias `pnpm cleanup:tests-demos` documented in contributing guide.
+
+### Changed
+- Rebuilt `SearchableSelect` with Radix Popover + `cmdk`, delivering accessible filtering, looping keyboard navigation, and updated stories/tests.
+- Refined `CommandPalette` to stabilize layout via `cmdk` best practices (stable grouping, min-height list, consistent keyboard handling).
+- Migrated primitive `Select` to Radix Select with keyboard navigation, menu virtualization, and form-friendly hidden input support.
+- Added semantic toast variants (success, warning, error, info) with styled actions/close affordances and updated stories/tests.
+- Updated `Tooltip` to export `TooltipProvider` and removed the per-instance provider overhead; demos/tests now wrap multiple tooltips with a shared provider.
+
 ## [2.2.1] - 2025-10-02
 
 ### Fixed

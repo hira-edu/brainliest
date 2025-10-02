@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from 'react';
+import { forwardRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cn } from '../lib/utils';
@@ -29,14 +29,24 @@ export interface DialogProps {
 }
 
 export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
-  ({ isOpen, onClose, title, description, children, actions = [] }, ref) => (
-    <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-modalBackdrop bg-black/40 backdrop-blur-sm data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
-        <DialogPrimitive.Content
-          ref={ref}
-          className="fixed left-1/2 top-1/2 z-modal w-[90vw] max-w-lg translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white p-6 shadow-xl focus:outline-none data-[state=open]:animate-scale-in data-[state=closed]:animate-scale-out"
-        >
+  ({ isOpen, onClose, title, description, children, actions = [] }, ref) => {
+    const handleOpenChange = useCallback(
+      (open: boolean) => {
+        if (!open && isOpen) {
+          onClose();
+        }
+      },
+      [isOpen, onClose]
+    );
+
+    return (
+      <DialogPrimitive.Root open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-modalBackdrop bg-black/40 backdrop-blur-sm data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
+          <DialogPrimitive.Content
+            ref={ref}
+            className="fixed left-1/2 top-1/2 z-modal w-[90vw] max-w-lg translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-white p-6 shadow-xl focus:outline-none data-[state=open]:animate-scale-in data-[state=closed]:animate-scale-out"
+          >
           {title ? (
             <DialogPrimitive.Title className="text-lg font-semibold text-gray-900">
               {title}
@@ -72,10 +82,11 @@ export const Dialog = forwardRef<HTMLDivElement, DialogProps>(
               ))}
             </div>
           ) : null}
-        </DialogPrimitive.Content>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
-  )
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+    );
+  }
 );
 
 Dialog.displayName = 'Dialog';
