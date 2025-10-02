@@ -1,1 +1,0 @@
-id,date,view_count,exam_starts,exam_completions,unique_users,avg_session_duration,bounce_rate,subject_slug
