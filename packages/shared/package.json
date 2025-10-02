@@ -20,5 +20,12 @@
   "scripts": {
     "lint": "eslint src --ext .ts",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "ioredis": "^5.4.1",
+    "openai": "^4.53.0"
+  },
+  "devDependencies": {
+    "vite-tsconfig-paths": "^4.3.1"
   }
 }
