@@ -1,0 +1,154 @@
+# AI GUARDRAILS — BRAINLIEST PROJECT
+# This file MUST be read by any AI assistant before performing ANY task
+# Violation of these rules is a CRITICAL FAILURE
+
+## 🧠 PERMANENT MEMORY ACTIVATION
+Every AI session MUST start with this protocol:
+1. "I have loaded PROJECT_MANIFEST.md into memory"
+2. "I have reviewed the deep audit checklist"
+3. "I understand zero-drift and zero-duplication requirements"
+4. "I will ask when unclear rather than assume"
+5. "Ready to proceed with [task name]"
+
+## MANDATORY READING ORDER
+1. .ai-guardrails (THIS FILE - 2 min)
+2. PROJECT_MANIFEST.md (REQUIRED - 15 min)
+3. COMPLETE_BUILD_SPECIFICATION.md (implementation details)
+4. ARCHITECTURE_BLUEPRINT.md (architecture patterns)
+5. UI_COMPONENT_SPECIFICATION.md (when creating UI components)
+
+## FORBIDDEN ACTIONS
+❌ Create new architectural documents
+❌ Create duplicate schemas/types/interfaces
+❌ Create duplicate UI components (check existing first)
+❌ Modify locked documents without approval
+❌ Use 'any' type in TypeScript
+❌ Access process.env directly (use typed env)
+❌ Import DB in UI packages
+❌ Import apps/web in apps/admin or vice versa
+❌ Create README.md in individual packages
+❌ Hardcode domains (use SITE_PRIMARY_DOMAIN env)
+❌ Hardcode colors/spacing (use design tokens)
+❌ Skip Zod validation at boundaries
+❌ Create files not listed in specifications
+❌ Skip deep audit before implementation
+❌ Skip component existence check before creating
+❌ Assume or guess when unclear
+
+## REQUIRED ACTIONS
+✅ Read PROJECT_MANIFEST.md before starting
+✅ Read UI_COMPONENT_SPECIFICATION.md before creating components
+✅ Run DEEP AUDIT CHECKLIST before coding
+✅ Search existing components before creating new ones
+✅ Verify file path matches monorepo structure
+✅ Check SSOT location before creating types
+✅ Use design tokens (never hardcode colors/spacing)
+✅ Search for duplicate code/logic
+✅ Scan for circular dependencies
+✅ Run dependency cruiser to validate imports
+✅ Follow naming conventions exactly
+✅ Create tests for all new code (>80% coverage)
+✅ Create Storybook stories for UI components
+✅ Verify accessibility (ARIA, keyboard nav)
+✅ Test responsive behavior (mobile-first)
+✅ Ask user when specifications are unclear
+✅ Escalate when encountering conflicts
+✅ Update package index exports for new modules
+✅ Maintain zero drift from specifications
+✅ Check for race conditions in async code
+✅ Verify no hardcoded URLs
+
+## DEEP AUDIT REQUIREMENTS
+Before ANY implementation:
+□ Logic issues reviewed
+□ Code duplication checked (jscpd)
+□ Code smells identified
+□ SSOT violations verified (0 found)
+□ Circular dependencies scanned (madge)
+□ Unwanted coupling checked
+□ Race conditions reviewed
+□ Type safety verified (0 'any' usage)
+□ Schema issues checked
+□ URL hardcoding scanned
+□ Import/export hygiene verified
+□ Performance issues identified (N+1, missing indexes)
+□ Security audit passed (secrets, injection)
+
+## EMERGENCY STOP CONDITIONS
+🛑 Specification conflict detected
+🛑 Security vulnerability identified
+🛑 Forbidden import dependency detected
+🛑 Duplicate type/schema/constant found
+🛑 Unable to determine SSOT location
+🛑 User approval required but not obtained
+🛑 Circular dependency detected
+🛑 'any' type usage found
+🛑 Race condition identified
+🛑 SSOT violation found
+🛑 Code duplication detected (>5 lines)
+
+## QUALITY GATES (ALL MUST PASS)
+□ pnpm typecheck (0 errors)
+□ pnpm lint (0 warnings)
+□ pnpm test (100% pass)
+□ pnpm depgraph (0 violations)
+□ pnpm madge --circular (0 cycles)
+□ rg "\bany\b" --type ts (0 matches)
+□ pnpm jscpd (0 duplicates >5 lines)
+□ pnpm build (success)
+
+## AUTOMATED AUDIT COMMANDS
+Run these BEFORE considering task complete:
+
+# TypeScript errors
+pnpm typecheck 2>&1 | grep -c "error TS"  # Must = 0
+
+# Search for 'any' usage
+rg "\bany\b" --type ts --glob '!node_modules' --glob '!*.test.ts' | wc -l  # Must = 0
+
+# Circular dependencies
+pnpm madge --circular --extensions ts,tsx ./apps ./packages  # Must be empty
+
+# Forbidden patterns
+rg "process\.env\." --type ts --glob '!packages/config/**'  # Must be empty
+rg "admin.brainliest.com|brainliest.com" --type ts --glob '!packages/config/**'  # Must be empty
+
+# Duplicate code
+pnpm jscpd --min-lines 5 --min-tokens 50 ./apps ./packages  # Must = 0%
+
+# Dependency validation
+pnpm depcruise --validate .dependency-cruiser.js src  # Must pass
+
+## ESCALATION PROTOCOL
+When in doubt: STOP → ASK USER → WAIT FOR APPROVAL
+Never guess. Never assume. Always ask.
+
+## DOCUMENT AUTHORITY HIERARCHY
+1. PROJECT_MANIFEST.md (highest authority)
+2. COMPLETE_BUILD_SPECIFICATION.md (implementation contract)
+3. ARCHITECTURE_BLUEPRINT.md (patterns & rationale)
+4. Existing code implementation
+5. ADRs (historical context only)
+
+## SESSION END PROTOCOL
+Before marking task complete:
+1. Run ALL automated audit commands above
+2. Review deep audit checklist in PROJECT_MANIFEST.md
+3. Confirm all quality gates pass
+4. Request user review and approval
+5. Update CHANGELOG.md if specifications changed
+
+## ZERO TOLERANCE VIOLATIONS
+These will result in IMMEDIATE TASK FAILURE:
+- Using 'any' type
+- SSOT violation (duplicate schema/type)
+- Circular dependency introduced
+- Forbidden import (apps→db, ui→infra)
+- Hardcoded secret or domain
+- Skipping deep audit
+- Modifying locked documents without approval
+
+---
+Last Updated: 2025-10-02
+Version: 2.0.0 LOCKED
+Enforced by: ALL AI assistants working on this project

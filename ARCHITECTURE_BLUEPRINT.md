@@ -1,8 +1,20 @@
 # Brainliest Platform - Complete Architecture Blueprint
 
-**Version:** 1.0.0
+**Version:** 2.0.0
 **Last Updated:** 2025-10-02
-**Status:** Foundational Charter - Complete Rebuild
+**Status:** 🔒 LOCKED — Foundational Charter - Complete Rebuild
+
+> **Guardrail Notice**  
+> This blueprint is subordinate to `.ai-guardrails`, `PROJECT_MANIFEST.md`, and `COMPLETE_BUILD_SPECIFICATION.md`.
+> Review those documents first, then [docs/architecture/guardrails.md](docs/architecture/guardrails.md) before making any change.
+> AI assistants must follow these guardrails exactly.
+>
+> **Companion Documents**
+> - [.ai-guardrails](.ai-guardrails) — AI session onboarding checklist
+> - [PROJECT_MANIFEST.md](PROJECT_MANIFEST.md) — Highest authority guardrails
+> - [COMPLETE_BUILD_SPECIFICATION.md](COMPLETE_BUILD_SPECIFICATION.md) — Implementation contract
+> - [docs/architecture/guardrails.md](docs/architecture/guardrails.md) — Governance & enforcement rules
+> - [docs/architecture/overview.md](docs/architecture/overview.md) — System summary
 
 ---
 
