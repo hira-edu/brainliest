@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "jsx": "react-jsx",
+    "types": [
+      "vitest/globals"
+    ],
+    "noEmit": true
+  },
+  "include": [
+    "src",
+    "tailwind.config.ts",
+    "vitest.config.ts",
+    ".storybook"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}

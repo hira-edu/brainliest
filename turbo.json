@@ -1,0 +1,42 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "storybook-static/**"],
+      "inputs": ["src/**/*", "package.json", "tsconfig.json", "tsconfig.*.json"]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**/*", "package.json", "tsconfig.json", "tsconfig.*.json"]
+    },
+    "test:e2e": {
+      "outputs": []
+    },
+    "storybook": {
+      "outputs": ["storybook-static/**"]
+    },
+    "migrate:generate": {
+      "outputs": []
+    },
+    "migrate:apply": {
+      "outputs": []
+    },
+    "seed": {
+      "outputs": []
+    },
+    "depgraph": {
+      "outputs": ["docs/dependencies.svg"]
+    },
+    "dev": {
+      "cache": false
+    }
+  }
+}

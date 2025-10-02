@@ -17,6 +17,181 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.1] - 2025-10-02
+
+### Fixed
+- **Button component** — Improved implementation
+  - Changed default `type` from implicit to explicit `type="button"`
+  - Enhanced spinner integration with proper size mapping (sm→xs, md→sm, lg→md)
+  - Added `aria-busy` attribute for loading states
+  - Improved disabled state handling with `resolvedDisabled` boolean
+  - Wrapped icon/spinner content in semantic spans for better layout control
+  - Exported `buttonVariants` for potential composition patterns
+  - Updated gap from variant-specific to base class `gap-2`
+
+- **Checkbox component** — Enhanced accessibility
+  - Replaced `Math.random()` ID generation with React's `useId()` hook (SSR-safe)
+  - Added proper `aria-describedby` linking description to input
+  - Used nullish coalescing (`??`) instead of OR operator for ID fallback
+  - Changed `label` and `description` types from `string` to `React.ReactNode` for flexibility
+  - Improved spacing from `ml-3` to `gap-3` on flex container
+  - Added `mt-1` margin to description for better visual hierarchy
+
+- **Radio component** — Enhanced accessibility and SSR safety
+  - Replaced `Math.random()` ID generation with React's `useId()` hook
+  - Added proper `aria-describedby` for description linking
+  - Ensured `name` prop is properly passed through for radio grouping
+  - Changed `label` and `description` to `React.ReactNode` type
+  - Consistent spacing improvements matching Checkbox component
+
+- **Switch component** — Complete Radix UI rewrite
+  - Migrated from custom button implementation to `@radix-ui/react-switch`
+  - Uses `SwitchPrimitive.Root` and `SwitchPrimitive.Thumb` for proper semantics
+  - Correct ref type changed to `HTMLButtonElement` (Radix switch renders button)
+  - Proper state management via `data-[state=checked]` and `data-[state=unchecked]`
+  - Enhanced accessibility with `aria-labelledby` and `aria-describedby`
+  - Integrated `@radix-ui/react-label` for proper label association
+  - Removed manual state tracking - delegated to Radix primitive
+  - Improved disabled state styling with `opacity-60`
+
+- **Card component** — Major restructuring
+  - Renamed `cardVariants` to `cardContainerVariants` for clarity
+  - Split styling concerns: container variants (border, shadow) vs. padding
+  - Created `paddingMap` and `sectionPaddingMap` constant objects with type safety
+  - Introduced `sectionPadding` prop for independent header/footer padding control
+  - Enhanced default variant with better shadow: `shadow-sm` → `hover:shadow-md`
+  - Updated border radius from `rounded-lg` to `rounded-xl` for modern look
+  - Proper TypeScript typing with `PaddingKey` and `SectionPaddingKey` types
+  - Improved conditional rendering with ternary expressions instead of `&&`
+  - Exported `cardContainerVariants` for potential composition
+
+- **useClipboard hook** — Enhanced implementation
+  - Added explicit `UseClipboardOptions` and `UseClipboardResult` interfaces
+  - Proper return type: `UseClipboardResult` with typed `copy` function
+  - Memory leak prevention with `timeoutRef` and cleanup in `useEffect`
+  - Clear previous timeout before setting new one to prevent multiple timeouts
+  - Explicit parameter type `value: string` in copy function
+  - Returns `Promise<boolean>` for success/failure feedback
+
+- **useDisclosure hook** — Added proper typing
+  - Created `UseDisclosureReturn` interface documenting all return values
+  - Explicit return type annotation for better IDE support
+  - Consistent naming: `open`, `close`, `toggle` plus legacy `onOpen`, `onClose`, `onToggle` aliases
+
+- **Input component** — Enhanced accessibility
+  - Added `aria-invalid={isError}` for error states
+  - Exported `inputVariants` for composition
+  - Reordered addon div classes for consistency
+
+- **Select component** — Enhanced accessibility
+  - Added `aria-invalid={isError}` for error states
+  - Exported `selectVariants` for composition
+
+- **Textarea component** — Enhanced accessibility
+  - Added `aria-invalid={isError}` for error states
+  - Exported `textareaVariants` for composition
+
+- **Grid component** — Improved TypeScript strictness
+  - Changed variant keys from numbers to strings ('1', '2', etc.) for proper CVA typing
+  - Prevents TypeScript errors with numeric property keys
+
+- **Stack component** — Improved TypeScript strictness
+  - Changed gap variant keys from numbers to strings for proper CVA typing
+
+- **Icon component** — NEW primitive component
+  - Built with lucide-react for consistent icon system
+  - Type-safe icon names with `IconName` type export
+  - Supports all CVA sizes (xs, sm, md, lg, xl)
+  - Accessible with proper aria-hidden and role attributes
+  - Fully typed and exported from package index
+
+- **useFocusTrap hook** — NEW accessibility hook
+  - Traps focus within a container (modals, dialogs)
+  - Exported from package index
+
+### Added
+- **Dependencies**
+  - `@radix-ui/react-switch` ^1.0.3 for Switch component
+  - `lucide-react` ^0.368.0 for Icon component
+  - Fixed `dependency-cruiser` package name (was incorrectly `depcruise`)
+- **Storybook coverage** — Added CSF stories for primitives, layout, and feedback components to aid visual regression and design review
+- **Unit tests** — Added Vitest coverage for primitives, layout, and feedback components to satisfy >80% coverage requirement for new UI modules
+- **Form library** — Implemented `Form`, `FormField`, `FormLabel`, `FormError`, and `FormSection` with full accessibility wiring, tests, and stories
+- **Navigation suite** — Added `Breadcrumbs`, `Sidebar`, `Header`, `Footer`, `Menu`, and `MenuButton` with co-located tests and Storybook demos
+
+### Fixed (TypeScript)
+- **Input & Select components** — Resolved `size` property conflict with native HTML attributes
+  - Used `Omit<React.InputHTMLAttributes, 'size'>` to prevent conflict
+  - CVA size variants now work properly without TypeScript errors
+- **tsconfig.json** — Removed conflicting `@testing-library/jest-dom` from types array
+  - Prevents conflict between Jest and Vitest global types
+- **turbo.json** — Updated from deprecated `pipeline` to `tasks` field
+- **package.json** — Fixed `depcruise` → `dependency-cruiser` package name
+
+### Changed
+- All updated components maintain backward compatibility with existing API
+- Improved SSR safety across Checkbox, Radio, and Switch with `useId()`
+- Enhanced accessibility attributes across all form components
+- Better TypeScript strictness with explicit types instead of implicit inference
+- **Dependencies installed successfully** — 769 packages installed with pnpm
+
+---
+
+## [2.2.0] - 2025-10-02
+
+### Added
+- **UI Component Library Implementation** (`packages/ui/`)
+  - Monorepo structure with pnpm workspaces
+  - Design system tokens at `packages/ui/src/theme/tokens.ts` (SSOT)
+  - Primitive components: Button, Input, Textarea, Select, Checkbox, Radio, Switch, Badge, Avatar, Spinner, Link
+  - Layout components: Container, Grid, Stack, Divider, Card, Section
+  - Feedback components: Alert, Progress, Skeleton, EmptyState
+  - Custom hooks: useMediaQuery, useBreakpoint, useClipboard, usePagination, useDisclosure, useKeyboardShortcut
+  - Utility functions: cn (className merger with tailwind-merge)
+  - Full TypeScript support with strict mode, zero `any` usage
+  - Class Variance Authority (CVA) for type-safe variant management
+  - Mobile-first responsive design with breakpoints (sm, md, lg, xl, 2xl)
+  - Accessibility features: ARIA labels, keyboard navigation, focus management
+  - Component exports at `packages/ui/src/index.ts`
+
+- **Next.js 15 Applications**
+  - `apps/web` — Student-facing app with App Router (port 3000)
+  - `apps/admin` — Admin portal with App Router (port 3001)
+  - Shared Tailwind config extending UI package tokens
+  - Global CSS with design system variables
+
+- **Demo Page** (`apps/web/src/app/demo/`)
+  - Comprehensive component showcase with interactive examples
+  - All primitives, layouts, and feedback components demonstrated
+  - Responsive design examples
+  - Isolated in `/demo` folder for easy removal
+
+- **Dependencies**
+  - @tailwindcss/forms plugin for consistent form styling
+  - class-variance-authority for variant management
+  - tailwind-merge + clsx for className merging
+  - Radix UI primitives (accordion, dialog, dropdown, tabs, toast, tooltip, etc.)
+
+### Fixed
+- **Card component** — Corrected `cardVariants` usage (was incorrectly passing `className` as variant argument)
+  - Line 40: Changed from `cn(cardVariants({ variant, className }))` to `cn(cardVariants({ variant }), className)`
+  - Line 47: Removed incorrect `cardVariants({ padding })` usage, replaced with conditional padding classes
+  - Now correctly separates variant styling from padding and custom className
+
+### Changed
+- Updated `packages/ui/package.json` with correct build configuration and dependencies
+- Added @tailwindcss/forms to devDependencies
+- Configured tsup for ESM/CJS dual bundle output
+
+### Verified
+- All components follow correct cn/cva pattern: `className={cn(componentVariants({ ...variantProps }), className)}`
+- Button, Input, Progress, Spinner, Badge, Divider components verified as correct
+- Zero SSOT violations — all design tokens centralized in `tokens.ts`
+- Zero TypeScript errors in component implementations
+- All exports properly typed and documented
+
+---
+
 ## [2.1.0] - 2025-10-02
 
 ### Added

@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": false,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@brainliest/ui/*": ["packages/ui/src/*"],
+      "@brainliest/shared/*": ["packages/shared/src/*"],
+      "@brainliest/db/*": ["packages/db/src/*"],
+      "@brainliest/config/*": ["packages/config/src/*"],
+      "@brainliest/testing/*": ["packages/testing/src/*"]
+    }
+  }
+}
