@@ -111,13 +111,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Dependencies**
-  - `@radix-ui/react-switch` ^1.0.3 for Switch component
+  - Radix primitives (`@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-popover`, `@radix-ui/react-tooltip`, `@radix-ui/react-command`, `@radix-ui/react-switch`) adopted as the standard UI foundation
   - `lucide-react` ^0.368.0 for Icon component
   - Fixed `dependency-cruiser` package name (was incorrectly `depcruise`)
 - **Storybook coverage** — Added CSF stories for primitives, layout, and feedback components to aid visual regression and design review
 - **Unit tests** — Added Vitest coverage for primitives, layout, and feedback components to satisfy >80% coverage requirement for new UI modules
 - **Form library** — Implemented `Form`, `FormField`, `FormLabel`, `FormError`, and `FormSection` with full accessibility wiring, tests, and stories
 - **Navigation suite** — Added `Breadcrumbs`, `Sidebar`, `Header`, `Footer`, `Menu`, and `MenuButton` with co-located tests and Storybook demos
+- **Composite refresh** — Rebuilt `Modal`, `Dialog`, `Dropdown`, `Tooltip` using Radix primitives with exhaustive tests, stories, and demos
+- **Interactive controls** — Delivered `Pagination`, `SearchableSelect`, and `CommandPalette` composites with typed APIs, stories, tests, and demo routes
+- **Navigation & layout demos** — Added Radix-backed Tabs, Accordion, Popover with co-located tests/stories and new demo pages
+- **Feedback** — Introduced Radix Toast primitives (provider, viewport, actions) with tests, Storybook story, and dedicated demo route
+- **Testing** — Added Playwright configuration and demo-route E2E coverage for composites and toast
+
+### Changed
+- Standardised composite implementations on Radix UI primitives (`Dialog`, `DropdownMenu`, `Popover`, `Tooltip`, `Command`) to unify accessibility behaviour.
+
+### Removed
+- `@headlessui/react` dependency (all components migrated to Radix equivalents).
 
 ### Fixed (TypeScript)
 - **Input & Select components** — Resolved `size` property conflict with native HTML attributes

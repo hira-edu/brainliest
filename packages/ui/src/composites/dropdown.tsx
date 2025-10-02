@@ -1,127 +1,129 @@
-import { createContext, forwardRef, useContext } from 'react';
-import { Menu, Transition } from '@headlessui/react';
-import type { ReactNode, HTMLAttributes, ButtonHTMLAttributes } from 'react';
-import { Fragment } from 'react';
+"use client";
+
+import { forwardRef, isValidElement } from 'react';
+import type {
+  ReactNode,
+  HTMLAttributes,
+  ButtonHTMLAttributes,
+  AnchorHTMLAttributes,
+  Ref,
+} from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { cn } from '../lib/utils';
 import { Button } from '../primitives/button';
 
-interface DropdownContextValue {
-  align: 'start' | 'end';
-}
-
-const DropdownContext = createContext<DropdownContextValue>({ align: 'start' });
+type DropdownItemElement = HTMLButtonElement | HTMLAnchorElement;
 
 export interface DropdownProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   trigger: ReactNode;
-  align?: 'start' | 'end';
+  align?: 'start' | 'center' | 'end';
   children: ReactNode;
 }
 
 export const Dropdown = ({ trigger, align = 'start', children, className, ...props }: DropdownProps) => (
-  <DropdownContext.Provider value={{ align }}>
-    <Menu as="div" className={cn('relative inline-block text-left', className)} {...props}>
-      <Menu.Button as={Fragment}>{trigger}</Menu.Button>
+  <DropdownMenu.Root>
+    <div className={cn('relative inline-block text-left', className)} {...props}>
+      <DropdownMenu.Trigger asChild>
+        {isValidElement(trigger) ? trigger : <span>{trigger}</span>}
+      </DropdownMenu.Trigger>
 
-      <Transition
-        as={Fragment}
-        enter="transition ease-out duration-100"
-        enterFrom="transform opacity-0 scale-95"
-        enterTo="transform opacity-100 scale-100"
-        leave="transition ease-in duration-75"
-        leaveFrom="transform opacity-100 scale-100"
-        leaveTo="transform opacity-0 scale-95"
-      >
-        <Menu.Items
-          className={({ open }) =>
-            cn(
-              'absolute z-dropdown mt-2 w-56 origin-top-right overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl focus:outline-none',
-              align === 'end' ? 'right-0' : 'left-0'
-            )
-          }
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side="bottom"
+          align={align}
+          sideOffset={8}
+          className="z-dropdown min-w-[14rem] origin-[var(--radix-dropdown-menu-content-transform-origin)] transform overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl outline-none transition duration-150 data-[state=open]:opacity-100 data-[state=open]:scale-100 data-[state=closed]:pointer-events-none data-[state=closed]:opacity-0 data-[state=closed]:scale-95"
         >
           {children}
-        </Menu.Items>
-      </Transition>
-    </Menu>
-  </DropdownContext.Provider>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </div>
+  </DropdownMenu.Root>
 );
 
 Dropdown.displayName = 'Dropdown';
 
-export interface DropdownItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface DropdownItemProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
+    Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> {
   inset?: boolean;
   icon?: ReactNode;
   shortcut?: ReactNode;
   href?: string;
 }
 
-export const DropdownItem = forwardRef<HTMLButtonElement, DropdownItemProps>(
-  ({ className, inset, icon, shortcut, href, children, ...props }, ref) => (
-    <Menu.Item>
-      {({ active, disabled }) => {
-        const baseClasses = cn(
-          'flex w-full items-center justify-between rounded-lg px-2 py-2 text-sm transition-colors',
-          inset ? 'pl-8' : 'pl-2',
-          active ? 'bg-primary-50 text-primary-900' : 'text-gray-700',
-          disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
-          className
-        );
+export const DropdownItem = forwardRef<DropdownItemElement, DropdownItemProps>(
+  ({ className, inset, icon, shortcut, href, disabled, children, ...props }, forwardedRef) => {
+    const baseClasses = cn(
+      'flex w-full items-center justify-between rounded-lg px-2 py-2 text-sm text-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 data-[highlighted]:bg-primary-50 data-[highlighted]:text-primary-900 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 cursor-pointer',
+      inset ? 'pl-8' : 'pl-2',
+      className
+    );
 
-        if (href && !disabled) {
-          return (
-            <a href={href} className={baseClasses} role="menuitem">
-              <span className="flex items-center gap-2">
-                {icon ? <span className="text-gray-400" aria-hidden="true">{icon}</span> : null}
-                {children}
-              </span>
-              {shortcut ? (
-                <span className="text-xs text-gray-400">{shortcut}</span>
-              ) : null}
-            </a>
-          );
-        }
-
-        return (
-          <button
-            ref={ref}
-            type="button"
-            className={baseClasses}
-            disabled={disabled}
-            {...props}
-          >
-            <span className="flex items-center gap-2">
-              {icon ? <span className="text-gray-400" aria-hidden="true">{icon}</span> : null}
-              {children}
+    const content = (
+      <span className="flex w-full items-center justify-between gap-4">
+        <span className="flex items-center gap-2">
+          {icon ? (
+            <span className="text-gray-400" aria-hidden="true">
+              {icon}
             </span>
-            {shortcut ? (
-              <span className="text-xs text-gray-400">{shortcut}</span>
-            ) : null}
-          </button>
-        );
-      }}
-    </Menu.Item>
-  )
+          ) : null}
+          <span className="text-current">{children}</span>
+        </span>
+        {shortcut ? <span className="text-xs text-gray-400">{shortcut}</span> : null}
+      </span>
+    );
+
+    if (href) {
+      return (
+        <DropdownMenu.Item asChild disabled={disabled}>
+          <a
+            ref={forwardedRef as Ref<HTMLAnchorElement>}
+            href={href}
+            className={baseClasses}
+            {...(props as AnchorHTMLAttributes<HTMLAnchorElement>)}
+          >
+            {content}
+          </a>
+        </DropdownMenu.Item>
+      );
+    }
+
+    return (
+      <DropdownMenu.Item asChild disabled={disabled}>
+        <button
+          ref={forwardedRef as Ref<HTMLButtonElement>}
+          type="button"
+          className={baseClasses}
+          disabled={disabled}
+          {...(props as ButtonHTMLAttributes<HTMLButtonElement>)}
+        >
+          {content}
+        </button>
+      </DropdownMenu.Item>
+    );
+  }
 );
 
 DropdownItem.displayName = 'DropdownItem';
 
 export const DropdownSeparator = () => (
-  <div role="separator" className="my-1 h-px w-full bg-gray-200" />
+  <DropdownMenu.Separator className="my-1 h-px w-full bg-gray-200" />
 );
 
 DropdownSeparator.displayName = 'DropdownSeparator';
 
 export const DropdownLabel = ({ children }: { children: ReactNode }) => (
-  <div className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
+  <DropdownMenu.Label className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-gray-400">
     {children}
-  </div>
+  </DropdownMenu.Label>
 );
 
 DropdownLabel.displayName = 'DropdownLabel';
 
 export const DropdownTriggerButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(
-  ({ children, ...props }, ref) => (
-    <Button ref={ref} variant="ghost" {...props}>
+  ({ children, className, ...props }, ref) => (
+    <Button ref={ref} variant="ghost" className={className} {...props}>
       {children}
     </Button>
   )

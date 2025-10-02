@@ -102,20 +102,36 @@ export type { SkeletonProps } from './feedback/skeleton';
 export { EmptyState } from './feedback/empty-state';
 export type { EmptyStateProps } from './feedback/empty-state';
 
+export {
+  Toast,
+  ToastProvider,
+  ToastViewport,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastAction,
+} from './feedback/toast';
+
 // Composites
-export { Modal } from './composites/modal';
+export { Modal, ModalTrigger, ModalClose } from './composites/modal';
 export type { ModalProps } from './composites/modal';
 
-export { Dialog, DialogTrigger, DialogClose } from './composites/dialog';
-export type { DialogProps } from './composites/dialog';
+export { Dialog } from './composites/dialog';
+export type { DialogProps, DialogAction } from './composites/dialog';
 
-export { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from './composites/dropdown';
-export type { DropdownProps } from './composites/dropdown';
+export {
+  Dropdown,
+  DropdownItem,
+  DropdownSeparator,
+  DropdownLabel,
+  DropdownTriggerButton,
+} from './composites/dropdown';
+export type { DropdownProps, DropdownItemProps } from './composites/dropdown';
 
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './composites/tabs';
 export type { TabsProps } from './composites/tabs';
 
-export { Tooltip, TooltipProvider } from './composites/tooltip';
+export { Tooltip } from './composites/tooltip';
 export type { TooltipProps } from './composites/tooltip';
 
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './composites/accordion';
@@ -123,6 +139,15 @@ export type { AccordionProps, AccordionItemProps, AccordionTriggerProps, Accordi
 
 export { Popover, PopoverClose } from './composites/popover';
 export type { PopoverProps } from './composites/popover';
+
+export { Pagination } from './composites/pagination';
+export type { PaginationProps } from './composites/pagination';
+
+export { SearchableSelect } from './composites/searchable-select';
+export type { SearchableSelectProps, SearchableSelectOption } from './composites/searchable-select';
+
+export { CommandPalette } from './composites/command-palette';
+export type { CommandPaletteProps, CommandItem } from './composites/command-palette';
 
 // Hooks
 export { useMediaQuery, useBreakpoint } from './hooks/use-media-query';

@@ -10,7 +10,7 @@ describe('Dropdown', () => {
     const user = userEvent.setup();
     render(
       <Dropdown trigger={trigger}>
-        <DropdownItem onClick={() => {}}>Profile</DropdownItem>
+        <DropdownItem onSelect={() => {}}>Profile</DropdownItem>
       </Dropdown>
     );
 
@@ -26,7 +26,7 @@ describe('Dropdown', () => {
     render(
       <Dropdown trigger={trigger}>
         <DropdownLabel>Account</DropdownLabel>
-        <DropdownItem onClick={onSelect}>Settings</DropdownItem>
+        <DropdownItem onSelect={onSelect}>Settings</DropdownItem>
         <DropdownSeparator />
         <DropdownItem disabled>Disabled</DropdownItem>
       </Dropdown>

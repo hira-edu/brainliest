@@ -28,6 +28,8 @@ describe('Dialog', () => {
       <Dialog
         isOpen
         onClose={onClose}
+        title="Confirm action"
+        description="Press escape to close"
       />
     );
 
@@ -43,6 +45,8 @@ describe('Dialog', () => {
       <Dialog
         isOpen
         onClose={onClose}
+        title="Delete question"
+        description="This action cannot be undone."
         actions={[
           { id: 'cancel', label: 'Cancel', onClick: onClose, variant: 'secondary' },
           { id: 'confirm', label: 'Delete', onClick: confirm },

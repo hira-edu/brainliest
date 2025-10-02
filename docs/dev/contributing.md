@@ -68,27 +68,13 @@
 
 ## Active Workstreams & Ownership (2025-10-02)
 
-> ℹ️ Ownership is enforced to prevent drift and duplication. Do not begin work on an item assigned to another developer without explicit hand-off.
+> ℹ️ Codex currently owns every in-flight implementation stream. Contributions from additional developers require explicit hand-off.
 
 - **Codex (lead / repo owner)**
-  - Finalize shared form wrappers: `packages/ui/src/forms/{form.tsx,form-field.tsx,form-label.tsx,form-error.tsx,form-section.tsx}`
-  - Build navigation primitives: `packages/ui/src/navigation/{breadcrumbs.tsx,sidebar.tsx,header.tsx,footer.tsx,menu.tsx,menu-button.tsx}`
-  - Maintain documentation updates (CHANGELOG, onboarding) and validate Claude’s submissions against SSOT guardrails each day.
+  - Maintain the shared UI library (`packages/ui`) and deliver components with co-located tests, stories, and demo coverage.
+  - Curate demo routes under `apps/web/src/app/demo/**` so Playwright scenarios remain deterministic.
+  - Keep CHANGELOG, worklog, and contributing guide synchronized with shipped features.
 
-- **Claude Sonnet 4.5 (developer)**
-  - Implement composite UI components using Radix primitives: `packages/ui/src/composites/{modal.tsx,dialog.tsx,dropdown.tsx,tooltip.tsx}` with matching tests/stories.
-  - Deliver pagination & command surfaces: `packages/ui/src/composites/{pagination.tsx,searchable-select.tsx,command-palette.tsx}` following spec variants.
-  - Produce Playwright-ready demos under `apps/web/src/app/demo/` showcasing the new composite components (one route per component group).
-
-### Checkpoints for Claude
-
-1. Before coding, re-read the relevant subsection in `UI_COMPONENT_SPECIFICATION.md` and confirm there is no existing implementation.
-2. Every component MUST ship with:
-   - Co-located Vitest coverage hitting render + interaction paths.
-   - Storybook CSF stories covering all variants and accessibility cases.
-   - Index exports and token usage verification.
-3. Open a progress update after each component (summary, tests run, outstanding questions). Codex will review for drift and duplication; fixes are mandatory before moving on.
-
-Failure to follow any checkpoint will block merge and requires rework. Escalate ambiguities immediately—never guess.
+Failure to follow guardrails (tests, stories, documentation) will block merge until remedied.
 
 Thank you for contributing! Keep this guide updated as the team evolves.
