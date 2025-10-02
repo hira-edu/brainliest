@@ -1,0 +1,24 @@
+{
+  "name": "@brainliest/shared",
+  "version": "0.0.0",
+  "description": "Shared domain models, analytics contracts, and service interfaces for Brainliest",
+  "private": false,
+  "type": "module",
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./domain": "./src/domain/index.ts",
+    "./domain/enums": "./src/domain/enums.ts",
+    "./domain/models": "./src/domain/models.ts",
+    "./analytics": "./src/analytics/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  }
+}

@@ -11,6 +11,12 @@
 - Finalized shared form wrappers (`Form`, `FormField`, `FormLabel`, `FormError`, `FormSection`).
 - Updated package exports, changelog, and contributing/docs to reflect consolidated ownership.
 - Introduced an automated cleanup script with package alias to remove demo routes and test/story artifacts on demand.
+- Bootstrapped `@brainliest/config` (env schemas, redis keys, routes, feature flags) and `@brainliest/shared` (domain models, analytics contracts) to anchor upcoming platform workstreams.
+
+## 2025-10-02 (Session 6) — Codex
+- 🧭 **Config scaffolding** — Created `packages/config` with server/client env parsers, redis key registry, feature flags, and route helpers; added unit coverage for env parsing.
+- 🧩 **Shared domain layer** — Added `packages/shared` with branded domain models plus analytics registry/tracker contracts, including tests for the new tracking pipeline.
+- 🛠️ **Workspace wiring** — Updated TypeScript path aliases, package manifests, and lint/test hooks so downstream apps can consume the new config/shared exports immediately.
 
 ## 2025-10-02 (Session 5) — Codex
 - ✅ **Radix Select upgrade** — Replaced the primitive `<select>` with a Radix Select wrapper that supports keyboard navigation, custom sizing/state treatment, and hidden form inputs.

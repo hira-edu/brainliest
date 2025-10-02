@@ -78,6 +78,7 @@
   - Maintain the shared UI library (`packages/ui`) and deliver components with co-located tests, stories, and demo coverage.
   - Curate demo routes under `apps/web/src/app/demo/**` so Playwright scenarios remain deterministic.
   - Keep CHANGELOG, worklog, and contributing guide synchronized with shipped features.
+  - Own `@brainliest/config` (env schemas, redis keys, routes, feature flags) and `@brainliest/shared` (domain contracts, analytics tooling) until ownership is reassigned.
 
 Failure to follow guardrails (tests, stories, documentation) will block merge until remedied.
 

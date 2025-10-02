@@ -47,10 +47,10 @@ test.describe('Composite demos', () => {
     await page.goto(`${base}/composites/searchable-select`);
     await expectHeadingVisible(page, 'Searchable Select');
 
-    await page.getByRole('combobox').click();
-    await page.getByRole('textbox').fill('Security');
-    await page.getByText('Security Analyst').click();
-    await expect(page.getByText('Selected: security')).toBeVisible();
+    await page.getByRole('button', { name: /Search options/i }).click();
+    await page.getByRole('combobox', { name: /Search options/i }).fill('Security');
+    await page.getByRole('option', { name: 'Security+' }).click();
+    await expect(page.getByText('Selected: security+')).toBeVisible();
   });
 
   test('command palette executes command', async ({ page }) => {
@@ -58,8 +58,8 @@ test.describe('Composite demos', () => {
     await expectHeadingVisible(page, 'Command Palette');
 
     await page.getByRole('button', { name: 'Open command palette' }).click();
-    await page.getByRole('textbox').fill('analytics');
-    await page.getByText('View analytics').click();
+    await page.getByPlaceholder('Search commands').fill('analytics');
+    await page.getByRole('option', { name: 'View analytics' }).click();
     await expect(page.getByText('Executed: View analytics')).toBeVisible();
   });
 
@@ -78,8 +78,13 @@ test.describe('Composite demos', () => {
     await page.goto(`${base}/composites/accordion`);
     await expectHeadingVisible(page, 'Accordion');
 
-    await page.getByRole('button', { name: 'How are exam questions sourced?' }).click();
-    await expect(page.getByText(/We curate official practice items/)).toBeVisible();
+    const trigger = page.getByRole('button', { name: 'How are exam questions sourced?' });
+    const answer = page.getByText(/We curate official practice items/);
+
+    // Default accordion state keeps the first panel expanded. Toggle closed then open to validate interaction.
+    await trigger.click();
+    await trigger.click();
+    await expect(answer).toBeVisible();
   });
 
   test('popover demo displays contextual content', async ({ page }) => {
@@ -103,6 +108,6 @@ test.describe('Composite demos', () => {
     await expectHeadingVisible(page, 'Toast');
 
     await page.getByRole('button', { name: 'Trigger toast' }).click();
-    await expect(page.getByText('Settings updated')).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('Settings updated');
   });
 });

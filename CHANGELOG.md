@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Cleanup utility `scripts/cleanup-tests-demos.js` with dry-run safety to remove demo routes and test/story files for production-only deployments.
 - Workspace script alias `pnpm cleanup:tests-demos` documented in contributing guide.
+- Bootstrapped `@brainliest/config` (env schemas, redis keys, feature flags, routes) and `@brainliest/shared` (domain enums/models, analytics registry) with initial unit coverage.
 
 ### Changed
 - Rebuilt `SearchableSelect` with Radix Popover + `cmdk`, delivering accessible filtering, looping keyboard navigation, and updated stories/tests.

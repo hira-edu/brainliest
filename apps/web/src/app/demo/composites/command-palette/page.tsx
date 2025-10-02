@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { CommandPalette, Button, type CommandItem } from '@brainliest/ui';
+import { CommandPalette, Button } from '@brainliest/ui';
+import type { CommandItem } from '@brainliest/ui';
 
 const commands: CommandItem[] = [
   { id: 'create', name: 'Create practice set', group: 'Actions', shortcut: '⌘N' },
@@ -12,6 +13,7 @@ const commands: CommandItem[] = [
 
 export default function CommandPaletteDemo() {
   const [open, setOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-redundant-type-constituents
   const [lastCommand, setLastCommand] = useState<CommandItem | null>(null);
 
   return (
@@ -23,6 +25,7 @@ export default function CommandPaletteDemo() {
 
       <Button onClick={() => setOpen(true)}>Open command palette</Button>
       <p className="text-sm text-gray-500">
+        {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
         {lastCommand ? `Executed: ${lastCommand.name}` : 'No command executed yet.'}
       </p>
 

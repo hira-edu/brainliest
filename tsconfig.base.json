@@ -17,7 +17,7 @@
       "@brainliest/ui/*": ["packages/ui/src/*"],
       "@brainliest/shared/*": ["packages/shared/src/*"],
       "@brainliest/db/*": ["packages/db/src/*"],
-      "@brainliest/config/*": ["packages/config/src/*"],
+      "@brainliest/config/*": ["packages/config/*"],
       "@brainliest/testing/*": ["packages/testing/src/*"]
     }
   }

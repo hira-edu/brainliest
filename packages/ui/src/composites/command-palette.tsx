@@ -8,7 +8,7 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandInput,
-  CommandItem,
+  CommandItem as CmdkCommandItem,
   CommandList,
   CommandSeparator,
 } from 'cmdk';
@@ -122,7 +122,7 @@ export function CommandPalette({ isOpen, onClose, commands, onSelect }: CommandP
                     className="px-2"
                   >
                     {items.map((item) => (
-                      <CommandItem
+                      <CmdkCommandItem
                         key={item.id}
                         value={item.id}
                         disabled={item.disabled}
@@ -149,7 +149,7 @@ export function CommandPalette({ isOpen, onClose, commands, onSelect }: CommandP
                             {item.shortcut}
                           </span>
                         ) : null}
-                      </CommandItem>
+                      </CmdkCommandItem>
                     ))}
                   </CommandGroup>
                   {groupIndex < groups.length - 1 ? (

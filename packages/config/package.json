@@ -1,0 +1,28 @@
+{
+  "name": "@brainliest/config",
+  "version": "0.0.0",
+  "description": "Shared configuration utilities for the Brainliest platform",
+  "private": false,
+  "type": "module",
+  "files": [
+    "*.ts"
+  ],
+  "exports": {
+    ".": {
+      "import": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./env.server": "./env.server.ts",
+    "./env.client": "./env.client.ts",
+    "./redis-keys": "./redis-keys.ts",
+    "./feature-flags": "./feature-flags.ts",
+    "./routes": "./routes.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}
