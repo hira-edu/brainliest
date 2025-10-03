@@ -439,6 +439,11 @@ export const subcategoryRelations = relations(subcategories, ({ one }) => ({
   }),
 }));
 
+export const categoryRelations = relations(categories, ({ many }) => ({
+  subcategories: many(subcategories),
+  subjects: many(subjects),
+}));
+
 export const subjectRelations = relations(subjects, ({ one }) => ({
   category: one(categories, {
     fields: [subjects.categorySlug],

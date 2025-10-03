@@ -84,7 +84,7 @@ export default function CatalogDemoPage() {
       </Section>
 
       <Section spacing="xl">
-        <Container maxWidth="5xl">
+        <Container maxWidth="2xl">
           <PracticeCourseNavigation
             courseLabel="Professional certifications"
             collectionLabel="3 learning tracks"

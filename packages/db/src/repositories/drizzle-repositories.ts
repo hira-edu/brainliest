@@ -4,7 +4,7 @@
  */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
-import { and, eq, gte, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, eq, gte, ilike, inArray, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type {
@@ -23,7 +23,13 @@ import type {
   CreateExamInput,
   UpdateExamInput,
 } from './exam-repository';
-import type { UserRepository, UserRecord, CreateUserInput, UpdateUserInput } from './user-repository';
+import type { UserRepository, UserRecord, CreateUserInput, UpdateUserInput, UserFilter } from './user-repository';
+import type { AdminUserRepository, AdminUserRecord, AdminUserFilter } from './admin-user-repository';
+import type {
+  IntegrationKeyRepository,
+  IntegrationKeyRecord,
+  IntegrationKeyFilter,
+} from './integration-repository';
 import type {
   ExplanationRepository,
   ExplanationRecord,
@@ -52,6 +58,7 @@ import type {
 } from './session-repository';
 import type { TaxonomyRepository } from './taxonomy-repository';
 import { DrizzleTaxonomyRepository } from './taxonomy-repository';
+export { DrizzleTaxonomyRepository } from './taxonomy-repository';
 import type { PaginatedResult, PaginationMeta, QuestionId, ExamSlug, UserId, SessionId } from '../types';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -199,13 +206,8 @@ export class DrizzleQuestionRepository implements QuestionRepository {
     return this.mapQuestion(question);
   }
 
-  async findByExam(
-    examSlug: ExamSlug,
-    filters: QuestionFilter,
-    page: number,
-    pageSize: number
-  ): Promise<PaginatedResult<QuestionRecord>> {
-    const conditions: SQL[] = [eq(schema.questions.examSlug, examSlug)];
+  private buildQuestionConditions(filters: QuestionFilter): SQL[] {
+    const conditions: SQL[] = [];
 
     if (filters.subjectSlug !== undefined) {
       conditions.push(eq(schema.questions.subjectSlug, filters.subjectSlug));
@@ -228,20 +230,32 @@ export class DrizzleQuestionRepository implements QuestionRepository {
       conditions.push(eq(schema.questions.domain, filters.domain));
     }
 
-    const combinedWhere = conditions.length === 1 ? conditions[0]! : and(...conditions);
+    return conditions;
+  }
+
+  private async listWithConditions(
+    conditions: SQL[],
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<QuestionRecord>> {
+    const whereClause =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]!
+          : and(...conditions);
 
     const totalCountResult = await this.db
       .select({ value: sql<number>`count(*)` })
       .from(schema.questions)
-      .where(combinedWhere);
+      .where(whereClause ?? sql`TRUE`);
 
     const total = Number(totalCountResult[0]?.value ?? 0);
-
     const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
     const offset = Math.max(0, (Math.max(page, 1) - 1) * safePageSize);
 
     const questions = await this.db.query.questions.findMany({
-      where: combinedWhere,
+      where: whereClause,
       limit: safePageSize,
       offset,
       orderBy: (fields, { desc }) => desc(fields.createdAt),
@@ -255,12 +269,25 @@ export class DrizzleQuestionRepository implements QuestionRepository {
       },
     });
 
-    const records = questions.map((item) => this.mapQuestion(item));
-
     return {
-      data: records,
+      data: questions.map((item) => this.mapQuestion(item)),
       pagination: buildPaginationMeta(total, page, safePageSize),
     };
+  }
+
+  async list(filters: QuestionFilter, page: number, pageSize: number): Promise<PaginatedResult<QuestionRecord>> {
+    const conditions = this.buildQuestionConditions(filters);
+    return this.listWithConditions(conditions, page, pageSize);
+  }
+
+  async findByExam(
+    examSlug: ExamSlug,
+    filters: QuestionFilter,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<QuestionRecord>> {
+    const conditions = [eq(schema.questions.examSlug, examSlug), ...this.buildQuestionConditions(filters)];
+    return this.listWithConditions(conditions, page, pageSize);
   }
 
   async findManyByIds(ids: QuestionId[]): Promise<QuestionRecord[]> {
@@ -528,8 +555,8 @@ export class DrizzleQuestionRepository implements QuestionRepository {
 
 type ExamRow = typeof schema.exams.$inferSelect & {
   subject?: (typeof schema.subjects.$inferSelect & {
-    category?: typeof schema.categories.$inferSelect;
-    subcategory?: typeof schema.subcategories.$inferSelect;
+    category?: typeof schema.categories.$inferSelect | null;
+    subcategory?: typeof schema.subcategories.$inferSelect | null;
   });
 };
 
@@ -664,7 +691,7 @@ export class DrizzleExamRepository implements ExamRepository {
           categoryName: exam.subject.category?.name ?? undefined,
           categoryType: exam.subject.category?.type ?? undefined,
           subcategorySlug: exam.subject.subcategorySlug ?? undefined,
-          subcategoryName: exam.subject.subcategory?.name ?? undefined,
+          subcategoryName: exam.subject.subcategory ? exam.subject.subcategory.name : undefined,
         }
       : undefined;
 
@@ -696,6 +723,49 @@ export class DrizzleUserRepository implements UserRepository {
   async findByEmail(email: string): Promise<UserRecord | null> {
     const user = await this.db.query.users.findFirst({ where: eq(schema.users.email, email) });
     return user ? this.mapUser(user) : null;
+  }
+
+  async list(filters: UserFilter, page: number, pageSize: number): Promise<PaginatedResult<UserRecord>> {
+    const conditions: SQL[] = [];
+
+    if (filters.role) {
+      conditions.push(eq(schema.users.role, filters.role));
+    }
+    if (filters.status) {
+      conditions.push(eq(schema.users.status, filters.status));
+    }
+    if (filters.search && filters.search.trim().length > 0) {
+      const term = `%${filters.search.trim().replace(/%/g, '\\%')}%`;
+      conditions.push(ilike(schema.users.email, term));
+    }
+
+    const whereClause =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]!
+          : and(...conditions);
+
+    const totalRows = await this.db
+      .select({ value: sql<number>`count(*)` })
+      .from(schema.users)
+      .where(whereClause ?? sql`TRUE`);
+
+    const total = Number(totalRows[0]?.value ?? 0);
+    const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+    const offset = Math.max(0, (Math.max(page, 1) - 1) * safePageSize);
+
+    const rows = await this.db.query.users.findMany({
+      where: whereClause,
+      orderBy: (fields, { desc }) => desc(fields.createdAt),
+      limit: safePageSize,
+      offset,
+    });
+
+    return {
+      data: rows.map((row) => this.mapUser(row)),
+      pagination: buildPaginationMeta(total, page, safePageSize),
+    };
   }
 
   async create(input: CreateUserInput): Promise<UserId> {
@@ -744,6 +814,135 @@ export class DrizzleUserRepository implements UserRepository {
       emailVerifiedAt: user.emailVerifiedAt,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
+    };
+  }
+}
+
+export class DrizzleAdminUserRepository implements AdminUserRepository {
+  constructor(private readonly db: DatabaseClient) {}
+
+  async list(filters: AdminUserFilter, page: number, pageSize: number): Promise<PaginatedResult<AdminUserRecord>> {
+    const conditions: SQL[] = [];
+
+    if (filters.role) {
+      conditions.push(eq(schema.adminUsers.role, filters.role));
+    }
+    if (filters.status) {
+      conditions.push(eq(schema.adminUsers.status, filters.status));
+    }
+    if (filters.search && filters.search.trim().length > 0) {
+      const term = `%${filters.search.trim().replace(/%/g, '\\%')}%`;
+      conditions.push(ilike(schema.adminUsers.email, term));
+    }
+
+    const whereClause =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]!
+          : and(...conditions);
+
+    const totalRows = await this.db
+      .select({ value: sql<number>`count(*)` })
+      .from(schema.adminUsers)
+      .where(whereClause ?? sql`TRUE`);
+
+    const total = Number(totalRows[0]?.value ?? 0);
+    const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+    const offset = Math.max(0, (Math.max(page, 1) - 1) * safePageSize);
+
+    const queryOptions: NonNullable<Parameters<typeof this.db.query.adminUsers.findMany>[0]> = {
+      orderBy: (fields, { desc }) => desc(fields.createdAt),
+      limit: safePageSize,
+      offset,
+    };
+
+    if (whereClause) {
+      queryOptions.where = whereClause;
+    }
+
+    const rows = await this.db.query.adminUsers.findMany(queryOptions);
+
+    return {
+      data: rows.map((row) => this.mapAdmin(row)),
+      pagination: buildPaginationMeta(total, page, safePageSize),
+    };
+  }
+
+  private mapAdmin(user: typeof schema.adminUsers.$inferSelect): AdminUserRecord {
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      lastLoginAt: user.lastLoginAt ?? null,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+}
+
+export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository {
+  constructor(private readonly db: DatabaseClient) {}
+
+  async list(
+    filters: IntegrationKeyFilter,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<IntegrationKeyRecord>> {
+    const conditions: SQL[] = [];
+
+    if (filters.type) {
+      conditions.push(eq(schema.integrationKeys.type, filters.type));
+    }
+    if (filters.environment) {
+      conditions.push(eq(schema.integrationKeys.environment, filters.environment));
+    }
+    if (filters.search && filters.search.trim().length > 0) {
+      const term = `%${filters.search.trim().replace(/%/g, '\\%')}%`;
+      conditions.push(ilike(schema.integrationKeys.name, term));
+    }
+
+    const whereClause =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]!
+          : and(...conditions);
+
+    const totalRows = await this.db
+      .select({ value: sql<number>`count(*)` })
+      .from(schema.integrationKeys)
+      .where(whereClause ?? sql`TRUE`);
+
+    const total = Number(totalRows[0]?.value ?? 0);
+    const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+    const offset = Math.max(0, (Math.max(page, 1) - 1) * safePageSize);
+
+    const rows = await this.db.query.integrationKeys.findMany({
+      ...(whereClause ? { where: whereClause } : {}),
+      orderBy: (fields, { desc }) => desc(fields.createdAt),
+      limit: safePageSize,
+      offset,
+      with: {
+        createdBy: true,
+      },
+    });
+
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        environment: row.environment,
+        description: row.description ?? null,
+        lastRotatedAt: row.lastRotatedAt ?? null,
+        createdByAdminId: row.createdByAdmin ?? null,
+        createdByAdminEmail: row.createdBy?.email ?? null,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })),
+      pagination: buildPaginationMeta(total, page, safePageSize),
     };
   }
 }
@@ -1257,6 +1456,8 @@ export interface RepositoryBundle {
   questions: QuestionRepository;
   exams: ExamRepository;
   users: UserRepository;
+  adminUsers: AdminUserRepository;
+  integrationKeys: IntegrationKeyRepository;
   explanations: ExplanationRepository;
   sessions: SessionRepository;
   taxonomy: TaxonomyRepository;
@@ -1267,6 +1468,8 @@ export function createRepositories(db: DatabaseClient): RepositoryBundle {
     questions: new DrizzleQuestionRepository(db),
     exams: new DrizzleExamRepository(db),
     users: new DrizzleUserRepository(db),
+    adminUsers: new DrizzleAdminUserRepository(db),
+    integrationKeys: new DrizzleIntegrationKeyRepository(db),
     explanations: new DrizzleExplanationRepository(db),
     sessions: new DrizzleSessionRepository(db),
     taxonomy: new DrizzleTaxonomyRepository(db),

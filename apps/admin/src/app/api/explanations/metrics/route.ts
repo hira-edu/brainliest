@@ -8,8 +8,12 @@ const repository: ExplanationRepository = new DrizzleExplanationRepository(drizz
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const windowParam = Number(url.searchParams.get('window'));
-  const windowDays = Number.isFinite(windowParam) ? Math.min(Math.max(Math.trunc(windowParam), 1), 90) : 7;
+  const windowRaw = url.searchParams.get('window');
+  const windowParam = windowRaw === null ? undefined : Number(windowRaw);
+  const windowDays =
+    windowParam === undefined || !Number.isFinite(windowParam)
+      ? 7
+      : Math.min(Math.max(Math.trunc(windowParam), 1), 90);
 
   const [totals, dailyTotals] = await Promise.all([
     repository.getAggregateTotals(),

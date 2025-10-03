@@ -5,30 +5,39 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { invalidateCategory, invalidateExam } from '@brainliest/shared';
 
-const invalidateSchema = z.object({
-  type: z.enum(['exam', 'category']),
-  identifier: z.string().min(1),
-});
+type InvalidatePayload = {
+  readonly type: 'exam' | 'category';
+  readonly identifier: string;
+};
+
+function isInvalidatePayload(value: unknown): value is InvalidatePayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    (candidate.type === 'exam' || candidate.type === 'category') &&
+    typeof candidate.identifier === 'string' &&
+    candidate.identifier.trim().length > 0
+  );
+}
 
 export async function POST(request: NextRequest) {
   const json = await request.json().catch(() => null);
-  const parsed = invalidateSchema.safeParse(json);
-
-  if (!parsed.success) {
+  if (!isInvalidatePayload(json)) {
     return NextResponse.json(
       {
         error: 'INVALID_PAYLOAD',
         message: 'Request body does not match schema',
-        details: parsed.error.flatten(),
       },
       { status: 400 }
     );
   }
 
-  const { type, identifier } = parsed.data;
+  const { type, identifier } = json;
 
   try {
     if (type === 'exam') {

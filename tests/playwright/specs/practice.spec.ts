@@ -280,7 +280,7 @@ test.describe('Practice page', () => {
     const initialTimerValue = await timerLabel.textContent();
 
     await page.getByRole('radio', { name: 'A' }).click();
-    await page.getByRole('button', { name: 'AI explanation' }).first().click();
+    await page.getByRole('button', { name: 'Generate answer explanation' }).click();
 
     const explanationCard = page.getByRole('heading', { name: 'AI explanation' });
     await expect(explanationCard).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
@@ -295,7 +295,7 @@ test.describe('Practice page', () => {
     await expect(page.getByText(/Correct answer:/i)).toBeVisible();
 
     const finishExamButton = page.getByRole('button', { name: 'Finish exam' });
-    await expect(finishExamButton).toBeVisible();
+    await expect(finishExamButton).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
     await expect(finishExamButton).toBeEnabled();
 
     await finishExamButton.click();
@@ -321,7 +321,7 @@ test.describe('Practice page', () => {
 
     await submitButtonToggleTest.click();
 
-    await expect(page.getByRole('button', { name: 'Finish exam' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Finish exam' })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
 
     const bookmarkButton = page.getByRole('button', { name: 'Bookmark question' });
     await bookmarkButton.click();
@@ -357,7 +357,8 @@ test.describe('Practice page', () => {
     await page.getByRole('button', { name: 'Submit answer' }).click();
     await expect(page.getByRole('button', { name: 'Finish exam' })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Next' }).click();
+    const nextButton = page.locator('main').getByRole('button', { name: 'Next' });
+    await nextButton.click();
     await page.waitForTimeout(250);
 
     await expect(page.getByRole('button', { name: 'Finish exam' })).toHaveCount(0);

@@ -54,8 +54,8 @@ type FetchExplanationPageOptions = {
   readonly cache?: RequestCache;
 };
 
-function resolveAdminBaseUrl(): string {
-  const headerStore = headers() as Headers;
+async function resolveAdminBaseUrl(): Promise<string> {
+  const headerStore = await headers();
   const rawHost = headerStore.get('host');
   const hostHeader = typeof rawHost === 'string' ? rawHost : '';
 
@@ -126,7 +126,7 @@ export async function fetchExplanationPage({
   pageSize,
   cache = 'no-store',
 }: FetchExplanationPageOptions): Promise<{ data: ExplanationRecord[]; pagination: PaginationDto; }> {
-  const baseUrl = resolveAdminBaseUrl();
+  const baseUrl = await resolveAdminBaseUrl();
 
   const response = await fetch(`${baseUrl}/api/explanations?page=${page}&pageSize=${pageSize}`, {
     cache,
@@ -157,7 +157,7 @@ export async function fetchExplanationPage({
 export async function fetchExplanationMetrics(
   options: { windowDays?: number; cache?: RequestCache } = {}
 ): Promise<ExplanationMetrics> {
-  const baseUrl = resolveAdminBaseUrl();
+  const baseUrl = await resolveAdminBaseUrl();
   const windowDays = options.windowDays ?? 7;
   const cache = options.cache ?? 'no-store';
 

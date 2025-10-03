@@ -15,7 +15,22 @@ export type {
   CreateExamInput,
   UpdateExamInput,
 } from './exam-repository';
-export type { UserRepository, UserRecord, CreateUserInput, UpdateUserInput, UserRoleValue } from './user-repository';
+export type {
+  UserRepository,
+  UserRecord,
+  CreateUserInput,
+  UpdateUserInput,
+  UserRoleValue,
+  UserFilter,
+} from './user-repository';
+export type { AdminUserRepository, AdminUserRecord, AdminUserFilter } from './admin-user-repository';
+export type {
+  IntegrationKeyRepository,
+  IntegrationKeyRecord,
+  IntegrationKeyFilter,
+  IntegrationKeyType,
+  IntegrationEnvironment,
+} from './integration-repository';
 export type {
   ExplanationRepository,
   ExplanationRecord,
@@ -49,6 +64,8 @@ export {
   DrizzleQuestionRepository,
   DrizzleExamRepository,
   DrizzleUserRepository,
+  DrizzleAdminUserRepository,
+  DrizzleIntegrationKeyRepository,
   DrizzleExplanationRepository,
   DrizzleSessionRepository,
   DrizzleTaxonomyRepository,

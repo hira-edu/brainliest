@@ -9,9 +9,9 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./tailwind.config": "./tailwind.config.ts"
   },
@@ -21,7 +21,9 @@
     "tailwind.config.ts"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm,cjs --dts --out-dir dist",
+    "build": "pnpm run build:js && pnpm run build:types",
+    "build:js": "tsup --config tsup.config.ts",
+    "build:types": "tsc --project tsconfig.build.json",
     "clean": "rimraf dist storybook-static coverage",
     "preview": "storybook dev -p 6006",
     "storybook": "storybook build -o storybook-static",

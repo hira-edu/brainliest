@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, isNotNull, sql, asc } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 
@@ -154,7 +154,7 @@ export class DrizzleTaxonomyRepository implements TaxonomyRepository {
         eq(schema.subjects.subcategorySlug, subcategorySlug),
         eq(schema.exams.status, 'published')
       ))
-      .orderBy((fields, { asc }) => asc(schema.exams.title));
+      .orderBy(asc(schema.exams.title));
 
     const examSummaries: CatalogExamSummary[] = [];
     for (const row of examRows) {

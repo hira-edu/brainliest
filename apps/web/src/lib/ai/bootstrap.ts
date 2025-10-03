@@ -29,7 +29,7 @@ export function ensureAiExplanationBootstrap() {
 
   configureAiExplanationService({
     fetchQuestion: async (questionId) => {
-      const record = await questionRepository.findById(questionId as string);
+      const record = await questionRepository.findById(questionId);
       if (record) {
         return mapRecordToQuestionModel(record);
       }

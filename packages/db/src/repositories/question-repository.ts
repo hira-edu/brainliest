@@ -61,6 +61,7 @@ export interface UpdateQuestionInput extends Partial<CreateQuestionInput> {
 
 export interface QuestionRepository {
   findById(id: QuestionId): Promise<QuestionRecord | null>;
+  list(filters: QuestionFilter, page: number, pageSize: number): Promise<PaginatedResult<QuestionRecord>>;
   findByExam(
     examSlug: ExamSlug,
     filters: QuestionFilter,

@@ -75,7 +75,7 @@ export default async function CatalogSubcategoryPage({ params }: { params: Promi
                   key={exam.slug}
                   title={exam.title}
                   subtitle={detail.subcategory.name}
-                  description={exam.description}
+                  description={exam.description ?? undefined}
                   tags={exam.tags}
                   stats={[
                     { label: 'Duration', value: exam.durationMinutes ? `${exam.durationMinutes} min` : '—' },

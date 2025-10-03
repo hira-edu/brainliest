@@ -32,87 +32,105 @@
             - term [ref=e32]: Difficulty mix
             - definition [ref=e33]: E • M • H
       - generic [ref=e34]:
-        - generic [ref=e37]:
-          - generic [ref=e38]:
-            - generic [ref=e39]:
-              - generic [ref=e40]:
-                - paragraph [ref=e41]: Question 1
-                - generic [ref=e42]: MEDIUM
-              - generic [ref=e44]:
-                - button "Bookmark question" [ref=e45] [cursor=pointer]:
-                  - img [ref=e47] [cursor=pointer]
-                - button "Flag question" [ref=e49] [cursor=pointer]:
-                  - img [ref=e51] [cursor=pointer]
-                - generic [ref=e53]:
-                  - img [ref=e54]
-                  - time [ref=e57]: 45:00
-            - heading "What is the derivative of $f(x) = x^3$?" [level=2] [ref=e58]
-          - generic [ref=e60]:
-            - paragraph [ref=e61]: Nice work — your submitted answer matches the correct solution.
-            - button "Toggle question explanation" [ref=e62] [cursor=pointer]:
-              - generic [ref=e63] [cursor=pointer]:
-                - img [ref=e64] [cursor=pointer]
-                - generic [ref=e66] [cursor=pointer]: AI explanation
-            - generic [ref=e67]:
-              - group "Select one answer" [ref=e68]:
-                - generic [ref=e69]: Select one answer
-                - generic [ref=e70]:
-                  - generic [ref=e71] [cursor=pointer]:
-                    - radio "A" [checked] [ref=e74]
-                    - generic [ref=e75] [cursor=pointer]:
-                      - paragraph [ref=e76] [cursor=pointer]: A
-                      - paragraph [ref=e77] [cursor=pointer]: $3x^2$
-                  - generic [ref=e78] [cursor=pointer]:
-                    - radio "B" [ref=e81]
-                    - generic [ref=e82] [cursor=pointer]:
-                      - paragraph [ref=e83] [cursor=pointer]: B
-                      - paragraph [ref=e84] [cursor=pointer]: $x^2$
-                  - generic [ref=e85] [cursor=pointer]:
-                    - radio "C" [ref=e88]
-                    - generic [ref=e89] [cursor=pointer]:
-                      - paragraph [ref=e90] [cursor=pointer]: C
-                      - paragraph [ref=e91] [cursor=pointer]: $3x$
-                  - generic [ref=e92] [cursor=pointer]:
-                    - radio "D" [ref=e95]
-                    - generic [ref=e96] [cursor=pointer]:
-                      - paragraph [ref=e97] [cursor=pointer]: D
-                      - paragraph [ref=e98] [cursor=pointer]: $x^3$
-              - generic [ref=e99]:
-                - generic [ref=e100]:
-                  - button "Generate answer explanation" [ref=e101] [cursor=pointer]:
-                    - generic [ref=e102] [cursor=pointer]:
-                      - img [ref=e103] [cursor=pointer]
-                      - generic [ref=e105] [cursor=pointer]: AI explanation
-                  - button "Submit answer" [disabled]:
-                    - generic: Submit answer
-                - generic [ref=e106]:
-                  - button "Previous" [disabled]:
-                    - generic: Previous
-                  - paragraph [ref=e107]: Question 1 of 24
-                  - button "Next" [disabled]:
-                    - generic: Next
-              - paragraph [ref=e108]: "Correct answer: choice-a"
-        - complementary [ref=e109]:
-          - generic [ref=e110]:
-            - generic [ref=e112]:
-              - heading "Session checklist" [level=3] [ref=e113]
-              - list [ref=e114]:
-                - listitem [ref=e115]: Flag questions to revisit later
-                - listitem [ref=e116]: Toggle calculator mode when allowed
-                - listitem [ref=e117]: Review hints before requesting AI help
-            - generic [ref=e119]:
-              - heading "Keyboard shortcuts" [level=3] [ref=e120]
-              - generic [ref=e121]:
-                - paragraph [ref=e122]:
-                  - generic [ref=e123]: J
-                  - generic [ref=e124]: Next question
-                - paragraph [ref=e125]:
-                  - generic [ref=e126]: K
-                  - generic [ref=e127]: Previous question
-                - paragraph [ref=e128]:
-                  - generic [ref=e129]: /
-                  - generic [ref=e130]: Command palette
-  - button "Open Next.js Dev Tools" [ref=e136] [cursor=pointer]:
-    - img [ref=e137] [cursor=pointer]
-  - alert [ref=e140]
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - navigation "Breadcrumb" [ref=e37]:
+              - list [ref=e38]:
+                - listitem [ref=e39]:
+                  - generic [ref=e40]: Academic
+                  - generic [ref=e42]: /
+                - listitem [ref=e43]:
+                  - generic [ref=e44]: Algebra
+                  - generic [ref=e46]: /
+                - listitem [ref=e47]:
+                  - generic [ref=e48]: A-Level Mathematics Mock Paper (sample-exam)
+            - link "Back to exams" [ref=e49] [cursor=pointer]:
+              - /url: /practice
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]:
+                - generic [ref=e54]:
+                  - paragraph [ref=e55]: Question 1
+                  - generic [ref=e56]: MEDIUM
+                - generic [ref=e58]:
+                  - button "Bookmark question" [ref=e59] [cursor=pointer]:
+                    - img [ref=e61] [cursor=pointer]
+                  - button "Flag question" [ref=e63] [cursor=pointer]:
+                    - img [ref=e65] [cursor=pointer]
+                  - generic [ref=e67]:
+                    - img [ref=e68]
+                    - time [ref=e71]: 44:36
+              - heading "What is the derivative of $f(x) = x^3$?" [level=2] [ref=e72]
+            - generic [ref=e74]:
+              - alert [ref=e75]:
+                - heading "Correct answer" [level=5] [ref=e76]
+                - generic [ref=e77]: Nice work — your submitted answer matches the correct solution.
+              - button "Toggle question explanation" [ref=e78] [cursor=pointer]:
+                - generic [ref=e79] [cursor=pointer]:
+                  - img [ref=e80] [cursor=pointer]
+                  - generic [ref=e82] [cursor=pointer]: AI explanation
+              - generic [ref=e83]:
+                - group "Select one answer" [ref=e84]:
+                  - generic [ref=e85]: Select one answer
+                  - generic [ref=e86]:
+                    - generic [ref=e87] [cursor=pointer]:
+                      - radio "A" [checked] [ref=e90]
+                      - generic [ref=e91] [cursor=pointer]:
+                        - paragraph [ref=e92] [cursor=pointer]: A
+                        - paragraph [ref=e93] [cursor=pointer]: $3x^2$
+                    - generic [ref=e94] [cursor=pointer]:
+                      - radio "B" [ref=e97]
+                      - generic [ref=e98] [cursor=pointer]:
+                        - paragraph [ref=e99] [cursor=pointer]: B
+                        - paragraph [ref=e100] [cursor=pointer]: $x^2$
+                    - generic [ref=e101] [cursor=pointer]:
+                      - radio "C" [ref=e104]
+                      - generic [ref=e105] [cursor=pointer]:
+                        - paragraph [ref=e106] [cursor=pointer]: C
+                        - paragraph [ref=e107] [cursor=pointer]: $3x$
+                    - generic [ref=e108] [cursor=pointer]:
+                      - radio "D" [ref=e111]
+                      - generic [ref=e112] [cursor=pointer]:
+                        - paragraph [ref=e113] [cursor=pointer]: D
+                        - paragraph [ref=e114] [cursor=pointer]: $x^3$
+                - generic [ref=e115]:
+                  - generic [ref=e116]:
+                    - button "Generate answer explanation" [ref=e117] [cursor=pointer]:
+                      - generic [ref=e118] [cursor=pointer]:
+                        - img [ref=e119] [cursor=pointer]
+                        - generic [ref=e121] [cursor=pointer]: AI explanation
+                    - button "Submit answer" [disabled]:
+                      - generic: Submit answer
+                  - generic [ref=e122]:
+                    - button "Previous" [disabled]:
+                      - generic: Previous
+                    - paragraph [ref=e123]: Question 1 of 24
+                    - button "Next" [disabled]:
+                      - generic: Next
+                - alert [ref=e124]:
+                  - heading "You answered correctly" [level=5] [ref=e125]
+                  - generic [ref=e126]: "Correct answer: choice-a"
+        - complementary [ref=e127]:
+          - generic [ref=e128]:
+            - generic [ref=e130]:
+              - heading "Session checklist" [level=3] [ref=e131]
+              - list [ref=e132]:
+                - listitem [ref=e133]: Flag questions to revisit later
+                - listitem [ref=e134]: Toggle calculator mode when allowed
+                - listitem [ref=e135]: Review hints before requesting AI help
+            - generic [ref=e137]:
+              - heading "Keyboard shortcuts" [level=3] [ref=e138]
+              - generic [ref=e139]:
+                - paragraph [ref=e140]:
+                  - generic [ref=e141]: J
+                  - generic [ref=e142]: Next question
+                - paragraph [ref=e143]:
+                  - generic [ref=e144]: K
+                  - generic [ref=e145]: Previous question
+                - paragraph [ref=e146]:
+                  - generic [ref=e147]: /
+                  - generic [ref=e148]: Command palette
+  - button "Open Next.js Dev Tools" [ref=e154] [cursor=pointer]:
+    - img [ref=e155] [cursor=pointer]
+  - alert [ref=e158]
 ```

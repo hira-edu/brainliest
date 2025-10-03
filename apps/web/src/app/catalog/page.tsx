@@ -10,7 +10,7 @@ import {
 } from '@brainliest/ui';
 import { fetchCatalogCategories } from '@/lib/catalog/fetch-catalog';
 
-const typeBadges: Record<string, { label: string; variant: 'secondary' | 'info' | 'success' | 'warning' | 'danger' }> = {
+const typeBadges: Record<string, { label: string; variant: 'secondary' | 'info' | 'success' | 'warning' | 'error' }> = {
   professional: { label: 'Professional', variant: 'info' },
   university: { label: 'University', variant: 'success' },
   certification: { label: 'Certification', variant: 'secondary' },

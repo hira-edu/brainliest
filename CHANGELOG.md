@@ -17,6 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.10] - 2025-10-04
+
+### Changed
+- **UI package build** — Split the `@brainliest/ui` build into dedicated JS (`tsup`) and declaration (`tsc`) passes, ensuring the type bundle succeeds under TypeScript 5.9 without relying on tsup’s `--dts` mode.
+- **Package exports** — Reordered the root export conditions so the `types` entry is respected and removed the temporary deep-import subpath now that `PracticeCourseNavigation` is surfaced from the index bundle.
+- **Catalog consumers** — Updated catalog routes and demos to import `PracticeCourseNavigation` from the library root, keeping all web surfaces aligned with the shared SSOT.
+- **Database mappers** — Relaxed exam/taxonomy relation typing and simplified Drizzle ordering so catalog queries compile cleanly during Next.js production builds.
+- **Redis bootstrap** — Deferred Redis connections to first use and enabled managed TLS support so the shared cache can talk to the provided Redis Cloud endpoint once credentials are finalised.
+- **Admin shell** — Rebuilt the admin dashboard on top of a reusable `AdminShell`, added metric/data table composites, and split panel routes so navigation + breadcrumbs stay SSOT across the admin surface.
+
+### Tests
+- `pnpm --filter @brainliest/ui build`
+- `pnpm --filter @brainliest/ui typecheck`
+- `DATABASE_URL=… pnpm --filter @brainliest/web build`
+- `pnpm --filter @brainliest/shared test`
+- `pnpm --filter @brainliest/admin test`
+
 ## [2.2.9] - 2025-10-03
 
 ### Added

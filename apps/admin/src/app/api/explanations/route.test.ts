@@ -149,7 +149,7 @@ describe('GET /api/explanations/metrics', () => {
       },
     ]);
 
-    const response = await GET();
+    const response = await GET(new Request('http://localhost/api/explanations/metrics'));
 
     expect(response.status).toBe(200);
     expect(getAggregateTotalsMock).toHaveBeenCalledTimes(1);

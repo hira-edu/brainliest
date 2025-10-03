@@ -3,6 +3,15 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+## 2025-10-04 (Session 16) — Codex
+- 🧱 **UI build pipeline** — Split the `@brainliest/ui` build into JS + declaration passes (`tsup` + `tsc`) and reordered package exports so the type entry is respected while removing the temporary deep-import subpath.
+- 🧭 **Catalog imports** — Updated catalog and demo routes to consume `PracticeCourseNavigation` from the package root to stay aligned with the shared export surface.
+- 🧪 **Validation** — `pnpm --filter @brainliest/ui build`, `pnpm --filter @brainliest/ui typecheck`.
+- 🧮 **Catalog build sweep** — Ran `pnpm --filter @brainliest/web build` (with Neon `DATABASE_URL`) to catch regression lint/type errors; patched taxonomy/exam repository typing so null subcategories map cleanly and adjusted Drizzle ordering to satisfy the new compiler constraints. Build now completes, albeit with expected Redis ECONNREFUSED while the cache service is offline in this sandbox.
+- ♻️ **Redis bootstrap** — Switched the shared Redis adapter to lazy connections with optional TLS, ready for the managed Redis endpoint once credentials land (current `vercel_blob…` token appears to be a Vercel Blob key, so cache auth still pending).
+- 🧑‍💼 **Admin shell refresh** — Moved the admin dashboard into a reusable `AdminShell`, introduced metric/data table primitives, split panel routes, and expanded Vitest coverage across the new config + components.
+- 🔜 **Next** — Stub Redis for local builds (or point at Neon/Upstash) and extend the Playwright suite to exercise catalog navigation with live taxonomy fixtures.
+
 ## 2025-10-03 (Session 15) — Codex
 - 🔔 **Practice status alerts** — Converted `PracticeQuestionStatus` to wrap the shared `Alert`, delivering contextual success/warning/error banners for submissions, reveal outcomes, and AI explanation lifecycle messages across the practice experience.
 - 🎯 **Session UI sync** — Refined `PracticeSessionContainer` and `PracticeClient` to compute rich banner metadata (correct vs incorrect, offline cache, explanation ready/failure) and wired the shared logic into both the live flow and demo routes.
