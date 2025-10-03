@@ -150,6 +150,31 @@ export type { SearchableSelectProps, SearchableSelectOption } from './composites
 export { CommandPalette } from './composites/command-palette';
 export type { CommandPaletteProps, CommandItem } from './composites/command-palette';
 
+// Practice
+export { PracticeLayout } from './practice/practice-layout';
+export type { PracticeLayoutProps } from './practice/practice-layout';
+
+export { PracticeExamCard } from './practice/practice-exam-card';
+export type { PracticeExamCardProps, PracticeExamCardStat } from './practice/practice-exam-card';
+
+export { PracticeQuestionCard } from './practice/practice-question-card';
+export type { PracticeQuestionCardProps } from './practice/practice-question-card';
+
+export { PracticeOptionList } from './practice/practice-option-list';
+export type { PracticeOptionListProps, PracticeOption } from './practice/practice-option-list';
+
+export { PracticeFillBlank } from './practice/practice-fill-blank';
+export type { PracticeFillBlankProps } from './practice/practice-fill-blank';
+
+export { PracticeExplanationCard } from './practice/practice-explanation-card';
+export type { PracticeExplanationCardProps } from './practice/practice-explanation-card';
+
+export { PracticeNavigation } from './practice/practice-navigation';
+export type { PracticeNavigationProps } from './practice/practice-navigation';
+
+export { PracticePageHeader } from './practice/practice-page-header';
+export type { PracticePageHeaderProps } from './practice/practice-page-header';
+
 // Hooks
 export { useMediaQuery, useBreakpoint } from './hooks/use-media-query';
 export { useClipboard } from './hooks/use-clipboard';

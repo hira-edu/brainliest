@@ -1,0 +1,50 @@
+{
+  "name": "@brainliest/db",
+  "version": "0.0.0",
+  "description": "Brainliest database access layer",
+  "private": false,
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./schema": "./src/schema/index.ts"
+  },
+  "files": [
+    "dist",
+    "src",
+    "drizzle.config.ts",
+    "migrations",
+    "scripts"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --out-dir dist",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --project tsconfig.build.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate:generate": "drizzle-kit generate:pg --config drizzle.config.ts",
+    "migrate:apply": "drizzle-kit up --config drizzle.config.ts",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.33.0",
+    "postgres": "^3.4.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.26.1",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.3.0",
+    "@electric-sql/pglite": "^0.3.10"
+  }
+}

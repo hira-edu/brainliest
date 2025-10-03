@@ -43,24 +43,28 @@ test.describe('Composite demos', () => {
     await expect(page.getByText('Showing page 2 of 18.')).toBeVisible();
   });
 
-  test('searchable select filters options', async ({ page }) => {
+  test('searchable select requests explanation', async ({ page }) => {
     await page.goto(`${base}/composites/searchable-select`);
     await expectHeadingVisible(page, 'Searchable Select');
 
-    await page.getByRole('button', { name: /Search options/i }).click();
-    await page.getByRole('combobox', { name: /Search options/i }).fill('Security');
-    await page.getByRole('option', { name: 'Security+' }).click();
-    await expect(page.getByText('Selected: security+')).toBeVisible();
+    await page.getByRole('button', { name: /Select an answer choice/i }).click();
+    await page.getByRole('option', { name: 'Option A — 3x²' }).click();
+
+    await expect(page.getByText('Selected choice: Option A — 3x²')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: 'AI explanation' })).toBeVisible();
+    await expect(page.getByText(/Great job/)).toBeVisible();
   });
 
-  test('command palette executes command', async ({ page }) => {
+  test('command palette triggers explanation command', async ({ page }) => {
     await page.goto(`${base}/composites/command-palette`);
     await expectHeadingVisible(page, 'Command Palette');
 
     await page.getByRole('button', { name: 'Open command palette' }).click();
-    await page.getByPlaceholder('Search commands').fill('analytics');
-    await page.getByRole('option', { name: 'View analytics' }).click();
-    await expect(page.getByText('Executed: View analytics')).toBeVisible();
+    await page.getByPlaceholder('Search commands').fill('Explain Option A');
+    await page.getByRole('option', { name: 'Explain Option A — 3x²' }).click();
+
+    await expect(page.getByText('Executed: Explain Option A — 3x²')).toBeVisible();
+    await expect(page.getByText(/Great job/)).toBeVisible();
   });
 
   test('tabs demo switches panels', async ({ page }) => {
@@ -108,6 +112,10 @@ test.describe('Composite demos', () => {
     await expectHeadingVisible(page, 'Toast');
 
     await page.getByRole('button', { name: 'Trigger toast' }).click();
-    await expect(page.getByRole('status')).toContainText('Settings updated');
+    const toastStatus = page
+      .getByRole('status')
+      .filter({ hasText: 'Settings updated' })
+      .first();
+    await expect(toastStatus).toBeVisible();
   });
 });

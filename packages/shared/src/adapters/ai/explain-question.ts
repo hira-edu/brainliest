@@ -23,6 +23,7 @@ export interface ExplanationDto {
 
 export interface QuestionRepository {
   saveExplanation(input: {
+    questionId: string;
     questionVersionId: string;
     answerHash: string;
     model: string;
@@ -102,6 +103,7 @@ export async function generateExplanation(request: ExplanationRequest): Promise<
   }
 
   await questionRepositorySave({
+    questionId: question.id,
     questionVersionId: question.currentVersionId,
     answerHash,
     model: 'gpt-4-turbo',

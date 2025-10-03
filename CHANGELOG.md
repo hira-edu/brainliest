@@ -17,6 +17,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.5] - 2025-10-03
+
+### Added
+- Admin API route `/api/explanations` and the accompanying log page in `apps/admin` so operators can review recently generated AI explanations backed by Drizzle.
+
+### Changed
+- Replaced the AI explanation stub pipeline with the Drizzle repository, propagating language/version metadata through the shared adapters, web bootstrap, and server helper.
+- Extended the explanation repository contract with a `listRecent` helper for reporting, refreshed exports, and updated unit tests to cover the new shape.
+- Added pagination metadata to `/api/explanations`, updating the admin activity view to consume the endpoint and paginate results from the shared repository.
+
+### Tests
+- `pnpm lint --filter @brainliest/db`
+- `pnpm --filter @brainliest/db typecheck`
+- `pnpm test --filter @brainliest/db`
+
+## [2.2.4] - 2025-10-02
+
+### Added
+- Introduced `@brainliest/db` workspace package with Drizzle ORM schema covering taxonomy, assessment, user, and admin tables with enums and relations.
+- Added Drizzle CLI configuration, migration scaffolding, and Vitest coverage to validate enum/default mappings.
+- Exported repository interfaces and pagination helpers so services can adopt the new database layer immediately.
+- Hooked the AI explanation API into demo flows by sourcing questions from the Drizzle repository and wiring the Searchable Select/Command Palette demos to `/api/ai/explanations`.
+- Added practice server action scaffolding that reuses the shared AI service configuration for upcoming session flows.
+- Extended Playwright composite specs to assert the explanation summaries produced by the new demos.
+- Created a reusable practice UI kit (`PracticeLayout`, `PracticeExamCard`, `PracticeQuestionCard`, `PracticeOptionList`, `PracticeFillBlank`, `PracticeExplanationCard`, `PracticeNavigation`, `PracticePageHeader`) and adopted it in the new `/practice/[examSlug]` scaffold.
+- Practice page now resolves exam/question data through Drizzle repositories with graceful fallbacks so the session shell runs ahead of full backend integration.
+
+## [2.2.3] - 2025-10-02
+
+### Added
+- Shared AI explanation orchestration (`packages/shared/src/services/ai-explanation.ts`) with configurable rate limiting, question lookup, and analytics tracking hooks.
+- Zod schemas for AI explanation requests/responses published via `@brainliest/shared` for consistent validation across apps.
+- Next.js API route `/api/ai/explanations` in the web app, backed by the shared service with fixture-driven question lookup for local development.
+- Admin API route `/api/cache/invalidate` bridging to shared cache invalidation helpers for exams and categories.
+
+### Changed
+- Bootstrapped web-side AI configuration helper to ensure Radix-driven composites can call the shared service without duplicating setup logic.
+- Added schema unit tests to keep `@brainliest/shared` coverage aligned with new exports.
+
 ## [2.2.2] - 2025-10-02
 
 ### Added

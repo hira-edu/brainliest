@@ -3,6 +3,8 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+- Persisted AI explanation generations through the Drizzle repository and surfaced an admin log/API for auditing.
+- Added pagination to `/api/explanations` and updated the admin activity view to read from the shared endpoint instead of direct repository access.
 - Completed Radix migration of composite library (`Modal`, `Dialog`, `Dropdown`, `Tooltip`) with co-located tests/stories and demo routes.
 - Rounded out Radix composite coverage with Tabs, Accordion, Popover, and Toast (tests, stories, dedicated demo routes).
 - Added Playwright harness + end-to-end specs covering composite and feedback demo routes.
@@ -12,6 +14,35 @@
 - Updated package exports, changelog, and contributing/docs to reflect consolidated ownership.
 - Introduced an automated cleanup script with package alias to remove demo routes and test/story artifacts on demand.
 - Bootstrapped `@brainliest/config` (env schemas, redis keys, routes, feature flags) and `@brainliest/shared` (domain models, analytics contracts) to anchor upcoming platform workstreams.
+- Integrated shared AI explanation + cache services into the web/admin apps with Next.js API routes, rate limiting, and Redis-backed invalidation stubs.
+- Established `@brainliest/db` with Drizzle schema, repository interfaces, and database client tooling to anchor upcoming data access workstreams.
+
+## 2025-10-03 (Session 9) — Codex
+- 🔄 **Drizzle persistence** — Replaced the AI explanation stub hook with the shared Drizzle repository so web flows read/write from Postgres.
+- 🗃️ **Repository upgrades** — Added `listRecent` reporting helper, pagination metadata, and refreshed exports/tests so downstream services can page through history.
+- 📈 **Admin reporting** — Built `/api/explanations`, migrated the AI Explanation Activity page to consume it, and linked the view from the home screen for quick access.
+- 📝 **Docs & coordination** — Updated changelog and worklog to capture the persistence sync and outline follow-up owners.
+- ✅ **Validation** — `pnpm lint --filter @brainliest/db`, `pnpm --filter @brainliest/db typecheck`, `pnpm test --filter @brainliest/db`.
+- 🔜 **Next up** — Migrate remaining consumer dashboards/views off stub data to the new `/api/explanations` endpoint and flesh out pagination/filtering on the repository.
+
+## 2025-10-02 (Session 8) — Codex
+- 🗄️ **Database foundation** — Scaffolded `@brainliest/db` with Drizzle schema spanning taxonomy, assessment, user, and admin tables plus supporting enums.
+- 📚 **Repository contracts** — Added question/exam/user/explanation repository interfaces and exported shared pagination types.
+- 🔧 **Infrastructure tooling** — Added Drizzle client wrapper, migration scripts, and workspace wiring (package.json, drizzle config, lockfile).
+- 🧪 **Schema verification** — Introduced Vitest coverage for enums/defaults and wired ESLint/TypeScript configs for the new database package.
+- ⚡ **AI demo integration** — Replaced the UI fixture with a Drizzle-backed question lookup (fallbacks in dev) and wired Searchable Select + Command Palette demos to `/api/ai/explanations`.
+- 🧩 **Practice wiring** — Added `apps/web/src/app/practice/[examSlug]/actions.ts` to share the server-side AI service configuration so upcoming practice flows reuse the same infrastructure.
+- ✅ **Playwright coverage** — Extended composite specs to assert the new explanation output in both Searchable Select and Command Palette demos, and added a `/practice/[examSlug]` smoke test verifying the AI explanation stub.
+- 🧱 **Practice UI kit** — Introduced reusable modules (`PracticeLayout`, `PracticeExamCard`, `PracticeQuestionCard`, `PracticeOptionList`, `PracticeExplanationCard`, `PracticeNavigation`, `PracticePageHeader`) to standardize the practice experience across apps.
+- 🧭 **Practice page scaffold** — Implemented `/practice/[examSlug]/page.tsx` with the new modules, wiring the client experience to `requestExplanationAction` and responsive sidebar meta cards.
+- 🔭 **Next up** — Connect the practice layout to real session data (timer, flagging, progress) and extend Playwright to cover the practice route once the backend is ready.
+
+- 🔜 **Next up** — Generate initial migrations & seeds, implement Drizzle repository classes, and wire database services into apps.
+## 2025-10-02 (Session 7) — Codex
+- 🔌 **AI service wiring** — Added shared configuration helpers, zod schemas, and a rate-limited orchestrator that wraps the OpenAI explanation adapter.
+- 🌐 **Web API integration** — Bootstrapped `/api/ai/explanations` with shared fixtures, schema validation, and structured error responses for rate limits and question lookup.
+- 🛡️ **Admin cache hooks** — Exposed `/api/cache/invalidate` to fan out to shared cache invalidation helpers for exams and categories.
+- 🧪 **Validation** — Added schema unit tests alongside the new shared surface to keep coverage intact.
 
 ## 2025-10-02 (Session 6) — Codex
 - 🧭 **Config scaffolding** — Created `packages/config` with server/client env parsers, redis key registry, feature flags, and route helpers; added unit coverage for env parsing.
