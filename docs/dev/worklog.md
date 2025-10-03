@@ -3,6 +3,12 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+## 2025-10-03 (Session 13) — Codex
+- ♻️ **Practice header alignment** — Moved the timer pill, bookmark, flag, and AI explanation controls into `PracticeQuestionActions` so the question card header remains the single surface for quick actions.
+- 🧭 **Navigation trim** — Simplified `PracticeNavigation`/`PracticeQuestionFooter` to handle pagination only, preventing duplicate bookmark/flag/timer UI in the footer and keeping the layout modular.
+- 🧪 **Validation** — `pnpm lint --filter @brainliest/ui`, `pnpm lint --filter @brainliest/web`, `pnpm test --filter @brainliest/ui`.
+- ✨ **Dual explanation SSOT** — Introduced `PracticeExplainButton` so both question-level and answer-level AI triggers share identical styling, relocated the question toggle beneath the prompt, and wired footer controls (AI button, navigation, submit/reveal) through the shared practice footer layout.
+
 - Wired practice navigation to the session API with a client container that manages question advance, flag state, and answer persistence across questions.
 - Persisted AI explanation generations through the Drizzle repository and surfaced an admin log/API for auditing.
 - Added pagination to `/api/explanations` and updated the admin activity view to read from the shared endpoint instead of direct repository access.
@@ -26,6 +32,7 @@
 - 📈 **Metrics endpoint** — Introduced `/api/explanations/metrics` powered by new repository aggregates so the dashboard can report lifetime totals, spend, and averages alongside the recent activity table.
 - 🧹 **Practice lint pass** — Removed redundant type assertions across the practice data pipeline, added a guard when deriving the active question, and re-ran `pnpm lint --filter @brainliest/web` to confirm the route is clean.
 - 🧪 **Playwright coverage** — Expanded `tests/playwright/specs/practice.spec.ts` to exercise flagging, bookmarking, timer countdown, and persistence across reloads using the API intercept harness.
+- 🧭 **Practice UX polish** — Moved the navigation controls beneath the submit CTA, introduced header icon buttons (bookmark/flag plus AI explanation), and added question-level explanation reveal using stored markdown so the layout mirrors the UI spec.
 - ✅ **Validation** — `pnpm lint --filter @brainliest/admin`, `pnpm lint --filter @brainliest/web`.
 
 ## 2025-10-03 (Session 11) — Codex

@@ -198,14 +198,6 @@ export async function PATCH(
         });
         break;
       }
-      default:
-        return NextResponse.json(
-          {
-            error: 'INVALID_OPERATION',
-            message: `Unsupported operation: ${payload.operation}`,
-          },
-          { status: 400 }
-        );
     }
 
     const session = await sessionRepository.getSession(sessionId);

@@ -14,9 +14,13 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
+      "@brainliest/ui": ["packages/ui/src/index.ts"],
       "@brainliest/ui/*": ["packages/ui/src/*"],
+      "@brainliest/shared": ["packages/shared/src/index.ts"],
       "@brainliest/shared/*": ["packages/shared/src/*"],
+      "@brainliest/db": ["packages/db/src/index.ts"],
       "@brainliest/db/*": ["packages/db/src/*"],
+      "@brainliest/config": ["packages/config/index.ts"],
       "@brainliest/config/*": ["packages/config/*"],
       "@brainliest/testing/*": ["packages/testing/src/*"]
     }

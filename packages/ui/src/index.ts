@@ -175,6 +175,33 @@ export type { PracticeNavigationProps } from './practice/practice-navigation';
 export { PracticePageHeader } from './practice/practice-page-header';
 export type { PracticePageHeaderProps } from './practice/practice-page-header';
 
+export { PracticeQuestionActions } from './practice/practice-question-actions';
+export type { PracticeQuestionActionsProps } from './practice/practice-question-actions';
+
+export { PracticeExplainButton } from './practice/practice-explain-button';
+export type { PracticeExplainButtonProps } from './practice/practice-explain-button';
+
+export { PracticeQuestionStatus } from './practice/practice-question-status';
+export type { PracticeQuestionStatusProps } from './practice/practice-question-status';
+
+export { PracticeQuestionExplanation } from './practice/practice-question-explanation';
+export type { PracticeQuestionExplanationProps } from './practice/practice-question-explanation';
+
+export { PracticeQuestionFooter } from './practice/practice-question-footer';
+export type { PracticeQuestionFooterProps } from './practice/practice-question-footer';
+
+export { PracticeQuestionContent } from './practice/practice-question-content';
+export type { PracticeQuestionContentProps } from './practice/practice-question-content';
+
+export { PracticeSidebar } from './practice/practice-sidebar';
+export type { PracticeSidebarProps } from './practice/practice-sidebar';
+
+export { PracticeSidebarChecklistCard } from './practice/practice-sidebar-checklist-card';
+export type { PracticeSidebarChecklistCardProps } from './practice/practice-sidebar-checklist-card';
+
+export { PracticeSidebarShortcutsCard } from './practice/practice-sidebar-shortcuts-card';
+export type { PracticeSidebarShortcutsCardProps, PracticeSidebarShortcut } from './practice/practice-sidebar-shortcuts-card';
+
 // Hooks
 export { useMediaQuery, useBreakpoint } from './hooks/use-media-query';
 export { useClipboard } from './hooks/use-clipboard';

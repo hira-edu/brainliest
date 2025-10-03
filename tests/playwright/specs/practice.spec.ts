@@ -200,7 +200,7 @@ test.describe('Practice page', () => {
     const initialTimerValue = await timerLabel.textContent();
 
     await page.getByRole('radio', { name: 'A' }).click();
-    await page.getByRole('button', { name: 'Generate explanation' }).click();
+    await page.getByRole('button', { name: 'Generate answer explanation' }).click();
 
     const explanationCard = page.getByRole('heading', { name: 'AI explanation' });
     await expect(explanationCard).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
@@ -211,37 +211,32 @@ test.describe('Practice page', () => {
     expect(updatedTimerValue).not.toBe(initialTimerValue);
   });
 
-  test('allows toggling bookmark and flag state from the navigation panel', async ({ page }) => {
+  test('allows toggling question controls and persists state', async ({ page }) => {
     await page.goto('/practice/a-level-math');
     await page.waitForLoadState('networkidle');
 
-    const sidebar = page.locator('aside').first();
-    await expect(sidebar).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+    const questionExplanationButton = page.getByRole('button', { name: 'Toggle question explanation' });
+    await questionExplanationButton.click();
+    await expect(page.getByText(/power rule/i)).toBeVisible();
 
-    const bookmarkButton = sidebar.getByRole('button', { name: /Bookmark/ });
-    const initialBookmarkLabel = (await bookmarkButton.textContent())?.trim() ?? 'Bookmark';
-    const toggledBookmarkLabel = initialBookmarkLabel.includes('Bookmarked') ? 'Bookmark' : 'Bookmarked';
-
+    const bookmarkButton = page.getByRole('button', { name: 'Bookmark question' });
     await bookmarkButton.click();
-    await expect(bookmarkButton).toHaveText(toggledBookmarkLabel);
+    await expect(page.getByRole('button', { name: 'Remove bookmark' })).toBeVisible();
 
-    const flagButton = sidebar.getByRole('button', { name: /(Flag question|Flagged)/ });
-    const initialFlagLabel = (await flagButton.textContent())?.trim() ?? 'Flag question';
-    const toggledFlagLabel = initialFlagLabel.includes('Flagged') ? 'Flag question' : 'Flagged';
-
+    const flagButton = page.getByRole('button', { name: 'Flag question' });
     await flagButton.click();
-    await expect(flagButton).toHaveText(toggledFlagLabel);
+    await expect(page.getByRole('button', { name: 'Unflag question' })).toBeVisible();
 
     await page.reload();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('button', { name: toggledBookmarkLabel })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
-    await expect(page.getByRole('button', { name: toggledFlagLabel })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+    await expect(page.getByRole('button', { name: 'Remove bookmark' })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+    await expect(page.getByRole('button', { name: 'Unflag question' })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
 
-    await page.getByRole('button', { name: toggledBookmarkLabel }).click();
-    await expect(page.getByRole('button', { name: initialBookmarkLabel })).toBeVisible();
+    await page.getByRole('button', { name: 'Remove bookmark' }).click();
+    await expect(page.getByRole('button', { name: 'Bookmark question' })).toBeVisible();
 
-    await page.getByRole('button', { name: toggledFlagLabel }).click();
-    await expect(page.getByRole('button', { name: initialFlagLabel })).toBeVisible();
+    await page.getByRole('button', { name: 'Unflag question' }).click();
+    await expect(page.getByRole('button', { name: 'Flag question' })).toBeVisible();
   });
 });

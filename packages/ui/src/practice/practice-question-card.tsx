@@ -10,6 +10,7 @@ export interface PracticeQuestionCardProps extends React.HTMLAttributes<HTMLDivE
   title?: string;
   difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
   children: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
 const difficultyMap: Record<NonNullable<PracticeQuestionCardProps['difficulty']>, BadgeProps['variant']> = {
@@ -23,6 +24,7 @@ export function PracticeQuestionCard({
   label,
   title,
   difficulty,
+  actions,
   children,
   className,
   ...rest
@@ -31,11 +33,14 @@ export function PracticeQuestionCard({
 
   return (
     <Card padding="lg" className={cn('space-y-6 bg-white shadow-sm', className)} {...rest}>
-      {(label || title || difficulty) && (
+      {(label || title || difficulty || actions) && (
         <Stack gap={2}>
-          <div className="flex flex-wrap items-center gap-3">
-            {label ? <p className="text-sm font-medium uppercase tracking-wide text-primary-600">{label}</p> : null}
-            {difficulty && difficultyVariant ? <Badge variant={difficultyVariant}>{difficulty}</Badge> : null}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {label ? <p className="text-sm font-medium uppercase tracking-wide text-primary-600">{label}</p> : null}
+              {difficulty && difficultyVariant ? <Badge variant={difficultyVariant}>{difficulty}</Badge> : null}
+            </div>
+            {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
           </div>
           {title ? <h2 className="text-2xl font-semibold text-gray-900 leading-tight">{title}</h2> : null}
         </Stack>

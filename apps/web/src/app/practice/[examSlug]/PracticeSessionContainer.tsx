@@ -1,14 +1,27 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Badge, Card, PracticeLayout, PracticeQuestionCard, Stack } from '@brainliest/ui';
+import {
+  Badge,
+  Button,
+  PracticeLayout,
+  PracticeQuestionCard,
+  PracticeQuestionActions,
+  PracticeQuestionStatus,
+  PracticeQuestionExplanation,
+  PracticeQuestionContent,
+  PracticeExplainButton,
+  PracticeSidebar,
+  PracticeSidebarChecklistCard,
+  PracticeSidebarShortcutsCard,
+  PracticeQuestionFooter,
+} from '@brainliest/ui';
 import { mapApiResponseToPracticeSessionData } from '@/lib/practice/mappers';
 import type {
   PracticeSessionApiQuestion,
   PracticeSessionApiResponse,
   PracticeSessionData,
 } from '@/lib/practice/types';
-import { PracticeNavigationPanel } from './PracticeNavigationPanel';
 import { PracticeClient } from './PracticeClient';
 
 type SessionPatchPayload =
@@ -194,6 +207,7 @@ export function PracticeSessionContainer({ initialData }: PracticeSessionContain
   const [session, setSession] = useState<PracticeSessionData>(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showQuestionExplanation, setShowQuestionExplanation] = useState(false);
   const [displayRemainingSeconds, setDisplayRemainingSeconds] = useState<number | null>(
     initialData.progress.timeRemainingSeconds ?? null
   );
@@ -306,10 +320,20 @@ export function PracticeSessionContainer({ initialData }: PracticeSessionContain
     [activeQuestion?.questionId, session.bookmarkedQuestionIds, session.questionState.questionId]
   );
 
+  const statusMessage = isFlagged
+    ? 'This question is flagged for review.'
+    : isBookmarked
+    ? 'This question is bookmarked for quick access.'
+    : 'Review the prompt and select your answer.';
+
   useEffect(() => {
     setDisplayRemainingSeconds(session.progress.timeRemainingSeconds ?? null);
     timerSyncRef.current = session.progress.timeRemainingSeconds ?? null;
   }, [session.progress.timeRemainingSeconds, session.sessionId]);
+
+  useEffect(() => {
+    setShowQuestionExplanation(false);
+  }, [session.question.id]);
 
   const hasTimer = displayRemainingSeconds !== null;
 
@@ -361,68 +385,105 @@ export function PracticeSessionContainer({ initialData }: PracticeSessionContain
   return (
     <PracticeLayout
       sidebar={
-        <Stack gap="4">
-          <PracticeNavigationPanel
-            progressLabel={progressLabel}
-            timeRemainingLabel={timeRemainingLabel}
-            disablePrevious={session.currentQuestionIndex === 0}
-            disableNext={session.currentQuestionIndex >= session.questions.length - 1}
-            isFlagged={isFlagged}
-            onToggleFlag={(next) => {
-              void handleToggleFlag(next);
-            }}
-            isBookmarked={isBookmarked}
-            onToggleBookmark={(next) => {
-              void handleToggleBookmark(next);
-            }}
-            onPrevious={() => {
-              void handleAdvance('previous');
-            }}
-            onNext={() => {
-              void handleAdvance('next');
-            }}
+        <PracticeSidebar>
+          <PracticeSidebarChecklistCard
+            items={['Flag questions to revisit later', 'Toggle calculator mode when allowed', 'Review hints before requesting AI help']}
           />
-          <Card padding="md" className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Session checklist</h3>
-            <ul className="ml-5 list-disc text-sm text-gray-600">
-              <li>Flag questions to revisit later</li>
-              <li>Toggle calculator mode when allowed</li>
-              <li>Review hints before requesting AI help</li>
-            </ul>
-          </Card>
-          <Card padding="md" className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Keyboard shortcuts</h3>
-            <div className="space-y-1 text-xs text-gray-600">
-              <p>
-                <kbd className="rounded border border-slate-200 px-1 py-0.5">J</kbd> Next question
-              </p>
-              <p>
-                <kbd className="rounded border border-slate-200 px-1 py-0.5">K</kbd> Previous question
-              </p>
-              <p>
-                <kbd className="rounded border border-slate-200 px-1 py-0.5">/</kbd> Command palette
-              </p>
-            </div>
-          </Card>
+          <PracticeSidebarShortcutsCard
+            shortcuts={[
+              { key: 'J', description: 'Next question' },
+              { key: 'K', description: 'Previous question' },
+              { key: '/', description: 'Command palette' },
+            ]}
+          />
           {error ? <p className="text-sm text-error-600">{error}</p> : null}
-        </Stack>
+        </PracticeSidebar>
       }
     >
         <PracticeQuestionCard
           label={`Question ${session.progress.questionIndex}`}
           title={session.question.stemMarkdown}
           difficulty={session.question.difficulty}
+          actions={
+          <PracticeQuestionActions
+            isBookmarked={isBookmarked}
+            onToggleBookmark={(next) => {
+              void handleToggleBookmark(next);
+            }}
+            isFlagged={isFlagged}
+            onToggleFlag={(next) => {
+              void handleToggleFlag(next);
+            }}
+            timerLabel={timeRemainingLabel}
+          />
+        }
       >
-        <PracticeClient
-          question={session.question}
-          questionState={session.questionState}
-          isFlagged={isFlagged}
-          onToggleFlag={handleToggleFlag}
-          onRecordAnswer={handleRecordAnswer}
-          isSaving={isSaving}
-          fromSample={session.fromSample}
-        />
-        {isSaving ? <Badge variant="secondary" className="mt-4">Saving…</Badge> : null}
+        <PracticeQuestionContent>
+          <PracticeQuestionStatus message={statusMessage} />
+          <PracticeExplainButton
+            isActive={showQuestionExplanation}
+            onClick={() => setShowQuestionExplanation((previous) => !previous)}
+            label={showQuestionExplanation ? 'Hide question explanation' : 'AI explanation'}
+            size="sm"
+            aria-label={
+              showQuestionExplanation ? 'Hide question explanation' : 'Toggle question explanation'
+            }
+          />
+          <PracticeQuestionExplanation
+            visible={showQuestionExplanation}
+            content={session.question.explanationMarkdown}
+          />
+          <PracticeClient
+            question={session.question}
+            questionState={session.questionState}
+            onRecordAnswer={handleRecordAnswer}
+            isSaving={isSaving}
+            fromSample={session.fromSample}
+            renderFooter={({
+              explanationButton,
+              supportText,
+              savingIndicator,
+              onSubmit,
+              canSubmit,
+              onReveal,
+              canReveal,
+            }) => (
+              <PracticeQuestionFooter
+                progressLabel={progressLabel}
+                disablePrevious={session.currentQuestionIndex === 0}
+                disableNext={session.currentQuestionIndex >= session.questions.length - 1}
+                onPrevious={() => {
+                  void handleAdvance('previous');
+                }}
+                onNext={() => {
+                  void handleAdvance('next');
+                }}
+                leadingSlot={
+                  <div className="flex flex-col gap-1">
+                    {explanationButton}
+                    {supportText}
+                    {savingIndicator}
+                  </div>
+                }
+                trailingSlot={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button onClick={onSubmit} disabled={!canSubmit}>
+                      Submit answer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={onReveal}
+                      disabled={!canReveal}
+                    >
+                      Reveal correct answer
+                    </Button>
+                  </div>
+                }
+              />
+            )}
+          />
+          {isSaving ? <Badge variant="secondary">Saving…</Badge> : null}
+        </PracticeQuestionContent>
       </PracticeQuestionCard>
     </PracticeLayout>
   );

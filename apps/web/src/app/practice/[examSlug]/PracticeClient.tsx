@@ -7,21 +7,40 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-redundant-type-constituents */
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { Button, Stack, PracticeOptionList, PracticeFillBlank, PracticeExplanationCard } from '@brainliest/ui';
+import type { ReactNode } from 'react';
+import {
+  Stack,
+  PracticeOptionList,
+  PracticeFillBlank,
+  PracticeExplanationCard,
+  PracticeExplainButton,
+  PracticeQuestionStatus,
+} from '@brainliest/ui';
 import type { PracticeOption } from '@brainliest/ui';
 import type { QuestionModel } from '@brainliest/shared';
 import type { ExplanationDtoShape } from '@brainliest/shared';
 import type { PracticeSessionQuestionState } from '@/lib/practice/types';
 import { requestExplanationAction } from './actions';
 
+interface PracticeClientFooterRenderArgs {
+  explanationButton: ReactNode;
+  supportText: ReactNode;
+  savingIndicator: ReactNode | null;
+  onSubmit: () => void;
+  canSubmit: boolean;
+  onReveal: () => void;
+  canReveal: boolean;
+  isSubmitted: boolean;
+  hasRevealed: boolean;
+}
+
 interface PracticeClientProps {
   question: QuestionModel;
   questionState: PracticeSessionQuestionState;
-  isFlagged: boolean;
-  onToggleFlag: (next: boolean) => Promise<void> | void;
   onRecordAnswer: (selected: number[]) => Promise<void> | void;
   isSaving: boolean;
   fromSample: boolean;
+  renderFooter?: (args: PracticeClientFooterRenderArgs) => React.ReactNode;
 }
 
 type RequestState = 'idle' | 'loading' | 'success' | 'error';
@@ -42,11 +61,10 @@ const deriveSelectedChoiceId = (question: QuestionModel, state: PracticeSessionQ
 export function PracticeClient({
   question,
   questionState,
-  isFlagged,
-  onToggleFlag,
   onRecordAnswer,
   isSaving,
   fromSample,
+  renderFooter,
 }: PracticeClientProps) {
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(
     deriveSelectedChoiceId(question, questionState)
@@ -58,6 +76,8 @@ export function PracticeClient({
   const [state, setState] = useState<RequestState>('idle');
   const [isPending, startTransition] = useTransition();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [hasRevealed, setHasRevealed] = useState(false);
 
   const options: PracticeOption[] = useMemo(
     () =>
@@ -78,6 +98,10 @@ export function PracticeClient({
   useEffect(() => {
     setFreeResponse('');
   }, [question.id]);
+
+  const disabled = hasOptions
+    ? !selectedChoiceId || isPending
+    : freeResponse.trim().length === 0 || isPending;
 
   const handleExplain = () => {
     const selectedIds = hasOptions
@@ -140,38 +164,60 @@ export function PracticeClient({
       });
   };
 
-  const disabled = hasOptions
-    ? !selectedChoiceId || isPending
-    : freeResponse.trim().length === 0 || isPending;
+  const handleSubmit = () => {
+    if (isSubmitted || disabled) {
+      return;
+    }
+
+    setIsSubmitted(true);
+    setHasRevealed(false);
+  };
+
+  const handleReveal = () => {
+    if (!isSubmitted || hasRevealed) {
+      return;
+    }
+
+    setHasRevealed(true);
+  };
+
+  const supportText = (
+    <p className="text-xs text-gray-500">
+      {state === 'success' && rateLimitRemaining !== null
+        ? `Rate limit remaining: ${rateLimitRemaining}`
+        : 'Powered by the shared AI explanation service.'}
+    </p>
+  );
+
+  const savingIndicator =
+    isSaving || isSyncing ? <span className="text-xs text-gray-500">Saving…</span> : null;
+
+  const explanationButton = (
+    <PracticeExplainButton
+      onClick={handleExplain}
+      disabled={disabled}
+      isLoading={isPending}
+      isActive={state === 'success'}
+      label="AI explanation"
+      size="sm"
+      aria-label="Generate answer explanation"
+    />
+  );
+
+  const footerNode = renderFooter?.({
+    explanationButton,
+    supportText,
+    savingIndicator,
+    onSubmit: handleSubmit,
+    canSubmit: !isSubmitted && !disabled,
+    onReveal: handleReveal,
+    canReveal: isSubmitted && !hasRevealed,
+    isSubmitted,
+    hasRevealed,
+  });
 
   return (
     <Stack gap="6">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-medium text-gray-600">
-          {isFlagged ? 'This question is flagged for review.' : 'Review the prompt and select your answer.'}
-        </span>
-        <Button
-          variant={isFlagged ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => {
-            setIsSyncing(true);
-            Promise.resolve(onToggleFlag(!isFlagged))
-              .then(() => {
-                setError(null);
-              })
-              .catch((requestError) => {
-                setError(requestError instanceof Error ? requestError.message : 'Practice session update failed.');
-              })
-              .finally(() => {
-                setIsSyncing(false);
-              });
-          }}
-          disabled={isSyncing || isSaving}
-        >
-          {isFlagged ? 'Remove flag' : 'Flag question'}
-        </Button>
-      </div>
-
       {hasOptions ? (
         <PracticeOptionList
           options={options}
@@ -190,21 +236,24 @@ export function PracticeClient({
         />
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={handleExplain} disabled={disabled} isLoading={isPending}>
-          Generate explanation
-        </Button>
-        <p className="text-sm text-gray-500">
-          {state === 'success' && rateLimitRemaining !== null
-            ? `Rate limit remaining: ${rateLimitRemaining}`
-            : 'Powered by the shared AI explanation service.'}
-        </p>
-        {isSaving || isSyncing ? <span className="text-xs text-gray-500">Saving…</span> : null}
-      </div>
+      {footerNode ?? (
+        <div className="flex flex-wrap items-center gap-3">
+          {explanationButton}
+          {supportText}
+          {savingIndicator}
+        </div>
+      )}
 
       {state === 'error' && error ? <p className="text-sm text-error-600">{error}</p> : null}
       {isSyncing && fromSample ? (
         <p className="text-xs text-gray-500">Changes saved locally for sample sessions.</p>
+      ) : null}
+
+      {hasRevealed ? (
+        <PracticeQuestionStatus
+          message={`Correct answer: ${question.correctChoiceIds.join(', ') || 'Unavailable'}`}
+          className="text-success-700"
+        />
       ) : null}
 
       {explanation ? (
