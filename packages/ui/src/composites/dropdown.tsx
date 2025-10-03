@@ -7,6 +7,7 @@ import type {
   ButtonHTMLAttributes,
   AnchorHTMLAttributes,
   Ref,
+  PropsWithChildren,
 } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import type { DropdownMenuItemProps } from '@radix-ui/react-dropdown-menu';
@@ -44,15 +45,25 @@ export const Dropdown = ({ trigger, align = 'end', children, className, ...props
 
 Dropdown.displayName = 'Dropdown';
 
-export interface DropdownItemProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
-    Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> {
+interface DropdownItemCommonProps {
   inset?: boolean;
   icon?: ReactNode;
   shortcut?: ReactNode;
-  href?: string;
   onSelect?: DropdownMenuItemProps['onSelect'];
+  disabled?: boolean;
 }
+
+type DropdownItemButtonProps = DropdownItemCommonProps &
+  PropsWithChildren<Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>> & {
+    href?: undefined;
+  };
+
+type DropdownItemAnchorProps = DropdownItemCommonProps &
+  PropsWithChildren<Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children' | 'href'>> & {
+    href: string;
+  };
+
+export type DropdownItemProps = DropdownItemButtonProps | DropdownItemAnchorProps;
 
 export const DropdownItem = forwardRef<DropdownItemElement, DropdownItemProps>(
   ({ className, inset, icon, shortcut, href, disabled, children, onSelect, ...props }, forwardedRef) => {

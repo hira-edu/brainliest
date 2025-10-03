@@ -44,16 +44,32 @@ const stackVariants = cva(
   }
 );
 
+type StackGap = VariantProps<typeof stackVariants>['gap'];
+
 export interface StackProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof stackVariants> {}
+    Omit<VariantProps<typeof stackVariants>, 'gap'> {
+  gap?: StackGap | number;
+}
+
+const normalizeGap = (gap?: StackProps['gap']): StackGap | undefined => {
+  if (gap === undefined) {
+    return undefined;
+  }
+
+  if (typeof gap === 'number') {
+    return String(gap) as StackGap;
+  }
+
+  return gap;
+};
 
 export const Stack = forwardRef<HTMLDivElement, StackProps>(
   ({ className, direction, gap, align, justify, ...props }, ref) => {
     return (
       <div
         ref={ref}
-        className={cn(stackVariants({ direction, gap, align, justify }), className)}
+        className={cn(stackVariants({ direction, gap: normalizeGap(gap), align, justify }), className)}
         {...props}
       />
     );

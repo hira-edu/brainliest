@@ -1,0 +1,109 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic [active]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - navigation [ref=e6]:
+            - button "previous" [disabled] [ref=e7]:
+              - img "previous" [ref=e8]
+            - generic [ref=e10]:
+              - generic [ref=e11]: 1/
+              - generic [ref=e12]: "1"
+            - button "next" [disabled] [ref=e13]:
+              - img "next" [ref=e14]
+          - img
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - img [ref=e18]
+            - generic "Latest available version is detected (15.5.4)." [ref=e20]: Next.js 15.5.4
+            - generic [ref=e21]: Webpack
+          - img
+      - generic [ref=e22]:
+        - dialog "Runtime ZodError" [ref=e23]:
+          - generic [ref=e26]:
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - generic [ref=e30]: Runtime ZodError
+                - generic [ref=e31]:
+                  - button "Copy Error Info" [ref=e32] [cursor=pointer]:
+                    - img [ref=e33] [cursor=pointer]
+                  - button "No related documentation found" [disabled] [ref=e35]:
+                    - img [ref=e36]
+                  - link "Learn more about enabling Node.js inspector for server code with Chrome DevTools" [ref=e38] [cursor=pointer]:
+                    - /url: https://nextjs.org/docs/app/building-your-application/configuring/debugging#server-side-code
+                    - img [ref=e39] [cursor=pointer]
+              - generic [ref=e47]:
+                - paragraph [ref=e48]: "[ { \"code\": \"invalid_type\", \"expected\": \"string\", \"received\": \"undefined\", \"path\": [ \"DATABASE_URL\" ], \"message\": \"Required\" } ]"
+                - button "Show More" [ref=e50] [cursor=pointer]
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - paragraph [ref=e54]:
+                  - img [ref=e56]
+                  - generic [ref=e60]: ../packages/db/src/client.ts (13:64) @ eval
+                  - button "Open in editor" [ref=e61] [cursor=pointer]:
+                    - img [ref=e63] [cursor=pointer]
+                - generic [ref=e66]:
+                  - generic [ref=e68]: "11 | });"
+                  - generic [ref=e70]: 12 |
+                  - generic [ref=e72]: "> 13 | const { DATABASE_URL: defaultDatabaseUrl } = databaseEnvSchema.parse({"
+                  - generic [ref=e74]: "| ^"
+                  - generic [ref=e76]: "14 | DATABASE_URL: process.env.DATABASE_URL,"
+                  - generic [ref=e78]: "15 | });"
+                  - generic [ref=e80]: 16 |
+              - generic [ref=e81]:
+                - generic [ref=e82]:
+                  - paragraph [ref=e83]:
+                    - text: Call Stack
+                    - generic [ref=e84]: "10"
+                  - button "Show 4 ignore-listed frame(s)" [ref=e85] [cursor=pointer]:
+                    - text: Show 4 ignore-listed frame(s)
+                    - img [ref=e86] [cursor=pointer]
+                - generic [ref=e88]:
+                  - generic [ref=e89]:
+                    - text: eval
+                    - button "Open eval in editor" [ref=e90] [cursor=pointer]:
+                      - img [ref=e91] [cursor=pointer]
+                  - generic [ref=e93]: ../packages/db/src/client.ts (13:64)
+                - generic [ref=e94]:
+                  - generic [ref=e95]: <unknown>
+                  - generic [ref=e96]: rsc)/../../packages/db/src/client.ts (/Users/umairliaquat/Documents/GitHub/brainliest/apps/web/.next/server/app/practice/[examSlug]/page.js (393:1)
+                - generic [ref=e97]:
+                  - generic [ref=e98]: eval
+                  - generic [ref=e99]: ../../packages/db/src/index.ts
+                - generic [ref=e100]:
+                  - generic [ref=e101]: <unknown>
+                  - generic [ref=e102]: rsc)/../../packages/db/src/index.ts (/Users/umairliaquat/Documents/GitHub/brainliest/apps/web/.next/server/app/practice/[examSlug]/page.js (404:1)
+                - generic [ref=e103]:
+                  - generic [ref=e104]: eval
+                  - generic [ref=e105]: ./src/lib/practice/fetch-practice-session.ts
+                - generic [ref=e106]:
+                  - generic [ref=e107]: <unknown>
+                  - generic [ref=e108]: rsc)/./src/lib/practice/fetch-practice-session.ts (/Users/umairliaquat/Documents/GitHub/brainliest/apps/web/.next/server/app/practice/[examSlug]/page.js (558:1)
+          - generic [ref=e109]:
+            - generic [ref=e110]: "1"
+            - generic [ref=e111]: "2"
+        - contentinfo [ref=e112]:
+          - region "Error feedback" [ref=e113]:
+            - paragraph [ref=e114]:
+              - link "Was this helpful?" [ref=e115] [cursor=pointer]:
+                - /url: https://nextjs.org/telemetry#error-feedback
+            - button "Mark as helpful" [ref=e116] [cursor=pointer]:
+              - img [ref=e117] [cursor=pointer]
+            - button "Mark as not helpful" [ref=e120] [cursor=pointer]:
+              - img [ref=e121] [cursor=pointer]
+    - generic [ref=e127] [cursor=pointer]:
+      - button "Open Next.js Dev Tools" [ref=e128] [cursor=pointer]:
+        - img [ref=e129] [cursor=pointer]
+      - generic [ref=e132] [cursor=pointer]:
+        - button "Open issues overlay" [ref=e133] [cursor=pointer]:
+          - generic [ref=e134] [cursor=pointer]:
+            - generic [ref=e135] [cursor=pointer]: "0"
+            - generic [ref=e136] [cursor=pointer]: "1"
+          - generic [ref=e137] [cursor=pointer]: Issue
+        - button "Collapse issues badge" [ref=e138] [cursor=pointer]:
+          - img [ref=e139] [cursor=pointer]
+  - alert [ref=e141]
+```

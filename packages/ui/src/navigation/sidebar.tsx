@@ -10,7 +10,7 @@ export interface SidebarItem {
   isActive?: boolean;
 }
 
-export interface SidebarProps extends Omit<HTMLAttributes<aside>, 'children'> {
+export interface SidebarProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   header?: ReactNode;
   footer?: ReactNode;
   items: SidebarItem[];

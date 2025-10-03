@@ -6,11 +6,7 @@ import 'server-only';
  */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-redundant-type-constituents */
 
-import {
-  drizzleClient,
-  createRepositories,
-  type ExamSlug,
-} from '@brainliest/db';
+import { drizzleClient, createRepositories } from '@brainliest/db';
 import { mapRecordToQuestionModel } from '@/lib/ai/map-record-to-question';
 import { SAMPLE_QUESTION } from '@/lib/ai/sample-question';
 import type { PracticeSessionData, PracticeSessionApiResponse } from './types';
@@ -51,8 +47,8 @@ async function fetchSessionFromApi(examSlug: string): Promise<PracticeSessionDat
 
 async function buildFallbackSession(examSlug: string): Promise<PracticeSessionData> {
   const repositories = createRepositories(drizzleClient);
-  const examRecord = await repositories.exams.findBySlug(examSlug as ExamSlug);
-  const questionPage = await repositories.questions.findByExam(examSlug as ExamSlug, {}, 1, 1);
+  const examRecord = await repositories.exams.findBySlug(examSlug);
+  const questionPage = await repositories.questions.findByExam(examSlug, {}, 1, 1);
 
   const totalQuestions = questionPage.pagination.totalCount;
   const difficultyMix = deriveDifficultyMix(questionPage.data);
@@ -70,20 +66,43 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
   const record = questionPage.data[0];
   const question = record ? mapRecordToQuestionModel(record) : SAMPLE_QUESTION;
 
-  const progress = buildPracticeProgress(examInfo, 1, examInfo.totalQuestions, examInfo.durationMinutes ? examInfo.durationMinutes * 60 : undefined);
+  const progress = buildPracticeProgress(
+    examInfo,
+    1,
+    examInfo.totalQuestions,
+    examInfo.durationMinutes ? examInfo.durationMinutes * 60 : undefined
+  );
+
+  const questions: PracticeSessionData['questions'] = [
+    {
+      questionId: record?.id ?? SAMPLE_QUESTION.id,
+      orderIndex: 0,
+      selectedAnswers: [],
+      isFlagged: false,
+      isBookmarked: false,
+      timeSpentSeconds: 0,
+      question,
+    },
+  ];
 
   return {
     sessionId: 'sample-session',
+    sessionStatus: 'in_progress',
     exam: examInfo,
+    questions,
+    currentQuestionIndex: 0,
     question,
     questionState: {
       questionId: record?.id ?? SAMPLE_QUESTION.id,
       orderIndex: 0,
       selectedAnswers: [],
       isFlagged: false,
+      isBookmarked: false,
       timeSpentSeconds: 0,
     },
     progress,
+    flaggedQuestionIds: [],
+    bookmarkedQuestionIds: [],
     fromSample: !record,
   };
 }

@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
 import { OpenAI } from 'openai';
-import type { CompletionUsage } from 'openai/resources/chat/completions';
 import type { QuestionModel } from '../../domain';
 import { env } from '@brainliest/config/env.server';
 import { REDIS_TTL, redisKeys } from '@brainliest/config/redis-keys';
@@ -20,6 +19,7 @@ export interface ExplanationDto {
   relatedConcepts?: string[];
   confidence: 'low' | 'medium' | 'high';
 }
+
 
 export interface QuestionRepository {
   saveExplanation(input: {
@@ -148,10 +148,10 @@ Explain the correct answer and reasoning. If user is wrong, contrast succinctly.
   `.trim();
 }
 
-function calculateCost(usage?: CompletionUsage): number {
+function calculateCost(usage: unknown): number {
   let totalTokens = 0;
 
-  if (usage && typeof usage === 'object' && 'total_tokens' in usage) {
+  if (usage && typeof usage === 'object' && 'total_tokens' in (usage as Record<string, unknown>)) {
     const value = (usage as Record<string, unknown>).total_tokens;
     if (typeof value === 'number') {
       totalTokens = value;

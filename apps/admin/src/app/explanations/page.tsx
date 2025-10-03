@@ -1,36 +1,5 @@
 import Link from 'next/link';
-import { headers } from 'next/headers';
-
-interface ExplanationDto {
-  readonly id: string;
-  readonly questionId: string;
-  readonly questionVersionId: string;
-  readonly answerPattern: string;
-  readonly model: string;
-  readonly language: string;
-  readonly tokensTotal: number;
-  readonly costCents: number;
-  readonly createdAt: string;
-  readonly subjectSlug: string;
-  readonly examSlug: string | null;
-  readonly questionStem: string;
-}
-
-interface PaginationDto {
-  readonly page: number;
-  readonly pageSize: number;
-  readonly totalCount: number;
-  readonly totalPages: number;
-}
-
-interface ExplanationResponse {
-  readonly data: ExplanationDto[];
-  readonly pagination: PaginationDto;
-}
-
-interface ExplanationRecord extends Omit<ExplanationDto, 'createdAt'> {
-  readonly createdAt: Date;
-}
+import { fetchExplanationPage } from '@/lib/explanations';
 
 interface ExplanationLogPageProps {
   readonly searchParams?: {
@@ -41,34 +10,6 @@ interface ExplanationLogPageProps {
 
 const DEFAULT_PAGE_SIZE = 20;
 
-async function fetchExplanationPage(page: number, pageSize: number): Promise<{ data: ExplanationRecord[]; pagination: PaginationDto; }> {
-  const headerStore = headers();
-  const host = headerStore.get('host');
-  const protocol = host && host.includes('localhost') ? 'http' : 'https';
-  const baseUrl = process.env.ADMIN_BASE_URL ?? (host ? `${protocol}://${host}` : 'http://localhost:3000');
-
-  const response = await fetch(`${baseUrl}/api/explanations?page=${page}&pageSize=${pageSize}`, {
-    cache: 'no-store',
-    headers: {
-      Accept: 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to load explanation activity (status ${response.status})`);
-  }
-
-  const payload = (await response.json()) as ExplanationResponse;
-
-  return {
-    data: payload.data.map((item) => ({
-      ...item,
-      createdAt: new Date(item.createdAt),
-    })),
-    pagination: payload.pagination,
-  };
-}
-
 export default async function ExplanationLogPage({ searchParams }: ExplanationLogPageProps) {
   const pageParam = Number(searchParams?.page);
   const pageSizeParam = Number(searchParams?.pageSize);
@@ -76,7 +17,10 @@ export default async function ExplanationLogPage({ searchParams }: ExplanationLo
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
   const pageSize = Number.isFinite(pageSizeParam) && pageSizeParam > 0 ? pageSizeParam : DEFAULT_PAGE_SIZE;
 
-  const { data: explanations, pagination } = await fetchExplanationPage(page, Math.min(pageSize, 100));
+  const { data: explanations, pagination } = await fetchExplanationPage({
+    page,
+    pageSize: Math.min(pageSize, 100),
+  });
 
   const formatter = new Intl.DateTimeFormat('en-US', {
     year: 'numeric',

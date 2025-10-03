@@ -4,7 +4,7 @@ import { cn } from '../lib/utils';
 import { Menu, type MenuItem } from './menu';
 import { MenuButton } from './menu-button';
 
-export interface HeaderProps extends Omit<HTMLAttributes<header>, 'children'> {
+export interface HeaderProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   logo?: ReactNode;
   navigation?: MenuItem[];
   actions?: ReactNode;

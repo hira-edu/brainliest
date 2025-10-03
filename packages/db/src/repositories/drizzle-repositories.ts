@@ -1,4 +1,10 @@
-import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
+/*
+ * Drizzle mappers rely on `as` assertions when shaping query results. TypeScript already validates the shapes via
+ * the Drizzle schema, so disable the lint rule that flags these narrow casts as unnecessary.
+ */
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+
+import { and, eq, gte, inArray, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type {
@@ -17,6 +23,9 @@ import type {
   CreateExplanationInput,
   ExplanationListRecentOptions,
   ExplanationSummary,
+  ExplanationAggregateTotals,
+  ExplanationDailyTotalsOptions,
+  ExplanationDailyTotal,
 } from './explanation-repository';
 import type {
   SessionRepository,
@@ -26,6 +35,7 @@ import type {
   StartSessionInput,
   AdvanceQuestionInput,
   ToggleFlagInput,
+  ToggleBookmarkInput,
   UpdateRemainingSecondsInput,
   RecordQuestionProgressInput,
   ExamSessionStatus,
@@ -42,6 +52,7 @@ type RawMetadata = Record<string, unknown> | null | undefined;
 const DEFAULT_SESSION_METADATA: PracticeSessionMetadata = {
   currentQuestionIndex: 0,
   flaggedQuestionIds: [],
+  bookmarkedQuestionIds: [],
   remainingSeconds: null,
 };
 
@@ -75,6 +86,7 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
   }
 
   const flaggedQuestionIds = ensureStringArray((raw as Record<string, unknown>).flaggedQuestionIds);
+  const bookmarkedQuestionIds = ensureStringArray((raw as Record<string, unknown>).bookmarkedQuestionIds);
   const currentQuestionIndexValue = (raw as Record<string, unknown>).currentQuestionIndex;
   const remainingSecondsValue = (raw as Record<string, unknown>).remainingSeconds;
 
@@ -88,7 +100,12 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
 
   const extra: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
-    if (key === 'flaggedQuestionIds' || key === 'currentQuestionIndex' || key === 'remainingSeconds') {
+    if (
+      key === 'flaggedQuestionIds' ||
+      key === 'bookmarkedQuestionIds' ||
+      key === 'currentQuestionIndex' ||
+      key === 'remainingSeconds'
+    ) {
       continue;
     }
     extra[key] = value;
@@ -98,6 +115,7 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
     return {
       currentQuestionIndex,
       flaggedQuestionIds,
+      bookmarkedQuestionIds,
       remainingSeconds,
       extra,
     } satisfies PracticeSessionMetadata;
@@ -106,12 +124,14 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
   return {
     currentQuestionIndex,
     flaggedQuestionIds,
+    bookmarkedQuestionIds,
     remainingSeconds,
   } satisfies PracticeSessionMetadata;
 };
 
 const serializeSessionMetadata = (metadata: PracticeSessionMetadata): Record<string, unknown> => ({
   flaggedQuestionIds: [...metadata.flaggedQuestionIds],
+  bookmarkedQuestionIds: [...(metadata.bookmarkedQuestionIds ?? [])],
   currentQuestionIndex: metadata.currentQuestionIndex,
   remainingSeconds:
     metadata.remainingSeconds !== undefined && metadata.remainingSeconds !== null
@@ -782,6 +802,51 @@ export class DrizzleExplanationRepository implements ExplanationRepository {
       pagination: buildPaginationMeta(totalCount, page, pageSize),
     };
   }
+
+  async getAggregateTotals(): Promise<ExplanationAggregateTotals> {
+    const [totals] = await this.db
+      .select({
+        totalCount: sql<number>`count(*)`,
+        tokensTotal: sql<number>`COALESCE(SUM(${schema.questionAiExplanations.tokensTotal}), 0)`,
+        costCentsTotal: sql<number>`COALESCE(SUM(${schema.questionAiExplanations.costCents}), 0)`,
+      })
+      .from(schema.questionAiExplanations);
+
+    return {
+      totalCount: Number(totals?.totalCount ?? 0),
+      tokensTotal: Number(totals?.tokensTotal ?? 0),
+      costCentsTotal: Number(totals?.costCentsTotal ?? 0),
+    };
+  }
+
+  async listDailyTotals(options: ExplanationDailyTotalsOptions = {}): Promise<ExplanationDailyTotal[]> {
+    const windowDays = Math.min(Math.max(options.days ?? 7, 1), 90);
+    const startDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0);
+    startDate.setDate(startDate.getDate() - (windowDays - 1));
+
+    const rows = await this.db
+      .select({
+        day: sql<Date>`date_trunc('day', ${schema.questionAiExplanations.createdAt})`,
+        totalCount: sql<number>`count(*)`,
+        tokensTotal: sql<number>`COALESCE(SUM(${schema.questionAiExplanations.tokensTotal}), 0)`,
+        costCentsTotal: sql<number>`COALESCE(SUM(${schema.questionAiExplanations.costCents}), 0)`,
+      })
+      .from(schema.questionAiExplanations)
+      .where(gte(schema.questionAiExplanations.createdAt, startDate))
+      .groupBy(sql`date_trunc('day', ${schema.questionAiExplanations.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${schema.questionAiExplanations.createdAt})`);
+
+    return rows.map((row) => {
+      const dayValue = row.day instanceof Date ? row.day : new Date(row.day as unknown as string);
+      return {
+        day: dayValue,
+        totalCount: Number(row.totalCount ?? 0),
+        tokensTotal: Number(row.tokensTotal ?? 0),
+        costCentsTotal: Number(row.costCentsTotal ?? 0),
+      } satisfies ExplanationDailyTotal;
+    });
+  }
 }
 
 export class DrizzleSessionRepository implements SessionRepository {
@@ -823,6 +888,7 @@ export class DrizzleSessionRepository implements SessionRepository {
       const metadata: PracticeSessionMetadata = {
         currentQuestionIndex: 0,
         flaggedQuestionIds: [],
+        bookmarkedQuestionIds: [],
         remainingSeconds: input.remainingSeconds ?? defaultDurationSeconds ?? null,
       };
 
@@ -905,6 +971,9 @@ export class DrizzleSessionRepository implements SessionRepository {
       questionRecords.map((record) => [record.id as QuestionId, record])
     );
 
+    const flaggedSet = new Set(metadata.flaggedQuestionIds);
+    const bookmarkedSet = new Set(metadata.bookmarkedQuestionIds ?? []);
+
     const questions: PracticeSessionQuestionState[] = session.questions.map((row) => {
       const record = questionRecordMap.get(row.questionId as QuestionId);
       if (!record) {
@@ -918,6 +987,8 @@ export class DrizzleSessionRepository implements SessionRepository {
         isCorrect: row.isCorrect ?? null,
         timeSpentSeconds: row.timeSpentSeconds ?? null,
         question: record,
+        isFlagged: flaggedSet.has(row.questionId as QuestionId),
+        isBookmarked: bookmarkedSet.has(row.questionId as QuestionId),
       };
     });
 
@@ -952,6 +1023,21 @@ export class DrizzleSessionRepository implements SessionRepository {
       return {
         ...metadata,
         flaggedQuestionIds: Array.from(flagged),
+      };
+    });
+  }
+
+  async toggleBookmark(input: ToggleBookmarkInput): Promise<void> {
+    await this.updateMetadata(input.sessionId, (metadata) => {
+      const bookmarked = new Set(metadata.bookmarkedQuestionIds ?? []);
+      if (input.bookmarked) {
+        bookmarked.add(input.questionId);
+      } else {
+        bookmarked.delete(input.questionId);
+      }
+      return {
+        ...metadata,
+        bookmarkedQuestionIds: Array.from(bookmarked),
       };
     });
   }

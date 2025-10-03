@@ -20,7 +20,11 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@brainliest/ui": ["../../packages/ui/src"]
+      "@brainliest/ui": ["../../packages/ui/src"],
+      "@brainliest/db": ["../../packages/db/src"],
+      "@brainliest/db/*": ["../../packages/db/src/*"],
+      "@brainliest/shared": ["../../packages/shared/src"],
+      "@brainliest/shared/*": ["../../packages/shared/src/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,

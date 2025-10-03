@@ -45,16 +45,16 @@ export function buildPracticeExamInfo(
   totalQuestions: number,
   questionRecords: QuestionRecord[]
 ): PracticeExamInfo {
-  const fallback = {
+  const fallback: PracticeExamInfo = {
     ...DEFAULT_PRACTICE_INFO,
     totalQuestions: totalQuestions || DEFAULT_PRACTICE_INFO.totalQuestions,
-  } as PracticeExamInfo;
+  };
 
   if (!exam) {
     return fallback;
   }
 
-  const metadata = (exam.metadata ?? {}) as Record<string, unknown>;
+  const metadata = exam.metadata ?? {};
 
   const metadataTags = Array.isArray(metadata.tags)
     ? metadata.tags.filter((tag): tag is string => typeof tag === 'string')
@@ -107,6 +107,7 @@ export function buildPracticeProgress(
 
 export function mapSessionRecordToApiResponse(record: PracticeSessionRecord): PracticeSessionApiResponse {
   const flaggedSet = new Set(record.metadata.flaggedQuestionIds);
+  const bookmarkedSet = new Set(record.metadata.bookmarkedQuestionIds ?? []);
   const questions: PracticeSessionApiQuestion[] = record.questions
     .slice()
     .sort((a, b) => a.orderIndex - b.orderIndex)
@@ -115,6 +116,7 @@ export function mapSessionRecordToApiResponse(record: PracticeSessionRecord): Pr
       orderIndex: item.orderIndex,
       selectedAnswers: ensureArray(item.selectedAnswers),
       isFlagged: flaggedSet.has(item.questionId),
+      isBookmarked: bookmarkedSet.has(item.questionId),
       timeSpentSeconds: item.timeSpentSeconds ?? null,
       question: mapRecordToQuestionModel(item.question),
     }));
@@ -130,6 +132,7 @@ export function mapSessionRecordToApiResponse(record: PracticeSessionRecord): Pr
       totalQuestions: questions.length,
       remainingSeconds: record.metadata.remainingSeconds ?? null,
       flaggedQuestionIds: [...flaggedSet],
+      bookmarkedQuestionIds: [...bookmarkedSet],
     },
     exam: examInfo,
     questions,
@@ -145,22 +148,32 @@ export function mapApiResponseToPracticeSessionData(
   }
 
   const boundedIndex = Math.max(0, Math.min(session.currentQuestionIndex, questions.length - 1));
-  const activeQuestion = questions[boundedIndex] ?? questions[0]!;
+  const activeQuestion = questions[boundedIndex];
+
+  if (!activeQuestion) {
+    throw new Error('Unable to resolve active practice question.');
+  }
 
   const progress = buildPracticeProgress(exam, boundedIndex + 1, session.totalQuestions, session.remainingSeconds);
 
   return {
     sessionId: session.id,
+    sessionStatus: session.status,
     exam,
+    questions,
+    currentQuestionIndex: boundedIndex,
     question: activeQuestion.question,
     questionState: {
       questionId: activeQuestion.questionId,
       orderIndex: activeQuestion.orderIndex,
       selectedAnswers: ensureArray(activeQuestion.selectedAnswers),
       isFlagged: activeQuestion.isFlagged,
+      isBookmarked: activeQuestion.isBookmarked,
       timeSpentSeconds: activeQuestion.timeSpentSeconds,
     },
     progress,
+    flaggedQuestionIds: [...session.flaggedQuestionIds],
+    bookmarkedQuestionIds: [...session.bookmarkedQuestionIds],
     fromSample: false,
   };
 }

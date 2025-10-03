@@ -100,7 +100,7 @@ export default function CommandPaletteDemo() {
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-base font-semibold text-gray-900">Explanation</h3>
-                <Badge variant={explanation.confidence === 'high' ? 'success' : 'default'}>
+                <Badge variant={explanation.confidence === 'high' ? 'success' : 'secondary'}>
                   Confidence: {explanation.confidence}
                 </Badge>
               </div>

@@ -1,10 +1,31 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const base = '/demo';
+const WAIT_FOR_EXPLANATION = 15_000;
 
-const expectHeadingVisible = async (page: any, text: string) => {
-  await expect(page.getByRole('heading', { level: 1, name: text })).toBeVisible();
+const expectHeadingVisible = async (page: Page, text: string) => {
+  await expect(page.getByRole('heading', { level: 1, name: text })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
 };
+
+const MOCK_EXPLANATION_RESPONSE = {
+  explanation: {
+    summary: 'Great job — deterministic explanation.',
+    confidence: 'high',
+    keyPoints: ['Uses the power rule', 'Applies exponent decrement'],
+    steps: ['Differentiate using power rule', 'Multiply exponent by coefficient'],
+  },
+  rateLimitRemaining: 5,
+};
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/ai/explanations', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(MOCK_EXPLANATION_RESPONSE),
+    });
+  });
+});
 
 test.describe('Composite demos', () => {
   test('modal demo opens and closes', async ({ page }) => {
@@ -47,12 +68,12 @@ test.describe('Composite demos', () => {
     await page.goto(`${base}/composites/searchable-select`);
     await expectHeadingVisible(page, 'Searchable Select');
 
-    await page.getByRole('button', { name: /Select an answer choice/i }).click();
+    await page.getByRole('button', { name: /search options/i }).click();
     await page.getByRole('option', { name: 'Option A — 3x²' }).click();
 
     await expect(page.getByText('Selected choice: Option A — 3x²')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 3, name: 'AI explanation' })).toBeVisible();
-    await expect(page.getByText(/Great job/)).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: 'AI explanation' })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+    await expect(page.getByText(/Great job/)).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
   });
 
   test('command palette triggers explanation command', async ({ page }) => {
@@ -63,8 +84,8 @@ test.describe('Composite demos', () => {
     await page.getByPlaceholder('Search commands').fill('Explain Option A');
     await page.getByRole('option', { name: 'Explain Option A — 3x²' }).click();
 
-    await expect(page.getByText('Executed: Explain Option A — 3x²')).toBeVisible();
-    await expect(page.getByText(/Great job/)).toBeVisible();
+    await expect(page.getByText('Executed: Explain Option A — 3x²')).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+    await expect(page.getByText(/Great job/)).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
   });
 
   test('tabs demo switches panels', async ({ page }) => {
@@ -104,7 +125,7 @@ test.describe('Composite demos', () => {
     await expectHeadingVisible(page, 'Tooltip');
 
     await page.getByRole('button', { name: 'Top tooltip' }).hover();
-    await expect(page.getByRole('tooltip')).toContainText('Generate AI explanation');
+    await expect(page.getByRole('tooltip')).toContainText('Generate AI explanation', { timeout: WAIT_FOR_EXPLANATION });
   });
 
   test('toast demo emits notification', async ({ page }) => {

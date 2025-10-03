@@ -18,6 +18,12 @@ interface ToggleFlagPayload {
   flagged: boolean;
 }
 
+interface ToggleBookmarkPayload {
+  operation: 'toggle-bookmark';
+  questionId: string;
+  bookmarked: boolean;
+}
+
 interface UpdateTimerPayload {
   operation: 'update-timer';
   remainingSeconds: number;
@@ -30,7 +36,12 @@ interface RecordAnswerPayload {
   timeSpentSeconds?: number | null;
 }
 
-type PatchPayload = AdvancePayload | ToggleFlagPayload | UpdateTimerPayload | RecordAnswerPayload;
+type PatchPayload =
+  | AdvancePayload
+  | ToggleFlagPayload
+  | ToggleBookmarkPayload
+  | UpdateTimerPayload
+  | RecordAnswerPayload;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -58,6 +69,16 @@ function parsePatchPayload(raw: unknown): PatchPayload | null {
         operation: 'toggle-flag',
         questionId: raw.questionId,
         flagged: raw.flagged,
+      };
+    }
+    case 'toggle-bookmark': {
+      if (typeof raw.questionId !== 'string' || typeof raw.bookmarked !== 'boolean') {
+        return null;
+      }
+      return {
+        operation: 'toggle-bookmark',
+        questionId: raw.questionId,
+        bookmarked: raw.bookmarked,
       };
     }
     case 'update-timer': {
@@ -148,6 +169,14 @@ export async function PATCH(
         });
         break;
       }
+      case 'toggle-bookmark': {
+        await sessionRepository.toggleBookmark({
+          sessionId,
+          questionId: payload.questionId,
+          bookmarked: Boolean(payload.bookmarked),
+        });
+        break;
+      }
       case 'update-timer': {
         await sessionRepository.updateRemainingSeconds({
           sessionId,
@@ -169,19 +198,18 @@ export async function PATCH(
         });
         break;
       }
-      default: {
+      default:
         return NextResponse.json(
           {
-            error: 'UNSUPPORTED_OPERATION',
-            message: `Unsupported practice session operation: ${payload.operation}`,
+            error: 'INVALID_OPERATION',
+            message: `Unsupported operation: ${payload.operation}`,
           },
           { status: 400 }
         );
-      }
     }
 
-    const updated = await sessionRepository.getSession(sessionId);
-    if (!updated) {
+    const session = await sessionRepository.getSession(sessionId);
+    if (!session) {
       return NextResponse.json(
         {
           error: 'SESSION_NOT_FOUND',
@@ -191,13 +219,13 @@ export async function PATCH(
       );
     }
 
-    return NextResponse.json(mapSessionRecordToApiResponse(updated));
+    return NextResponse.json(mapSessionRecordToApiResponse(session));
   } catch (error) {
-    console.error('[api/practice/sessions/:id] failed to process update', error);
+    console.error('[api/practice/sessions] PATCH failed', error);
     return NextResponse.json(
       {
         error: 'PRACTICE_SESSION_UPDATE_FAILED',
-        message: error instanceof Error ? error.message : 'Failed to update practice session.',
+        message: 'Unable to update practice session.',
       },
       { status: 500 }
     );

@@ -17,6 +17,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.7] - 2025-10-03
+
+### Added
+- Admin dashboard now surfaces live AI explanation KPIs, latest generations, and a subject leaderboard powered by the `/api/explanations` endpoint.
+ - Practice navigation demo page (`/demo/practice/navigation`) for quickly exercising the shared layout without hitting the API.
+
+### Changed
+- Extracted a shared explanation fetch helper (`apps/admin/src/lib/explanations.ts`) so the dashboard and activity log reuse payload validation, base URL detection, and timestamp normalisation.
+- Added `/api/explanations/metrics` plus repository aggregates to deliver lifetime totals/averages for the admin dashboard KPIs.
+- Extended `tests/playwright/specs/practice.spec.ts` to cover bookmarking, flagging, and timer countdown across reloads so the session API wiring stays regression-proof.
+- Tightened the practice session fallback/mappers by removing redundant type assertions and guarding active-question selection to keep the pipeline lint-clean while backend wiring stabilises.
+
+### Tests
+- `pnpm lint --filter @brainliest/admin`
+- `pnpm lint --filter @brainliest/web`
+- `pnpm lint --filter @brainliest/db`
+- `pnpm test --filter @brainliest/db`
+
+## [2.2.6] - 2025-10-03
+
+### Added
+- `PracticeSessionContainer` client coordinator that keeps session state in sync with `/api/practice/sessions`, powering next/previous navigation, shared flag/bookmark toggles, and local fallbacks when the API is offline.
+- Session bookmark toggling exposed via the practice API (`toggle-bookmark`) and persisted through Drizzle metadata so navigation buttons and question cards stay consistent across reloads.
+
+### Changed
+- Extended `PracticeSessionData` and mapping utilities to expose the full question list, flagged/bookmarked question IDs, and session metadata so clients can react to repository updates without additional queries.
+- Refactored the practice page, navigation panel, and `PracticeClient` to use the new container callbacks—removing duplicate fetch logic and ensuring optimistic updates stay consistent across questions.
+- Updated the practice fallback builder to emit container-compatible questions so sample sessions behave like persisted ones, including bookmark state.
+- Added a lightweight timer heartbeat that syncs remaining seconds back to the session API every 30 seconds to keep multi-device views aligned.
+- Stabilised Playwright demos by intercepting `/api/ai/explanations` and practice session routes with deterministic fixtures so the suite no longer relies on live persistence.
+
+### Tests
+- `pnpm exec eslint apps/web/src/app/practice/[examSlug] --max-warnings=0`
+
 ## [2.2.5] - 2025-10-03
 
 ### Added

@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
@@ -45,7 +45,7 @@ export interface SelectOption {
 }
 
 export interface SelectProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'children' | 'defaultValue' | 'onChange'>,
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'defaultValue' | 'onChange' | 'value'>,
     VariantProps<typeof triggerVariants> {
   options: SelectOption[];
   value?: string;

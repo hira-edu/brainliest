@@ -9,6 +9,7 @@ type PrimitiveMetadata = Record<string, unknown>;
 export interface PracticeSessionMetadata {
   readonly currentQuestionIndex: number;
   readonly flaggedQuestionIds: readonly QuestionId[];
+  readonly bookmarkedQuestionIds: readonly QuestionId[];
   readonly remainingSeconds?: number | null;
   readonly extra?: PrimitiveMetadata;
 }
@@ -20,6 +21,8 @@ export interface PracticeSessionQuestionState {
   readonly isCorrect: boolean | null;
   readonly timeSpentSeconds: number | null;
   readonly question: QuestionRecord;
+  readonly isFlagged: boolean;
+  readonly isBookmarked: boolean;
 }
 
 export interface PracticeSessionRecord {
@@ -51,6 +54,12 @@ export interface ToggleFlagInput {
   readonly flagged: boolean;
 }
 
+export interface ToggleBookmarkInput {
+  readonly sessionId: SessionId;
+  readonly questionId: QuestionId;
+  readonly bookmarked: boolean;
+}
+
 export interface UpdateRemainingSecondsInput {
   readonly sessionId: SessionId;
   readonly remainingSeconds: number;
@@ -68,6 +77,7 @@ export interface SessionRepository {
   getSession(sessionId: SessionId): Promise<PracticeSessionRecord | null>;
   advanceQuestion(input: AdvanceQuestionInput): Promise<void>;
   toggleFlag(input: ToggleFlagInput): Promise<void>;
+  toggleBookmark(input: ToggleBookmarkInput): Promise<void>;
   updateRemainingSeconds(input: UpdateRemainingSecondsInput): Promise<void>;
   recordQuestionProgress(input: RecordQuestionProgressInput): Promise<void>;
 }

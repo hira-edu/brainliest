@@ -39,8 +39,10 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = request.headers.get('x-user-id') ?? 'anonymous';
+  const forwardedForHeader = request.headers.get('x-forwarded-for');
+  const forwardedIp = forwardedForHeader?.split(',')[0]?.trim();
   const rateLimitIdentifier =
-    request.headers.get('x-rate-limit-id') ?? userId ?? request.ip ?? 'anonymous';
+    request.headers.get('x-rate-limit-id') ?? forwardedIp ?? userId ?? 'anonymous';
 
   try {
     const { explanation, rateLimit } = await requestAiExplanation({

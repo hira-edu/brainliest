@@ -1,17 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const listRecentMock = vi.fn();
+const getAggregateTotalsMock = vi.fn();
+const listDailyTotalsMock = vi.fn();
 
 vi.mock('@brainliest/db', () => ({
   drizzleClient: {},
   DrizzleExplanationRepository: class {
     public listRecent = listRecentMock;
+    public getAggregateTotals = getAggregateTotalsMock;
+    public listDailyTotals = listDailyTotalsMock;
   },
 }));
 
 describe('GET /api/explanations', () => {
   beforeEach(() => {
     listRecentMock.mockReset();
+    getAggregateTotalsMock.mockReset();
+    listDailyTotalsMock.mockReset();
   });
 
   it('returns paginated explanation data', async () => {
@@ -118,5 +124,59 @@ describe('GET /api/explanations', () => {
     await GET(request);
 
     expect(listRecentMock).toHaveBeenCalledWith({ page: 1, pageSize: 5 });
+  });
+});
+
+describe('GET /api/explanations/metrics', () => {
+  beforeEach(() => {
+    getAggregateTotalsMock.mockReset();
+  });
+
+  it('returns aggregate totals with averages', async () => {
+    const { GET } = await import('./metrics/route');
+
+    getAggregateTotalsMock.mockResolvedValueOnce({
+      totalCount: 42,
+      tokensTotal: 1234,
+      costCentsTotal: 256,
+    });
+    listDailyTotalsMock.mockResolvedValueOnce([
+      {
+        day: new Date('2025-10-01T00:00:00Z'),
+        totalCount: 5,
+        tokensTotal: 120,
+        costCentsTotal: 12,
+      },
+    ]);
+
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    expect(getAggregateTotalsMock).toHaveBeenCalledTimes(1);
+    expect(listDailyTotalsMock).toHaveBeenCalledWith({ days: 7 });
+
+    const payload = (await response.json()) as {
+      totalCount: number;
+      tokensTotal: number;
+      costCentsTotal: number;
+      averageCostCents: number;
+      averageTokens: number;
+      windowDays: number;
+      series: Array<{ day: string; totalCount: number; tokensTotal: number; costCentsTotal: number }>;
+    };
+    expect(payload.totalCount).toBe(42);
+    expect(payload.tokensTotal).toBe(1234);
+    expect(payload.costCentsTotal).toBe(256);
+    expect(payload.averageCostCents).toBe(Math.round(256 / 42));
+    expect(payload.averageTokens).toBe(Math.round(1234 / 42));
+    expect(payload.windowDays).toBe(7);
+    expect(payload.series).toEqual([
+      {
+        day: '2025-10-01',
+        totalCount: 5,
+        tokensTotal: 120,
+        costCentsTotal: 12,
+      },
+    ]);
   });
 });

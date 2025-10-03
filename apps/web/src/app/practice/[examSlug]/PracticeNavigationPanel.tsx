@@ -1,28 +1,43 @@
 'use client';
 
-import { useState } from 'react';
 import { PracticeNavigation } from '@brainliest/ui';
 
 interface PracticeNavigationPanelProps {
   progressLabel: string;
   timeRemainingLabel?: string;
+  disablePrevious?: boolean;
+  disableNext?: boolean;
+  isFlagged: boolean;
+  onToggleFlag: (next: boolean) => void;
+  isBookmarked: boolean;
+  onToggleBookmark: (next: boolean) => void;
+  onPrevious?: () => void;
+  onNext?: () => void;
 }
 
 export function PracticeNavigationPanel({
   progressLabel,
   timeRemainingLabel,
+  disablePrevious,
+  disableNext,
+  isFlagged,
+  onToggleFlag,
+  isBookmarked,
+  onToggleBookmark,
+  onPrevious,
+  onNext,
 }: PracticeNavigationPanelProps) {
-  const [isFlagged, setIsFlagged] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-
   return (
     <PracticeNavigation
       progressLabel={progressLabel}
-      disablePrevious
+      disablePrevious={disablePrevious}
+      disableNext={disableNext}
+      onPrevious={onPrevious}
+      onNext={onNext}
       isFlagged={isFlagged}
-      onToggleFlag={setIsFlagged}
+      onToggleFlag={onToggleFlag}
       isBookmarked={isBookmarked}
-      onToggleBookmark={setIsBookmarked}
+      onToggleBookmark={onToggleBookmark}
       rightSlot={timeRemainingLabel ? <span className="font-medium text-gray-700">{timeRemainingLabel}</span> : undefined}
     />
   );

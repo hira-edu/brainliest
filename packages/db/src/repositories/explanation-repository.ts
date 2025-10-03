@@ -30,6 +30,23 @@ export interface ExplanationSummary extends ExplanationRecord {
   readonly questionStem: string;
 }
 
+export interface ExplanationAggregateTotals {
+  readonly totalCount: number;
+  readonly tokensTotal: number;
+  readonly costCentsTotal: number;
+}
+
+export interface ExplanationDailyTotal {
+  readonly day: Date;
+  readonly totalCount: number;
+  readonly tokensTotal: number;
+  readonly costCentsTotal: number;
+}
+
+export interface ExplanationDailyTotalsOptions {
+  readonly days?: number;
+}
+
 export interface ExplanationListRecentOptions {
   readonly page?: number;
   readonly pageSize?: number;
@@ -39,4 +56,6 @@ export interface ExplanationRepository {
   findByQuestionAndPattern(questionId: QuestionId, answerPattern: string): Promise<ExplanationRecord | null>;
   create(record: CreateExplanationInput): Promise<string>;
   listRecent(options?: ExplanationListRecentOptions): Promise<PaginatedResult<ExplanationSummary>>;
+  getAggregateTotals(): Promise<ExplanationAggregateTotals>;
+  listDailyTotals(options?: ExplanationDailyTotalsOptions): Promise<ExplanationDailyTotal[]>;
 }

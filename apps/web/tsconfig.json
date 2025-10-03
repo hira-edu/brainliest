@@ -22,7 +22,9 @@
       "@/*": ["./src/*"],
       "@brainliest/ui": ["../../packages/ui/src"],
       "@brainliest/db": ["../../packages/db/src"],
-      "@brainliest/shared": ["../../packages/shared/src"]
+      "@brainliest/shared": ["../../packages/shared/src"],
+      "@brainliest/config": ["../../packages/config"],
+      "@brainliest/config/*": ["../../packages/config/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,

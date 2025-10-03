@@ -2,8 +2,9 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 import { drizzleClient, DrizzleExplanationRepository } from '@brainliest/db';
+import type { ExplanationRepository } from '@brainliest/db';
 
-const repository = new DrizzleExplanationRepository(drizzleClient);
+const repository: ExplanationRepository = new DrizzleExplanationRepository(drizzleClient);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

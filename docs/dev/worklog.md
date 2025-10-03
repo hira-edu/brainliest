@@ -3,6 +3,7 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+- Wired practice navigation to the session API with a client container that manages question advance, flag state, and answer persistence across questions.
 - Persisted AI explanation generations through the Drizzle repository and surfaced an admin log/API for auditing.
 - Added pagination to `/api/explanations` and updated the admin activity view to read from the shared endpoint instead of direct repository access.
 - Stood up practice session storage (Drizzle repositories + `/api/practice/sessions` routes) and rewired the practice page/actions to call the new API while keeping the sample fallback for offline use.
@@ -19,7 +20,25 @@
 - Integrated shared AI explanation + cache services into the web/admin apps with Next.js API routes, rate limiting, and Redis-backed invalidation stubs.
 - Established `@brainliest/db` with Drizzle schema, repository interfaces, and database client tooling to anchor upcoming data access workstreams.
 
+## 2025-10-03 (Session 12) — Codex
+- 📊 **Admin dashboard wiring** — Replaced the static landing page with live metrics sourced from `/api/explanations`, including aggregate KPIs, a latest-generation table, and subject leaderboard links back to the activity log.
+- 🔁 **Shared fetch helper** — Added `apps/admin/src/lib/explanations.ts` so both the dashboard and activity log reuse a typed helper that resolves the admin base URL, validates payloads, and normalises timestamps.
+- 📈 **Metrics endpoint** — Introduced `/api/explanations/metrics` powered by new repository aggregates so the dashboard can report lifetime totals, spend, and averages alongside the recent activity table.
+- 🧹 **Practice lint pass** — Removed redundant type assertions across the practice data pipeline, added a guard when deriving the active question, and re-ran `pnpm lint --filter @brainliest/web` to confirm the route is clean.
+- 🧪 **Playwright coverage** — Expanded `tests/playwright/specs/practice.spec.ts` to exercise flagging, bookmarking, timer countdown, and persistence across reloads using the API intercept harness.
+- ✅ **Validation** — `pnpm lint --filter @brainliest/admin`, `pnpm lint --filter @brainliest/web`.
+
+## 2025-10-03 (Session 11) — Codex
+- 🧭 **Practice navigation sync** — Introduced `PracticeSessionContainer` to orchestrate session state on the client, enabling next/previous navigation, shared flag toggles, and answer persistence backed by the new `/api/practice/sessions` PATCH operations (with a sample fallback for offline use).
+- 🔖 **Bookmark persistence** — Added `toggle-bookmark` handling end-to-end (API + repository + container) so saved questions survive reloads and stay in lockstep with the navigation controls.
+- ⏱️ **Timer heartbeat** — Added a countdown loop that tracks remaining seconds locally and persists them to the session API every 30 seconds (and on expiry) so the timer label stays accurate across devices.
+- 📦 **Shared practice data** — Extended `PracticeSessionData` and mappers so API responses expose the full question list, flagged/bookmarked IDs, and session status—allowing clients to react to repository updates without extra queries.
+- 🧑‍💻 **Client refactor** — Updated `PracticeClient`, navigation panel, and fetch helpers to consume the new container callbacks while keeping optimistic updates and lint coverage intact.
+- 🧪 **Playwright stubs** — Added request interception in the composite/practice specs so AI explanation and session APIs return deterministic fixtures, keeping the E2E suite stable without hitting live services.
+- ✅ **Validation** — `pnpm exec eslint apps/web/src/app/practice/[examSlug] --max-warnings=0`, `pnpm exec eslint tests/playwright/specs/{composites,practice}.spec.ts --max-warnings=0`, `pnpm --filter @brainliest/web typecheck`, `pnpm test --filter @brainliest/db`.
+
 ## 2025-10-03 (Session 10) — Codex
+*(see prior entry for Drizzle persistence and admin reporting work)*
 - 🧠 **Practice session API** — Added session repository contracts, Drizzle implementation, and Vitest coverage so timers/flags/progress persist in Postgres.
 - 🌐 **Next.js routes** — Exposed `/api/practice/sessions` (POST) and `/api/practice/sessions/[sessionId]` (GET/PATCH) to serve session DTOs and accept progress mutations.
 - 🧑‍💻 **Client wiring** — Refactored `fetchPracticeSession` + `PracticeClient` to consume the new endpoints, record answer selection, and toggle flags while preserving the sample fallback.

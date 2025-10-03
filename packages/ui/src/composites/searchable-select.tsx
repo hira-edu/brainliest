@@ -22,7 +22,7 @@ export interface SearchableSelectOption {
 }
 
 export interface SearchableSelectProps {
-  options: SearchableSelectOption[];
+  options: ReadonlyArray<SearchableSelectOption>;
   value?: string;
   onChange: (value: string) => void;
   placeholder?: string;

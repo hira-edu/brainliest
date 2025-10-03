@@ -6,44 +6,25 @@
  */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-redundant-type-constituents */
 
-import { useMemo, useState, useTransition } from 'react';
-import {
-  Button,
-  Stack,
-  PracticeOptionList,
-  PracticeFillBlank,
-  PracticeExplanationCard,
-  Badge,
-} from '@brainliest/ui';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { Button, Stack, PracticeOptionList, PracticeFillBlank, PracticeExplanationCard } from '@brainliest/ui';
 import type { PracticeOption } from '@brainliest/ui';
 import type { QuestionModel } from '@brainliest/shared';
 import type { ExplanationDtoShape } from '@brainliest/shared';
-import type {
-  PracticeSessionApiResponse,
-  PracticeSessionQuestionState,
-} from '@/lib/practice/types';
+import type { PracticeSessionQuestionState } from '@/lib/practice/types';
 import { requestExplanationAction } from './actions';
 
 interface PracticeClientProps {
-  sessionId: string;
   question: QuestionModel;
   questionState: PracticeSessionQuestionState;
+  isFlagged: boolean;
+  onToggleFlag: (next: boolean) => Promise<void> | void;
+  onRecordAnswer: (selected: number[]) => Promise<void> | void;
+  isSaving: boolean;
+  fromSample: boolean;
 }
 
 type RequestState = 'idle' | 'loading' | 'success' | 'error';
-
-type PatchPayload =
-  | {
-      operation: 'toggle-flag';
-      questionId: string;
-      flagged: boolean;
-    }
-  | {
-      operation: 'record-answer';
-      questionId: string;
-      selectedAnswers: number[];
-      timeSpentSeconds?: number | null;
-    };
 
 const deriveSelectedChoiceId = (question: QuestionModel, state: PracticeSessionQuestionState) => {
   if (!state.selectedAnswers || state.selectedAnswers.length === 0) {
@@ -58,7 +39,15 @@ const deriveSelectedChoiceId = (question: QuestionModel, state: PracticeSessionQ
   return question.options[firstIndex]?.id ?? null;
 };
 
-export function PracticeClient({ sessionId, question, questionState }: PracticeClientProps) {
+export function PracticeClient({
+  question,
+  questionState,
+  isFlagged,
+  onToggleFlag,
+  onRecordAnswer,
+  isSaving,
+  fromSample,
+}: PracticeClientProps) {
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(
     deriveSelectedChoiceId(question, questionState)
   );
@@ -68,7 +57,6 @@ export function PracticeClient({ sessionId, question, questionState }: PracticeC
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<RequestState>('idle');
   const [isPending, startTransition] = useTransition();
-  const [isFlagged, setIsFlagged] = useState(questionState.isFlagged);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const options: PracticeOption[] = useMemo(
@@ -83,45 +71,13 @@ export function PracticeClient({ sessionId, question, questionState }: PracticeC
 
   const hasOptions = options.length > 0;
 
-  const patchSession = async (payload: PatchPayload) => {
-    setIsSyncing(true);
-    try {
-      const response = await fetch(`/api/practice/sessions/${sessionId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': 'demo-user',
-        },
-        body: JSON.stringify(payload),
-      });
+  useEffect(() => {
+    setSelectedChoiceId(deriveSelectedChoiceId(question, questionState));
+  }, [question, questionState]);
 
-      if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as { message?: string };
-        throw new Error(body.message ?? 'Failed to update practice session.');
-      }
-
-      const data = (await response.json()) as PracticeSessionApiResponse;
-      const updatedQuestion = data.questions.find((item) => item.questionId === question.id);
-      if (updatedQuestion) {
-        const nextState: PracticeSessionQuestionState = {
-          questionId: updatedQuestion.questionId,
-          orderIndex: updatedQuestion.orderIndex,
-          selectedAnswers: [...updatedQuestion.selectedAnswers],
-          isFlagged: updatedQuestion.isFlagged,
-          timeSpentSeconds: updatedQuestion.timeSpentSeconds ?? 0,
-        };
-        setSelectedChoiceId(deriveSelectedChoiceId(question, nextState));
-        setIsFlagged(nextState.isFlagged);
-      } else {
-        setIsFlagged(data.session.flaggedQuestionIds.includes(question.id));
-      }
-      setError(null);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Practice session update failed.');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  useEffect(() => {
+    setFreeResponse('');
+  }, [question.id]);
 
   const handleExplain = () => {
     const selectedIds = hasOptions
@@ -170,25 +126,26 @@ export function PracticeClient({ sessionId, question, questionState }: PracticeC
         )
       : -1;
 
-    if (selectedIndex >= 0) {
-      void patchSession({
-        operation: 'record-answer',
-        questionId: question.id,
-        selectedAnswers: [selectedIndex],
+    setIsSyncing(true);
+
+    Promise.resolve(onRecordAnswer(selectedIndex >= 0 ? [selectedIndex] : []))
+      .then(() => {
+        setError(null);
+      })
+      .catch((requestError) => {
+        setError(requestError instanceof Error ? requestError.message : 'Practice session update failed.');
+      })
+      .finally(() => {
+        setIsSyncing(false);
       });
-    } else {
-      void patchSession({
-        operation: 'record-answer',
-        questionId: question.id,
-        selectedAnswers: [],
-      });
-    }
   };
 
-  const disabled = hasOptions ? !selectedChoiceId || isPending : freeResponse.trim().length === 0 || isPending;
+  const disabled = hasOptions
+    ? !selectedChoiceId || isPending
+    : freeResponse.trim().length === 0 || isPending;
 
   return (
-    <Stack gap={6}>
+    <Stack gap="6">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-medium text-gray-600">
           {isFlagged ? 'This question is flagged for review.' : 'Review the prompt and select your answer.'}
@@ -197,13 +154,19 @@ export function PracticeClient({ sessionId, question, questionState }: PracticeC
           variant={isFlagged ? 'secondary' : 'ghost'}
           size="sm"
           onClick={() => {
-            void patchSession({
-              operation: 'toggle-flag',
-              questionId: question.id,
-              flagged: !isFlagged,
-            });
+            setIsSyncing(true);
+            Promise.resolve(onToggleFlag(!isFlagged))
+              .then(() => {
+                setError(null);
+              })
+              .catch((requestError) => {
+                setError(requestError instanceof Error ? requestError.message : 'Practice session update failed.');
+              })
+              .finally(() => {
+                setIsSyncing(false);
+              });
           }}
-          disabled={isSyncing}
+          disabled={isSyncing || isSaving}
         >
           {isFlagged ? 'Remove flag' : 'Flag question'}
         </Button>
@@ -236,10 +199,13 @@ export function PracticeClient({ sessionId, question, questionState }: PracticeC
             ? `Rate limit remaining: ${rateLimitRemaining}`
             : 'Powered by the shared AI explanation service.'}
         </p>
-        {isSyncing && <Badge variant="secondary">Saving…</Badge>}
+        {isSaving || isSyncing ? <span className="text-xs text-gray-500">Saving…</span> : null}
       </div>
 
       {state === 'error' && error ? <p className="text-sm text-error-600">{error}</p> : null}
+      {isSyncing && fromSample ? (
+        <p className="text-xs text-gray-500">Changes saved locally for sample sessions.</p>
+      ) : null}
 
       {explanation ? (
         <PracticeExplanationCard

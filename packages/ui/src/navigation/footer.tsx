@@ -12,7 +12,7 @@ export interface FooterColumn {
   links: FooterLink[];
 }
 
-export interface FooterProps extends Omit<HTMLAttributes<footer>, 'children'> {
+export interface FooterProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
   brand?: ReactNode;
   columns?: FooterColumn[];
   bottom?: ReactNode;

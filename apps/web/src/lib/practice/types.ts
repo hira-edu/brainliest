@@ -22,15 +22,21 @@ export interface PracticeSessionQuestionState {
   orderIndex: number;
   selectedAnswers: number[];
   isFlagged: boolean;
+  isBookmarked: boolean;
   timeSpentSeconds?: number | null;
 }
 
 export interface PracticeSessionData {
   sessionId: string;
+  sessionStatus: string;
   exam: PracticeExamInfo;
+  questions: PracticeSessionApiQuestion[];
+  currentQuestionIndex: number;
   question: QuestionModel;
   questionState: PracticeSessionQuestionState;
   progress: PracticeProgressInfo;
+  flaggedQuestionIds: string[];
+  bookmarkedQuestionIds: string[];
   fromSample: boolean;
 }
 
@@ -46,6 +52,7 @@ export interface PracticeSessionApiResponse {
     totalQuestions: number;
     remainingSeconds: number | null;
     flaggedQuestionIds: string[];
+    bookmarkedQuestionIds: string[];
   };
   exam: PracticeExamInfo;
   questions: PracticeSessionApiQuestion[];

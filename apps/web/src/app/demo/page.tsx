@@ -39,6 +39,14 @@ const demoLinks = [
       { href: '/demo/feedback/toast', label: 'Toast' },
     ],
   },
+  {
+    title: 'Flows & Pages',
+    links: [
+      { href: '/practice/a-level-math', label: 'Practice session (A-Level Math)' },
+      { href: '/demo/practice/navigation', label: 'Practice navigation kit' },
+      { href: 'http://localhost:3001', label: 'Admin dashboard (local dev)' },
+    ],
+  },
 ];
 
 const baseLogo = (
@@ -299,12 +307,23 @@ export default function DemoIndexPage() {
             <ul className="grid gap-3 sm:grid-cols-2">
               {section.links.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="flex h-full w-full rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm font-medium text-gray-700 transition-colors hover:border-primary-200 hover:bg-primary-50/60 hover:text-primary-800"
-                  >
-                    {link.label}
-                  </Link>
+                  {link.href.startsWith('http') ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex h-full w-full rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm font-medium text-gray-700 transition-colors hover:border-primary-200 hover:bg-primary-50/60 hover:text-primary-800"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="flex h-full w-full rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm font-medium text-gray-700 transition-colors hover:border-primary-200 hover:bg-primary-50/60 hover:text-primary-800"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

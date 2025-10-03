@@ -241,6 +241,17 @@ describe('Drizzle repositories', () => {
       const thirdPage = await repositories.explanations.listRecent({ page: 3, pageSize: 10 });
       expect(thirdPage.pagination.page).toBe(3);
       expect(thirdPage.data.length).toBe(5);
+
+      const aggregates = await repositories.explanations.getAggregateTotals();
+      expect(aggregates.totalCount).toBe(25);
+      expect(aggregates.tokensTotal).toBe(1940);
+      expect(aggregates.costCentsTotal).toBe(101);
+
+      const dailyTotals = await repositories.explanations.listDailyTotals({ days: 14 });
+      expect(dailyTotals.length).toBeGreaterThan(0);
+      const aggregateFromSeries = dailyTotals.reduce((sum, item) => sum + item.totalCount, 0);
+      expect(aggregateFromSeries).toBe(aggregates.totalCount);
+      expect(dailyTotals[dailyTotals.length - 1]?.tokensTotal ?? 0).toBeGreaterThan(0);
     });
   });
 
@@ -276,6 +287,12 @@ describe('Drizzle repositories', () => {
         flagged: true,
       });
 
+      await repositories.sessions.toggleBookmark({
+        sessionId: sessionRecord.id,
+        questionId: firstQuestion.questionId,
+        bookmarked: true,
+      });
+
       await repositories.sessions.updateRemainingSeconds({
         sessionId: sessionRecord.id,
         remainingSeconds: 1200,
@@ -290,11 +307,26 @@ describe('Drizzle repositories', () => {
       expect(updated).not.toBeNull();
       expect(updated?.metadata.currentQuestionIndex).toBe(1);
       expect(updated?.metadata.flaggedQuestionIds).toContain(firstQuestion.questionId);
+      expect(updated?.metadata.bookmarkedQuestionIds).toContain(firstQuestion.questionId);
       expect(updated?.metadata.remainingSeconds).toBe(1200);
 
       const updatedQuestion = updated?.questions.find((item) => item.questionId === firstQuestion.questionId);
       expect(updatedQuestion?.selectedAnswers).toEqual([1]);
       expect(updatedQuestion?.timeSpentSeconds).toBe(42);
+      expect(updatedQuestion?.isFlagged).toBe(true);
+      expect(updatedQuestion?.isBookmarked).toBe(true);
+
+      await repositories.sessions.toggleBookmark({
+        sessionId: sessionRecord.id,
+        questionId: firstQuestion.questionId,
+        bookmarked: false,
+      });
+
+      const afterBookmarkRemoval = await repositories.sessions.getSession(sessionRecord.id);
+      expect(afterBookmarkRemoval?.metadata.bookmarkedQuestionIds).not.toContain(firstQuestion.questionId);
+      expect(
+        afterBookmarkRemoval?.questions.find((item) => item.questionId === firstQuestion.questionId)?.isBookmarked
+      ).toBe(false);
     });
   }, 20000);
 });
