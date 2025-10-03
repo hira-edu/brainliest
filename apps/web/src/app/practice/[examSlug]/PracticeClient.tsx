@@ -102,8 +102,12 @@ export function PracticeClient({
   }, [question.correctChoiceIds]);
 
   useEffect(() => {
+    if (isSyncing) {
+      return;
+    }
+
     setSelectedChoiceId(deriveSelectedChoiceId(question, questionState));
-  }, [question, questionState]);
+  }, [question, questionState, isSyncing]);
 
   useEffect(() => {
     setFreeResponse('');
@@ -155,6 +159,10 @@ export function PracticeClient({
   const handleSelectionChange = (nextValue?: string) => {
     if (!hasOptions) {
       return;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[practice] selection change', nextValue);
     }
 
     setSelectedChoiceId(nextValue ?? null);

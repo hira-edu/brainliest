@@ -5,11 +5,12 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Badge, PracticeExamCard, PracticePageHeader } from '@brainliest/ui';
 import { mapApiResponseToPracticeSessionData } from '@/lib/practice/mappers';
+import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 import type { PracticeSessionApiResponse, PracticeSessionData } from '@/lib/practice/types';
 
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
-  'x-user-id': 'demo-user',
+  'x-user-id': PRACTICE_DEMO_USER_ID,
 };
 
 const formatDuration = (seconds: number): string => {

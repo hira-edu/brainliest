@@ -28,6 +28,7 @@ export interface UpdateUserInput extends Partial<CreateUserInput> {
 export interface UserFilter {
   readonly role?: UserRoleValue;
   readonly status?: string;
+  readonly subscriptionTier?: string;
   readonly search?: string;
 }
 

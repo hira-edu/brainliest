@@ -35,6 +35,7 @@ export const Dropdown = ({ trigger, align = 'end', children, className, ...props
           align={align}
           sideOffset={8}
           className="z-dropdown min-w-[14rem] origin-[var(--radix-dropdown-menu-content-transform-origin)] transform overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-xl outline-none transition duration-150 data-[state=open]:opacity-100 data-[state=open]:scale-100 data-[state=closed]:pointer-events-none data-[state=closed]:opacity-0 data-[state=closed]:scale-95"
+          style={{ zIndex: 4000, backgroundColor: '#ffffff' }}
         >
           {children}
         </DropdownMenu.Content>

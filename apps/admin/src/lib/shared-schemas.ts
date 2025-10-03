@@ -1,0 +1,30 @@
+export {
+  createExamSchema,
+  updateExamSchema,
+  questionOptionInputSchema,
+  createQuestionSchema,
+  updateQuestionSchema,
+  createCategorySchema,
+  updateCategorySchema,
+  createSubcategorySchema,
+  updateSubcategorySchema,
+  createSubjectSchema,
+  updateSubjectSchema,
+  createUserSchema,
+  updateUserSchema,
+} from '@brainliest/shared';
+
+export type {
+  CreateExamPayload,
+  UpdateExamPayload,
+  CreateQuestionPayload,
+  UpdateQuestionPayload,
+  CreateCategoryPayload,
+  UpdateCategoryPayload,
+  CreateSubcategoryPayload,
+  UpdateSubcategoryPayload,
+  CreateSubjectPayload,
+  UpdateSubjectPayload,
+  CreateUserPayload,
+  UpdateUserPayload,
+} from '@brainliest/shared';

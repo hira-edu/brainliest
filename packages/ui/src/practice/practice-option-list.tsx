@@ -31,8 +31,9 @@ export function PracticeOptionList({
 }: PracticeOptionListProps) {
   const generatedName = React.useId();
   const groupName = name ?? generatedName;
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange?.(event.target.value);
+  const handleChange = (optionId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    onChange?.(optionId);
   };
 
   return (
@@ -47,12 +48,18 @@ export function PracticeOptionList({
               'hover:shadow-sm focus-within:border-primary-500 focus-within:shadow focus-within:shadow-primary-100',
               option.disabled && 'cursor-not-allowed opacity-60'
             )}
+            onClick={() => {
+              if (option.disabled) {
+                return;
+              }
+              onChange?.(option.id);
+            }}
           >
             <Radio
               name={groupName}
               value={option.id}
               checked={value === option.id}
-              onChange={handleChange}
+              onChange={handleChange(option.id)}
               disabled={option.disabled}
               aria-label={typeof option.label === 'string' ? option.label : undefined}
             />

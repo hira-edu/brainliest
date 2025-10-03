@@ -34,6 +34,8 @@ function ensureServerAiConfigured() {
   }
 
   const useStubGenerator = process.env.OPENAI_API_KEY ? false : true;
+  const shouldStubRateLimiter =
+    !process.env.REDIS_URL || /localhost|127\.0\.0\.1/.test(process.env.REDIS_URL);
 
   configureAiExplanationService({
     fetchQuestion: async (questionId) => {
@@ -50,6 +52,9 @@ function ensureServerAiConfigured() {
     },
     generateExplanation: useStubGenerator
       ? (request) => Promise.resolve(buildStubExplanation(request))
+      : undefined,
+    rateLimit: shouldStubRateLimiter
+      ? async () => ({ allowed: true, remaining: 5 })
       : undefined,
   });
 

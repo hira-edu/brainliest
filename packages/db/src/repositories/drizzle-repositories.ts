@@ -4,7 +4,7 @@
  */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
-import { and, eq, gte, ilike, inArray, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, exists, gte, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type {
@@ -30,6 +30,12 @@ import type {
   IntegrationKeyRecord,
   IntegrationKeyFilter,
 } from './integration-repository';
+import type {
+  MediaRepository,
+  MediaAssetRecord,
+  MediaAssetFilter,
+  CreateMediaAssetInput,
+} from './media-repository';
 import type {
   ExplanationRepository,
   ExplanationRecord,
@@ -212,6 +218,9 @@ export class DrizzleQuestionRepository implements QuestionRepository {
     if (filters.subjectSlug !== undefined) {
       conditions.push(eq(schema.questions.subjectSlug, filters.subjectSlug));
     }
+    if (filters.examSlug !== undefined) {
+      conditions.push(eq(schema.questions.examSlug, filters.examSlug));
+    }
     if (filters.difficulty) {
       conditions.push(eq(schema.questions.difficulty, filters.difficulty));
     }
@@ -230,6 +239,54 @@ export class DrizzleQuestionRepository implements QuestionRepository {
       conditions.push(eq(schema.questions.domain, filters.domain));
     }
 
+    if (filters.subcategorySlug !== undefined) {
+      const subcategoryMatch = this.db
+        .select({ value: sql`1` })
+        .from(schema.subjects)
+        .where(
+          and(
+            eq(schema.subjects.slug, schema.questions.subjectSlug),
+            eq(schema.subjects.subcategorySlug, filters.subcategorySlug)
+          )
+        );
+      conditions.push(exists(subcategoryMatch));
+    }
+
+    if (filters.categorySlug !== undefined) {
+      const categoryMatch = this.db
+        .select({ value: sql`1` })
+        .from(schema.subjects)
+        .where(
+          and(
+            eq(schema.subjects.slug, schema.questions.subjectSlug),
+            eq(schema.subjects.categorySlug, filters.categorySlug)
+          )
+        );
+      conditions.push(exists(categoryMatch));
+    }
+
+    if (filters.search && filters.search.trim().length > 0) {
+      const sanitized = filters.search.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      const term = `%${sanitized}%`;
+      const stemMatches = this.db
+        .select({ value: sql`1` })
+        .from(schema.questionVersions)
+        .where(
+          and(
+            eq(schema.questionVersions.questionId, schema.questions.id),
+            eq(schema.questionVersions.isCurrent, true),
+            ilike(schema.questionVersions.stemMarkdown, term)
+          )
+        );
+
+      let combined: SQL = exists(stemMatches);
+      combined = or(combined, ilike(schema.questions.subjectSlug, term)) as SQL;
+      combined = or(combined, ilike(schema.questions.domain, term)) as SQL;
+      combined = or(combined, ilike(schema.questions.examSlug, term)) as SQL;
+
+      conditions.push(combined);
+    }
+
     return conditions;
   }
 
@@ -245,10 +302,12 @@ export class DrizzleQuestionRepository implements QuestionRepository {
           ? conditions[0]!
           : and(...conditions);
 
+    const effectiveWhere: SQL = whereClause ?? sql`TRUE`;
+
     const totalCountResult = await this.db
       .select({ value: sql<number>`count(*)` })
       .from(schema.questions)
-      .where(whereClause ?? sql`TRUE`);
+      .where(effectiveWhere);
 
     const total = Number(totalCountResult[0]?.value ?? 0);
     const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
@@ -588,19 +647,59 @@ export class DrizzleExamRepository implements ExamRepository {
     if (filters.subjectSlug !== undefined) {
       conditions.push(eq(schema.exams.subjectSlug, filters.subjectSlug));
     }
+    if (filters.subcategorySlug !== undefined) {
+      const subcategoryMatch = this.db
+        .select({ value: sql`1` })
+        .from(schema.subjects)
+        .where(
+          and(
+            eq(schema.subjects.slug, schema.exams.subjectSlug),
+            eq(schema.subjects.subcategorySlug, filters.subcategorySlug)
+          )
+        );
+      conditions.push(exists(subcategoryMatch));
+    }
+    if (filters.categorySlug !== undefined) {
+      const categoryMatch = this.db
+        .select({ value: sql`1` })
+        .from(schema.subjects)
+        .where(
+          and(
+            eq(schema.subjects.slug, schema.exams.subjectSlug),
+            eq(schema.subjects.categorySlug, filters.categorySlug)
+          )
+        );
+      conditions.push(exists(categoryMatch));
+    }
+    if (filters.examSlug !== undefined) {
+      conditions.push(eq(schema.exams.slug, filters.examSlug));
+    }
     if (filters.status) {
       conditions.push(eq(schema.exams.status, filters.status));
     }
     if (filters.difficulty) {
       conditions.push(eq(schema.exams.difficulty, filters.difficulty));
     }
+    if (filters.search && filters.search.trim().length > 0) {
+      const sanitized = filters.search.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      const term = `%${sanitized}%`;
+
+      let combined: SQL = ilike(schema.exams.title, term);
+      combined = or(combined, ilike(schema.exams.slug, term)) as SQL;
+      combined = or(combined, ilike(schema.exams.subjectSlug, term)) as SQL;
+      combined = or(combined, ilike(schema.exams.description, term)) as SQL;
+
+      conditions.push(combined);
+    }
 
     const whereClause = conditions.length === 0 ? undefined : conditions.length === 1 ? conditions[0]! : and(...conditions);
+
+    const effectiveWhere: SQL = whereClause ?? sql`TRUE`;
 
     const totalRows = await this.db
       .select({ value: sql<number>`count(*)` })
       .from(schema.exams)
-      .where(whereClause ?? sql`TRUE`);
+      .where(effectiveWhere);
 
     const total = Number(totalRows[0]?.value ?? 0);
 
@@ -688,14 +787,14 @@ export class DrizzleExamRepository implements ExamRepository {
           slug: exam.subject.slug,
           name: exam.subject.name,
           categorySlug: exam.subject.categorySlug,
-          categoryName: exam.subject.category?.name ?? undefined,
-          categoryType: exam.subject.category?.type ?? undefined,
-          subcategorySlug: exam.subject.subcategorySlug ?? undefined,
-          subcategoryName: exam.subject.subcategory ? exam.subject.subcategory.name : undefined,
+          ...(exam.subject.category?.name ? { categoryName: exam.subject.category.name } : {}),
+          ...(exam.subject.category?.type ? { categoryType: exam.subject.category.type } : {}),
+          subcategorySlug: exam.subject.subcategorySlug ?? null,
+          subcategoryName: exam.subject.subcategory?.name ?? null,
         }
       : undefined;
 
-    return {
+    const baseExam: ExamRecord = {
       slug: exam.slug,
       subjectSlug: exam.subjectSlug,
       title: exam.title,
@@ -707,8 +806,9 @@ export class DrizzleExamRepository implements ExamRepository {
       metadata: exam.metadata ?? {},
       createdAt: exam.createdAt,
       updatedAt: exam.updatedAt,
-      subject,
     };
+
+    return subject ? { ...baseExam, subject } : baseExam;
   }
 }
 
@@ -734,6 +834,9 @@ export class DrizzleUserRepository implements UserRepository {
     if (filters.status) {
       conditions.push(eq(schema.users.status, filters.status));
     }
+    if (filters.subscriptionTier) {
+      conditions.push(sql`${schema.users.profile}->>'subscriptionTier' = ${filters.subscriptionTier}`);
+    }
     if (filters.search && filters.search.trim().length > 0) {
       const term = `%${filters.search.trim().replace(/%/g, '\\%')}%`;
       conditions.push(ilike(schema.users.email, term));
@@ -746,10 +849,12 @@ export class DrizzleUserRepository implements UserRepository {
           ? conditions[0]!
           : and(...conditions);
 
+    const effectiveWhere: SQL = whereClause ?? sql`TRUE`;
+
     const totalRows = await this.db
       .select({ value: sql<number>`count(*)` })
       .from(schema.users)
-      .where(whereClause ?? sql`TRUE`);
+      .where(effectiveWhere);
 
     const total = Number(totalRows[0]?.value ?? 0);
     const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
@@ -842,10 +947,12 @@ export class DrizzleAdminUserRepository implements AdminUserRepository {
           ? conditions[0]!
           : and(...conditions);
 
+    const effectiveWhere = whereClause ?? sql`TRUE`;
+
     const totalRows = await this.db
       .select({ value: sql<number>`count(*)` })
       .from(schema.adminUsers)
-      .where(whereClause ?? sql`TRUE`);
+      .where(effectiveWhere);
 
     const total = Number(totalRows[0]?.value ?? 0);
     const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
@@ -910,10 +1017,12 @@ export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository
           ? conditions[0]!
           : and(...conditions);
 
+    const effectiveWhere = whereClause ?? sql`TRUE`;
+
     const totalRows = await this.db
       .select({ value: sql<number>`count(*)` })
       .from(schema.integrationKeys)
-      .where(whereClause ?? sql`TRUE`);
+      .where(effectiveWhere);
 
     const total = Number(totalRows[0]?.value ?? 0);
     const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
@@ -944,6 +1053,145 @@ export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository
       })),
       pagination: buildPaginationMeta(total, page, safePageSize),
     };
+  }
+}
+
+type MediaRow = {
+  asset: typeof schema.questionAssets.$inferSelect;
+  question: typeof schema.questions.$inferSelect;
+  version: typeof schema.questionVersions.$inferSelect | null;
+};
+
+export class DrizzleMediaRepository implements MediaRepository {
+  constructor(private readonly db: DatabaseClient) {}
+
+  async list(
+    filters: MediaAssetFilter,
+    page: number,
+    pageSize: number
+  ): Promise<PaginatedResult<MediaAssetRecord>> {
+    const conditions: SQL[] = [];
+
+    if (filters.type) {
+      conditions.push(eq(schema.questionAssets.type, filters.type));
+    }
+    if (filters.subjectSlug) {
+      conditions.push(eq(schema.questions.subjectSlug, filters.subjectSlug));
+    }
+    if (filters.examSlug) {
+      conditions.push(eq(schema.questions.examSlug, filters.examSlug));
+    }
+    if (filters.subcategorySlug) {
+      const subcategoryMatch = this.db
+        .select({ value: sql`1` })
+        .from(schema.subjects)
+        .where(
+          and(
+            eq(schema.subjects.slug, schema.questions.subjectSlug),
+            eq(schema.subjects.subcategorySlug, filters.subcategorySlug)
+          )
+        );
+      conditions.push(exists(subcategoryMatch));
+    }
+    if (filters.categorySlug) {
+      const categoryMatch = this.db
+        .select({ value: sql`1` })
+        .from(schema.subjects)
+        .where(
+          and(
+            eq(schema.subjects.slug, schema.questions.subjectSlug),
+            eq(schema.subjects.categorySlug, filters.categorySlug)
+          )
+        );
+      conditions.push(exists(categoryMatch));
+    }
+    if (filters.questionId) {
+      conditions.push(eq(schema.questionAssets.questionId, filters.questionId));
+    }
+
+    if (filters.search && filters.search.trim().length > 0) {
+      const sanitized = filters.search.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      const term = `%${sanitized}%`;
+
+      let combined: SQL = ilike(schema.questionAssets.url, term);
+      combined = or(combined, ilike(schema.questions.subjectSlug, term)) as SQL;
+      combined = or(combined, ilike(schema.questionVersions.stemMarkdown, term)) as SQL;
+      combined = or(combined, ilike(schema.questions.examSlug, term)) as SQL;
+
+      conditions.push(combined);
+    }
+
+    const whereClause =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]!
+          : and(...conditions);
+
+    const effectiveWhere = whereClause ?? sql`TRUE`;
+
+    const totalRows = await this.db
+      .select({ value: sql<number>`count(*)` })
+      .from(schema.questionAssets)
+      .innerJoin(schema.questions, eq(schema.questionAssets.questionId, schema.questions.id))
+      .leftJoin(
+        schema.questionVersions,
+        and(eq(schema.questionVersions.questionId, schema.questions.id), eq(schema.questionVersions.isCurrent, true))
+      )
+      .where(effectiveWhere);
+
+    const total = Number(totalRows[0]?.value ?? 0);
+    const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+    const offset = Math.max(0, (Math.max(page, 1) - 1) * safePageSize);
+
+    const rows = (await this.db
+      .select({
+        asset: schema.questionAssets,
+        question: schema.questions,
+        version: schema.questionVersions,
+      })
+      .from(schema.questionAssets)
+      .innerJoin(schema.questions, eq(schema.questionAssets.questionId, schema.questions.id))
+      .leftJoin(
+        schema.questionVersions,
+        and(eq(schema.questionVersions.questionId, schema.questions.id), eq(schema.questionVersions.isCurrent, true))
+      )
+      .where(effectiveWhere)
+      .orderBy(desc(schema.questionAssets.createdAt))
+      .limit(safePageSize)
+      .offset(offset)) as MediaRow[];
+
+    const data: MediaAssetRecord[] = rows.map((row) => ({
+      id: row.asset.id,
+      questionId: row.asset.questionId,
+      type: row.asset.type,
+      url: row.asset.url,
+      metadata: row.asset.metadata ?? {},
+      createdAt: row.asset.createdAt,
+      subjectSlug: row.question.subjectSlug,
+      examSlug: row.question.examSlug ?? null,
+      stemMarkdown: row.version?.stemMarkdown ?? null,
+    }));
+
+    return {
+      data,
+      pagination: buildPaginationMeta(total, page, safePageSize),
+    };
+  }
+
+  async createMany(assets: ReadonlyArray<CreateMediaAssetInput>): Promise<void> {
+    if (assets.length === 0) {
+      return;
+    }
+
+    await this.db.insert(schema.questionAssets).values(
+      assets.map((asset) => ({
+        questionId: asset.questionId,
+        type: asset.type,
+        url: asset.url,
+        metadata: asset.metadata ?? {},
+      }))
+    );
   }
 }
 
@@ -1120,6 +1368,25 @@ export class DrizzleSessionRepository implements SessionRepository {
   }
 
   async startSession(input: StartSessionInput): Promise<PracticeSessionRecord> {
+    const existingUser = await this.db.query.users.findFirst({
+      where: eq(schema.users.id, input.userId),
+      columns: {
+        id: true,
+      },
+    });
+
+    if (!existingUser) {
+      await this.db
+        .insert(schema.users)
+        .values({
+          id: input.userId,
+          email: `practice+${input.userId}@brainliest.dev`,
+          role: 'STUDENT',
+          status: 'active',
+        })
+        .onConflictDoNothing({ target: schema.users.id });
+    }
+
     const examRecord = await this.examRepository.findBySlug(input.examSlug);
 
     const existing = await this.db.query.examSessions.findFirst({
@@ -1230,17 +1497,23 @@ export class DrizzleSessionRepository implements SessionRepository {
           metadata: session.exam.metadata ?? {},
           createdAt: session.exam.createdAt,
           updatedAt: session.exam.updatedAt,
-          subject: session.exam.subject
+          ...(session.exam.subject
             ? {
-                slug: session.exam.subject.slug,
-                name: session.exam.subject.name,
-                categorySlug: session.exam.subject.categorySlug,
-                categoryName: session.exam.subject.category?.name ?? undefined,
-                categoryType: session.exam.subject.category?.type ?? undefined,
-                subcategorySlug: session.exam.subject.subcategorySlug ?? undefined,
-                subcategoryName: session.exam.subject.subcategory?.name ?? undefined,
-            }
-          : undefined,
+                subject: {
+                  slug: session.exam.subject.slug,
+                  name: session.exam.subject.name,
+                  categorySlug: session.exam.subject.categorySlug,
+                  ...(session.exam.subject.category?.name
+                    ? { categoryName: session.exam.subject.category.name }
+                    : {}),
+                  ...(session.exam.subject.category?.type
+                    ? { categoryType: session.exam.subject.category.type }
+                    : {}),
+                  subcategorySlug: session.exam.subject.subcategorySlug ?? null,
+                  subcategoryName: session.exam.subject.subcategory?.name ?? null,
+                },
+              }
+            : {}),
         }
       : await this.examRepository.findBySlug(session.examSlug as ExamSlug);
 
@@ -1458,6 +1731,7 @@ export interface RepositoryBundle {
   users: UserRepository;
   adminUsers: AdminUserRepository;
   integrationKeys: IntegrationKeyRepository;
+  media: MediaRepository;
   explanations: ExplanationRepository;
   sessions: SessionRepository;
   taxonomy: TaxonomyRepository;
@@ -1470,6 +1744,7 @@ export function createRepositories(db: DatabaseClient): RepositoryBundle {
     users: new DrizzleUserRepository(db),
     adminUsers: new DrizzleAdminUserRepository(db),
     integrationKeys: new DrizzleIntegrationKeyRepository(db),
+    media: new DrizzleMediaRepository(db),
     explanations: new DrizzleExplanationRepository(db),
     sessions: new DrizzleSessionRepository(db),
     taxonomy: new DrizzleTaxonomyRepository(db),

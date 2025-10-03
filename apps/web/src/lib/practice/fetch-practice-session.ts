@@ -9,6 +9,7 @@ import 'server-only';
 import { drizzleClient, createRepositories } from '@brainliest/db';
 import { mapRecordToQuestionModel } from '@/lib/ai/map-record-to-question';
 import { SAMPLE_QUESTION } from '@/lib/ai/sample-question';
+import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 import type { PracticeSessionData, PracticeSessionApiResponse } from './types';
 import { buildPracticeExamInfo, buildPracticeProgress, deriveDifficultyMix, mapApiResponseToPracticeSessionData } from './mappers';
 
@@ -31,10 +32,10 @@ async function fetchSessionFromApi(examSlug: string): Promise<PracticeSessionDat
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': 'demo-user',
+      'x-user-id': PRACTICE_DEMO_USER_ID,
     },
     cache: 'no-store',
-    body: JSON.stringify({ examSlug, userId: 'demo-user' }),
+    body: JSON.stringify({ examSlug, userId: PRACTICE_DEMO_USER_ID }),
   });
 
   if (!response.ok) {
@@ -48,35 +49,43 @@ async function fetchSessionFromApi(examSlug: string): Promise<PracticeSessionDat
 async function buildFallbackSession(examSlug: string): Promise<PracticeSessionData> {
   const repositories = createRepositories(drizzleClient);
   const examRecord = await repositories.exams.findBySlug(examSlug);
-  const questionPage = await repositories.questions.findByExam(examSlug, {}, 1, 1);
+  const questionPage = await repositories.questions.findByExam(examSlug, {}, 1, 10);
+  const questionRecords = questionPage.data;
+  const questionModels = questionRecords.length > 0
+    ? questionRecords.map((item) => mapRecordToQuestionModel(item))
+    : [SAMPLE_QUESTION];
 
-  const totalQuestions = questionPage.pagination.totalCount;
-  const difficultyMix = deriveDifficultyMix(questionPage.data);
+  const questions: PracticeSessionData['questions'] = questionModels.map((model, index) => ({
+    questionId: model.id,
+    orderIndex: index,
+    selectedAnswers: [],
+    isFlagged: false,
+    isBookmarked: false,
+    isSubmitted: false,
+    hasRevealedAnswer: false,
+    isCorrect: null,
+    timeSpentSeconds: 0,
+    question: model,
+  }));
 
-  const examInfo = buildPracticeExamInfo(
-    examRecord,
-    totalQuestions,
-    questionPage.data
-  );
+  const minimumQuestions = Math.max(questions.length, 3);
+  while (questions.length < minimumQuestions) {
+    const base = questions[0]?.question ?? SAMPLE_QUESTION;
+    const suffix = `-sample-${questions.length + 1}`;
+    const syntheticQuestion = {
+      ...base,
+      id: `${base.id}${suffix}` as typeof base.id,
+      stemMarkdown: `${base.stemMarkdown} (practice sample ${questions.length + 1})`,
+      options: base.options.map((option) => ({
+        ...option,
+        id: `${option.id}${suffix}`,
+      })),
+      correctChoiceIds: base.correctChoiceIds.map((choiceId) => `${choiceId}${suffix}`),
+    };
 
-  if (difficultyMix) {
-    examInfo.difficultyMix = difficultyMix;
-  }
-
-  const record = questionPage.data[0];
-  const question = record ? mapRecordToQuestionModel(record) : SAMPLE_QUESTION;
-
-  const progress = buildPracticeProgress(
-    examInfo,
-    1,
-    examInfo.totalQuestions,
-    examInfo.durationMinutes ? examInfo.durationMinutes * 60 : undefined
-  );
-
-  const questions: PracticeSessionData['questions'] = [
-    {
-      questionId: record?.id ?? SAMPLE_QUESTION.id,
-      orderIndex: 0,
+    questions.push({
+      questionId: syntheticQuestion.id,
+      orderIndex: questions.length,
       selectedAnswers: [],
       isFlagged: false,
       isBookmarked: false,
@@ -84,9 +93,35 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
       hasRevealedAnswer: false,
       isCorrect: null,
       timeSpentSeconds: 0,
-      question,
-    },
-  ];
+      question: syntheticQuestion,
+    });
+  }
+
+  const totalQuestions = questions.length;
+  const difficultyMix = deriveDifficultyMix(questionRecords);
+
+  const examInfo = buildPracticeExamInfo(
+    examRecord,
+    totalQuestions,
+    questionRecords
+  );
+
+  if (difficultyMix) {
+    examInfo.difficultyMix = difficultyMix;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[practice] using fallback session with', questions.length, 'questions');
+  }
+
+  const question = questions[0]?.question ?? SAMPLE_QUESTION;
+
+  const progress = buildPracticeProgress(
+    examInfo,
+    1,
+    examInfo.totalQuestions,
+    examInfo.durationMinutes ? examInfo.durationMinutes * 60 : undefined
+  );
 
   return {
     sessionId: 'sample-session',
@@ -111,7 +146,7 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
     bookmarkedQuestionIds: [],
     submittedQuestionIds: [],
     revealedQuestionIds: [],
-    fromSample: !record,
+    fromSample: true,
   };
 }
 
@@ -131,7 +166,7 @@ export async function fetchPracticeSessionById(sessionId: string): Promise<Pract
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': 'demo-user',
+      'x-user-id': PRACTICE_DEMO_USER_ID,
     },
     cache: 'no-store',
   });

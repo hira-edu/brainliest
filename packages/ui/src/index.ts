@@ -70,6 +70,9 @@ export type { FormLabelProps } from './forms/form-label';
 export { FormSection } from './forms/form-section';
 export type { FormSectionProps, FormSectionColumns } from './forms/form-section';
 
+export { EntityForm, EntityFormActions } from './forms/entity-form';
+export type { EntityFormProps, EntityFormActionsProps } from './forms/entity-form';
+
 // Navigation
 export { Breadcrumbs } from './navigation/breadcrumbs';
 export type { BreadcrumbsProps, BreadcrumbItem } from './navigation/breadcrumbs';
@@ -120,6 +123,9 @@ export type { ModalProps } from './composites/modal';
 export { Dialog } from './composites/dialog';
 export type { DialogProps, DialogAction } from './composites/dialog';
 
+export { CreateDialog, EditDialog, DeleteConfirmation } from './composites/crud-dialog';
+export type { CrudDialogBaseProps, CreateDialogProps, EditDialogProps, DeleteConfirmationProps } from './composites/crud-dialog';
+
 export {
   Dropdown,
   DropdownItem,
@@ -149,6 +155,9 @@ export type { SearchableSelectProps, SearchableSelectOption } from './composites
 
 export { CommandPalette } from './composites/command-palette';
 export type { CommandPaletteProps, CommandItem } from './composites/command-palette';
+
+export { BulkActions } from './composites/bulk-actions';
+export type { BulkActionsProps, BulkAction } from './composites/bulk-actions';
 
 // Practice
 export { PracticeLayout } from './practice/practice-layout';

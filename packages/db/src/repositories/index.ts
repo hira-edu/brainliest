@@ -32,6 +32,13 @@ export type {
   IntegrationEnvironment,
 } from './integration-repository';
 export type {
+  MediaRepository,
+  MediaAssetRecord,
+  MediaAssetFilter,
+  MediaAssetType,
+  CreateMediaAssetInput,
+} from './media-repository';
+export type {
   ExplanationRepository,
   ExplanationRecord,
   ExplanationSummary,
@@ -59,6 +66,14 @@ export type {
   CatalogSubcategorySummary,
   CatalogSubcategoryDetail,
   CatalogExamSummary,
+  CatalogSubcategoryAggregate,
+  CatalogSubjectSummary,
+  CreateCategoryInput,
+  UpdateCategoryInput,
+  CreateSubcategoryInput,
+  UpdateSubcategoryInput,
+  CreateSubjectInput,
+  UpdateSubjectInput,
 } from './taxonomy-repository';
 export {
   DrizzleQuestionRepository,
@@ -66,6 +81,7 @@ export {
   DrizzleUserRepository,
   DrizzleAdminUserRepository,
   DrizzleIntegrationKeyRepository,
+  DrizzleMediaRepository,
   DrizzleExplanationRepository,
   DrizzleSessionRepository,
   DrizzleTaxonomyRepository,

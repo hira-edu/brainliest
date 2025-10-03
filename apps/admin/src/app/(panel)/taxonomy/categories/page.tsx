@@ -1,16 +1,53 @@
-import { Icon, Badge } from '@brainliest/ui';
+import Link from 'next/link';
+import { Icon, Badge, Button } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listTaxonomyCategories, computeTaxonomyStats } from '@/lib/taxonomy';
+import { CategoryRowActions } from '@/components/category-row-actions';
+import { SubcategoryRowActions } from '@/components/subcategory-row-actions';
+import CategoryFilters from '@/components/category-filters';
+import type { CategoryFiltersInitialValues } from '@/types/filter-values';
+
+interface CategoriesPageProps {
+  readonly searchParams?: Promise<Record<string, string | string[]>>;
+}
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 
 const DESCRIPTION = 'Define top-level categories, track coverage, and monitor exam availability across the catalog.';
 
-export default async function CategoriesPage() {
+function parseParam(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+export default async function CategoriesPage({ searchParams }: CategoriesPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const typeParam = parseParam(resolvedSearchParams?.type) ?? 'all';
+  const searchParam = parseParam(resolvedSearchParams?.search) ?? '';
+
   const categories = await listTaxonomyCategories();
-  const stats = computeTaxonomyStats(categories);
+  const availableTypes = Array.from(new Set(categories.map((category) => category.type))).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
+  );
+
+  const normalizedType = availableTypes.includes(typeParam) ? typeParam : undefined;
+  const searchValue = searchParam.trim().toLowerCase();
+
+  const filteredCategories = categories.filter((category) => {
+    const matchesType = !normalizedType || category.type === normalizedType;
+    const matchesSearch = searchValue.length === 0
+      ? true
+      : category.name.toLowerCase().includes(searchValue) ||
+        (category.description ?? '').toLowerCase().includes(searchValue);
+    return matchesType && matchesSearch;
+  });
+
+  const stats = computeTaxonomyStats(filteredCategories);
 
   const subcategoryRows = categories.flatMap((category) =>
     category.subcategories.map((subcategory) => ({
@@ -19,6 +56,21 @@ export default async function CategoriesPage() {
       subcategory,
     }))
   );
+
+  const filteredSubcategoryRows = subcategoryRows.filter((row) => {
+    const matchesType = !normalizedType || row.category.type === normalizedType;
+    const matchesSearch = searchValue.length === 0
+      ? true
+      : row.subcategory.name.toLowerCase().includes(searchValue) ||
+        (row.subcategory.description ?? '').toLowerCase().includes(searchValue) ||
+        row.category.name.toLowerCase().includes(searchValue);
+    return matchesType && matchesSearch;
+  });
+
+  const initialFilters: CategoryFiltersInitialValues = {
+    type: normalizedType ?? 'all',
+    search: searchValue,
+  };
 
   return (
     <AdminShell
@@ -30,7 +82,15 @@ export default async function CategoriesPage() {
         { label: 'Categories', href: '/taxonomy/categories', isCurrent: true },
       ]}
       pageActions={
-        <Badge variant="secondary">{categories.length} active categories</Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant="secondary">{categories.length} active categories</Badge>
+          <Button variant="secondary" size="sm" asChild>
+            <Link href="/taxonomy/categories/new">Create category</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/taxonomy/subcategories/new">Create subcategory</Link>
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -46,8 +106,10 @@ export default async function CategoriesPage() {
           <p className="text-sm text-gray-600">High-level summary of every catalog category with subcategory coverage and exam counts.</p>
         </header>
 
+        <CategoryFilters initialFilters={initialFilters} availableTypes={availableTypes} />
+
         <DataTable
-          data={categories}
+          data={filteredCategories}
           getRowKey={(category) => category.slug}
           columns={[
             {
@@ -85,6 +147,12 @@ export default async function CategoriesPage() {
                   category.subcategories.reduce((total, subcategory) => total + subcategory.examCount, 0)
                 ),
             },
+            {
+              id: 'actions',
+              header: 'Actions',
+              align: 'right',
+              cell: (category) => <CategoryRowActions slug={category.slug} />,
+            },
           ]}
         />
       </section>
@@ -98,7 +166,7 @@ export default async function CategoriesPage() {
         </header>
 
         <DataTable
-          data={subcategoryRows}
+          data={filteredSubcategoryRows}
           getRowKey={(row) => row.id}
           columns={[
             {
@@ -139,6 +207,12 @@ export default async function CategoriesPage() {
                   ))}
                 </div>
               ),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              align: 'right',
+              cell: (row) => <SubcategoryRowActions slug={row.subcategory.slug} />,
             },
           ]}
         />

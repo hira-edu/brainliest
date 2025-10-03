@@ -5,14 +5,18 @@ import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listUsers, countUsersByRole, countUsersByStatus } from '@/lib/users';
 import { PaginationControl } from '@/components/pagination-control';
+import { UserRowActions } from '@/components/user-row-actions';
+import StudentUserFilters from '@/components/student-user-filters';
+import type { StudentUserFiltersInitialValues } from '@/types/filter-values';
 
 const DESCRIPTION = 'Monitor student accounts, investigate status changes, and keep growth metrics in view.';
 
 interface StudentsPageProps {
-  readonly searchParams?: Record<string, string | string[]>;
+  readonly searchParams?: Promise<Record<string, string | string[]>>;
 }
 
-const STATUS_OPTIONS = ['all', 'active', 'suspended'] as const;
+const STATUS_OPTIONS = ['all', 'active', 'suspended', 'banned'] as const;
+const SUBSCRIPTION_OPTIONS = ['all', 'free', 'standard', 'premium', 'team'] as const;
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -28,32 +32,32 @@ function parseParam(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-function buildSearchParams(
-  current: Record<string, string | undefined>,
-  overrides: Record<string, string | undefined>
-): string {
-  const params = new URLSearchParams();
-  const merged = { ...current, ...overrides };
-  for (const [key, value] of Object.entries(merged)) {
-    if (value && value !== 'all') {
-      params.set(key, value);
-    }
-  }
-  return params.toString();
-}
-
 export default async function StudentsPage({ searchParams }: StudentsPageProps) {
-  const statusParam = parseParam(searchParams?.status) ?? 'all';
-  const pageParam = parseParam(searchParams?.page);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const statusParam = parseParam(resolvedSearchParams?.status) ?? 'all';
+  const subscriptionParam = parseParam(resolvedSearchParams?.subscription) ?? 'all';
+  const searchParam = parseParam(resolvedSearchParams?.search);
+  const pageParam = parseParam(resolvedSearchParams?.page);
 
   const page = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
+  const searchValue = searchParam?.trim() ?? '';
+
+  const normalizedStatus = STATUS_OPTIONS.includes(statusParam as (typeof STATUS_OPTIONS)[number]) && statusParam !== 'all'
+    ? statusParam
+    : undefined;
+
+  const normalizedSubscription =
+    SUBSCRIPTION_OPTIONS.includes(subscriptionParam as (typeof SUBSCRIPTION_OPTIONS)[number]) && subscriptionParam !== 'all'
+      ? subscriptionParam
+      : undefined;
 
   const studentsPage = await listUsers({
     role: 'STUDENT',
-    status: STATUS_OPTIONS.includes(statusParam as (typeof STATUS_OPTIONS)[number]) && statusParam !== 'all'
-      ? statusParam
-      : undefined,
+    status: normalizedStatus,
+    subscriptionTier: normalizedSubscription,
     page,
+    search: searchValue.length > 0 ? searchValue : undefined,
   });
 
   const [totalStudents, activeStudents, suspendedStudents] = await Promise.all([
@@ -62,7 +66,11 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
     countUsersByStatus('STUDENT', 'suspended'),
   ]);
 
-  const tableParams = { status: statusParam } as Record<string, string | undefined>;
+  const initialFilters: StudentUserFiltersInitialValues = {
+    status: normalizedStatus ?? 'all',
+    subscriptionTier: normalizedSubscription ?? 'all',
+    search: searchValue,
+  };
 
   return (
     <AdminShell
@@ -92,18 +100,7 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
           <p className="text-sm text-gray-600">Filter by status to focus on intervention workflows.</p>
         </header>
 
-        <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((option) => {
-            const query = buildSearchParams(tableParams, { status: option, page: undefined });
-            const href = query.length > 0 ? `?${query}` : '?';
-            const isActive = statusParam === option;
-            return (
-              <Button key={option} variant={isActive ? 'primary' : 'ghost'} size="sm" asChild>
-                <Link href={href}>{option === 'all' ? 'All statuses' : option.charAt(0).toUpperCase() + option.slice(1)}</Link>
-              </Button>
-            );
-          })}
-        </div>
+        <StudentUserFilters initialFilters={initialFilters} />
 
         <DataTable
           data={studentsPage.data}
@@ -142,6 +139,12 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
               id: 'updatedAt',
               header: 'Updated',
               cell: (user) => dateFormatter.format(user.updatedAt),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              align: 'right',
+              cell: (user) => <UserRowActions userId={user.id} role={user.role} />,
             },
           ]}
         />

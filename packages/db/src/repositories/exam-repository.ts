@@ -27,8 +27,12 @@ export interface ExamSubjectSummary {
 
 export interface ExamFilter {
   readonly subjectSlug?: SubjectSlug;
+  readonly categorySlug?: string;
+  readonly subcategorySlug?: string;
+  readonly examSlug?: ExamSlug;
   readonly status?: 'draft' | 'published' | 'archived';
   readonly difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
+  readonly search?: string;
 }
 
 export interface CreateExamInput {

@@ -18,6 +18,7 @@ import {
   PracticeSidebarShortcutsCard,
 } from '@brainliest/ui';
 import { mapApiResponseToPracticeSessionData } from '@/lib/practice/mappers';
+import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 import type {
   PracticeSessionApiQuestion,
   PracticeSessionApiResponse,
@@ -356,7 +357,7 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-id': 'demo-user',
+            'x-user-id': PRACTICE_DEMO_USER_ID,
           },
           body: JSON.stringify(payload),
         });
@@ -560,7 +561,6 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   const hasTimer = displayRemainingSeconds !== null;
 
   const canFinalizeExam =
-    !session.fromSample &&
     session.sessionStatus !== 'completed' &&
     session.currentQuestionIndex === session.questions.length - 1 &&
     session.questionState.isSubmitted &&

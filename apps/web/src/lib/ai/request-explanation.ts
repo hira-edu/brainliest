@@ -7,6 +7,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
 
 import type { ExplanationDtoShape } from '@brainliest/shared';
+import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 import { SAMPLE_QUESTION } from './sample-question';
 
 interface RequestExplanationOptions {
@@ -31,7 +32,7 @@ export async function requestExplanation(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': 'demo-user',
+      'x-user-id': PRACTICE_DEMO_USER_ID,
     },
     body: JSON.stringify({
       questionId,

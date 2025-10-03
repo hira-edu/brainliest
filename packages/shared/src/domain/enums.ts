@@ -19,9 +19,26 @@ export enum ExamDifficulty {
   EXPERT = 'EXPERT',
 }
 
+export enum ExamStatus {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+  ARCHIVED = 'archived',
+}
+
 export enum QuestionType {
   SINGLE = 'SINGLE',
   MULTI = 'MULTI',
+}
+
+export enum QuestionStatus {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+}
+
+export enum QuestionAssetType {
+  IMAGE = 'image',
+  AUDIO = 'audio',
+  FILE = 'file',
 }
 
 export enum CategoryKind {

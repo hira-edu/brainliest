@@ -3,6 +3,7 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import { drizzleClient, DrizzleSessionRepository } from '@brainliest/db';
 import { mapSessionRecordToApiResponse } from '@/lib/practice/mappers';
+import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 
 const sessionRepository = new DrizzleSessionRepository(drizzleClient);
 
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     : null;
   const userId = typeof (body as Record<string, unknown> | null)?.userId === 'string'
     ? ((body as Record<string, unknown>).userId as string)
-    : 'demo-user';
+    : PRACTICE_DEMO_USER_ID;
 
   if (!examSlug) {
     return NextResponse.json(

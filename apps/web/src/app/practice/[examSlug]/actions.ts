@@ -8,6 +8,7 @@ import 'server-only';
 
 import { requestExplanationSchema, type ExplanationDto } from '@brainliest/shared';
 import { requestServerAiExplanation } from '@/lib/ai/server';
+import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 
 export interface RequestExplanationActionResult {
   explanation: ExplanationDto;
@@ -19,7 +20,7 @@ export async function requestExplanationAction(input: unknown): Promise<RequestE
 
   const result = await requestServerAiExplanation({
     ...payload,
-    userId: 'demo-user',
+    userId: PRACTICE_DEMO_USER_ID,
   });
 
   return {

@@ -9,8 +9,12 @@ export interface ListQuestionsOptions {
   readonly status?: QuestionFilter['status'] | 'all';
   readonly difficulty?: QuestionFilter['difficulty'] | 'all';
   readonly subjectSlug?: QuestionFilter['subjectSlug'];
+  readonly categorySlug?: QuestionFilter['categorySlug'];
+  readonly subcategorySlug?: QuestionFilter['subcategorySlug'];
+  readonly examSlug?: QuestionFilter['examSlug'];
   readonly domain?: QuestionFilter['domain'];
   readonly year?: QuestionFilter['year'];
+  readonly search?: string;
 }
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -24,10 +28,14 @@ export async function listQuestions(options: ListQuestionsOptions = {}): Promise
 
   const filters: QuestionFilter = {
     ...(options.subjectSlug ? { subjectSlug: options.subjectSlug } : {}),
+    ...(options.categorySlug ? { categorySlug: options.categorySlug } : {}),
+    ...(options.subcategorySlug ? { subcategorySlug: options.subcategorySlug } : {}),
+    ...(options.examSlug ? { examSlug: options.examSlug } : {}),
     ...(options.domain ? { domain: options.domain } : {}),
     ...(options.year ? { year: options.year } : {}),
     ...(statusFilter ? { status: statusFilter } : {}),
     ...(difficultyFilter ? { difficulty: difficultyFilter } : {}),
+    ...(options.search ? { search: options.search } : {}),
   };
 
   return repositories.questions.list(filters, page, pageSize);
@@ -43,4 +51,38 @@ export async function countQuestionsByDifficulty(
 ): Promise<number> {
   const result = await repositories.questions.list({ difficulty }, 1, 1);
   return result.pagination.totalCount;
+}
+
+export interface QuestionSearchSuggestion {
+  readonly id: string;
+  readonly stem: string;
+  readonly subjectSlug: string;
+  readonly examSlug: string | null;
+}
+
+export async function searchQuestionsSuggestions(
+  query: string,
+  limit = 8
+): Promise<QuestionSearchSuggestion[]> {
+  const term = query.trim();
+  if (!term) {
+    return [];
+  }
+
+  const page = await repositories.questions.list({ search: term }, 1, Math.max(1, limit));
+
+  return page.data.map((question) => ({
+    id: question.id,
+    stem: question.stemMarkdown,
+    subjectSlug: question.subjectSlug,
+    examSlug: question.examSlug ?? null,
+  }));
+}
+
+export async function getQuestionById(id: string): Promise<QuestionRecord | null> {
+  if (!id) {
+    return null;
+  }
+
+  return repositories.questions.findById(id);
 }

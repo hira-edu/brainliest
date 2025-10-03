@@ -5,14 +5,18 @@ import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listAdminUsers, countAdminUsersByRole } from '@/lib/admin-users';
 import { PaginationControl } from '@/components/pagination-control';
+import { UserRowActions } from '@/components/user-row-actions';
+import AdminUserFilters from '@/components/admin-user-filters';
+import type { AdminUserFiltersInitialValues } from '@/types/filter-values';
 
 const DESCRIPTION = 'Audit administrative access, check last activity, and plan staffing updates.';
 
 interface AdminAccountsPageProps {
-  readonly searchParams?: Record<string, string | string[]>;
+  readonly searchParams?: Promise<Record<string, string | string[]>>;
 }
 
 const ROLE_OPTIONS = ['all', 'VIEWER', 'EDITOR', 'ADMIN', 'SUPERADMIN'] as const;
+const STATUS_OPTIONS = ['all', 'active', 'invited', 'suspended'] as const;
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -30,31 +34,30 @@ function parseParam(value: string | string[] | undefined): string | undefined {
   return value;
 }
 
-function buildSearchParams(
-  current: Record<string, string | undefined>,
-  overrides: Record<string, string | undefined>
-): string {
-  const params = new URLSearchParams();
-  const merged = { ...current, ...overrides };
-  for (const [key, value] of Object.entries(merged)) {
-    if (value && value !== 'all') {
-      params.set(key, value);
-    }
-  }
-  return params.toString();
-}
-
 export default async function AdminAccountsPage({ searchParams }: AdminAccountsPageProps) {
-  const roleParam = parseParam(searchParams?.role) ?? 'all';
-  const pageParam = parseParam(searchParams?.page);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const roleParam = parseParam(resolvedSearchParams?.role) ?? 'all';
+  const statusParam = parseParam(resolvedSearchParams?.status) ?? 'all';
+  const searchParam = parseParam(resolvedSearchParams?.search);
+  const pageParam = parseParam(resolvedSearchParams?.page);
 
   const page = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
+  const searchValue = searchParam?.trim() ?? '';
+
+  const normalizedRole = ROLE_OPTIONS.includes(roleParam as (typeof ROLE_OPTIONS)[number]) && roleParam !== 'all'
+    ? (roleParam as 'VIEWER' | 'EDITOR' | 'ADMIN' | 'SUPERADMIN')
+    : undefined;
+
+  const normalizedStatus = STATUS_OPTIONS.includes(statusParam as (typeof STATUS_OPTIONS)[number]) && statusParam !== 'all'
+    ? (statusParam as 'active' | 'invited' | 'suspended')
+    : undefined;
 
   const adminPage = await listAdminUsers({
-    role: ROLE_OPTIONS.includes(roleParam as (typeof ROLE_OPTIONS)[number]) && roleParam !== 'all'
-      ? (roleParam as 'VIEWER' | 'EDITOR' | 'ADMIN' | 'SUPERADMIN')
-      : undefined,
+    role: normalizedRole,
+    status: normalizedStatus,
     page,
+    search: searchValue.length > 0 ? searchValue : undefined,
   });
 
   const [viewerCount, editorCount, adminCount, superadminCount] = await Promise.all([
@@ -64,7 +67,11 @@ export default async function AdminAccountsPage({ searchParams }: AdminAccountsP
     countAdminUsersByRole('SUPERADMIN'),
   ]);
 
-  const tableParams = { role: roleParam } as Record<string, string | undefined>;
+  const initialFilters: AdminUserFiltersInitialValues = {
+    role: normalizedRole ?? 'all',
+    status: normalizedStatus ?? 'all',
+    search: searchValue,
+  };
 
   return (
     <AdminShell
@@ -94,18 +101,7 @@ export default async function AdminAccountsPage({ searchParams }: AdminAccountsP
           <p className="text-sm text-gray-600">Filter by role to review permissions and ensure coverage.</p>
         </header>
 
-        <div className="flex flex-wrap gap-2">
-          {ROLE_OPTIONS.map((option) => {
-            const query = buildSearchParams(tableParams, { role: option, page: undefined });
-            const href = query.length > 0 ? `?${query}` : '?';
-            const isActive = roleParam === option;
-            return (
-              <Button key={option} variant={isActive ? 'primary' : 'ghost'} size="sm" asChild>
-                <Link href={href}>{option === 'all' ? 'All roles' : option}</Link>
-              </Button>
-            );
-          })}
-        </div>
+        <AdminUserFilters initialFilters={initialFilters} />
 
         <DataTable
           data={adminPage.data}
@@ -146,6 +142,12 @@ export default async function AdminAccountsPage({ searchParams }: AdminAccountsP
               id: 'createdAt',
               header: 'Created',
               cell: (admin) => dateFormatter.format(admin.createdAt),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              align: 'right',
+              cell: (admin) => <UserRowActions userId={admin.id} role={admin.role} />,
             },
           ]}
         />

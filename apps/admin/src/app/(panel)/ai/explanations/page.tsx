@@ -5,10 +5,10 @@ import { fetchExplanationPage } from '@/lib/explanations';
 import { Button } from '@brainliest/ui';
 
 interface ExplanationLogPageProps {
-  readonly searchParams?: {
+  readonly searchParams?: Promise<{
     readonly page?: string;
     readonly pageSize?: string;
-  };
+  }>;
 }
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -23,8 +23,10 @@ const timestampFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 export default async function ExplanationLogPage({ searchParams }: ExplanationLogPageProps) {
-  const pageParam = Number(searchParams?.page);
-  const pageSizeParam = Number(searchParams?.pageSize);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const pageParam = Number(resolvedSearchParams?.page);
+  const pageSizeParam = Number(resolvedSearchParams?.pageSize);
 
   const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
   const pageSize = Number.isFinite(pageSizeParam) && pageSizeParam > 0 ? pageSizeParam : DEFAULT_PAGE_SIZE;

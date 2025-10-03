@@ -5,6 +5,9 @@ import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listExams, countExamsByStatus } from '@/lib/exams';
 import { PaginationControl } from '@/components/pagination-control';
+import { ExamTemplateActions } from '@/components/exam-template-actions';
+import { ExamRowActions } from '@/components/exam-row-actions';
+import ExamFilters from '@/components/exam-filters';
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -16,7 +19,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 const DESCRIPTION = 'Audit exam inventory, monitor publishing cadence, and spot gaps across subjects.';
 
 interface ExamsPageProps {
-  readonly searchParams?: Record<string, string | string[]>;
+  readonly searchParams?: Promise<Record<string, string | string[]>>;
 }
 
 const STATUS_OPTIONS = ['all', 'draft', 'published', 'archived'] as const;
@@ -27,20 +30,6 @@ function parseParam(value: string | string[] | undefined): string | undefined {
     return value[0];
   }
   return value;
-}
-
-function buildSearchParams(
-  current: Record<string, string | undefined>,
-  overrides: Record<string, string | undefined>
-): string {
-  const params = new URLSearchParams();
-  const merged = { ...current, ...overrides };
-  for (const [key, value] of Object.entries(merged)) {
-    if (value && value !== 'all') {
-      params.set(key, value);
-    }
-  }
-  return params.toString();
 }
 
 function formatDuration(minutes: number | null): string {
@@ -69,9 +58,16 @@ function statusBadgeVariant(status: string): Parameters<typeof Badge>[0]['varian
 }
 
 export default async function ExamsPage({ searchParams }: ExamsPageProps) {
-  const statusParam = parseParam(searchParams?.status) ?? 'all';
-  const difficultyParam = parseParam(searchParams?.difficulty) ?? 'all';
-  const pageParam = parseParam(searchParams?.page);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const statusParam = parseParam(resolvedSearchParams?.status) ?? 'all';
+  const difficultyParam = parseParam(resolvedSearchParams?.difficulty) ?? 'all';
+  const categoryParam = parseParam(resolvedSearchParams?.category);
+  const subcategoryParam = parseParam(resolvedSearchParams?.subcategory);
+  const subjectParam = parseParam(resolvedSearchParams?.subject);
+  const examParam = parseParam(resolvedSearchParams?.exam);
+  const searchParam = parseParam(resolvedSearchParams?.search) ?? '';
+  const pageParam = parseParam(resolvedSearchParams?.page);
 
   const page = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
   const filters = {
@@ -81,20 +77,39 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
     difficulty: DIFFICULTY_OPTIONS.includes(difficultyParam as typeof DIFFICULTY_OPTIONS[number]) && difficultyParam !== 'all'
       ? (difficultyParam as 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT')
       : undefined,
+    categorySlug: categoryParam ?? undefined,
+    subcategorySlug: subcategoryParam ?? undefined,
+    subjectSlug: subjectParam ?? undefined,
+    examSlug: examParam ?? undefined,
+    search: searchParam.trim().length > 0 ? searchParam.trim() : undefined,
   };
 
   const [{ data: exams, pagination }, publishedCount, draftCount, archivedCount] = await Promise.all([
-    listExams({ page, status: filters.status, difficulty: filters.difficulty }),
+    listExams({
+      page,
+      status: filters.status,
+      difficulty: filters.difficulty,
+      categorySlug: filters.categorySlug,
+      subcategorySlug: filters.subcategorySlug,
+      subjectSlug: filters.subjectSlug,
+      examSlug: filters.examSlug,
+      search: filters.search,
+    }),
     countExamsByStatus('published'),
     countExamsByStatus('draft'),
     countExamsByStatus('archived'),
   ]);
 
   const totalCount = pagination.totalCount;
-  const summaryParams = {
+  const initialFilters = {
     status: statusParam,
     difficulty: difficultyParam,
-  } as Record<string, string | undefined>;
+    categorySlug: categoryParam ?? undefined,
+    subcategorySlug: subcategoryParam ?? undefined,
+    subjectSlug: subjectParam ?? undefined,
+    examSlug: examParam ?? undefined,
+    search: searchParam ? searchParam.trim() : undefined,
+  };
 
   return (
     <AdminShell
@@ -119,37 +134,17 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
       </div>
 
       <section className="space-y-4">
-        <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-gray-900">Exam inventory</h2>
-            <p className="text-sm text-gray-600">Filter by status or difficulty to focus on upcoming launches or clean up drafts.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map((option) => {
-              const query = buildSearchParams(summaryParams, { status: option, page: undefined });
-              const href = query.length > 0 ? `?${query}` : '?';
-              const isActive = statusParam === option;
-              return (
-                <Button key={option} variant={isActive ? 'primary' : 'ghost'} size="sm" asChild>
-                  <Link href={href}>{option === 'all' ? 'All statuses' : option.charAt(0).toUpperCase() + option.slice(1)}</Link>
-                </Button>
-              );
-            })}
+        <header className="space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-gray-900">Exam inventory</h2>
+              <p className="text-sm text-gray-600">Filter by taxonomy, publication status, or difficulty to manage launch pipelines.</p>
+            </div>
+            <ExamTemplateActions className="w-full max-w-xl lg:w-auto" />
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2">
-          {DIFFICULTY_OPTIONS.map((option) => {
-            const query = buildSearchParams(summaryParams, { difficulty: option, page: undefined });
-            const href = query.length > 0 ? `?${query}` : '?';
-            const isActive = difficultyParam === option;
-            return (
-              <Button key={option} variant={isActive ? 'secondary' : 'ghost'} size="sm" asChild>
-                <Link href={href}>{option === 'all' ? 'All difficulties' : option}</Link>
-              </Button>
-            );
-          })}
-        </div>
+        <ExamFilters initialFilters={initialFilters} />
 
         <DataTable
           data={exams}
@@ -212,6 +207,12 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
               id: 'updated',
               header: 'Updated',
               cell: (exam) => dateFormatter.format(exam.updatedAt),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              align: 'right',
+              cell: (exam) => <ExamRowActions slug={exam.slug} />,
             },
           ]}
         />

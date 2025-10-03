@@ -1,6 +1,11 @@
 import 'server-only';
 
-import type { IntegrationEnvironment, IntegrationKeyFilter, IntegrationKeyRecord, PaginatedResult } from '@brainliest/db';
+import type {
+  IntegrationEnvironment,
+  IntegrationKeyFilter,
+  IntegrationKeyRecord,
+  PaginatedResult,
+} from '@brainliest/db';
 import { repositories } from './repositories';
 
 export interface ListIntegrationKeysOptions extends Partial<IntegrationKeyFilter> {
@@ -28,4 +33,36 @@ export async function listIntegrationKeys(
 export async function countIntegrationKeysByEnvironment(environment: IntegrationEnvironment): Promise<number> {
   const result = await repositories.integrationKeys.list({ environment }, 1, 1);
   return result.pagination.totalCount;
+}
+
+export interface IntegrationKeySuggestion {
+  readonly id: string;
+  readonly name: string;
+  readonly environment: IntegrationEnvironment;
+}
+
+export async function searchIntegrationKeySuggestions(
+  query: string,
+  limit = 6,
+  environment?: IntegrationEnvironment
+): Promise<IntegrationKeySuggestion[]> {
+  const term = query.trim();
+  if (term.length === 0) {
+    return [];
+  }
+
+  const safeLimit = Math.max(1, Math.min(20, Math.trunc(limit)));
+
+  const filters: IntegrationKeyFilter = {
+    ...(environment ? { environment } : {}),
+    search: term,
+  };
+
+  const page = await repositories.integrationKeys.list(filters, 1, safeLimit);
+
+  return page.data.map((key) => ({
+    id: key.id,
+    name: key.name,
+    environment: key.environment,
+  }));
 }

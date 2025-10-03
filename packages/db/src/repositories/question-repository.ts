@@ -33,10 +33,14 @@ export interface QuestionRecord {
 
 export interface QuestionFilter {
   readonly subjectSlug?: SubjectSlug;
+  readonly categorySlug?: string;
+  readonly subcategorySlug?: string;
+  readonly examSlug?: ExamSlug;
   readonly domain?: string;
   readonly difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
   readonly year?: number;
   readonly status?: 'draft' | 'published' | 'unpublished';
+  readonly search?: string;
 }
 
 export interface CreateQuestionInput {
@@ -47,7 +51,7 @@ export interface CreateQuestionInput {
   readonly allowMultiple: boolean;
   readonly difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
   readonly explanation?: string;
-  readonly domain: string;
+  readonly domain?: string;
   readonly subjectSlug: SubjectSlug;
   readonly examSlug?: ExamSlug;
   readonly source?: string;

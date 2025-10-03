@@ -27,3 +27,41 @@ export async function countAdminUsersByRole(role: NonNullable<AdminUserFilter['r
   const result = await repositories.adminUsers.list({ role }, 1, 1);
   return result.pagination.totalCount;
 }
+
+export interface AdminUserSuggestion {
+  readonly id: string;
+  readonly email: string;
+  readonly role: NonNullable<AdminUserFilter['role']>;
+}
+
+export interface AdminUserSuggestionFilter {
+  readonly role?: NonNullable<AdminUserFilter['role']>;
+  readonly status?: AdminUserFilter['status'];
+}
+
+export async function searchAdminUsersSuggestions(
+  query: string,
+  limit = 6,
+  filter: AdminUserSuggestionFilter = {}
+): Promise<AdminUserSuggestion[]> {
+  const term = query.trim();
+  if (term.length === 0) {
+    return [];
+  }
+
+  const safeLimit = Math.max(1, Math.min(20, Math.trunc(limit)));
+
+  const filters: AdminUserFilter = {
+    search: term,
+    ...(filter.role ? { role: filter.role } : {}),
+    ...(filter.status ? { status: filter.status } : {}),
+  };
+
+  const page = await repositories.adminUsers.list(filters, 1, safeLimit);
+
+  return page.data.map((admin) => ({
+    id: admin.id,
+    email: admin.email,
+    role: admin.role,
+  }));
+}

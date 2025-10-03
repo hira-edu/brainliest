@@ -5,14 +5,17 @@ import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listIntegrationKeys, countIntegrationKeysByEnvironment } from '@/lib/integrations';
 import { PaginationControl } from '@/components/pagination-control';
+import IntegrationFilters from '@/components/integration-filters';
+import type { IntegrationFiltersInitialValues } from '@/types/filter-values';
 
 const DESCRIPTION = 'Manage third-party secrets, check rotation cadence, and keep environments in sync.';
 
 interface IntegrationKeysPageProps {
-  readonly searchParams?: Record<string, string | string[]>;
+  readonly searchParams?: Promise<Record<string, string | string[]>>;
 }
 
 const ENV_OPTIONS = ['all', 'production', 'staging', 'development'] as const;
+const TYPE_OPTIONS = ['all', 'OPENAI', 'STRIPE', 'RESEND', 'CAPTCHA'] as const;
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -26,20 +29,6 @@ function parseParam(value: string | string[] | undefined): string | undefined {
     return value[0];
   }
   return value;
-}
-
-function buildSearchParams(
-  current: Record<string, string | undefined>,
-  overrides: Record<string, string | undefined>
-): string {
-  const params = new URLSearchParams();
-  const merged = { ...current, ...overrides };
-  for (const [key, value] of Object.entries(merged)) {
-    if (value && value !== 'all') {
-      params.set(key, value);
-    }
-  }
-  return params.toString();
 }
 
 function environmentBadge(env: string): Parameters<typeof Badge>[0]['variant'] {
@@ -56,16 +45,29 @@ function environmentBadge(env: string): Parameters<typeof Badge>[0]['variant'] {
 }
 
 export default async function IntegrationKeysPage({ searchParams }: IntegrationKeysPageProps) {
-  const environmentParam = parseParam(searchParams?.environment) ?? 'all';
-  const pageParam = parseParam(searchParams?.page);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const environmentParam = parseParam(resolvedSearchParams?.environment) ?? 'all';
+  const typeParam = parseParam(resolvedSearchParams?.type) ?? 'all';
+  const searchParam = parseParam(resolvedSearchParams?.search);
+  const pageParam = parseParam(resolvedSearchParams?.page);
 
   const page = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
+  const searchValue = searchParam?.trim() ?? '';
+
+  const normalizedEnvironment = ENV_OPTIONS.includes(environmentParam as (typeof ENV_OPTIONS)[number]) && environmentParam !== 'all'
+    ? (environmentParam as 'production' | 'staging' | 'development')
+    : undefined;
+
+  const normalizedType = TYPE_OPTIONS.includes(typeParam as (typeof TYPE_OPTIONS)[number]) && typeParam !== 'all'
+    ? (typeParam as 'OPENAI' | 'STRIPE' | 'RESEND' | 'CAPTCHA')
+    : undefined;
 
   const keysPage = await listIntegrationKeys({
-    environment: ENV_OPTIONS.includes(environmentParam as (typeof ENV_OPTIONS)[number]) && environmentParam !== 'all'
-      ? (environmentParam as 'production' | 'staging' | 'development')
-      : undefined,
+    environment: normalizedEnvironment,
+    type: normalizedType,
     page,
+    search: searchValue.length > 0 ? searchValue : undefined,
   });
 
   const [productionCount, stagingCount, developmentCount] = await Promise.all([
@@ -74,7 +76,11 @@ export default async function IntegrationKeysPage({ searchParams }: IntegrationK
     countIntegrationKeysByEnvironment('development'),
   ]);
 
-  const tableParams = { environment: environmentParam } as Record<string, string | undefined>;
+  const initialFilters: IntegrationFiltersInitialValues = {
+    environment: normalizedEnvironment ?? 'all',
+    type: normalizedType ?? 'all',
+    search: searchValue,
+  };
 
   return (
     <AdminShell
@@ -104,18 +110,7 @@ export default async function IntegrationKeysPage({ searchParams }: IntegrationK
           <p className="text-sm text-gray-600">Filter by environment to confirm credentials are rotated on schedule.</p>
         </header>
 
-        <div className="flex flex-wrap gap-2">
-          {ENV_OPTIONS.map((option) => {
-            const query = buildSearchParams(tableParams, { environment: option, page: undefined });
-            const href = query.length > 0 ? `?${query}` : '?';
-            const isActive = environmentParam === option;
-            return (
-              <Button key={option} variant={isActive ? 'primary' : 'ghost'} size="sm" asChild>
-                <Link href={href}>{option === 'all' ? 'All environments' : option}</Link>
-              </Button>
-            );
-          })}
-        </div>
+        <IntegrationFilters initialFilters={initialFilters} />
 
         <DataTable
           data={keysPage.data}

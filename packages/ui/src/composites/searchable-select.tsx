@@ -120,6 +120,7 @@ export function SearchableSelect({
       <Popover.Portal>
         <Popover.Content
           className="z-dropdown w-72 rounded-xl border border-gray-200 bg-white shadow-xl"
+          style={{ zIndex: 4000, backgroundColor: '#ffffff' }}
           sideOffset={8}
           align="start"
         >

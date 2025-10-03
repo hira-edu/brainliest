@@ -140,7 +140,11 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
         </SelectPrimitive.Trigger>
 
         <SelectPrimitive.Portal>
-          <SelectPrimitive.Content className={contentClasses} position="popper">
+          <SelectPrimitive.Content
+            className={contentClasses}
+            position="popper"
+            style={{ zIndex: 4000, backgroundColor: '#ffffff' }}
+          >
             <SelectPrimitive.ScrollUpButton className="flex items-center justify-center py-2 text-gray-500">
               <svg
                 aria-hidden="true"
