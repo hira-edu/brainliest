@@ -243,4 +243,58 @@ describe('Drizzle repositories', () => {
       expect(thirdPage.data.length).toBe(5);
     });
   });
+
+  it('creates and updates practice sessions', async () => {
+    await withTestContext(async ({ repositories }) => {
+      const userId = await repositories.users.create({
+        email: 'practice-user@example.com',
+        hashedPassword: 'secret-hash',
+        role: 'STUDENT',
+      });
+
+      const sessionRecord = await repositories.sessions.startSession({
+        userId,
+        examSlug: 'algebra-ii-midterm' as ExamSlug,
+      });
+
+      expect(sessionRecord.examSlug).toBe('algebra-ii-midterm');
+      expect(sessionRecord.questions.length).toBeGreaterThan(0);
+      expect(sessionRecord.metadata.currentQuestionIndex).toBe(0);
+
+      const firstQuestion = sessionRecord.questions[0]!;
+
+      await repositories.sessions.recordQuestionProgress({
+        sessionId: sessionRecord.id,
+        questionId: firstQuestion.questionId,
+        selectedAnswers: [1],
+        timeSpentSeconds: 42,
+      });
+
+      await repositories.sessions.toggleFlag({
+        sessionId: sessionRecord.id,
+        questionId: firstQuestion.questionId,
+        flagged: true,
+      });
+
+      await repositories.sessions.updateRemainingSeconds({
+        sessionId: sessionRecord.id,
+        remainingSeconds: 1200,
+      });
+
+      await repositories.sessions.advanceQuestion({
+        sessionId: sessionRecord.id,
+        currentQuestionIndex: 1,
+      });
+
+      const updated = await repositories.sessions.getSession(sessionRecord.id);
+      expect(updated).not.toBeNull();
+      expect(updated?.metadata.currentQuestionIndex).toBe(1);
+      expect(updated?.metadata.flaggedQuestionIds).toContain(firstQuestion.questionId);
+      expect(updated?.metadata.remainingSeconds).toBe(1200);
+
+      const updatedQuestion = updated?.questions.find((item) => item.questionId === firstQuestion.questionId);
+      expect(updatedQuestion?.selectedAnswers).toEqual([1]);
+      expect(updatedQuestion?.timeSpentSeconds).toBe(42);
+    });
+  }, 20000);
 });

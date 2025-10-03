@@ -16,11 +16,23 @@ export type {
   CreateExplanationInput,
   ExplanationListRecentOptions,
 } from './explanation-repository';
+export type {
+  SessionRepository,
+  PracticeSessionRecord,
+  PracticeSessionQuestionState,
+  PracticeSessionMetadata,
+  StartSessionInput,
+  AdvanceQuestionInput,
+  ToggleFlagInput,
+  UpdateRemainingSecondsInput,
+  RecordQuestionProgressInput,
+} from './session-repository';
 export {
   DrizzleQuestionRepository,
   DrizzleExamRepository,
   DrizzleUserRepository,
   DrizzleExplanationRepository,
+  DrizzleSessionRepository,
   createRepositories,
   type RepositoryBundle,
 } from './drizzle-repositories';

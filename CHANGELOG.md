@@ -21,11 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Admin API route `/api/explanations` and the accompanying log page in `apps/admin` so operators can review recently generated AI explanations backed by Drizzle.
+- Practice session infrastructure surfaced through `@brainliest/db` repositories plus Next.js routes (`/api/practice/sessions`, `/api/practice/sessions/[sessionId]`) to deliver timers, flags, and progress mutations.
 
 ### Changed
 - Replaced the AI explanation stub pipeline with the Drizzle repository, propagating language/version metadata through the shared adapters, web bootstrap, and server helper.
 - Extended the explanation repository contract with a `listRecent` helper for reporting, refreshed exports, and updated unit tests to cover the new shape.
 - Added pagination metadata to `/api/explanations`, updating the admin activity view to consume the endpoint and paginate results from the shared repository.
+- Backfilled Vitest coverage for `/api/explanations`, exercising paginated responses plus query parameter edge cases.
+- Refactored the practice experience to consume the new session endpoints, wiring client actions to persist answer selection and flag toggles while retaining the sample fallback for offline development.
 
 ### Tests
 - `pnpm lint --filter @brainliest/db`
@@ -43,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended Playwright composite specs to assert the explanation summaries produced by the new demos.
 - Created a reusable practice UI kit (`PracticeLayout`, `PracticeExamCard`, `PracticeQuestionCard`, `PracticeOptionList`, `PracticeFillBlank`, `PracticeExplanationCard`, `PracticeNavigation`, `PracticePageHeader`) and adopted it in the new `/practice/[examSlug]` scaffold.
 - Practice page now resolves exam/question data through Drizzle repositories with graceful fallbacks so the session shell runs ahead of full backend integration.
+- Practice navigation exposes flag/bookmark controls with client-side stubs so future backend mutations can reuse the same UI surface.
 
 ## [2.2.3] - 2025-10-02
 

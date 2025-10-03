@@ -13,6 +13,14 @@ export interface PracticeNavigationProps extends React.HTMLAttributes<HTMLDivEle
   disableNext?: boolean;
   progressLabel?: string;
   rightSlot?: React.ReactNode;
+  isFlagged?: boolean;
+  onToggleFlag?: (next: boolean) => void;
+  flagLabel?: string;
+  flaggedLabel?: string;
+  isBookmarked?: boolean;
+  onToggleBookmark?: (next: boolean) => void;
+  bookmarkLabel?: string;
+  bookmarkedLabel?: string;
 }
 
 export function PracticeNavigation({
@@ -24,9 +32,29 @@ export function PracticeNavigation({
   disableNext,
   progressLabel,
   rightSlot,
+  isFlagged,
+  onToggleFlag,
+  flagLabel = 'Flag question',
+  flaggedLabel = 'Flagged',
+  isBookmarked,
+  onToggleBookmark,
+  bookmarkLabel = 'Bookmark',
+  bookmarkedLabel = 'Bookmarked',
   className,
   ...rest
 }: PracticeNavigationProps) {
+  const handleFlagClick = () => {
+    if (onToggleFlag) {
+      onToggleFlag(!isFlagged);
+    }
+  };
+
+  const handleBookmarkClick = () => {
+    if (onToggleBookmark) {
+      onToggleBookmark(!isBookmarked);
+    }
+  };
+
   return (
     <Card
       padding="md"
@@ -44,7 +72,29 @@ export function PracticeNavigation({
         </div>
         {progressLabel ? <p className="text-sm text-gray-500">{progressLabel}</p> : null}
       </Stack>
-      {rightSlot ? <div className="text-sm text-gray-500">{rightSlot}</div> : null}
+      <div className="flex flex-col gap-2 text-sm text-gray-500 sm:flex-row sm:items-center sm:gap-3">
+        {onToggleFlag ? (
+          <Button
+            type="button"
+            variant={isFlagged ? 'secondary' : 'ghost'}
+            onClick={handleFlagClick}
+            aria-pressed={Boolean(isFlagged)}
+          >
+            {isFlagged ? flaggedLabel : flagLabel}
+          </Button>
+        ) : null}
+        {onToggleBookmark ? (
+          <Button
+            type="button"
+            variant={isBookmarked ? 'secondary' : 'ghost'}
+            onClick={handleBookmarkClick}
+            aria-pressed={Boolean(isBookmarked)}
+          >
+            {isBookmarked ? bookmarkedLabel : bookmarkLabel}
+          </Button>
+        ) : null}
+        {rightSlot ? <div>{rightSlot}</div> : null}
+      </div>
     </Card>
   );
 }

@@ -10,13 +10,13 @@ import {
   PracticeExamCard,
   PracticeLayout,
   PracticeQuestionCard,
-  PracticeNavigation,
   Card,
   Stack,
   Badge,
 } from '@brainliest/ui';
 import { PracticeClient } from './PracticeClient';
 import { fetchPracticeSession } from '@/lib/practice/fetch-practice-session';
+import { PracticeNavigationPanel } from './PracticeNavigationPanel';
 
 function formatTimeRemaining(seconds?: number): string | undefined {
   if (!seconds || seconds <= 0) {
@@ -42,18 +42,15 @@ export default async function PracticePage({ params }: PracticePageProps) {
     notFound();
   }
 
-  const { exam, question, progress } = session;
+  const { exam, question, progress, sessionId, questionState } = session;
   const timeRemainingDisplay = formatTimeRemaining(progress.timeRemainingSeconds);
 
   const sidebar = (
     <Stack gap={4}>
-      <PracticeNavigation
+      <PracticeNavigationPanel
         progressLabel={`Question ${progress.questionIndex} of ${progress.totalQuestions}`}
-        disablePrevious
-        rightSlot={
-          timeRemainingDisplay ? (
-            <span className="font-medium text-gray-700">Time left: {timeRemainingDisplay}</span>
-          ) : undefined
+        timeRemainingLabel={
+          timeRemainingDisplay ? `Time left: ${timeRemainingDisplay}` : undefined
         }
       />
       <Card padding="md" className="space-y-3">
@@ -107,7 +104,11 @@ export default async function PracticePage({ params }: PracticePageProps) {
             title={question.stemMarkdown}
             difficulty={question.difficulty}
           >
-            <PracticeClient question={question} />
+            <PracticeClient
+              sessionId={sessionId}
+              question={question}
+              questionState={questionState}
+            />
           </PracticeQuestionCard>
         </PracticeLayout>
       </div>

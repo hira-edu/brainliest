@@ -1,4 +1,4 @@
-import { and, eq, sql, type SQL } from 'drizzle-orm';
+import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type {
@@ -18,12 +18,107 @@ import type {
   ExplanationListRecentOptions,
   ExplanationSummary,
 } from './explanation-repository';
-import type { PaginatedResult, PaginationMeta, QuestionId, ExamSlug, UserId } from '../types';
+import type {
+  SessionRepository,
+  PracticeSessionRecord,
+  PracticeSessionMetadata,
+  PracticeSessionQuestionState,
+  StartSessionInput,
+  AdvanceQuestionInput,
+  ToggleFlagInput,
+  UpdateRemainingSecondsInput,
+  RecordQuestionProgressInput,
+  ExamSessionStatus,
+} from './session-repository';
+import type { PaginatedResult, PaginationMeta, QuestionId, ExamSlug, UserId, SessionId } from '../types';
 
 const DEFAULT_PAGE_SIZE = 20;
 const KATEX_PATTERN = /\\(?:begin|end|frac|sum|int|sqrt|left|right|\(|\[)/;
 
 const containsKatex = (value?: string): boolean => (value ? KATEX_PATTERN.test(value) : false);
+
+type RawMetadata = Record<string, unknown> | null | undefined;
+
+const DEFAULT_SESSION_METADATA: PracticeSessionMetadata = {
+  currentQuestionIndex: 0,
+  flaggedQuestionIds: [],
+  remainingSeconds: null,
+};
+
+const ensureNumericArray = (value: unknown): number[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => {
+      if (typeof item === 'number' && Number.isFinite(item)) {
+        return Math.trunc(item);
+      }
+      const parsed = Number(item);
+      return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
+    })
+    .filter((item): item is number => item !== null);
+};
+
+const ensureStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => (typeof item === 'string' ? item : item ? String(item) : null))
+    .filter((item): item is string => Boolean(item));
+};
+
+const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
+  if (!raw || typeof raw !== 'object') {
+    return DEFAULT_SESSION_METADATA;
+  }
+
+  const flaggedQuestionIds = ensureStringArray((raw as Record<string, unknown>).flaggedQuestionIds);
+  const currentQuestionIndexValue = (raw as Record<string, unknown>).currentQuestionIndex;
+  const remainingSecondsValue = (raw as Record<string, unknown>).remainingSeconds;
+
+  const currentQuestionIndex = Number.isFinite(currentQuestionIndexValue)
+    ? Math.max(0, Math.trunc(Number(currentQuestionIndexValue)))
+    : DEFAULT_SESSION_METADATA.currentQuestionIndex;
+
+  const remainingSeconds = Number.isFinite(remainingSecondsValue)
+    ? Math.max(0, Math.trunc(Number(remainingSecondsValue)))
+    : null;
+
+  const extra: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (key === 'flaggedQuestionIds' || key === 'currentQuestionIndex' || key === 'remainingSeconds') {
+      continue;
+    }
+    extra[key] = value;
+  }
+
+  if (Object.keys(extra).length > 0) {
+    return {
+      currentQuestionIndex,
+      flaggedQuestionIds,
+      remainingSeconds,
+      extra,
+    } satisfies PracticeSessionMetadata;
+  }
+
+  return {
+    currentQuestionIndex,
+    flaggedQuestionIds,
+    remainingSeconds,
+  } satisfies PracticeSessionMetadata;
+};
+
+const serializeSessionMetadata = (metadata: PracticeSessionMetadata): Record<string, unknown> => ({
+  flaggedQuestionIds: [...metadata.flaggedQuestionIds],
+  currentQuestionIndex: metadata.currentQuestionIndex,
+  remainingSeconds:
+    metadata.remainingSeconds !== undefined && metadata.remainingSeconds !== null
+      ? Math.max(0, Math.trunc(metadata.remainingSeconds))
+      : null,
+  ...(metadata.extra ?? {}),
+});
 
 function buildPaginationMeta(totalCount: number, page: number, pageSize: number): PaginationMeta {
   const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
@@ -122,6 +217,31 @@ export class DrizzleQuestionRepository implements QuestionRepository {
       data: records,
       pagination: buildPaginationMeta(total, page, safePageSize),
     };
+  }
+
+  async findManyByIds(ids: QuestionId[]): Promise<QuestionRecord[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const records = await this.db.query.questions.findMany({
+      where: inArray(schema.questions.id, ids),
+      with: {
+        versions: {
+          where: eq(schema.questionVersions.isCurrent, true),
+          with: {
+            choices: true,
+          },
+        },
+      },
+    });
+
+    const mapped = records.map((record) => this.mapQuestion(record));
+    const byId = new Map(mapped.map((record) => [record.id as QuestionId, record]));
+
+    return ids
+      .map((id) => byId.get(id))
+      .filter((record): record is QuestionRecord => Boolean(record));
   }
 
   async create(payload: CreateQuestionInput, actorId: string): Promise<QuestionId> {
@@ -664,11 +784,231 @@ export class DrizzleExplanationRepository implements ExplanationRepository {
   }
 }
 
+export class DrizzleSessionRepository implements SessionRepository {
+  private readonly questionRepository: DrizzleQuestionRepository;
+  private readonly examRepository: DrizzleExamRepository;
+
+  constructor(private readonly db: DatabaseClient) {
+    this.questionRepository = new DrizzleQuestionRepository(db);
+    this.examRepository = new DrizzleExamRepository(db);
+  }
+
+  async startSession(input: StartSessionInput): Promise<PracticeSessionRecord> {
+    const examRecord = await this.examRepository.findBySlug(input.examSlug);
+
+    const existing = await this.db.query.examSessions.findFirst({
+      where: and(eq(schema.examSessions.userId, input.userId), eq(schema.examSessions.examSlug, input.examSlug), eq(schema.examSessions.status, 'in_progress')),
+    });
+
+    if (existing) {
+      const record = await this.getSession(existing.id as SessionId);
+      if (record) {
+        return record;
+      }
+    }
+
+    const sessionId = await this.db.transaction(async (tx) => {
+      const questions = await tx
+        .select({ id: schema.questions.id })
+        .from(schema.questions)
+        .where(eq(schema.questions.examSlug, input.examSlug))
+        .orderBy(schema.questions.createdAt);
+
+      if (questions.length === 0) {
+        throw new Error(`No questions found for exam ${input.examSlug}`);
+      }
+
+      const defaultDurationSeconds = examRecord?.durationMinutes ? examRecord.durationMinutes * 60 : undefined;
+
+      const metadata: PracticeSessionMetadata = {
+        currentQuestionIndex: 0,
+        flaggedQuestionIds: [],
+        remainingSeconds: input.remainingSeconds ?? defaultDurationSeconds ?? null,
+      };
+
+      const [session] = await tx
+        .insert(schema.examSessions)
+        .values({
+          userId: input.userId,
+          examSlug: input.examSlug,
+          status: 'in_progress',
+          metadata: serializeSessionMetadata(metadata),
+          timeSpentSeconds: 0,
+        })
+        .returning({ id: schema.examSessions.id });
+
+      if (!session) {
+        throw new Error('Failed to create exam session');
+      }
+
+      await tx.insert(schema.examSessionQuestions).values(
+        questions.map((question, index) => ({
+          sessionId: session.id,
+          questionId: question.id,
+          orderIndex: index,
+          selectedAnswers: [],
+          isCorrect: null,
+          timeSpentSeconds: 0,
+        }))
+      );
+
+      return session.id as SessionId;
+    });
+
+    const created = await this.getSession(sessionId);
+    if (!created) {
+      throw new Error('Unable to load created session');
+    }
+    return created;
+  }
+
+  async getSession(sessionId: SessionId): Promise<PracticeSessionRecord | null> {
+    const session = await this.db.query.examSessions.findFirst({
+      where: eq(schema.examSessions.id, sessionId),
+      with: {
+        exam: true,
+        questions: {
+          orderBy: (fields, { asc }) => asc(fields.orderIndex),
+        },
+      },
+    });
+
+    if (!session) {
+      return null;
+    }
+
+    const metadata = parseSessionMetadata(session.metadata as RawMetadata);
+
+    const examRecord = session.exam
+      ? {
+          slug: session.exam.slug as ExamSlug,
+          subjectSlug: session.exam.subjectSlug,
+          title: session.exam.title,
+          description: session.exam.description,
+          difficulty: session.exam.difficulty,
+          durationMinutes: session.exam.durationMinutes,
+          questionTarget: session.exam.questionTarget,
+          status: session.exam.status,
+          metadata: session.exam.metadata ?? {},
+          createdAt: session.exam.createdAt,
+          updatedAt: session.exam.updatedAt,
+        }
+      : await this.examRepository.findBySlug(session.examSlug as ExamSlug);
+
+    if (!examRecord) {
+      throw new Error(`Exam ${String(session.examSlug)} not found for session ${String(sessionId)}`);
+    }
+
+    const questionIds = session.questions.map((row) => row.questionId as QuestionId);
+    const questionRecords = await this.questionRepository.findManyByIds(questionIds);
+    const questionRecordMap = new Map<QuestionId, QuestionRecord>(
+      questionRecords.map((record) => [record.id as QuestionId, record])
+    );
+
+    const questions: PracticeSessionQuestionState[] = session.questions.map((row) => {
+      const record = questionRecordMap.get(row.questionId as QuestionId);
+      if (!record) {
+        throw new Error(`Question ${String(row.questionId)} not found for session ${String(sessionId)}`);
+      }
+
+      return {
+        questionId: row.questionId as QuestionId,
+        orderIndex: row.orderIndex,
+        selectedAnswers: ensureNumericArray(row.selectedAnswers),
+        isCorrect: row.isCorrect ?? null,
+        timeSpentSeconds: row.timeSpentSeconds ?? null,
+        question: record,
+      };
+    });
+
+    return {
+      id: session.id as SessionId,
+      userId: session.userId as UserId,
+      examSlug: session.examSlug as ExamSlug,
+      status: session.status as ExamSessionStatus,
+      startedAt: session.startedAt,
+      completedAt: session.completedAt,
+      metadata,
+      exam: examRecord,
+      questions,
+    };
+  }
+
+  async advanceQuestion(input: AdvanceQuestionInput): Promise<void> {
+    await this.updateMetadata(input.sessionId, (metadata) => ({
+      ...metadata,
+      currentQuestionIndex: Math.max(0, input.currentQuestionIndex),
+    }));
+  }
+
+  async toggleFlag(input: ToggleFlagInput): Promise<void> {
+    await this.updateMetadata(input.sessionId, (metadata) => {
+      const flagged = new Set(metadata.flaggedQuestionIds);
+      if (input.flagged) {
+        flagged.add(input.questionId);
+      } else {
+        flagged.delete(input.questionId);
+      }
+      return {
+        ...metadata,
+        flaggedQuestionIds: Array.from(flagged),
+      };
+    });
+  }
+
+  async updateRemainingSeconds(input: UpdateRemainingSecondsInput): Promise<void> {
+    await this.updateMetadata(input.sessionId, (metadata) => ({
+      ...metadata,
+      remainingSeconds: Math.max(0, input.remainingSeconds),
+    }));
+  }
+
+  async recordQuestionProgress(input: RecordQuestionProgressInput): Promise<void> {
+    await this.db
+      .update(schema.examSessionQuestions)
+      .set({
+        selectedAnswers: input.selectedAnswers.map((value) => Math.trunc(value)),
+        timeSpentSeconds:
+          input.timeSpentSeconds !== undefined && input.timeSpentSeconds !== null
+            ? Math.max(0, Math.trunc(input.timeSpentSeconds))
+            : null,
+      })
+      .where(
+        and(
+          eq(schema.examSessionQuestions.sessionId, input.sessionId),
+          eq(schema.examSessionQuestions.questionId, input.questionId)
+        )
+      );
+  }
+
+  private async updateMetadata(
+    sessionId: SessionId,
+    mutator: (metadata: PracticeSessionMetadata) => PracticeSessionMetadata
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const row = await tx
+        .select({ metadata: schema.examSessions.metadata })
+        .from(schema.examSessions)
+        .where(eq(schema.examSessions.id, sessionId))
+        .limit(1);
+
+      const current = parseSessionMetadata(row[0]?.metadata as RawMetadata);
+      const next = mutator(current);
+
+      await tx
+        .update(schema.examSessions)
+        .set({ metadata: serializeSessionMetadata(next) })
+        .where(eq(schema.examSessions.id, sessionId));
+    });
+  }
+}
+
 export interface RepositoryBundle {
   questions: QuestionRepository;
   exams: ExamRepository;
   users: UserRepository;
   explanations: ExplanationRepository;
+  sessions: SessionRepository;
 }
 
 export function createRepositories(db: DatabaseClient): RepositoryBundle {
@@ -677,5 +1017,6 @@ export function createRepositories(db: DatabaseClient): RepositoryBundle {
     exams: new DrizzleExamRepository(db),
     users: new DrizzleUserRepository(db),
     explanations: new DrizzleExplanationRepository(db),
+    sessions: new DrizzleSessionRepository(db),
   };
 }

@@ -2,6 +2,7 @@ export type QuestionId = string;
 export type ExamSlug = string;
 export type SubjectSlug = string;
 export type UserId = string;
+export type SessionId = string;
 
 export interface PaginationMeta {
   readonly page: number;

@@ -5,6 +5,8 @@
 
 - Persisted AI explanation generations through the Drizzle repository and surfaced an admin log/API for auditing.
 - Added pagination to `/api/explanations` and updated the admin activity view to read from the shared endpoint instead of direct repository access.
+- Stood up practice session storage (Drizzle repositories + `/api/practice/sessions` routes) and rewired the practice page/actions to call the new API while keeping the sample fallback for offline use.
+- Added Vitest API coverage for `/api/explanations`, validating pagination defaults and legacy query handling.
 - Completed Radix migration of composite library (`Modal`, `Dialog`, `Dropdown`, `Tooltip`) with co-located tests/stories and demo routes.
 - Rounded out Radix composite coverage with Tabs, Accordion, Popover, and Toast (tests, stories, dedicated demo routes).
 - Added Playwright harness + end-to-end specs covering composite and feedback demo routes.
@@ -17,6 +19,14 @@
 - Integrated shared AI explanation + cache services into the web/admin apps with Next.js API routes, rate limiting, and Redis-backed invalidation stubs.
 - Established `@brainliest/db` with Drizzle schema, repository interfaces, and database client tooling to anchor upcoming data access workstreams.
 
+## 2025-10-03 (Session 10) — Codex
+- 🧠 **Practice session API** — Added session repository contracts, Drizzle implementation, and Vitest coverage so timers/flags/progress persist in Postgres.
+- 🌐 **Next.js routes** — Exposed `/api/practice/sessions` (POST) and `/api/practice/sessions/[sessionId]` (GET/PATCH) to serve session DTOs and accept progress mutations.
+- 🧑‍💻 **Client wiring** — Refactored `fetchPracticeSession` + `PracticeClient` to consume the new endpoints, record answer selection, and toggle flags while preserving the sample fallback.
+- 🧾 **Documentation** — Updated changelog/worklog with the new practice runtime and queued follow-up coordination.
+- ✅ **Validation** — `pnpm --filter @brainliest/db typecheck`, `pnpm test --filter @brainliest/db`.
+- ⚠️ **Note** — Skipped `@brainliest/web` typecheck (pre-existing workspace issues unrelated to this change).
+
 ## 2025-10-03 (Session 9) — Codex
 - 🔄 **Drizzle persistence** — Replaced the AI explanation stub hook with the shared Drizzle repository so web flows read/write from Postgres.
 - 🗃️ **Repository upgrades** — Added `listRecent` reporting helper, pagination metadata, and refreshed exports/tests so downstream services can page through history.
@@ -24,6 +34,7 @@
 - 📝 **Docs & coordination** — Updated changelog and worklog to capture the persistence sync and outline follow-up owners.
 - ✅ **Validation** — `pnpm lint --filter @brainliest/db`, `pnpm --filter @brainliest/db typecheck`, `pnpm test --filter @brainliest/db`.
 - 🔜 **Next up** — Migrate remaining consumer dashboards/views off stub data to the new `/api/explanations` endpoint and flesh out pagination/filtering on the repository.
+  - ✅ Confirmed no other reporting surfaces exist yet; dashboards remain stubbed until upcoming workstreams wire them to the new endpoint.
 
 ## 2025-10-02 (Session 8) — Codex
 - 🗄️ **Database foundation** — Scaffolded `@brainliest/db` with Drizzle schema spanning taxonomy, assessment, user, and admin tables plus supporting enums.
@@ -35,6 +46,7 @@
 - ✅ **Playwright coverage** — Extended composite specs to assert the new explanation output in both Searchable Select and Command Palette demos, and added a `/practice/[examSlug]` smoke test verifying the AI explanation stub.
 - 🧱 **Practice UI kit** — Introduced reusable modules (`PracticeLayout`, `PracticeExamCard`, `PracticeQuestionCard`, `PracticeOptionList`, `PracticeExplanationCard`, `PracticeNavigation`, `PracticePageHeader`) to standardize the practice experience across apps.
 - 🧭 **Practice page scaffold** — Implemented `/practice/[examSlug]/page.tsx` with the new modules, wiring the client experience to `requestExplanationAction` and responsive sidebar meta cards.
+- 🎯 **Session stubs** — Added toggle-ready navigation controls (flag/bookmark) and a client sidebar panel so backend mutations can plug in without reshaping the UI.
 - 🔭 **Next up** — Connect the practice layout to real session data (timer, flagging, progress) and extend Playwright to cover the practice route once the backend is ready.
 
 - 🔜 **Next up** — Generate initial migrations & seeds, implement Drizzle repository classes, and wire database services into apps.
