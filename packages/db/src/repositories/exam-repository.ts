@@ -12,6 +12,17 @@ export interface ExamRecord {
   readonly metadata: Record<string, unknown>;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly subject?: ExamSubjectSummary;
+}
+
+export interface ExamSubjectSummary {
+  readonly slug: SubjectSlug;
+  readonly name: string;
+  readonly categorySlug: string;
+  readonly categoryName?: string;
+  readonly categoryType?: string;
+  readonly subcategorySlug?: string | null;
+  readonly subcategoryName?: string | null;
 }
 
 export interface ExamFilter {

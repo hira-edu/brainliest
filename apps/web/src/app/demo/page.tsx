@@ -19,6 +19,30 @@ import type { MenuItem } from '@brainliest/ui';
 
 const demoLinks = [
   {
+    title: 'Primitives',
+    links: [
+      { href: '/demo/primitives', label: 'Primitive components' },
+    ],
+  },
+  {
+    title: 'Forms',
+    links: [
+      { href: '/demo/forms', label: 'Form layout & validation' },
+    ],
+  },
+  {
+    title: 'Layout',
+    links: [
+      { href: '/demo/layout', label: 'Cards, sections, grids' },
+    ],
+  },
+  {
+    title: 'Navigation',
+    links: [
+      { href: '/demo/navigation', label: 'Headers, menus & sidebars' },
+    ],
+  },
+  {
     title: 'Composites',
     links: [
       { href: '/demo/composites/modal', label: 'Modal' },
@@ -36,14 +60,28 @@ const demoLinks = [
   {
     title: 'Feedback',
     links: [
+      { href: '/demo/feedback', label: 'Alerts, progress, skeletons' },
       { href: '/demo/feedback/toast', label: 'Toast' },
     ],
   },
   {
-    title: 'Flows & Pages',
+    title: 'Practice experience',
     links: [
-      { href: '/practice/a-level-math', label: 'Practice session (A-Level Math)' },
+      { href: '/demo/practice', label: 'Practice component kit' },
       { href: '/demo/practice/navigation', label: 'Practice navigation kit' },
+      { href: '/practice/a-level-math', label: 'Practice session (A-Level Math)' },
+    ],
+  },
+  {
+    title: 'Catalog experience',
+    links: [
+      { href: '/demo/catalog', label: 'Catalog layout & tracks' },
+      { href: '/catalog', label: 'Live catalog (taxonomy data)' },
+    ],
+  },
+  {
+    title: 'Admin & supporting apps',
+    links: [
       { href: 'http://localhost:3001', label: 'Admin dashboard (local dev)' },
     ],
   },

@@ -15,7 +15,14 @@ import type {
   UpdateQuestionInput,
   QuestionOptionRecord,
 } from './question-repository';
-import type { ExamRepository, ExamRecord, ExamFilter, CreateExamInput, UpdateExamInput } from './exam-repository';
+import type {
+  ExamRepository,
+  ExamRecord,
+  ExamSubjectSummary,
+  ExamFilter,
+  CreateExamInput,
+  UpdateExamInput,
+} from './exam-repository';
 import type { UserRepository, UserRecord, CreateUserInput, UpdateUserInput } from './user-repository';
 import type {
   ExplanationRepository,
@@ -38,8 +45,13 @@ import type {
   ToggleBookmarkInput,
   UpdateRemainingSecondsInput,
   RecordQuestionProgressInput,
+  SubmitAnswerInput,
+  RevealAnswerInput,
+  CompleteSessionInput,
   ExamSessionStatus,
 } from './session-repository';
+import type { TaxonomyRepository } from './taxonomy-repository';
+import { DrizzleTaxonomyRepository } from './taxonomy-repository';
 import type { PaginatedResult, PaginationMeta, QuestionId, ExamSlug, UserId, SessionId } from '../types';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -53,6 +65,8 @@ const DEFAULT_SESSION_METADATA: PracticeSessionMetadata = {
   currentQuestionIndex: 0,
   flaggedQuestionIds: [],
   bookmarkedQuestionIds: [],
+  submittedQuestionIds: [],
+  revealedQuestionIds: [],
   remainingSeconds: null,
 };
 
@@ -89,6 +103,8 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
   const bookmarkedQuestionIds = ensureStringArray((raw as Record<string, unknown>).bookmarkedQuestionIds);
   const currentQuestionIndexValue = (raw as Record<string, unknown>).currentQuestionIndex;
   const remainingSecondsValue = (raw as Record<string, unknown>).remainingSeconds;
+  const submittedQuestionIds = ensureStringArray((raw as Record<string, unknown>).submittedQuestionIds);
+  const revealedQuestionIds = ensureStringArray((raw as Record<string, unknown>).revealedQuestionIds);
 
   const currentQuestionIndex = Number.isFinite(currentQuestionIndexValue)
     ? Math.max(0, Math.trunc(Number(currentQuestionIndexValue)))
@@ -103,6 +119,8 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
     if (
       key === 'flaggedQuestionIds' ||
       key === 'bookmarkedQuestionIds' ||
+      key === 'submittedQuestionIds' ||
+      key === 'revealedQuestionIds' ||
       key === 'currentQuestionIndex' ||
       key === 'remainingSeconds'
     ) {
@@ -116,6 +134,8 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
       currentQuestionIndex,
       flaggedQuestionIds,
       bookmarkedQuestionIds,
+      submittedQuestionIds,
+      revealedQuestionIds,
       remainingSeconds,
       extra,
     } satisfies PracticeSessionMetadata;
@@ -125,6 +145,8 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
     currentQuestionIndex,
     flaggedQuestionIds,
     bookmarkedQuestionIds,
+    submittedQuestionIds,
+    revealedQuestionIds,
     remainingSeconds,
   } satisfies PracticeSessionMetadata;
 };
@@ -132,6 +154,8 @@ const parseSessionMetadata = (raw: RawMetadata): PracticeSessionMetadata => {
 const serializeSessionMetadata = (metadata: PracticeSessionMetadata): Record<string, unknown> => ({
   flaggedQuestionIds: [...metadata.flaggedQuestionIds],
   bookmarkedQuestionIds: [...(metadata.bookmarkedQuestionIds ?? [])],
+  submittedQuestionIds: [...(metadata.submittedQuestionIds ?? [])],
+  revealedQuestionIds: [...(metadata.revealedQuestionIds ?? [])],
   currentQuestionIndex: metadata.currentQuestionIndex,
   remainingSeconds:
     metadata.remainingSeconds !== undefined && metadata.remainingSeconds !== null
@@ -502,12 +526,27 @@ export class DrizzleQuestionRepository implements QuestionRepository {
   }
 }
 
+type ExamRow = typeof schema.exams.$inferSelect & {
+  subject?: (typeof schema.subjects.$inferSelect & {
+    category?: typeof schema.categories.$inferSelect;
+    subcategory?: typeof schema.subcategories.$inferSelect;
+  });
+};
+
 export class DrizzleExamRepository implements ExamRepository {
   constructor(private readonly db: DatabaseClient) {}
 
   async findBySlug(slug: ExamSlug): Promise<ExamRecord | null> {
     const exam = await this.db.query.exams.findFirst({
       where: eq(schema.exams.slug, slug),
+      with: {
+        subject: {
+          with: {
+            category: true,
+            subcategory: true,
+          },
+        },
+      },
     });
 
     if (!exam) {
@@ -551,7 +590,17 @@ export class DrizzleExamRepository implements ExamRepository {
       examQueryOptions.where = whereClause;
     }
 
-    const exams = await this.db.query.exams.findMany(examQueryOptions);
+    const exams = await this.db.query.exams.findMany({
+      ...examQueryOptions,
+      with: {
+        subject: {
+          with: {
+            category: true,
+            subcategory: true,
+          },
+        },
+      },
+    });
 
     return {
       data: exams.map((exam) => this.mapExam(exam)),
@@ -606,7 +655,19 @@ export class DrizzleExamRepository implements ExamRepository {
     void actorId;
   }
 
-  private mapExam(exam: typeof schema.exams.$inferSelect): ExamRecord {
+  private mapExam(exam: ExamRow): ExamRecord {
+    const subject: ExamSubjectSummary | undefined = exam.subject
+      ? {
+          slug: exam.subject.slug,
+          name: exam.subject.name,
+          categorySlug: exam.subject.categorySlug,
+          categoryName: exam.subject.category?.name ?? undefined,
+          categoryType: exam.subject.category?.type ?? undefined,
+          subcategorySlug: exam.subject.subcategorySlug ?? undefined,
+          subcategoryName: exam.subject.subcategory?.name ?? undefined,
+        }
+      : undefined;
+
     return {
       slug: exam.slug,
       subjectSlug: exam.subjectSlug,
@@ -619,6 +680,7 @@ export class DrizzleExamRepository implements ExamRepository {
       metadata: exam.metadata ?? {},
       createdAt: exam.createdAt,
       updatedAt: exam.updatedAt,
+      subject,
     };
   }
 }
@@ -889,6 +951,8 @@ export class DrizzleSessionRepository implements SessionRepository {
         currentQuestionIndex: 0,
         flaggedQuestionIds: [],
         bookmarkedQuestionIds: [],
+        submittedQuestionIds: [],
+        revealedQuestionIds: [],
         remainingSeconds: input.remainingSeconds ?? defaultDurationSeconds ?? null,
       };
 
@@ -932,7 +996,16 @@ export class DrizzleSessionRepository implements SessionRepository {
     const session = await this.db.query.examSessions.findFirst({
       where: eq(schema.examSessions.id, sessionId),
       with: {
-        exam: true,
+        exam: {
+          with: {
+            subject: {
+              with: {
+                category: true,
+                subcategory: true,
+              },
+            },
+          },
+        },
         questions: {
           orderBy: (fields, { asc }) => asc(fields.orderIndex),
         },
@@ -958,11 +1031,22 @@ export class DrizzleSessionRepository implements SessionRepository {
           metadata: session.exam.metadata ?? {},
           createdAt: session.exam.createdAt,
           updatedAt: session.exam.updatedAt,
+          subject: session.exam.subject
+            ? {
+                slug: session.exam.subject.slug,
+                name: session.exam.subject.name,
+                categorySlug: session.exam.subject.categorySlug,
+                categoryName: session.exam.subject.category?.name ?? undefined,
+                categoryType: session.exam.subject.category?.type ?? undefined,
+                subcategorySlug: session.exam.subject.subcategorySlug ?? undefined,
+                subcategoryName: session.exam.subject.subcategory?.name ?? undefined,
+            }
+          : undefined,
         }
       : await this.examRepository.findBySlug(session.examSlug as ExamSlug);
 
     if (!examRecord) {
-      throw new Error(`Exam ${String(session.examSlug)} not found for session ${String(sessionId)}`);
+      throw new Error(`Exam record ${session.examSlug as string} not found for session ${sessionId}`);
     }
 
     const questionIds = session.questions.map((row) => row.questionId as QuestionId);
@@ -1067,6 +1151,86 @@ export class DrizzleSessionRepository implements SessionRepository {
       );
   }
 
+  async submitAnswer(input: SubmitAnswerInput): Promise<void> {
+    const questionRow = await this.db.query.examSessionQuestions.findFirst({
+      where: and(
+        eq(schema.examSessionQuestions.sessionId, input.sessionId),
+        eq(schema.examSessionQuestions.questionId, input.questionId)
+      ),
+    });
+
+    if (!questionRow) {
+      throw new Error(
+        `Question ${String(input.questionId)} not found for session ${String(input.sessionId)}`
+      );
+    }
+
+    const question = await this.questionRepository.findById(input.questionId);
+    if (!question) {
+      throw new Error(`Question ${String(input.questionId)} not found.`);
+    }
+
+    const options = [...question.options].sort((a, b) => a.sortOrder - b.sortOrder);
+    const selectedAnswers = ensureNumericArray(questionRow.selectedAnswers);
+
+    const correctIndices = options
+      .map((option, index) => (option.isCorrect ? index : null))
+      .filter((value): value is number => value !== null);
+
+    let isCorrect: boolean | null;
+    if (correctIndices.length === 0) {
+      isCorrect = null;
+    } else {
+      const selectedSet = new Set(selectedAnswers);
+      const correctSet = new Set(correctIndices);
+      if (selectedSet.size !== correctSet.size) {
+        isCorrect = false;
+      } else {
+        isCorrect = [...selectedSet].every((value) => correctSet.has(value));
+      }
+    }
+
+    await this.db
+      .update(schema.examSessionQuestions)
+      .set({ isCorrect })
+      .where(
+        and(
+          eq(schema.examSessionQuestions.sessionId, input.sessionId),
+          eq(schema.examSessionQuestions.questionId, input.questionId)
+        )
+      );
+
+    await this.updateMetadata(input.sessionId, (metadata) => {
+      const submitted = new Set(metadata.submittedQuestionIds ?? []);
+      submitted.add(input.questionId);
+      return {
+        ...metadata,
+        submittedQuestionIds: Array.from(submitted),
+      };
+    });
+  }
+
+  async revealAnswer(input: RevealAnswerInput): Promise<void> {
+    await this.updateMetadata(input.sessionId, (metadata) => {
+      const revealed = new Set(metadata.revealedQuestionIds ?? []);
+      revealed.add(input.questionId);
+      return {
+        ...metadata,
+        revealedQuestionIds: Array.from(revealed),
+      };
+    });
+  }
+
+  async completeSession(input: CompleteSessionInput): Promise<void> {
+    await this.db
+      .update(schema.examSessions)
+      .set({
+        status: 'completed',
+        completedAt: new Date(),
+      })
+      .where(eq(schema.examSessions.id, input.sessionId));
+  }
+
   private async updateMetadata(
     sessionId: SessionId,
     mutator: (metadata: PracticeSessionMetadata) => PracticeSessionMetadata
@@ -1095,6 +1259,7 @@ export interface RepositoryBundle {
   users: UserRepository;
   explanations: ExplanationRepository;
   sessions: SessionRepository;
+  taxonomy: TaxonomyRepository;
 }
 
 export function createRepositories(db: DatabaseClient): RepositoryBundle {
@@ -1104,5 +1269,6 @@ export function createRepositories(db: DatabaseClient): RepositoryBundle {
     users: new DrizzleUserRepository(db),
     explanations: new DrizzleExplanationRepository(db),
     sessions: new DrizzleSessionRepository(db),
+    taxonomy: new DrizzleTaxonomyRepository(db),
   };
 }

@@ -50,7 +50,7 @@ export default async function PracticePage({ params }: { params: Promise<Practic
           ]}
         />
 
-        <PracticeSessionContainer initialData={session} />
+        <PracticeSessionContainer initialData={session} examSlug={examSlug} />
       </div>
     </div>
   );

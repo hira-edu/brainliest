@@ -1,6 +1,7 @@
 import type { QuestionModel } from '@brainliest/shared';
 
 export interface PracticeExamInfo {
+  slug: string;
   title: string;
   description?: string;
   tags: string[];
@@ -9,6 +10,15 @@ export interface PracticeExamInfo {
   difficultyMix?: string;
   attemptsAllowed?: string;
   totalQuestions: number;
+  category?: {
+    slug: string;
+    name: string;
+    type?: string;
+  };
+  subcategory?: {
+    slug: string;
+    name: string;
+  };
 }
 
 export interface PracticeProgressInfo {
@@ -23,6 +33,9 @@ export interface PracticeSessionQuestionState {
   selectedAnswers: number[];
   isFlagged: boolean;
   isBookmarked: boolean;
+  isSubmitted: boolean;
+  hasRevealedAnswer: boolean;
+  isCorrect: boolean | null;
   timeSpentSeconds?: number | null;
 }
 
@@ -37,6 +50,8 @@ export interface PracticeSessionData {
   progress: PracticeProgressInfo;
   flaggedQuestionIds: string[];
   bookmarkedQuestionIds: string[];
+  submittedQuestionIds: string[];
+  revealedQuestionIds: string[];
   fromSample: boolean;
 }
 
@@ -53,6 +68,8 @@ export interface PracticeSessionApiResponse {
     remainingSeconds: number | null;
     flaggedQuestionIds: string[];
     bookmarkedQuestionIds: string[];
+    submittedQuestionIds: string[];
+    revealedQuestionIds: string[];
   };
   exam: PracticeExamInfo;
   questions: PracticeSessionApiQuestion[];

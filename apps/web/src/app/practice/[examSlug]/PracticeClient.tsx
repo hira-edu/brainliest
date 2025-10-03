@@ -9,11 +9,11 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import type { ReactNode } from 'react';
 import {
+  Button,
   Stack,
   PracticeOptionList,
   PracticeFillBlank,
   PracticeExplanationCard,
-  PracticeExplainButton,
   PracticeQuestionStatus,
 } from '@brainliest/ui';
 import type { PracticeOption } from '@brainliest/ui';
@@ -21,10 +21,10 @@ import type { QuestionModel } from '@brainliest/shared';
 import type { ExplanationDtoShape } from '@brainliest/shared';
 import type { PracticeSessionQuestionState } from '@/lib/practice/types';
 import { requestExplanationAction } from './actions';
+import { ExplainButton } from '../ExplainButton';
 
 interface PracticeClientFooterRenderArgs {
   explanationButton: ReactNode;
-  supportText: ReactNode;
   savingIndicator: ReactNode | null;
   onSubmit: () => void;
   canSubmit: boolean;
@@ -40,6 +40,8 @@ interface PracticeClientProps {
   onRecordAnswer: (selected: number[]) => Promise<void> | void;
   isSaving: boolean;
   fromSample: boolean;
+  onSubmitAnswer: () => Promise<void> | void;
+  onRevealAnswer: () => Promise<void> | void;
   renderFooter?: (args: PracticeClientFooterRenderArgs) => React.ReactNode;
 }
 
@@ -64,6 +66,8 @@ export function PracticeClient({
   onRecordAnswer,
   isSaving,
   fromSample,
+  onSubmitAnswer,
+  onRevealAnswer,
   renderFooter,
 }: PracticeClientProps) {
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(
@@ -76,8 +80,8 @@ export function PracticeClient({
   const [state, setState] = useState<RequestState>('idle');
   const [isPending, startTransition] = useTransition();
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [hasRevealed, setHasRevealed] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(Boolean(questionState.isSubmitted));
+  const [hasRevealed, setHasRevealed] = useState(Boolean(questionState.hasRevealedAnswer));
 
   const options: PracticeOption[] = useMemo(
     () =>
@@ -91,6 +95,12 @@ export function PracticeClient({
 
   const hasOptions = options.length > 0;
 
+  const correctAnswerLabel = useMemo(() => {
+    return question.correctChoiceIds && question.correctChoiceIds.length > 0
+      ? question.correctChoiceIds.join(', ')
+      : 'Unavailable';
+  }, [question.correctChoiceIds]);
+
   useEffect(() => {
     setSelectedChoiceId(deriveSelectedChoiceId(question, questionState));
   }, [question, questionState]);
@@ -98,6 +108,11 @@ export function PracticeClient({
   useEffect(() => {
     setFreeResponse('');
   }, [question.id]);
+
+  useEffect(() => {
+    setIsSubmitted(Boolean(questionState.isSubmitted));
+    setHasRevealed(Boolean(questionState.hasRevealedAnswer));
+  }, [questionState.questionId, questionState.isSubmitted, questionState.hasRevealedAnswer]);
 
   const disabled = hasOptions
     ? !selectedChoiceId || isPending
@@ -171,29 +186,38 @@ export function PracticeClient({
 
     setIsSubmitted(true);
     setHasRevealed(false);
+    setIsSyncing(true);
+
+    Promise.resolve(onSubmitAnswer())
+      .then(() => {
+        setError(null);
+        return Promise.resolve(onRevealAnswer())
+          .then(() => {
+            setHasRevealed(true);
+            setError(null);
+          })
+          .catch((requestError) => {
+            setHasRevealed(Boolean(questionState.hasRevealedAnswer));
+            setError(requestError instanceof Error ? requestError.message : 'Revealing answer failed.');
+          });
+      })
+      .catch((requestError) => {
+        setIsSubmitted(Boolean(questionState.isSubmitted));
+        setHasRevealed(Boolean(questionState.hasRevealedAnswer));
+        setError(requestError instanceof Error ? requestError.message : 'Submitting answer failed.');
+      })
+      .finally(() => {
+        setIsSyncing(false);
+      });
   };
 
-  const handleReveal = () => {
-    if (!isSubmitted || hasRevealed) {
-      return;
-    }
-
-    setHasRevealed(true);
-  };
-
-  const supportText = (
-    <p className="text-xs text-gray-500">
-      {state === 'success' && rateLimitRemaining !== null
-        ? `Rate limit remaining: ${rateLimitRemaining}`
-        : 'Powered by the shared AI explanation service.'}
-    </p>
-  );
+  const handleReveal = () => undefined;
 
   const savingIndicator =
     isSaving || isSyncing ? <span className="text-xs text-gray-500">Saving…</span> : null;
 
   const explanationButton = (
-    <PracticeExplainButton
+    <ExplainButton
       onClick={handleExplain}
       disabled={disabled}
       isLoading={isPending}
@@ -206,15 +230,60 @@ export function PracticeClient({
 
   const footerNode = renderFooter?.({
     explanationButton,
-    supportText,
     savingIndicator,
     onSubmit: handleSubmit,
     canSubmit: !isSubmitted && !disabled,
     onReveal: handleReveal,
-    canReveal: isSubmitted && !hasRevealed,
+    canReveal: false,
     isSubmitted,
     hasRevealed,
   });
+
+  const revealedAnswerBanner = useMemo(() => {
+    if (!hasRevealed) {
+      return null;
+    }
+
+    const description = `Correct answer: ${correctAnswerLabel}`;
+
+    if (questionState.isCorrect === true) {
+      return {
+        variant: 'success' as const,
+        title: 'You answered correctly',
+        description,
+      };
+    }
+
+    if (questionState.isCorrect === false) {
+      return {
+        variant: 'warning' as const,
+        title: 'Review the correct answer',
+        description,
+      };
+    }
+
+    return {
+      variant: 'info' as const,
+      title: 'Correct answer',
+      description,
+    };
+  }, [correctAnswerLabel, hasRevealed, questionState.isCorrect]);
+
+  const explanationSuccessBanner = state === 'success' && explanation
+    ? {
+        variant: 'info' as const,
+        title: 'AI explanation ready',
+        description: 'Review the generated explanation below.',
+      }
+    : null;
+
+  const errorBanner = error
+    ? {
+        variant: 'error' as const,
+        title: state === 'error' ? 'Explanation request failed' : 'Practice session update failed',
+        description: error,
+      }
+    : null;
 
   return (
     <Stack gap="6">
@@ -237,22 +306,48 @@ export function PracticeClient({
       )}
 
       {footerNode ?? (
-        <div className="flex flex-wrap items-center gap-3">
-          {explanationButton}
-          {supportText}
-          {savingIndicator}
+        <div className="mt-6 space-y-3">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {explanationButton}
+            <Button onClick={handleSubmit} disabled={isSubmitted || disabled}>
+              Submit answer
+            </Button>
+          </div>
+          {savingIndicator ? (
+            <div className="flex justify-end text-xs text-gray-500">{savingIndicator}</div>
+          ) : null}
         </div>
       )}
 
-      {state === 'error' && error ? <p className="text-sm text-error-600">{error}</p> : null}
-      {isSyncing && fromSample ? (
-        <p className="text-xs text-gray-500">Changes saved locally for sample sessions.</p>
+      {errorBanner ? (
+        <PracticeQuestionStatus
+          variant={errorBanner.variant}
+          title={errorBanner.title}
+          description={errorBanner.description}
+        />
       ) : null}
 
-      {hasRevealed ? (
+      {explanationSuccessBanner ? (
         <PracticeQuestionStatus
-          message={`Correct answer: ${question.correctChoiceIds.join(', ') || 'Unavailable'}`}
-          className="text-success-700"
+          variant={explanationSuccessBanner.variant}
+          title={explanationSuccessBanner.title}
+          description={explanationSuccessBanner.description}
+        />
+      ) : null}
+
+      {isSyncing && fromSample ? (
+        <PracticeQuestionStatus
+          variant="info"
+          title="Offline cache"
+          description="Changes saved locally for sample sessions."
+        />
+      ) : null}
+
+      {revealedAnswerBanner ? (
+        <PracticeQuestionStatus
+          variant={revealedAnswerBanner.variant}
+          title={revealedAnswerBanner.title}
+          description={revealedAnswerBanner.description}
         />
       ) : null}
 

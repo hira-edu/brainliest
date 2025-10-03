@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 
@@ -24,7 +24,7 @@ export interface AlertProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof alertVariants> {
   title?: string;
-  description?: string;
+  description?: ReactNode;
 }
 
 export const Alert = forwardRef<HTMLDivElement, AlertProps>(

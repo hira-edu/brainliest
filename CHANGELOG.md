@@ -17,6 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.9] - 2025-10-03
+
+### Added
+- **Practice session lifecycle** — Extended the session metadata schema to track submitted and revealed question IDs plus stored correctness, and introduced Drizzle repository helpers (`submitAnswer`, `revealAnswer`) exposed through the existing `/api/practice/sessions/[sessionId]` PATCH handler.
+
+### Changed
+- **Practice UI wiring** — Updated `PracticeSessionContainer`/`PracticeClient` to call the new submit/reveal mutations, surface submission state in the header status messaging, and keep the sample fallback in sync with server behaviour.
+- **End-to-end coverage** — Expanded the practice Playwright intercepts to emulate submit/reveal flows and added assertions for disabled/enabled footer CTAs and persisted reveal state after reloads.
+- **Build stability** — Replaced the Google-hosted Inter font with the Tailwind sans stack so builds succeed in offline or sandboxed environments.
+- **Practice status alerts** — Replaced inline status copy with the shared `Alert` component so correct/incorrect answers, AI explanation states, and demos surface contextual success/warning/error banners from a single module.
+- **Course navigation shell** — Added `PracticeCourseNavigation`, composing `Sidebar` and `Menu` for course-level navigation and surfaced the new module in the practice navigation demo so flags/bookmarks/analytics stay SSOT.
+- **Practice breadcrumbs** — Extended `PracticePageHeader` with breadcrumb/back-link support and wired the practice route to display category → subcategory → exam identifiers sourced from the session payload.
+- **Catalog showcase** — Introduced modular catalog pages (`/catalog`, `/catalog/[category]`, `/catalog/[category]/[subcategory]`) backed by the new taxonomy repository so shared layout/navigation/exam cards present live categories, tracks, and certification exams.
+
+### Tests
+- `pnpm test --filter @brainliest/db`
+- `pnpm --filter @brainliest/web typecheck`
+- `pnpm test --filter @brainliest/web`
+- `pnpm test --filter @brainliest/ui`
+- `pnpm lint --filter @brainliest/web`
+
 ## [2.2.8] - 2025-10-03
 
 ### Added
@@ -55,6 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Consolidated timer, bookmark, and flag controls inside `PracticeQuestionActions` so the question header remains the single source of truth for quick actions.
   - Trimmed `PracticeNavigation`/`PracticeQuestionFooter` to pagination-only responsibilities, eliminating duplicate flag/bookmark/timer surfaces in the footer and keeping modules reusable.
   - Added shared `PracticeExplainButton`, moved the question-level toggle beneath the prompt, and routed the footer through a single layout housing the answer-level AI button, navigation, and submit/reveal CTAs.
+  - Refined the footer layout so the AI toggle and submit button align on the right, submission auto-reveals answer outcomes, and progress sits between previous/next controls without extra copy.
+  - Introduced a “Finish exam” control that appears on the final question, completes the session, and redirects to the new `/practice/[examSlug]/summary` results view.
+  - Updated Playwright coverage to validate the new summary redirect and finish-button lifecycle across single- and multi-question sessions.
 - **Environment Variable Management**
   - Updated seed script execution to use explicit DATABASE_URL environment variable
   - Fixed environment variable loading for tsx-based scripts
@@ -81,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Platform**: integration_keys, feature_flags, audit_logs, announcements
 
 ### Tests
-- UI regression checks: `pnpm lint --filter @brainliest/ui`, `pnpm lint --filter @brainliest/web`, `pnpm test --filter @brainliest/ui`
+- UI regression checks: `pnpm lint --filter @brainliest/ui`, `pnpm lint --filter @brainliest/web`, `pnpm lint --filter @brainliest/db`, `pnpm test --filter @brainliest/ui`
 - Database migration verified with successful table creation
 - Seed data verified with SQL queries confirming data integrity
 - Development server restarted successfully with all environment variables loaded

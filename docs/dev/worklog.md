@@ -3,11 +3,33 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+## 2025-10-03 (Session 15) — Codex
+- 🔔 **Practice status alerts** — Converted `PracticeQuestionStatus` to wrap the shared `Alert`, delivering contextual success/warning/error banners for submissions, reveal outcomes, and AI explanation lifecycle messages across the practice experience.
+- 🎯 **Session UI sync** — Refined `PracticeSessionContainer` and `PracticeClient` to compute rich banner metadata (correct vs incorrect, offline cache, explanation ready/failure) and wired the shared logic into both the live flow and demo routes.
+- 🧪 **Validation** — `pnpm test --filter @brainliest/ui`, `pnpm lint --filter @brainliest/web`.
+- 📚 **Demo polish** — Updated `/demo/practice` surfaces to showcase the new alert variants for flagged/bookmarked scenarios so QA can preview the exact styling.
+- 🧭 **Course navigation module** — Introduced `PracticeCourseNavigation` (Sidebar + Menu SSOT) and wired it into the practice navigation demo with flags/bookmarks/analytics counts mirroring the spec copy.
+- 🧵 **Practice breadcrumbs** — Expanded `PracticePageHeader` to render breadcrumbs/back CTA and pushed category → subcategory → exam identifiers from the session mapper so the practice page aligns with the catalog hierarchy.
+- 🗂️ **Catalog showcase** — Added `/catalog` plus nested category/subcategory routes wired to the taxonomy repository so shared layout/navigation/exam cards render live categories, tracks, and exams.
+- 🔜 **Next** — Once backend persistence for timer/bookmark is live, reuse the alert surface to confirm network errors and recovery states in end-to-end Playwright coverage.
+
+## 2025-10-03 (Session 14) — Codex
+- 🔄 **Submit/reveal persistence** — Extended session metadata with submitted/revealed question tracking, added `submitAnswer`/`revealAnswer` to the Drizzle repository, and taught `/api/practice/sessions/[sessionId]` to accept the new `submit-answer`/`reveal-answer` operations.
+- 🧠 **Session UI state** — Wired `PracticeSessionContainer`/`PracticeClient` to the new mutations, updated the sample fallback to compute correctness locally, and refreshed the header status copy plus footer CTA disablement to reflect submission/reveal state.
+- 🧪 **Practice spec** — Expanded the Playwright intercept harness so submit/reveal calls mutate the mock session and added assertions for CTA enablement plus persisted reveal state after reloads.
+- ✅ **Validation** — `pnpm test --filter @brainliest/db`, `pnpm --filter @brainliest/web typecheck`, `pnpm test --filter @brainliest/web`.
+- 🧰 **Offline build fix** — Dropped the Google-hosted Inter font in favour of the Tailwind sans stack so sandboxed builds complete without network access.
+- 🚧 **Playwright attempt** — Built the production bundle successfully, but `next start --hostname 127.0.0.1` cannot bind inside the sandbox (`EPERM`) and Chromium fails to launch under macOS Seatbelt (`bootstrap_check_in … Permission denied`). Need an environment with listen privileges and Playwright allowances to complete the suite run.
+- 🔜 **Next** — Retry the Playwright suite once we have a runnable server + browser in CI or a less restrictive local environment.
+
 ## 2025-10-03 (Session 13) — Codex
 - ♻️ **Practice header alignment** — Moved the timer pill, bookmark, flag, and AI explanation controls into `PracticeQuestionActions` so the question card header remains the single surface for quick actions.
 - 🧭 **Navigation trim** — Simplified `PracticeNavigation`/`PracticeQuestionFooter` to handle pagination only, preventing duplicate bookmark/flag/timer UI in the footer and keeping the layout modular.
 - 🧪 **Validation** — `pnpm lint --filter @brainliest/ui`, `pnpm lint --filter @brainliest/web`, `pnpm test --filter @brainliest/ui`.
 - ✨ **Dual explanation SSOT** — Introduced `PracticeExplainButton` so both question-level and answer-level AI triggers share identical styling, relocated the question toggle beneath the prompt, and wired footer controls (AI button, navigation, submit/reveal) through the shared practice footer layout.
+- ✅ **Submit flow polish** — Simplified the practice footer so AI explanation and submit live together on the right, auto-revealed outcomes after submission, and centred the progress label between previous/next actions.
+- 📝 **Summary redirect** — Added a client-side summary view (`/practice/[examSlug]/summary`) and wired the new “Finish exam” action to redirect there once the final question is submitted and revealed.
+- 🧪 **Playwright coverage** — Extended `tests/playwright/specs/practice.spec.ts` to assert the finish button lifecycle and summary redirect across single- and multi-question sessions.
 
 - Wired practice navigation to the session API with a client container that manages question advance, flag state, and answer persistence across questions.
 - Persisted AI explanation generations through the Drizzle repository and surfaced an admin log/API for auditing.

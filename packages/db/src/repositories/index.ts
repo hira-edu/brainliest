@@ -7,7 +7,14 @@ export type {
   QuestionOptionInput,
   QuestionOptionRecord,
 } from './question-repository';
-export type { ExamRepository, ExamRecord, ExamFilter, CreateExamInput, UpdateExamInput } from './exam-repository';
+export type {
+  ExamRepository,
+  ExamRecord,
+  ExamSubjectSummary,
+  ExamFilter,
+  CreateExamInput,
+  UpdateExamInput,
+} from './exam-repository';
 export type { UserRepository, UserRecord, CreateUserInput, UpdateUserInput, UserRoleValue } from './user-repository';
 export type {
   ExplanationRepository,
@@ -24,15 +31,27 @@ export type {
   StartSessionInput,
   AdvanceQuestionInput,
   ToggleFlagInput,
+  ToggleBookmarkInput,
   UpdateRemainingSecondsInput,
   RecordQuestionProgressInput,
+  SubmitAnswerInput,
+  RevealAnswerInput,
+  CompleteSessionInput,
 } from './session-repository';
+export type {
+  TaxonomyRepository,
+  CatalogCategorySummary,
+  CatalogSubcategorySummary,
+  CatalogSubcategoryDetail,
+  CatalogExamSummary,
+} from './taxonomy-repository';
 export {
   DrizzleQuestionRepository,
   DrizzleExamRepository,
   DrizzleUserRepository,
   DrizzleExplanationRepository,
   DrizzleSessionRepository,
+  DrizzleTaxonomyRepository,
   createRepositories,
   type RepositoryBundle,
 } from './drizzle-repositories';

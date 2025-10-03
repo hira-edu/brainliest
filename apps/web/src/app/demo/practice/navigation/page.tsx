@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import {
+  Badge,
+  Button,
+  Icon,
+  PracticeCourseNavigation,
   PracticeLayout,
   PracticeExamCard,
   PracticeQuestionCard,
@@ -16,13 +20,26 @@ import {
   PracticeOptionList,
   PracticeExplanationCard,
   PracticeExplainButton,
-  Button,
 } from '@brainliest/ui';
 
 const demoOptions = [
   { id: 'choice-a', label: 'Apply chain rule', description: 'Differentiate inner and outer functions separately.' },
   { id: 'choice-b', label: 'Use quotient rule', description: 'Reserve for rational expressions.' },
   { id: 'choice-c', label: 'Apply power rule', description: 'Differentiate term-by-term when exponents are constants.' },
+];
+
+const courseSidebarItems = [
+  { label: 'Assignments', href: '#assignments', isActive: true, icon: <Icon name="Notebook" /> },
+  { label: 'Bookmarks', href: '#bookmarks', badge: <Badge size="sm">14</Badge>, icon: <Icon name="Bookmark" /> },
+  { label: 'Flagged questions', href: '#flagged', icon: <Icon name="Flag" /> },
+  { label: 'Analytics', href: '#analytics', icon: <Icon name="BarChart3" /> },
+];
+
+const courseMenuItems = [
+  { label: 'Overview', href: '#overview', isActive: true },
+  { label: 'Practice', href: '#practice' },
+  { label: 'Reports', href: '#reports' },
+  { label: 'Settings', href: '#settings' },
 ];
 
 export default function PracticeNavigationDemoPage() {
@@ -86,14 +103,28 @@ export default function PracticeNavigationDemoPage() {
         >
             <PracticeQuestionContent>
               <PracticeQuestionStatus
-                message={
+                variant={
+                  isFlagged
+                    ? 'warning'
+                    : isBookmarked
+                    ? 'info'
+                    : 'info'
+                }
+                title={
+                  isFlagged
+                    ? 'Flagged for review'
+                    : isBookmarked
+                    ? 'Bookmarked'
+                    : 'Ready to answer'
+                }
+                description={
                   isFlagged
                     ? 'This question is flagged for review.'
-                  : isBookmarked
-                  ? 'This question is bookmarked for quick access.'
-                  : 'Review the prompt and select your answer.'
-              }
-            />
+                    : isBookmarked
+                    ? 'This question is bookmarked for quick access.'
+                    : 'Review the prompt and select your answer.'
+                }
+              />
             <PracticeExplainButton
               isActive={showExplanation}
               onClick={() => setShowExplanation((next) => !next)}
@@ -158,6 +189,17 @@ export default function PracticeNavigationDemoPage() {
           keyPoints={['Apply the power rule term-by-term', 'Lower the exponent by one', 'Multiply by the previous exponent']}
           steps={['Identify term exponents', 'Differentiate using the rule', 'Simplify the resulting polynomial']}
           footer="Explain card renders below the question when an answer is evaluated."
+        />
+
+        <PracticeCourseNavigation
+          className="mt-6"
+          courseLabel="Algebra II"
+          collectionLabel="Midterm prep set"
+          sidebarItems={courseSidebarItems}
+          menuItems={courseMenuItems}
+          footerAction={<Button variant="ghost">Create collection</Button>}
+          menuTitle="Quick filters"
+          menuDescription="Use the menu for quick filters or secondary navigation inside the main content column."
         />
       </PracticeLayout>
     </main>

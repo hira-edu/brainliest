@@ -1,0 +1,117 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8] [cursor=pointer]
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: Brainliest Practice
+        - heading "A-Level Mathematics Mock Paper" [level=1] [ref=e15]
+        - paragraph [ref=e16]: Timed practice session covering differentiation, integration, and applied mechanics.
+      - generic [ref=e18]: Sample session
+    - generic [ref=e19]:
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - paragraph [ref=e24]: Module summary
+          - generic [ref=e25]: Timed
+          - generic [ref=e26]: STEM
+          - generic [ref=e27]: Adaptive
+        - heading "Session overview" [level=1] [ref=e28]
+        - paragraph [ref=e29]: Timed practice session covering differentiation, integration, and applied mechanics.
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - term [ref=e32]: Questions
+            - definition [ref=e33]: "24"
+          - generic [ref=e34]:
+            - term [ref=e35]: Passing score
+            - definition [ref=e36]: 75%
+          - generic [ref=e37]:
+            - term [ref=e38]: Attempts left
+            - definition [ref=e39]: Unlimited
+          - generic [ref=e40]:
+            - term [ref=e41]: Difficulty mix
+            - definition [ref=e42]: E • M • H
+      - generic [ref=e43]:
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - generic [ref=e49]:
+                - paragraph [ref=e50]: Question 1
+                - generic [ref=e51]: MEDIUM
+              - generic [ref=e53]:
+                - button "Bookmark question" [ref=e54] [cursor=pointer]:
+                  - img [ref=e56] [cursor=pointer]
+                - button "Flag question" [ref=e58] [cursor=pointer]:
+                  - img [ref=e60] [cursor=pointer]
+                - generic [ref=e62]:
+                  - img [ref=e63]
+                  - time [ref=e66]: 44:47
+            - heading "What is the derivative of $f(x) = x^3$?" [level=2] [ref=e67]
+          - generic [ref=e69]:
+            - paragraph [ref=e70]: Review the prompt and select your answer.
+            - button "Toggle question explanation" [ref=e71] [cursor=pointer]:
+              - generic [ref=e72] [cursor=pointer]:
+                - img [ref=e73] [cursor=pointer]
+                - generic [ref=e75] [cursor=pointer]: AI explanation
+            - generic [ref=e76]:
+              - group "Select one answer" [ref=e77]:
+                - generic [ref=e78]: Select one answer
+                - generic [ref=e79]:
+                  - generic [ref=e80] [cursor=pointer]:
+                    - radio "A" [checked] [active] [ref=e83]
+                    - generic [ref=e84] [cursor=pointer]:
+                      - paragraph [ref=e85] [cursor=pointer]: A
+                      - paragraph [ref=e86] [cursor=pointer]: $3x^2$
+                  - generic [ref=e87] [cursor=pointer]:
+                    - radio "B" [ref=e90]
+                    - generic [ref=e91] [cursor=pointer]:
+                      - paragraph [ref=e92] [cursor=pointer]: B
+                      - paragraph [ref=e93] [cursor=pointer]: $x^2$
+                  - generic [ref=e94] [cursor=pointer]:
+                    - radio "C" [ref=e97]
+                    - generic [ref=e98] [cursor=pointer]:
+                      - paragraph [ref=e99] [cursor=pointer]: C
+                      - paragraph [ref=e100] [cursor=pointer]: $3x$
+                  - generic [ref=e101] [cursor=pointer]:
+                    - radio "D" [ref=e104]
+                    - generic [ref=e105] [cursor=pointer]:
+                      - paragraph [ref=e106] [cursor=pointer]: D
+                      - paragraph [ref=e107] [cursor=pointer]: $x^3$
+              - generic [ref=e108]:
+                - generic [ref=e109]:
+                  - button "Generate answer explanation" [ref=e110] [cursor=pointer]:
+                    - generic [ref=e111] [cursor=pointer]:
+                      - img [ref=e112] [cursor=pointer]
+                      - generic [ref=e114] [cursor=pointer]: AI explanation
+                  - button "Submit answer" [ref=e115] [cursor=pointer]:
+                    - generic [ref=e116] [cursor=pointer]: Submit answer
+                - generic [ref=e117]:
+                  - button "Previous" [disabled]:
+                    - generic: Previous
+                  - paragraph [ref=e118]: Question 1 of 24
+                  - button "Next" [disabled]:
+                    - generic: Next
+        - complementary [ref=e119]:
+          - generic [ref=e120]:
+            - generic [ref=e122]:
+              - heading "Session checklist" [level=3] [ref=e123]
+              - list [ref=e124]:
+                - listitem [ref=e125]: Flag questions to revisit later
+                - listitem [ref=e126]: Toggle calculator mode when allowed
+                - listitem [ref=e127]: Review hints before requesting AI help
+            - generic [ref=e129]:
+              - heading "Keyboard shortcuts" [level=3] [ref=e130]
+              - generic [ref=e131]:
+                - paragraph [ref=e132]:
+                  - generic [ref=e133]: J
+                  - generic [ref=e134]: Next question
+                - paragraph [ref=e135]:
+                  - generic [ref=e136]: K
+                  - generic [ref=e137]: Previous question
+                - paragraph [ref=e138]:
+                  - generic [ref=e139]: /
+                  - generic [ref=e140]: Command palette
+  - alert [ref=e141]
+```

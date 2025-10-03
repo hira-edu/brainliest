@@ -80,6 +80,9 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
       selectedAnswers: [],
       isFlagged: false,
       isBookmarked: false,
+      isSubmitted: false,
+      hasRevealedAnswer: false,
+      isCorrect: null,
       timeSpentSeconds: 0,
       question,
     },
@@ -98,11 +101,16 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
       selectedAnswers: [],
       isFlagged: false,
       isBookmarked: false,
+      isSubmitted: false,
+      hasRevealedAnswer: false,
+      isCorrect: null,
       timeSpentSeconds: 0,
     },
     progress,
     flaggedQuestionIds: [],
     bookmarkedQuestionIds: [],
+    submittedQuestionIds: [],
+    revealedQuestionIds: [],
     fromSample: !record,
   };
 }
@@ -116,4 +124,22 @@ export async function fetchPracticeSession(examSlug: string): Promise<PracticeSe
     }
     return buildFallbackSession(examSlug);
   }
+}
+
+export async function fetchPracticeSessionById(sessionId: string): Promise<PracticeSessionData> {
+  const response = await fetch(`${PRACTICE_API_BASE_URL}/api/practice/sessions/${sessionId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': 'demo-user',
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Practice session ${sessionId} not found`);
+  }
+
+  const payload = (await response.json()) as PracticeSessionApiResponse;
+  return mapApiResponseToPracticeSessionData(payload);
 }

@@ -36,12 +36,29 @@ interface RecordAnswerPayload {
   timeSpentSeconds?: number | null;
 }
 
+interface SubmitAnswerPayload {
+  operation: 'submit-answer';
+  questionId: string;
+}
+
+interface RevealAnswerPayload {
+  operation: 'reveal-answer';
+  questionId: string;
+}
+
+interface CompleteSessionPayload {
+  operation: 'complete-session';
+}
+
 type PatchPayload =
   | AdvancePayload
   | ToggleFlagPayload
   | ToggleBookmarkPayload
   | UpdateTimerPayload
-  | RecordAnswerPayload;
+  | RecordAnswerPayload
+  | SubmitAnswerPayload
+  | RevealAnswerPayload
+  | CompleteSessionPayload;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -106,6 +123,29 @@ function parsePatchPayload(raw: unknown): PatchPayload | null {
         questionId: raw.questionId,
         selectedAnswers,
         timeSpentSeconds: Number.isFinite(timeSpentSeconds) ? timeSpentSeconds : null,
+      };
+    }
+    case 'submit-answer': {
+      if (typeof raw.questionId !== 'string') {
+        return null;
+      }
+      return {
+        operation: 'submit-answer',
+        questionId: raw.questionId,
+      };
+    }
+    case 'reveal-answer': {
+      if (typeof raw.questionId !== 'string') {
+        return null;
+      }
+      return {
+        operation: 'reveal-answer',
+        questionId: raw.questionId,
+      };
+    }
+    case 'complete-session': {
+      return {
+        operation: 'complete-session',
       };
     }
     default:
@@ -195,6 +235,26 @@ export async function PATCH(
             payload.timeSpentSeconds !== undefined && payload.timeSpentSeconds !== null
               ? Math.max(0, Math.trunc(Number(payload.timeSpentSeconds)))
               : null,
+        });
+        break;
+      }
+      case 'submit-answer': {
+        await sessionRepository.submitAnswer({
+          sessionId,
+          questionId: payload.questionId,
+        });
+        break;
+      }
+      case 'reveal-answer': {
+        await sessionRepository.revealAnswer({
+          sessionId,
+          questionId: payload.questionId,
+        });
+        break;
+      }
+      case 'complete-session': {
+        await sessionRepository.completeSession({
+          sessionId,
         });
         break;
       }

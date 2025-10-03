@@ -12,39 +12,48 @@ const MOCK_EXPLANATION_RESPONSE = {
   rateLimitRemaining: 5,
 };
 
-const createMockPracticeSession = () => {
-  const question = {
-    id: 'question-1',
+let mockQuestionCount = 1;
+
+const createMockPracticeQuestion = (index: number) => {
+  const optionIds = ['a', 'b', 'c', 'd'] as const;
+
+  return {
+    id: `question-${index + 1}`,
     examSlug: 'a-level-math',
     subjectSlug: 'mathematics',
     type: 'single',
     difficulty: 'MEDIUM',
-    stemMarkdown: 'What is the derivative of $f(x) = x^3$?',
+    stemMarkdown: `Question ${index + 1}: What is the derivative of $f(x) = x^3$?`,
     hasKatex: true,
-    options: [
-      { id: 'choice-a', label: 'A', contentMarkdown: '$3x^2$' },
-      { id: 'choice-b', label: 'B', contentMarkdown: '$x^2$' },
-      { id: 'choice-c', label: 'C', contentMarkdown: '$3x$' },
-      { id: 'choice-d', label: 'D', contentMarkdown: '$x^3$' },
-    ],
-    correctChoiceIds: ['choice-a'],
+    options: optionIds.map((suffix, optionIndex) => ({
+      id: `choice-${suffix}-${index + 1}`,
+      label: String.fromCharCode(65 + optionIndex),
+      contentMarkdown: optionIndex === 0 ? '$3x^2$' : `$x^{${optionIndex}}$`,
+    })),
+    correctChoiceIds: [`choice-a-${index + 1}`],
     explanationMarkdown: 'Differentiate using the power rule: f\'(x) = 3x^2.',
     source: 'Stub',
     year: 2024,
-    currentVersionId: 'question-1-v1',
+    currentVersionId: `question-${index + 1}-v1`,
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   } as const;
+};
+
+const createMockPracticeSession = (questionCount = 1) => {
+  const questions = Array.from({ length: questionCount }, (_, index) => createMockPracticeQuestion(index));
 
   return {
     session: {
       id: 'session-1',
       status: 'in_progress',
       currentQuestionIndex: 0,
-      totalQuestions: 1,
+      totalQuestions: questionCount,
       remainingSeconds: 900,
       flaggedQuestionIds: [] as string[],
       bookmarkedQuestionIds: [] as string[],
+      submittedQuestionIds: [] as string[],
+      revealedQuestionIds: [] as string[],
     },
     exam: {
       title: 'A-Level Mathematics Mock Paper',
@@ -54,20 +63,51 @@ const createMockPracticeSession = () => {
       passingScore: '75%',
       difficultyMix: 'M',
       attemptsAllowed: 'Unlimited',
-      totalQuestions: 1,
+      totalQuestions: questionCount,
     },
-    questions: [
-      {
-        questionId: question.id,
-        orderIndex: 0,
-        selectedAnswers: [] as number[],
-        isFlagged: false,
-        isBookmarked: false,
-        timeSpentSeconds: 0,
-        question,
-      },
-    ],
+    questions: questions.map((question, orderIndex) => ({
+      questionId: question.id,
+      orderIndex,
+      selectedAnswers: [] as number[],
+      isFlagged: false,
+      isBookmarked: false,
+      isSubmitted: false,
+      hasRevealedAnswer: false,
+      isCorrect: null,
+      timeSpentSeconds: 0,
+      question,
+    })),
   };
+};
+
+type MockSessionQuestion = ReturnType<typeof createMockPracticeSession>['questions'][number];
+
+const computeIsCorrect = (question: MockSessionQuestion): boolean | null => {
+  const options = question.question.options ?? [];
+  const correctIds = new Set(question.question.correctChoiceIds ?? []);
+
+  if (correctIds.size === 0) {
+    return null;
+  }
+
+  const correctIndices = options
+    .map((option, index) => (correctIds.has(option.id) ? index : null))
+    .filter((value): value is number => value !== null);
+
+  const selectedSet = new Set(question.selectedAnswers);
+  const correctSet = new Set(correctIndices);
+
+  if (selectedSet.size !== correctSet.size) {
+    return false;
+  }
+
+  for (const value of selectedSet) {
+    if (!correctSet.has(value)) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 test.beforeEach(async ({ page }) => {
@@ -79,7 +119,7 @@ test.beforeEach(async ({ page }) => {
     });
   });
 
-  let sessionResponse = createMockPracticeSession();
+  let sessionResponse = createMockPracticeSession(mockQuestionCount);
 
   const fulfillSession = async (route: Route, status: number) => {
     await route.fulfill({
@@ -91,7 +131,7 @@ test.beforeEach(async ({ page }) => {
 
   await page.route('**/api/practice/sessions', async (route) => {
     if (route.request().method() === 'POST') {
-      sessionResponse = createMockPracticeSession();
+      sessionResponse = createMockPracticeSession(mockQuestionCount);
       await fulfillSession(route, 201);
       return;
     }
@@ -121,6 +161,8 @@ test.beforeEach(async ({ page }) => {
           }
         | { operation: 'update-timer'; remainingSeconds: number }
         | { operation: 'advance'; currentQuestionIndex: number }
+        | { operation: 'submit-answer'; questionId: string }
+        | { operation: 'reveal-answer'; questionId: string }
         | undefined;
 
       if (!payload) {
@@ -179,6 +221,40 @@ test.beforeEach(async ({ page }) => {
           sessionResponse.session.currentQuestionIndex = Math.max(0, Number(payload.currentQuestionIndex ?? 0));
           break;
         }
+        case 'submit-answer': {
+          const submitted = new Set(sessionResponse.session.submittedQuestionIds ?? []);
+          submitted.add(payload.questionId);
+          sessionResponse.session.submittedQuestionIds = Array.from(submitted);
+          sessionResponse.questions = sessionResponse.questions.map((question) =>
+            question.questionId === payload.questionId
+              ? {
+                  ...question,
+                  isSubmitted: true,
+                  hasRevealedAnswer: false,
+                  isCorrect: computeIsCorrect(question),
+                }
+              : question
+          );
+          break;
+        }
+        case 'reveal-answer': {
+          const revealed = new Set(sessionResponse.session.revealedQuestionIds ?? []);
+          revealed.add(payload.questionId);
+          sessionResponse.session.revealedQuestionIds = Array.from(revealed);
+          sessionResponse.questions = sessionResponse.questions.map((question) =>
+            question.questionId === payload.questionId
+              ? {
+                  ...question,
+                  hasRevealedAnswer: true,
+                }
+              : question
+          );
+          break;
+        }
+        case 'complete-session': {
+          sessionResponse.session.status = 'completed';
+          break;
+        }
         default:
           break;
       }
@@ -186,6 +262,10 @@ test.beforeEach(async ({ page }) => {
 
     await fulfillSession(route, 200);
   });
+});
+
+test.afterEach(() => {
+  mockQuestionCount = 1;
 });
 
 test.describe('Practice page', () => {
@@ -200,11 +280,27 @@ test.describe('Practice page', () => {
     const initialTimerValue = await timerLabel.textContent();
 
     await page.getByRole('radio', { name: 'A' }).click();
-    await page.getByRole('button', { name: 'Generate answer explanation' }).click();
+    await page.getByRole('button', { name: 'AI explanation' }).first().click();
 
     const explanationCard = page.getByRole('heading', { name: 'AI explanation' });
     await expect(explanationCard).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
     await expect(page.getByText(/Great job/)).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+
+    const submitButton = page.getByRole('button', { name: 'Submit answer' });
+
+    await expect(submitButton).toBeEnabled();
+
+    await submitButton.click();
+    await expect(submitButton).toBeDisabled();
+    await expect(page.getByText(/Correct answer:/i)).toBeVisible();
+
+    const finishExamButton = page.getByRole('button', { name: 'Finish exam' });
+    await expect(finishExamButton).toBeVisible();
+    await expect(finishExamButton).toBeEnabled();
+
+    await finishExamButton.click();
+    await expect(page).toHaveURL(/practice\/a-level-math\/summary/);
+    await expect(page.getByRole('heading', { name: /Practice summary/i })).toBeVisible();
 
     await page.waitForTimeout(2_000);
     const updatedTimerValue = await timerLabel.textContent();
@@ -219,6 +315,14 @@ test.describe('Practice page', () => {
     await questionExplanationButton.click();
     await expect(page.getByText(/power rule/i)).toBeVisible();
 
+    await page.getByRole('radio', { name: 'A' }).click();
+
+    const submitButtonToggleTest = page.getByRole('button', { name: 'Submit answer' });
+
+    await submitButtonToggleTest.click();
+
+    await expect(page.getByRole('button', { name: 'Finish exam' })).toBeVisible();
+
     const bookmarkButton = page.getByRole('button', { name: 'Bookmark question' });
     await bookmarkButton.click();
     await expect(page.getByRole('button', { name: 'Remove bookmark' })).toBeVisible();
@@ -232,11 +336,40 @@ test.describe('Practice page', () => {
 
     await expect(page.getByRole('button', { name: 'Remove bookmark' })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
     await expect(page.getByRole('button', { name: 'Unflag question' })).toBeVisible({ timeout: WAIT_FOR_EXPLANATION });
+    await expect(page.getByRole('button', { name: 'Submit answer' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Finish exam' })).toBeVisible();
+    await expect(page.getByText(/Correct answer:/i)).toBeVisible();
 
     await page.getByRole('button', { name: 'Remove bookmark' }).click();
     await expect(page.getByRole('button', { name: 'Bookmark question' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Unflag question' }).click();
     await expect(page.getByRole('button', { name: 'Flag question' })).toBeVisible();
+  });
+
+  test('shows finish exam only on final question', async ({ page }) => {
+    mockQuestionCount = 2;
+
+    await page.goto('/practice/a-level-math');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('radio', { name: 'A' }).click();
+    await page.getByRole('button', { name: 'Submit answer' }).click();
+    await expect(page.getByRole('button', { name: 'Finish exam' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.waitForTimeout(250);
+
+    await expect(page.getByRole('button', { name: 'Finish exam' })).toHaveCount(0);
+
+    await page.getByRole('radio', { name: 'A' }).click();
+    await page.getByRole('button', { name: 'Submit answer' }).click();
+
+    const finishExamButton = page.getByRole('button', { name: 'Finish exam' });
+    await expect(finishExamButton).toBeVisible();
+
+    await finishExamButton.click();
+    await expect(page).toHaveURL(/practice\/a-level-math\/summary/);
+    await expect(page.getByRole('heading', { name: /Practice summary/i })).toBeVisible();
   });
 });

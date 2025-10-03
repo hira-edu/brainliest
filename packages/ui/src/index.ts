@@ -202,6 +202,9 @@ export type { PracticeSidebarChecklistCardProps } from './practice/practice-side
 export { PracticeSidebarShortcutsCard } from './practice/practice-sidebar-shortcuts-card';
 export type { PracticeSidebarShortcutsCardProps, PracticeSidebarShortcut } from './practice/practice-sidebar-shortcuts-card';
 
+export { PracticeCourseNavigation } from './practice/practice-course-navigation';
+export type { PracticeCourseNavigationProps } from './practice/practice-course-navigation';
+
 // Hooks
 export { useMediaQuery, useBreakpoint } from './hooks/use-media-query';
 export { useClipboard } from './hooks/use-clipboard';

@@ -1,0 +1,128 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e6] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+      - img [ref=e8] [cursor=pointer]
+    - generic [ref=e11] [cursor=pointer]:
+      - button "Open issues overlay" [ref=e12] [cursor=pointer]:
+        - generic [ref=e13] [cursor=pointer]:
+          - generic [ref=e14] [cursor=pointer]: "0"
+          - generic [ref=e15] [cursor=pointer]: "1"
+        - generic [ref=e16] [cursor=pointer]: Issue
+      - button "Collapse issues badge" [ref=e17] [cursor=pointer]:
+        - img [ref=e18] [cursor=pointer]
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Brainliest Practice
+        - heading "A-Level Mathematics Mock Paper" [level=1] [ref=e24]
+        - paragraph [ref=e25]: Timed practice session covering differentiation, integration, and applied mechanics.
+      - generic [ref=e27]: Sample session
+    - generic [ref=e28]:
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - paragraph [ref=e33]: Module summary
+          - generic [ref=e34]: Timed
+          - generic [ref=e35]: STEM
+          - generic [ref=e36]: Adaptive
+        - heading "Session overview" [level=1] [ref=e37]
+        - paragraph [ref=e38]: Timed practice session covering differentiation, integration, and applied mechanics.
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - term [ref=e41]: Questions
+            - definition [ref=e42]: "24"
+          - generic [ref=e43]:
+            - term [ref=e44]: Passing score
+            - definition [ref=e45]: 75%
+          - generic [ref=e46]:
+            - term [ref=e47]: Attempts left
+            - definition [ref=e48]: Unlimited
+          - generic [ref=e49]:
+            - term [ref=e50]: Difficulty mix
+            - definition [ref=e51]: E • M • H
+      - generic [ref=e52]:
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - paragraph [ref=e59]: Question 1
+                - generic [ref=e60]: MEDIUM
+              - generic [ref=e62]:
+                - button "Bookmark question" [ref=e63] [cursor=pointer]:
+                  - img [ref=e65] [cursor=pointer]
+                - button "Flag question" [ref=e67] [cursor=pointer]:
+                  - img [ref=e69] [cursor=pointer]
+                - generic [ref=e71]:
+                  - img [ref=e72]
+                  - time [ref=e75]: 44:54
+            - heading "What is the derivative of $f(x) = x^3$?" [level=2] [ref=e76]
+          - generic [ref=e78]:
+            - paragraph [ref=e79]: Nice work — your submitted answer matches the correct solution.
+            - button "Hide question explanation" [pressed] [ref=e80] [cursor=pointer]:
+              - generic [ref=e81] [cursor=pointer]:
+                - img [ref=e82] [cursor=pointer]
+                - generic [ref=e84] [cursor=pointer]: Hide question explanation
+            - paragraph [ref=e87]: "Differentiate using the power rule: f'(x) = 3x^2."
+            - generic [ref=e88]:
+              - group "Select one answer" [ref=e89]:
+                - generic [ref=e90]: Select one answer
+                - generic [ref=e91]:
+                  - generic [ref=e92] [cursor=pointer]:
+                    - radio "A" [checked] [ref=e95]
+                    - generic [ref=e96] [cursor=pointer]:
+                      - paragraph [ref=e97] [cursor=pointer]: A
+                      - paragraph [ref=e98] [cursor=pointer]: $3x^2$
+                  - generic [ref=e99] [cursor=pointer]:
+                    - radio "B" [ref=e102]
+                    - generic [ref=e103] [cursor=pointer]:
+                      - paragraph [ref=e104] [cursor=pointer]: B
+                      - paragraph [ref=e105] [cursor=pointer]: $x^2$
+                  - generic [ref=e106] [cursor=pointer]:
+                    - radio "C" [ref=e109]
+                    - generic [ref=e110] [cursor=pointer]:
+                      - paragraph [ref=e111] [cursor=pointer]: C
+                      - paragraph [ref=e112] [cursor=pointer]: $3x$
+                  - generic [ref=e113] [cursor=pointer]:
+                    - radio "D" [ref=e116]
+                    - generic [ref=e117] [cursor=pointer]:
+                      - paragraph [ref=e118] [cursor=pointer]: D
+                      - paragraph [ref=e119] [cursor=pointer]: $x^3$
+              - generic [ref=e120]:
+                - generic [ref=e121]:
+                  - button "Generate answer explanation" [ref=e122] [cursor=pointer]:
+                    - generic [ref=e123] [cursor=pointer]:
+                      - img [ref=e124] [cursor=pointer]
+                      - generic [ref=e126] [cursor=pointer]: AI explanation
+                  - button "Submit answer" [disabled]:
+                    - generic: Submit answer
+                - generic [ref=e127]:
+                  - button "Previous" [disabled]:
+                    - generic: Previous
+                  - paragraph [ref=e128]: Question 1 of 24
+                  - button "Next" [disabled]:
+                    - generic: Next
+              - paragraph [ref=e129]: "Correct answer: choice-a"
+        - complementary [ref=e130]:
+          - generic [ref=e131]:
+            - generic [ref=e133]:
+              - heading "Session checklist" [level=3] [ref=e134]
+              - list [ref=e135]:
+                - listitem [ref=e136]: Flag questions to revisit later
+                - listitem [ref=e137]: Toggle calculator mode when allowed
+                - listitem [ref=e138]: Review hints before requesting AI help
+            - generic [ref=e140]:
+              - heading "Keyboard shortcuts" [level=3] [ref=e141]
+              - generic [ref=e142]:
+                - paragraph [ref=e143]:
+                  - generic [ref=e144]: J
+                  - generic [ref=e145]: Next question
+                - paragraph [ref=e146]:
+                  - generic [ref=e147]: K
+                  - generic [ref=e148]: Previous question
+                - paragraph [ref=e149]:
+                  - generic [ref=e150]: /
+                  - generic [ref=e151]: Command palette
+  - alert [ref=e152]
+```

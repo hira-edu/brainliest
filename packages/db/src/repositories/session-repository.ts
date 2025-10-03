@@ -10,6 +10,8 @@ export interface PracticeSessionMetadata {
   readonly currentQuestionIndex: number;
   readonly flaggedQuestionIds: readonly QuestionId[];
   readonly bookmarkedQuestionIds: readonly QuestionId[];
+  readonly submittedQuestionIds: readonly QuestionId[];
+  readonly revealedQuestionIds: readonly QuestionId[];
   readonly remainingSeconds?: number | null;
   readonly extra?: PrimitiveMetadata;
 }
@@ -60,6 +62,16 @@ export interface ToggleBookmarkInput {
   readonly bookmarked: boolean;
 }
 
+export interface SubmitAnswerInput {
+  readonly sessionId: SessionId;
+  readonly questionId: QuestionId;
+}
+
+export interface RevealAnswerInput {
+  readonly sessionId: SessionId;
+  readonly questionId: QuestionId;
+}
+
 export interface UpdateRemainingSecondsInput {
   readonly sessionId: SessionId;
   readonly remainingSeconds: number;
@@ -72,6 +84,10 @@ export interface RecordQuestionProgressInput {
   readonly timeSpentSeconds?: number | null;
 }
 
+export interface CompleteSessionInput {
+  readonly sessionId: SessionId;
+}
+
 export interface SessionRepository {
   startSession(input: StartSessionInput): Promise<PracticeSessionRecord>;
   getSession(sessionId: SessionId): Promise<PracticeSessionRecord | null>;
@@ -80,4 +96,7 @@ export interface SessionRepository {
   toggleBookmark(input: ToggleBookmarkInput): Promise<void>;
   updateRemainingSeconds(input: UpdateRemainingSecondsInput): Promise<void>;
   recordQuestionProgress(input: RecordQuestionProgressInput): Promise<void>;
+  submitAnswer(input: SubmitAnswerInput): Promise<void>;
+  revealAnswer(input: RevealAnswerInput): Promise<void>;
+  completeSession(input: CompleteSessionInput): Promise<void>;
 }

@@ -1,4 +1,6 @@
-import { forwardRef } from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import { forwardRef, Children } from 'react';
+import type { Ref } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 import { Spinner } from './spinner';
@@ -37,6 +39,7 @@ export interface ButtonProps
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  asChild?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -52,6 +55,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       type = 'button',
       children,
+      asChild = false,
       ...props
     },
     ref
@@ -64,9 +68,25 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       leftIcon
     );
 
+    if (asChild) {
+      const singleChild = Children.only(children);
+
+      return (
+        <Slot
+          ref={ref as Ref<HTMLElement>}
+          className={cn(buttonVariants({ variant, size, fullWidth }), className)}
+          aria-busy={isLoading}
+          data-disabled={resolvedDisabled ? '' : undefined}
+          {...props}
+        >
+          {singleChild}
+        </Slot>
+      );
+    }
+
     return (
       <button
-        ref={ref}
+        ref={ref as Ref<HTMLButtonElement>}
         type={type}
         className={cn(buttonVariants({ variant, size, fullWidth }), className)}
         disabled={resolvedDisabled}

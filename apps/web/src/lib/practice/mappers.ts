@@ -11,6 +11,7 @@ import type {
 } from './types';
 
 const DEFAULT_PRACTICE_INFO: PracticeExamInfo = {
+  slug: 'sample-exam',
   title: 'A-Level Mathematics Mock Paper',
   description: 'Timed practice session covering differentiation, integration, and applied mechanics.',
   tags: ['Timed', 'STEM', 'Adaptive'],
@@ -19,6 +20,15 @@ const DEFAULT_PRACTICE_INFO: PracticeExamInfo = {
   difficultyMix: 'E • M • H',
   attemptsAllowed: 'Unlimited',
   totalQuestions: 24,
+  category: {
+    slug: 'academic',
+    name: 'Academic',
+    type: 'academic',
+  },
+  subcategory: {
+    slug: 'algebra',
+    name: 'Algebra',
+  },
 };
 
 const ensureArray = <T>(value: T[] | readonly T[] | undefined): T[] => (value ? [...value] : []);
@@ -69,7 +79,23 @@ export function buildPracticeExamInfo(
       ? metadata.attemptsAllowed
       : fallback.attemptsAllowed;
 
+  const category = exam.subject?.categorySlug
+    ? {
+        slug: exam.subject.categorySlug,
+        name: exam.subject.categoryName ?? exam.subject.categorySlug,
+        type: exam.subject.categoryType ?? undefined,
+      }
+    : undefined;
+
+  const subcategory = exam.subject?.subcategorySlug
+    ? {
+        slug: exam.subject.subcategorySlug,
+        name: exam.subject.subcategoryName ?? exam.subject.subcategorySlug,
+      }
+    : undefined;
+
   const examInfo: PracticeExamInfo = {
+    slug: exam.slug,
     title: exam.title,
     description: exam.description ?? fallback.description,
     tags,
@@ -83,6 +109,8 @@ export function buildPracticeExamInfo(
         : exam.questionTarget && exam.questionTarget > 0
         ? exam.questionTarget
         : fallback.totalQuestions,
+    category,
+    subcategory,
   };
 
   return examInfo;
@@ -108,6 +136,8 @@ export function buildPracticeProgress(
 export function mapSessionRecordToApiResponse(record: PracticeSessionRecord): PracticeSessionApiResponse {
   const flaggedSet = new Set(record.metadata.flaggedQuestionIds);
   const bookmarkedSet = new Set(record.metadata.bookmarkedQuestionIds ?? []);
+  const submittedSet = new Set(record.metadata.submittedQuestionIds ?? []);
+  const revealedSet = new Set(record.metadata.revealedQuestionIds ?? []);
   const questions: PracticeSessionApiQuestion[] = record.questions
     .slice()
     .sort((a, b) => a.orderIndex - b.orderIndex)
@@ -118,6 +148,9 @@ export function mapSessionRecordToApiResponse(record: PracticeSessionRecord): Pr
       isFlagged: flaggedSet.has(item.questionId),
       isBookmarked: bookmarkedSet.has(item.questionId),
       timeSpentSeconds: item.timeSpentSeconds ?? null,
+      isSubmitted: submittedSet.has(item.questionId),
+      hasRevealedAnswer: revealedSet.has(item.questionId),
+      isCorrect: item.isCorrect ?? null,
       question: mapRecordToQuestionModel(item.question),
     }));
 
@@ -133,6 +166,8 @@ export function mapSessionRecordToApiResponse(record: PracticeSessionRecord): Pr
       remainingSeconds: record.metadata.remainingSeconds ?? null,
       flaggedQuestionIds: [...flaggedSet],
       bookmarkedQuestionIds: [...bookmarkedSet],
+      submittedQuestionIds: [...submittedSet],
+      revealedQuestionIds: [...revealedSet],
     },
     exam: examInfo,
     questions,
@@ -169,11 +204,16 @@ export function mapApiResponseToPracticeSessionData(
       selectedAnswers: ensureArray(activeQuestion.selectedAnswers),
       isFlagged: activeQuestion.isFlagged,
       isBookmarked: activeQuestion.isBookmarked,
+      isSubmitted: activeQuestion.isSubmitted ?? false,
+      hasRevealedAnswer: activeQuestion.hasRevealedAnswer ?? false,
+      isCorrect: activeQuestion.isCorrect ?? null,
       timeSpentSeconds: activeQuestion.timeSpentSeconds,
     },
     progress,
     flaggedQuestionIds: [...session.flaggedQuestionIds],
     bookmarkedQuestionIds: [...session.bookmarkedQuestionIds],
+    submittedQuestionIds: [...(session.submittedQuestionIds ?? [])],
+    revealedQuestionIds: [...(session.revealedQuestionIds ?? [])],
     fromSample: false,
   };
 }
