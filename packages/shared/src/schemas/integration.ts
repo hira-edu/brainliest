@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
-export const integrationKeyTypeEnum = z.enum(['OPENAI', 'STRIPE', 'RESEND', 'CAPTCHA']);
+export const integrationKeyTypeEnum = z.enum([
+  'OPENAI',
+  'STRIPE',
+  'RESEND',
+  'CAPTCHA',
+  'GOOGLE_RECAPTCHA_V2_SITE',
+  'GOOGLE_RECAPTCHA_V2_SECRET',
+  'GOOGLE_RECAPTCHA_V3_SITE',
+  'GOOGLE_RECAPTCHA_V3_SECRET',
+]);
 export const integrationEnvironmentEnum = z.enum(['production', 'staging', 'development']);
 
 export const createIntegrationKeySchema = z.object({

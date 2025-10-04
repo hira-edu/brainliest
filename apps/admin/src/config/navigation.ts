@@ -50,6 +50,7 @@ export const ADMIN_NAV_SECTIONS: ReadonlyArray<AdminNavSectionConfig> = [
       { label: 'Keys', href: '/integrations/keys', icon: 'KeySquare' },
       { label: 'Feature Flags', href: '/settings/feature-flags', icon: 'ToggleLeft' },
       { label: 'Announcements', href: '/settings/announcements', icon: 'Megaphone' },
+      { label: 'Security', href: '/settings/security', icon: 'Shield' },
       { label: 'System Settings', href: '/settings/system', icon: 'SlidersHorizontal' },
     ],
   },

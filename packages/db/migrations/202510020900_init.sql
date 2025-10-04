@@ -10,7 +10,16 @@ CREATE TYPE question_asset_type AS ENUM ('image', 'audio', 'file');
 CREATE TYPE user_role AS ENUM ('STUDENT', 'EDITOR', 'ADMIN', 'SUPERADMIN');
 CREATE TYPE admin_role AS ENUM ('VIEWER', 'EDITOR', 'ADMIN', 'SUPERADMIN');
 CREATE TYPE integration_environment AS ENUM ('production', 'staging', 'development');
-CREATE TYPE integration_key_type AS ENUM ('OPENAI', 'STRIPE', 'RESEND', 'CAPTCHA');
+CREATE TYPE integration_key_type AS ENUM (
+  'OPENAI',
+  'STRIPE',
+  'RESEND',
+  'CAPTCHA',
+  'GOOGLE_RECAPTCHA_V2_SITE',
+  'GOOGLE_RECAPTCHA_V2_SECRET',
+  'GOOGLE_RECAPTCHA_V3_SITE',
+  'GOOGLE_RECAPTCHA_V3_SECRET'
+);
 CREATE TYPE audit_actor_type AS ENUM ('admin', 'user', 'system');
 CREATE TYPE exam_session_status AS ENUM ('in_progress', 'completed', 'abandoned', 'expired');
 
@@ -177,11 +186,37 @@ CREATE TABLE admin_users (
     password_hash TEXT NOT NULL,
     role admin_role NOT NULL DEFAULT 'VIEWER',
     totp_secret TEXT,
+    totp_enabled_at TIMESTAMPTZ,
+    totp_last_used_at TIMESTAMPTZ,
     last_login_at TIMESTAMPTZ,
     status VARCHAR(50) NOT NULL DEFAULT 'active',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE admin_totp_recovery_codes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    used_at TIMESTAMPTZ
+);
+
+CREATE INDEX admin_totp_recovery_codes_admin_idx ON admin_totp_recovery_codes (admin_id);
+
+CREATE TABLE admin_remember_devices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL,
+    user_agent TEXT,
+    ip_address VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMPTZ NOT NULL,
+    last_used_at TIMESTAMPTZ
+);
+
+CREATE INDEX admin_remember_devices_admin_idx ON admin_remember_devices (admin_id);
+CREATE INDEX admin_remember_devices_expires_idx ON admin_remember_devices (expires_at);
 
 CREATE TABLE exam_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

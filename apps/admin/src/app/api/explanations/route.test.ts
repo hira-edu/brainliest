@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AdminUnauthorizedError } from '@/lib/auth/admin-actor';
+
 const listRecentMock = vi.fn();
 const getAggregateTotalsMock = vi.fn();
 const listDailyTotalsMock = vi.fn();
-const getAdminActorMock = vi.fn();
+const requireAdminActorMock = vi.fn();
 
 vi.mock('@brainliest/db', () => ({
   drizzleClient: {},
@@ -15,7 +17,7 @@ vi.mock('@brainliest/db', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  getAdminActor: getAdminActorMock,
+  requireAdminActor: requireAdminActorMock,
 }));
 
 describe('GET /api/explanations', () => {
@@ -23,8 +25,8 @@ describe('GET /api/explanations', () => {
     listRecentMock.mockReset();
     getAggregateTotalsMock.mockReset();
     listDailyTotalsMock.mockReset();
-    getAdminActorMock.mockReset();
-    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
+    requireAdminActorMock.mockReset();
+    requireAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('returns paginated explanation data', async () => {
@@ -135,7 +137,7 @@ describe('GET /api/explanations', () => {
 
   it('returns 401 when unauthenticated', async () => {
     const { GET } = await import('./route');
-    getAdminActorMock.mockResolvedValueOnce(null);
+    requireAdminActorMock.mockRejectedValueOnce(new AdminUnauthorizedError());
 
     const response = await GET(new Request('http://localhost/api/explanations'));
     expect(response.status).toBe(401);
@@ -146,8 +148,8 @@ describe('GET /api/explanations', () => {
 describe('GET /api/explanations/metrics', () => {
   beforeEach(() => {
     getAggregateTotalsMock.mockReset();
-    getAdminActorMock.mockReset();
-    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
+    requireAdminActorMock.mockReset();
+    requireAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('returns aggregate totals with averages', async () => {
@@ -200,7 +202,7 @@ describe('GET /api/explanations/metrics', () => {
 
   it('returns 401 for metrics when unauthenticated', async () => {
     const { GET } = await import('./metrics/route');
-    getAdminActorMock.mockResolvedValueOnce(null);
+    requireAdminActorMock.mockRejectedValueOnce(new AdminUnauthorizedError());
 
     const response = await GET(new Request('http://localhost/api/explanations/metrics'));
     expect(response.status).toBe(401);

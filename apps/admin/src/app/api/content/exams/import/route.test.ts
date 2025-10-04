@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AdminUnauthorizedError } from '@/lib/auth/admin-actor';
+
 class MockZodError extends Error {
   public readonly issues: unknown[];
 
@@ -10,7 +12,7 @@ class MockZodError extends Error {
 }
 
 const importExamTemplateMock = vi.fn();
-const getAdminActorMock = vi.fn();
+const requireAdminActorMock = vi.fn();
 
 vi.mock('@brainliest/shared', () => ({
   ZodError: MockZodError,
@@ -21,14 +23,14 @@ vi.mock('@/lib/exam-import', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  getAdminActor: getAdminActorMock,
+  requireAdminActor: requireAdminActorMock,
 }));
 
 describe('POST /api/content/exams/import', () => {
   beforeEach(() => {
     importExamTemplateMock.mockReset();
-    getAdminActorMock.mockReset();
-    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
+    requireAdminActorMock.mockReset();
+    requireAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('imports an exam template and returns the created slug', async () => {
@@ -163,7 +165,7 @@ describe('POST /api/content/exams/import', () => {
   });
 
   it('returns 401 when authentication is missing', async () => {
-    getAdminActorMock.mockResolvedValueOnce(null);
+    requireAdminActorMock.mockRejectedValueOnce(new AdminUnauthorizedError());
 
     const { POST } = await import('./route');
 

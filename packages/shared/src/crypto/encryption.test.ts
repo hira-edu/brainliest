@@ -8,6 +8,8 @@ process.env.OPENAI_API_KEY ??= 'sk-test-abcdefghijklmnopqrstuvwxyz012345';
 process.env.SITE_PRIMARY_DOMAIN ??= 'localhost';
 process.env.SITE_ADMIN_DOMAIN ??= 'localhost';
 process.env.SITE_KMS_MASTER_KEY ??= 'a'.repeat(64);
+process.env.ADMIN_SESSION_HMAC_SECRET ??= 'b'.repeat(64);
+process.env.ADMIN_REMEMBER_DEVICE_HMAC_SECRET ??= 'c'.repeat(64);
 
 let encryptFn: (plaintext: string) => Promise<string>;
 let decryptFn: (ciphertext: string) => Promise<string>;

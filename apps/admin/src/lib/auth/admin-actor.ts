@@ -10,6 +10,14 @@ export interface AdminActor {
   readonly email: string | null;
   readonly role: string | null;
   readonly source: 'header' | 'cookie' | 'lookup';
+  readonly sessionId?: string | null;
+}
+
+export class AdminUnauthorizedError extends Error {
+  constructor(message = 'Admin authentication required.') {
+    super(message);
+    this.name = 'AdminUnauthorizedError';
+  }
 }
 
 async function findAdminByEmail(email: string): Promise<AdminActor | null> {
@@ -24,6 +32,7 @@ async function findAdminByEmail(email: string): Promise<AdminActor | null> {
     email: record.email,
     role: record.role,
     source: 'lookup',
+    sessionId: null,
   } satisfies AdminActor;
 }
 
@@ -34,10 +43,11 @@ async function getSessionActor(): Promise<AdminActor | null> {
   }
 
   return {
-    id: session.id,
+    id: session.adminId,
     email: session.email,
     role: session.role,
     source: 'cookie',
+    sessionId: session.sessionId,
   } satisfies AdminActor;
 }
 
@@ -54,6 +64,7 @@ export async function getAdminActor(): Promise<AdminActor | null> {
       email: headerEmail ?? null,
       role: headerRole ?? null,
       source: 'header',
+      sessionId: null,
     } satisfies AdminActor;
   }
 
@@ -71,4 +82,12 @@ export async function getAdminActor(): Promise<AdminActor | null> {
   }
 
   return null;
+}
+
+export async function requireAdminActor(): Promise<AdminActor> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    throw new AdminUnauthorizedError();
+  }
+  return actor;
 }

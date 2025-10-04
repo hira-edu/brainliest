@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AdminUnauthorizedError } from '@/lib/auth/admin-actor';
+
 const generateExamTemplateMock = vi.fn();
-const getAdminActorMock = vi.fn();
+const requireAdminActorMock = vi.fn();
 
 vi.mock('@brainliest/shared', () => ({
   CURRENT_EXAM_TEMPLATE_VERSION: '2025.10',
@@ -12,14 +14,14 @@ vi.mock('@/lib/exam-import', () => ({
 }));
 
 vi.mock('@/lib/auth', () => ({
-  getAdminActor: getAdminActorMock,
+  requireAdminActor: requireAdminActorMock,
 }));
 
 describe('GET /api/content/exams/template', () => {
   beforeEach(() => {
     generateExamTemplateMock.mockReset();
-    getAdminActorMock.mockReset();
-    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
+    requireAdminActorMock.mockReset();
+    requireAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('returns a downloadable exam template', async () => {
@@ -50,7 +52,7 @@ describe('GET /api/content/exams/template', () => {
   });
 
   it('returns 401 when unauthenticated', async () => {
-    getAdminActorMock.mockResolvedValueOnce(null);
+    requireAdminActorMock.mockRejectedValueOnce(new AdminUnauthorizedError());
 
     const { GET } = await import('./route');
     const response = await GET();

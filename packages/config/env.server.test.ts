@@ -11,6 +11,8 @@ const REQUIRED_ENV = {
   SITE_PRIMARY_DOMAIN: 'brainliest.test',
   SITE_ADMIN_DOMAIN: 'admin.brainliest.test',
   SITE_KMS_MASTER_KEY: 'a'.repeat(64),
+  ADMIN_SESSION_HMAC_SECRET: 'b'.repeat(64),
+  ADMIN_REMEMBER_DEVICE_HMAC_SECRET: 'c'.repeat(64),
 };
 
 describe('env.server', () => {

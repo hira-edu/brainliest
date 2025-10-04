@@ -4,7 +4,7 @@
  */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
-import { and, desc, eq, exists, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, exists, gte, ilike, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type {
@@ -29,16 +29,20 @@ import type {
   AdminUserRecord,
   AdminUserFilter,
   AdminUserAuthRecord,
+  AdminRecoveryCodeRecord,
+  RememberDeviceRecord,
 } from './admin-user-repository';
 import type {
   IntegrationKeyRepository,
   IntegrationKeyRecord,
   IntegrationKeyFilter,
+  IntegrationKeyType,
+  IntegrationEnvironment,
   CreateIntegrationKeyInput,
   RotateIntegrationKeyInput,
   DeleteIntegrationKeyInput,
 } from './integration-repository';
-import { encrypt } from '@brainliest/shared/crypto/encryption';
+import { decrypt, encrypt } from '@brainliest/shared/crypto/encryption';
 import type {
   AuditLogRepository,
   AuditLogRecord,
@@ -998,6 +1002,7 @@ export class DrizzleAdminUserRepository implements AdminUserRepository {
       role: user.role,
       status: user.status,
       lastLoginAt: user.lastLoginAt ?? null,
+      totpEnabledAt: user.totpEnabledAt ?? null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
@@ -1008,6 +1013,7 @@ export class DrizzleAdminUserRepository implements AdminUserRepository {
       ...this.mapAdmin(user),
       passwordHash: user.passwordHash,
       totpSecret: user.totpSecret ?? null,
+      totpLastUsedAt: user.totpLastUsedAt ?? null,
     } satisfies AdminUserAuthRecord;
   }
 
@@ -1019,11 +1025,191 @@ export class DrizzleAdminUserRepository implements AdminUserRepository {
     return row ? this.mapAdminAuth(row) : null;
   }
 
+  async findById(id: string): Promise<AdminUserAuthRecord | null> {
+    const row = await this.db.query.adminUsers.findFirst({
+      where: (users, { eq }) => eq(users.id, id),
+    });
+
+    return row ? this.mapAdminAuth(row) : null;
+  }
+
   async updateLastLogin(id: string, lastLoginAt: Date = new Date()): Promise<void> {
     await this.db
       .update(schema.adminUsers)
       .set({ lastLoginAt, updatedAt: new Date() })
       .where(eq(schema.adminUsers.id, id));
+  }
+
+  async enableTotp(adminId: string, encryptedSecret: string, enabledAt: Date): Promise<void> {
+    await this.db
+      .update(schema.adminUsers)
+      .set({
+        totpSecret: encryptedSecret,
+        totpEnabledAt: enabledAt,
+        totpLastUsedAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.adminUsers.id, adminId));
+  }
+
+  async updateTotpUsage(adminId: string, usedAt: Date): Promise<void> {
+    await this.db
+      .update(schema.adminUsers)
+      .set({ totpLastUsedAt: usedAt, updatedAt: new Date() })
+      .where(eq(schema.adminUsers.id, adminId));
+  }
+
+  async disableTotp(adminId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(schema.adminUsers)
+        .set({
+          totpSecret: null,
+          totpEnabledAt: null,
+          totpLastUsedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.adminUsers.id, adminId));
+
+      await tx.delete(schema.adminTotpRecoveryCodes).where(eq(schema.adminTotpRecoveryCodes.adminId, adminId));
+      await tx.delete(schema.adminRememberDevices).where(eq(schema.adminRememberDevices.adminId, adminId));
+    });
+  }
+
+  async replaceRecoveryCodes(
+    adminId: string,
+    codes: readonly { id: string; codeHash: string }[]
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.delete(schema.adminTotpRecoveryCodes).where(eq(schema.adminTotpRecoveryCodes.adminId, adminId));
+
+      if (codes.length === 0) {
+        return;
+      }
+
+      await tx.insert(schema.adminTotpRecoveryCodes).values(
+        codes.map((code) => ({
+          id: code.id,
+          adminId,
+          codeHash: code.codeHash,
+        }))
+      );
+    });
+  }
+
+  async listRecoveryCodes(adminId: string): Promise<AdminRecoveryCodeRecord[]> {
+    const rows = await this.db.query.adminTotpRecoveryCodes.findMany({
+      where: (codes, { eq }) => eq(codes.adminId, adminId),
+      orderBy: (codes, { asc }) => asc(codes.createdAt),
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      codeHash: row.codeHash,
+      usedAt: row.usedAt ?? null,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  async markRecoveryCodeUsed(adminId: string, codeHash: string, usedAt: Date): Promise<boolean> {
+    const result = await this.db
+      .update(schema.adminTotpRecoveryCodes)
+      .set({ usedAt })
+      .where(
+        and(
+          eq(schema.adminTotpRecoveryCodes.adminId, adminId),
+          eq(schema.adminTotpRecoveryCodes.codeHash, codeHash),
+          isNull(schema.adminTotpRecoveryCodes.usedAt)
+        )
+      )
+      .returning({ id: schema.adminTotpRecoveryCodes.id });
+
+    return result.length > 0;
+  }
+
+  async createRememberDevice(input: {
+    adminId: string;
+    deviceId: string;
+    tokenHash: string;
+    userAgent?: string | null;
+    ipAddress?: string | null;
+    expiresAt: Date;
+  }): Promise<void> {
+    await this.db
+      .insert(schema.adminRememberDevices)
+      .values({
+        id: input.deviceId,
+        adminId: input.adminId,
+        tokenHash: input.tokenHash,
+        userAgent: input.userAgent ?? null,
+        ipAddress: input.ipAddress ?? null,
+        expiresAt: input.expiresAt,
+      })
+      .onConflictDoUpdate({
+        target: schema.adminRememberDevices.id,
+        set: {
+          tokenHash: input.tokenHash,
+          userAgent: input.userAgent ?? null,
+          ipAddress: input.ipAddress ?? null,
+          createdAt: new Date(),
+          expiresAt: input.expiresAt,
+          lastUsedAt: null,
+        },
+      });
+  }
+
+  async findRememberDevice(deviceId: string): Promise<RememberDeviceRecord | null> {
+    const row = await this.db.query.adminRememberDevices.findFirst({
+      where: (devices, { eq }) => eq(devices.id, deviceId),
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      id: row.id,
+      adminId: row.adminId,
+      tokenHash: row.tokenHash,
+      userAgent: row.userAgent ?? null,
+      ipAddress: row.ipAddress ?? null,
+      createdAt: row.createdAt,
+      expiresAt: row.expiresAt,
+      lastUsedAt: row.lastUsedAt ?? null,
+    } satisfies RememberDeviceRecord;
+  }
+
+  async touchRememberDevice(deviceId: string, usedAt: Date): Promise<void> {
+    await this.db
+      .update(schema.adminRememberDevices)
+      .set({ lastUsedAt: usedAt })
+      .where(eq(schema.adminRememberDevices.id, deviceId));
+  }
+
+  async deleteRememberDevice(deviceId: string): Promise<void> {
+    await this.db.delete(schema.adminRememberDevices).where(eq(schema.adminRememberDevices.id, deviceId));
+  }
+
+  async deleteRememberDevicesForAdmin(adminId: string): Promise<void> {
+    await this.db.delete(schema.adminRememberDevices).where(eq(schema.adminRememberDevices.adminId, adminId));
+  }
+
+  async listRememberDevices(adminId: string): Promise<RememberDeviceRecord[]> {
+    const rows = await this.db.query.adminRememberDevices.findMany({
+      where: (devices, { eq }) => eq(devices.adminId, adminId),
+      orderBy: (devices, { desc }) => desc(devices.createdAt),
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      adminId: row.adminId,
+      tokenHash: row.tokenHash,
+      userAgent: row.userAgent ?? null,
+      ipAddress: row.ipAddress ?? null,
+      createdAt: row.createdAt,
+      expiresAt: row.expiresAt,
+      lastUsedAt: row.lastUsedAt ?? null,
+    } satisfies RememberDeviceRecord));
   }
 }
 
@@ -1136,6 +1322,27 @@ export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository
       .returning({ id: schema.integrationKeys.id });
 
     return Boolean(row?.id);
+  }
+
+  async getDecryptedValueByType(
+    type: IntegrationKeyType,
+    environment: IntegrationEnvironment
+  ): Promise<string | null> {
+    const row = await this.db.query.integrationKeys.findFirst({
+      where: (fields, { and, eq }) => and(eq(fields.type, type), eq(fields.environment, environment)),
+      orderBy: (fields, { desc }) => desc(fields.updatedAt),
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    try {
+      return await decrypt(row.valueEncrypted);
+    } catch (error) {
+      console.error('[integration] failed to decrypt key', { type, environment, error });
+      return null;
+    }
   }
 }
 

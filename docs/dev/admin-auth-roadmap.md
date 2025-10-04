@@ -8,11 +8,11 @@
 - Update the sign-in screen to link to the reset flow once the endpoint is live.
 - Add admin notifications (email/SMS) describing the reset attempt.
 
-## MFA / TOTP rollout
-- Extend `admin_users` with `totp_secret`, `totp_enabled_at`, and recovery code table.
-- Provide setup UX (QR code, TOTP verification) gated behind the existing session.
-- Challenge for TOTP after password verification when enabled; allow “remember device” cookie scoped to the browser.
-- Update sign-in form and server action to recognise TOTP challenges, delivering descriptive error codes for the client.
+## MFA / TOTP rollout ✅
+- `admin_users` now tracks `totp_secret`, `totp_enabled_at`, `totp_last_used_at`, recovery codes, and trusted-device metadata.
+- Security settings page exposes QR-code enrollment, verification, recovery-code regeneration, and trusted-device revocation.
+- Sign-in action issues redis-backed TOTP challenges, honours recovery codes, and manages remember-device cookies so trusted browsers skip MFA.
+- All MFA events are logged via `AuditLogRepository`, and Vitest coverage guards repository behaviour.
 
 ## Session hygiene
 - Replace the plain AES payload with an HMAC-signed session envelope (prevent tampering) and include a rolling `lastSeenAt` timestamp.
@@ -20,6 +20,6 @@
 - Instrument audit logs for sign-in/out, failed attempts, reset attempts, and MFA events via `AuditLogRepository`.
 
 ## Open tasks
-1. Wire `requireAdminActor` into any remaining server entry points (API routes, background jobs) that still accept unauthenticated traffic.
-2. Build the password reset + MFA interfaces described above, including functional and Playwright coverage once Chromium is available.
-3. Integrate the auth guard into CI smoke tests so the admin suite verifies sign-in before executing downstream flows.
+1. Build the password reset experience (request/confirm endpoints, UI, notifications) once prioritised.
+2. Integrate the updated auth guard + MFA path into Playwright/CI smoke tests when a browser runner is available.
+3. Extend monitoring to surface MFA enrolment/remember-device activity in the security dashboard.

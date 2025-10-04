@@ -536,4 +536,116 @@ describe('Drizzle repositories', () => {
       expect(secondAttempt).toBe(false);
     });
   });
+
+  it('returns decrypted integration key values for the requested environment', async () => {
+    await withTestContext(async ({ repositories }) => {
+      await repositories.integrationKeys.create({
+        name: 'Google reCAPTCHA v2 Secret (Production)',
+        type: 'GOOGLE_RECAPTCHA_V2_SECRET',
+        environment: 'production',
+        description: 'reCAPTCHA server-side verification key',
+        value: 'prod-recaptcha-secret',
+        createdByAdminId: null,
+      });
+
+      await repositories.integrationKeys.create({
+        name: 'Google reCAPTCHA v2 Secret (Development)',
+        type: 'GOOGLE_RECAPTCHA_V2_SECRET',
+        environment: 'development',
+        description: 'reCAPTCHA dev secret',
+        value: 'dev-recaptcha-secret',
+        createdByAdminId: null,
+      });
+
+      const productionSecret = await repositories.integrationKeys.getDecryptedValueByType(
+        'GOOGLE_RECAPTCHA_V2_SECRET',
+        'production'
+      );
+
+      expect(productionSecret).toBe('prod-recaptcha-secret');
+
+      const stagingSecret = await repositories.integrationKeys.getDecryptedValueByType(
+        'GOOGLE_RECAPTCHA_V2_SECRET',
+        'staging'
+      );
+
+      expect(stagingSecret).toBeNull();
+    });
+  });
+
+  it('manages admin MFA secrets, recovery codes, and trusted devices', async () => {
+    await withTestContext(async ({ repositories, db }) => {
+      const [admin] = await db
+        .insert(schema.adminUsers)
+        .values({
+          email: 'mfa@example.com',
+          passwordHash: 'hashed-secret',
+          role: 'ADMIN',
+          status: 'active',
+        })
+        .returning({ id: schema.adminUsers.id });
+
+      if (!admin) {
+        throw new Error('Failed to insert admin user.');
+      }
+
+      const enabledAt = new Date('2025-10-04T12:00:00Z');
+      await repositories.adminUsers.enableTotp(admin.id, 'encrypted-secret', enabledAt);
+
+      const listAfterEnable = await repositories.adminUsers.listRecoveryCodes(admin.id);
+      expect(listAfterEnable).toHaveLength(0);
+
+      const recoveryCodes = [
+        { id: randomUUID(), codeHash: 'hash-one' },
+        { id: randomUUID(), codeHash: 'hash-two' },
+      ] as const;
+
+      await repositories.adminUsers.replaceRecoveryCodes(admin.id, recoveryCodes);
+
+      const storedCodes = await repositories.adminUsers.listRecoveryCodes(admin.id);
+      expect(storedCodes).toHaveLength(2);
+      expect(storedCodes.some((code) => code.codeHash === 'hash-one')).toBe(true);
+
+      const markUsed = await repositories.adminUsers.markRecoveryCodeUsed(admin.id, 'hash-one', new Date());
+      expect(markUsed).toBe(true);
+
+      const afterUse = await repositories.adminUsers.listRecoveryCodes(admin.id);
+      const usedRecord = afterUse.find((code) => code.codeHash === 'hash-one');
+      expect(usedRecord?.usedAt).toBeInstanceOf(Date);
+
+      const rememberDevice = {
+        deviceId: randomUUID(),
+        tokenHash: 'hash-token',
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      } as const;
+
+      await repositories.adminUsers.createRememberDevice({
+        adminId: admin.id,
+        deviceId: rememberDevice.deviceId,
+        tokenHash: rememberDevice.tokenHash,
+        userAgent: 'Vitest',
+        ipAddress: '10.0.0.5',
+        expiresAt: rememberDevice.expiresAt,
+      });
+
+      const rememberDevices = await repositories.adminUsers.listRememberDevices(admin.id);
+      expect(rememberDevices).toHaveLength(1);
+
+      const device = await repositories.adminUsers.findRememberDevice(rememberDevice.deviceId);
+      expect(device?.tokenHash).toBe(rememberDevice.tokenHash);
+
+      await repositories.adminUsers.touchRememberDevice(rememberDevice.deviceId, new Date());
+
+      await repositories.adminUsers.disableTotp(admin.id);
+
+      const disabledAdmin = await repositories.adminUsers.findById(admin.id);
+      expect(disabledAdmin?.totpSecret).toBeNull();
+
+      const codesAfterDisable = await repositories.adminUsers.listRecoveryCodes(admin.id);
+      expect(codesAfterDisable).toHaveLength(0);
+
+      const devicesAfterDisable = await repositories.adminUsers.listRememberDevices(admin.id);
+      expect(devicesAfterDisable).toHaveLength(0);
+    });
+  });
 });

@@ -334,29 +334,10 @@ interface PracticeSessionContainerProps {
 
 export function PracticeSessionContainer({ initialData, examSlug }: PracticeSessionContainerProps) {
   const [session, setSession] = useState<PracticeSessionData>(() => {
-    // For sample sessions, merge with localStorage on initial load
     if (initialData.fromSample) {
       const snapshot = loadSampleSessionSnapshot(examSlug);
-      // eslint-disable-next-line no-console
-      console.log('[practice] container init check', {
-        hasSnapshot: !!snapshot,
-        examSlug,
-        fromSample: initialData.fromSample,
-        snapshotData: snapshot ? {
-          flagged: snapshot.data.flaggedQuestionIds,
-          bookmarked: snapshot.data.bookmarkedQuestionIds,
-          flaggedOrderIndexes: snapshot.data.flaggedOrderIndexes,
-          bookmarkedOrderIndexes: snapshot.data.bookmarkedOrderIndexes,
-        } : null,
-      });
       if (snapshot) {
-        const merged = mergeSampleSessionWithSnapshot(initialData, snapshot);
-        // eslint-disable-next-line no-console
-        console.log('[practice] container after merge', {
-          mergedFlagged: merged.flaggedQuestionIds,
-          mergedBookmarked: merged.bookmarkedQuestionIds,
-        });
-        return merged;
+        return mergeSampleSessionWithSnapshot(initialData, snapshot);
       }
     }
     return initialData;
@@ -371,6 +352,12 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   const latestRemainingRef = useRef<number | null>(initialData.progress.timeRemainingSeconds ?? null);
   const hasSampleBaselineRef = useRef(initialData.fromSample);
   const router = useRouter();
+
+  useEffect(() => {
+    if (session.sessionId !== 'sample-session' && hasSampleBaselineRef.current) {
+      hasSampleBaselineRef.current = false;
+    }
+  }, [session.sessionId]);
 
   useEffect(() => {
     if (session.sessionId === initialData.sessionId) {
@@ -417,16 +404,8 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
       setDisplayRemainingSeconds(nextSession.progress.timeRemainingSeconds ?? null);
       timerSyncRef.current = nextSession.progress.timeRemainingSeconds ?? null;
       latestRemainingRef.current = nextSession.progress.timeRemainingSeconds ?? null;
-        if (sampleMode) {
-          const overrideRemaining =
-            latestRemainingRef.current ?? nextSession.progress.timeRemainingSeconds ?? null;
-          persistSampleSessionState(examSlug, nextSession, overrideRemaining);
-          // eslint-disable-next-line no-console
-          console.log('[practice] sample session updated (remote success)', {
-            flagged: nextSession.flaggedQuestionIds,
-            bookmarked: nextSession.bookmarkedQuestionIds,
-          });
-        }
+      const overrideRemaining = latestRemainingRef.current ?? nextSession.progress.timeRemainingSeconds ?? null;
+      persistSampleSessionState(examSlug, nextSession, overrideRemaining);
         return data;
       } catch (requestError) {
         if (sampleMode) {
@@ -435,11 +414,6 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
             const overrideRemaining =
               latestRemainingRef.current ?? next.progress.timeRemainingSeconds ?? null;
             persistSampleSessionState(examSlug, next, overrideRemaining);
-            // eslint-disable-next-line no-console
-            console.log('[practice] sample session updated (local patch)', {
-              flagged: next.flaggedQuestionIds,
-              bookmarked: next.bookmarkedQuestionIds,
-            });
             return next;
           });
           setError(null);
@@ -540,26 +514,12 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
 
   const isFlagged = useMemo(() => {
     const questionId = activeQuestion?.questionId ?? session.questionState.questionId;
-    const result = session.flaggedQuestionIds.includes(questionId);
-    // eslint-disable-next-line no-console
-    console.log('[practice] container isFlagged check', {
-      questionId,
-      flaggedQuestionIds: session.flaggedQuestionIds,
-      result,
-    });
-    return result;
+    return session.flaggedQuestionIds.includes(questionId);
   }, [activeQuestion?.questionId, session.flaggedQuestionIds, session.questionState.questionId]);
 
   const isBookmarked = useMemo(() => {
     const questionId = activeQuestion?.questionId ?? session.questionState.questionId;
-    const result = session.bookmarkedQuestionIds.includes(questionId);
-    // eslint-disable-next-line no-console
-    console.log('[practice] container isBookmarked check', {
-      questionId,
-      bookmarkedQuestionIds: session.bookmarkedQuestionIds,
-      result,
-    });
-    return result;
+    return session.bookmarkedQuestionIds.includes(questionId);
   }, [activeQuestion?.questionId, session.bookmarkedQuestionIds, session.questionState.questionId]);
 
   const isSubmitted = session.questionState.isSubmitted;
@@ -656,8 +616,7 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   const canFinalizeExam =
     session.sessionStatus !== 'completed' &&
     session.currentQuestionIndex === session.questions.length - 1 &&
-    session.questionState.isSubmitted &&
-    session.questionState.hasRevealedAnswer;
+    session.questionState.isSubmitted;
 
   const navigationBreadcrumbs = useMemo(() => {
     const items: Array<{ label: string; href?: string; isCurrent?: boolean }> = [];

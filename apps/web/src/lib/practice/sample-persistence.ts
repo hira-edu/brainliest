@@ -14,6 +14,7 @@ type SampleQuestionSnapshot = {
 };
 
 type SampleSessionState = {
+  sessionId: string | null;
   sessionStatus: PracticeSessionData['sessionStatus'];
   currentQuestionIndex: number;
   flaggedQuestionIds: string[];
@@ -102,6 +103,7 @@ const buildSnapshot = (
     version: STORAGE_VERSION,
     updatedAt: Date.now(),
     data: {
+      sessionId: typeof session.sessionId === 'string' ? session.sessionId : null,
       sessionStatus: session.sessionStatus,
       currentQuestionIndex: session.currentQuestionIndex,
       flaggedQuestionIds: normaliseIdList(session.flaggedQuestionIds),
@@ -143,7 +145,8 @@ export const loadSampleSessionSnapshot = (examSlug: string): SampleSessionSnapsh
   }
 
   try {
-    const raw = window.localStorage.getItem(getStorageKey(examSlug));
+    const storageKey = getStorageKey(examSlug);
+    const raw = window.localStorage.getItem(storageKey) ?? window.sessionStorage.getItem(storageKey);
     if (!raw) {
       return null;
     }
@@ -169,21 +172,16 @@ export const persistSampleSessionState = (
   session: PracticeSessionData,
   overrideRemainingSeconds?: number | null
 ): void => {
-  if (!isBrowser() || !session.fromSample) {
+  if (!isBrowser()) {
     return;
   }
 
   try {
     const snapshot = buildSnapshot(session, overrideRemainingSeconds ?? null);
-    // eslint-disable-next-line no-console
-    console.log('[practice] persist snapshot', {
-      examSlug,
-      flagged: snapshot.data.flaggedQuestionIds,
-      bookmarked: snapshot.data.bookmarkedQuestionIds,
-      flaggedOrderIndexes: snapshot.data.flaggedOrderIndexes,
-      bookmarkedOrderIndexes: snapshot.data.bookmarkedOrderIndexes,
-    });
-    window.localStorage.setItem(getStorageKey(examSlug), JSON.stringify(snapshot));
+    const storageKey = getStorageKey(examSlug);
+    const serialised = JSON.stringify(snapshot);
+    window.localStorage.setItem(storageKey, serialised);
+    window.sessionStorage.setItem(storageKey, serialised);
   } catch (error) {
     console.warn('[practice] unable to persist sample session snapshot', error);
   }
@@ -195,7 +193,9 @@ export const clearSampleSessionState = (examSlug: string): void => {
   }
 
   try {
-    window.localStorage.removeItem(getStorageKey(examSlug));
+    const storageKey = getStorageKey(examSlug);
+    window.localStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(storageKey);
   } catch (error) {
     console.warn('[practice] unable to clear sample session snapshot', error);
   }
@@ -289,6 +289,7 @@ export const mergeSampleSessionWithSnapshot = (
 
   const result: PracticeSessionData = {
     ...base,
+    sessionId: base.sessionId ?? snapshot.data.sessionId ?? base.sessionId,
     sessionStatus: snapshot.data.sessionStatus ?? base.sessionStatus,
     questions: nextQuestions,
     currentQuestionIndex: resolvedIndex,
@@ -325,13 +326,6 @@ export const mergeSampleSessionWithSnapshot = (
     ),
     fromSample: true,
   };
-
-  // eslint-disable-next-line no-console
-  console.log('[practice] merged snapshot', {
-    flagged: result.flaggedQuestionIds,
-    bookmarked: result.bookmarkedQuestionIds,
-    questionState: result.questionState,
-  });
 
   return result;
 };

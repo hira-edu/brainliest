@@ -28,6 +28,8 @@ export type {
   AdminUserRecord,
   AdminUserFilter,
   AdminUserAuthRecord,
+  AdminRecoveryCodeRecord,
+  RememberDeviceRecord,
 } from './admin-user-repository';
 export type {
   IntegrationKeyRepository,

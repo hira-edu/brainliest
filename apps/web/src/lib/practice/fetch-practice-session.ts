@@ -8,6 +8,7 @@ import 'server-only';
 
 import { drizzleClient, createRepositories } from '@brainliest/db';
 import { mapRecordToQuestionModel } from '@/lib/ai/map-record-to-question';
+import type { QuestionModel } from '@brainliest/shared';
 import { SAMPLE_QUESTION } from '@/lib/ai/sample-question';
 import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 import type { PracticeSessionData, PracticeSessionApiResponse } from './types';
@@ -51,50 +52,74 @@ export async function buildSampleSession(examSlug: string): Promise<PracticeSess
   const examRecord = await repositories.exams.findBySlug(examSlug);
   const questionPage = await repositories.questions.findByExam(examSlug, {}, 1, 10);
   const questionRecords = questionPage.data;
-  const questionModels = questionRecords.length > 0
+  const sourceModels = questionRecords.length > 0
     ? questionRecords.map((item) => mapRecordToQuestionModel(item))
     : [SAMPLE_QUESTION];
 
-  const questions: PracticeSessionData['questions'] = questionModels.map((model, index) => ({
-    questionId: model.id,
-    orderIndex: index,
-    selectedAnswers: [],
-    isFlagged: false,
-    isBookmarked: false,
-    isSubmitted: false,
-    hasRevealedAnswer: false,
-    isCorrect: null,
-    timeSpentSeconds: 0,
-    question: model,
-  }));
+  const buildNormalizedQuestion = (model: QuestionModel, index: number) => {
+    const normalizedQuestionId = `question-${index + 1}`;
+    const normalizedOptions = model.options.map((option, optionIndex) => {
+      const baseLabel = option.label ?? String.fromCharCode(65 + optionIndex);
+      const normalizedOptionId = `choice-${baseLabel.toLowerCase()}-${index + 1}`;
+      return {
+        ...option,
+        id: normalizedOptionId,
+        label: baseLabel,
+      };
+    });
+
+    const normalizedCorrectChoiceIds = (model.correctChoiceIds ?? []).map((choiceId) => {
+      const originalIndex = model.options.findIndex((option) => option.id === choiceId);
+      const normalizedOption = normalizedOptions[originalIndex] ?? normalizedOptions[0];
+      return normalizedOption.id;
+    });
+
+    const normalizedQuestionModel: QuestionModel = {
+      ...model,
+      id: normalizedQuestionId,
+      options: normalizedOptions,
+      correctChoiceIds: normalizedCorrectChoiceIds,
+    };
+
+    return {
+      questionModel: normalizedQuestionModel,
+      entry: {
+        questionId: normalizedQuestionId,
+        orderIndex: index,
+        selectedAnswers: [],
+        isFlagged: false,
+        isBookmarked: false,
+        isSubmitted: false,
+        hasRevealedAnswer: false,
+        isCorrect: null,
+        timeSpentSeconds: 0,
+        question: normalizedQuestionModel,
+      } as PracticeSessionData['questions'][number],
+    };
+  };
+
+  const normalizedPairs = sourceModels.map((model, index) => buildNormalizedQuestion(model, index));
+  const questions: PracticeSessionData['questions'] = normalizedPairs.map((pair) => pair.entry);
+  const normalizedQuestionModels = normalizedPairs.map((pair) => pair.questionModel);
 
   const minimumQuestions = Math.max(questions.length, 1);
   while (questions.length < minimumQuestions) {
-    const base = questions[0]?.question ?? SAMPLE_QUESTION;
-    const suffix = `-sample-${questions.length + 1}`;
-    const syntheticQuestion = {
-      ...base,
-      id: `${base.id}${suffix}` as typeof base.id,
-      stemMarkdown: `${base.stemMarkdown} (practice sample ${questions.length + 1})`,
-      options: base.options.map((option) => ({
+    const baseModel = normalizedQuestionModels[0] ?? SAMPLE_QUESTION;
+    const nextIndex = questions.length;
+    const suffix = `-sample-${nextIndex + 1}`;
+    const syntheticModel: QuestionModel = {
+      ...baseModel,
+      stemMarkdown: `${baseModel.stemMarkdown} (practice sample ${nextIndex + 1})`,
+      options: baseModel.options.map((option) => ({
         ...option,
         id: `${option.id}${suffix}`,
       })),
-      correctChoiceIds: base.correctChoiceIds.map((choiceId) => `${choiceId}${suffix}`),
+      correctChoiceIds: baseModel.correctChoiceIds?.map((choiceId) => `${choiceId}${suffix}`) ?? [],
     };
 
-    questions.push({
-      questionId: syntheticQuestion.id,
-      orderIndex: questions.length,
-      selectedAnswers: [],
-      isFlagged: false,
-      isBookmarked: false,
-      isSubmitted: false,
-      hasRevealedAnswer: false,
-      isCorrect: null,
-      timeSpentSeconds: 0,
-      question: syntheticQuestion,
-    });
+    const normalizedSynthetic = buildNormalizedQuestion(syntheticModel, nextIndex);
+    questions.push(normalizedSynthetic.entry);
+    normalizedQuestionModels.push(normalizedSynthetic.questionModel);
   }
 
   const totalQuestions = questions.length;

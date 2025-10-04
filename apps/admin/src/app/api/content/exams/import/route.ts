@@ -1,26 +1,29 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from '@brainliest/shared';
 import { importExamTemplate } from '@/lib/exam-import';
-import { getAdminActor } from '@/lib/auth';
+import { requireAdminActor } from '@/lib/auth';
+import { handleAdminRouteError } from '@/lib/auth/error-response';
 
 export async function POST(request: Request) {
-  const actor = await getAdminActor();
-  if (!actor) {
-    return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
-  }
-
-  let payload: unknown;
-
   try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ success: false, error: 'Invalid JSON payload.' }, { status: 400 });
-  }
+    const actor = await requireAdminActor();
 
-  try {
+    let payload: unknown;
+
+    try {
+      payload = await request.json();
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid JSON payload.' }, { status: 400 });
+    }
+
     const result = await importExamTemplate(payload, actor.id);
     return NextResponse.json({ success: true, examSlug: result.examSlug, questionCount: result.questionCount });
   } catch (error) {
+    const unauthorized = handleAdminRouteError(error);
+    if (unauthorized) {
+      return unauthorized;
+    }
+
     if (error instanceof ZodError) {
       return NextResponse.json(
         {
@@ -37,6 +40,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status });
     }
 
+    console.error('[api/content/exams/import] unexpected failure', error);
     return NextResponse.json({ success: false, error: 'Unexpected error importing exam.' }, { status: 500 });
   }
 }

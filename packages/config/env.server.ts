@@ -20,6 +20,8 @@ export const serverEnvSchema = z.object({
 
   // Security
   SITE_KMS_MASTER_KEY: z.string().length(64),
+  ADMIN_SESSION_HMAC_SECRET: z.string().length(64),
+  ADMIN_REMEMBER_DEVICE_HMAC_SECRET: z.string().length(64),
 
   // Integrations (optional)
   CAPTCHA_SECRET: z.string().optional(),

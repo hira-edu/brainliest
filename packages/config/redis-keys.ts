@@ -12,10 +12,13 @@ export const redisKeys = {
   // Rate Limits
   rateLimitAi: (identifier: string) => `ratelimit:ai:${identifier}`,
   rateLimitAuth: (ip: string) => `ratelimit:auth:${ip}`,
+  rateLimitAuthEmail: (email: string) => `ratelimit:auth:email:${email}`,
+  rateLimitAuthCredential: (email: string, ip: string) => `ratelimit:auth:credential:${email}:${ip}`,
   rateLimitSearch: (ip: string) => `ratelimit:search:${ip}`,
 
   // Sessions
   adminSession: (sessionId: string) => `session:admin:${sessionId}`,
+  adminTotpChallenge: (challengeId: string) => `auth:totp:challenge:${challengeId}`,
 
   // Locks
   lockImport: (importId: string) => `lock:import:${importId}`,

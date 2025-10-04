@@ -25,15 +25,6 @@ export function PracticeQuestionActions({
   unflagLabel = 'Unflag question',
   timerLabel,
 }: PracticeQuestionActionsProps) {
-  React.useEffect(() => {
-    // eslint-disable-next-line no-console
-    console.log('[practice] question actions state', {
-      isBookmarked,
-      isFlagged,
-      bookmarkAriaLabel: isBookmarked ? removeBookmarkLabel : bookmarkedLabel,
-      flagAriaLabel: isFlagged ? unflagLabel : flagLabel,
-    });
-  }, [isBookmarked, isFlagged, removeBookmarkLabel, bookmarkedLabel, unflagLabel, flagLabel]);
 
   const handleBookmark = () => {
     if (onToggleBookmark) {

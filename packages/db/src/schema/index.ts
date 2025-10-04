@@ -26,7 +26,16 @@ export const assetTypeEnum = pgEnum('question_asset_type', ['image', 'audio', 'f
 export const userRoleEnum = pgEnum('user_role', ['STUDENT', 'EDITOR', 'ADMIN', 'SUPERADMIN']);
 export const adminRoleEnum = pgEnum('admin_role', ['VIEWER', 'EDITOR', 'ADMIN', 'SUPERADMIN']);
 export const integrationEnvironmentEnum = pgEnum('integration_environment', ['production', 'staging', 'development']);
-export const integrationKeyTypeEnum = pgEnum('integration_key_type', ['OPENAI', 'STRIPE', 'RESEND', 'CAPTCHA']);
+export const integrationKeyTypeEnum = pgEnum('integration_key_type', [
+  'OPENAI',
+  'STRIPE',
+  'RESEND',
+  'CAPTCHA',
+  'GOOGLE_RECAPTCHA_V2_SITE',
+  'GOOGLE_RECAPTCHA_V2_SECRET',
+  'GOOGLE_RECAPTCHA_V3_SITE',
+  'GOOGLE_RECAPTCHA_V3_SECRET',
+]);
 export const actorTypeEnum = pgEnum('audit_actor_type', ['admin', 'user', 'system']);
 export const examSessionStatusEnum = pgEnum('exam_session_status', ['in_progress', 'completed', 'abandoned', 'expired']);
 
@@ -281,6 +290,8 @@ export const adminUsers = pgTable(
     passwordHash: text('password_hash').notNull(),
     role: adminRoleEnum('role').notNull().default('VIEWER'),
     totpSecret: text('totp_secret'),
+    totpEnabledAt: timestamp('totp_enabled_at', { withTimezone: true }),
+    totpLastUsedAt: timestamp('totp_last_used_at', { withTimezone: true }),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     status: varchar('status', { length: 50 }).notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -288,6 +299,42 @@ export const adminUsers = pgTable(
   },
   (table) => ({
     emailIdx: uniqueIndex('admin_users_email_idx').on(table.email),
+  })
+);
+
+export const adminTotpRecoveryCodes = pgTable(
+  'admin_totp_recovery_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    adminId: uuid('admin_id')
+      .notNull()
+      .references(() => adminUsers.id, { onDelete: 'cascade' }),
+    codeHash: text('code_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+  },
+  (table) => ({
+    adminIdx: index('admin_totp_recovery_codes_admin_idx').on(table.adminId),
+  })
+);
+
+export const adminRememberDevices = pgTable(
+  'admin_remember_devices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    adminId: uuid('admin_id')
+      .notNull()
+      .references(() => adminUsers.id, { onDelete: 'cascade' }),
+    tokenHash: text('token_hash').notNull(),
+    userAgent: text('user_agent'),
+    ipAddress: varchar('ip_address', { length: 255 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  },
+  (table) => ({
+    adminIdx: index('admin_remember_devices_admin_idx').on(table.adminId),
+    expiryIdx: index('admin_remember_devices_expires_idx').on(table.expiresAt),
   })
 );
 

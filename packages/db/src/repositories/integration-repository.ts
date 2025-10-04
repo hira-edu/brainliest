@@ -1,6 +1,14 @@
 import type { PaginatedResult } from '../types';
 
-export type IntegrationKeyType = 'OPENAI' | 'STRIPE' | 'RESEND' | 'CAPTCHA';
+export type IntegrationKeyType =
+  | 'OPENAI'
+  | 'STRIPE'
+  | 'RESEND'
+  | 'CAPTCHA'
+  | 'GOOGLE_RECAPTCHA_V2_SITE'
+  | 'GOOGLE_RECAPTCHA_V2_SECRET'
+  | 'GOOGLE_RECAPTCHA_V3_SITE'
+  | 'GOOGLE_RECAPTCHA_V3_SECRET';
 export type IntegrationEnvironment = 'production' | 'staging' | 'development';
 
 export interface IntegrationKeyRecord {
@@ -49,4 +57,8 @@ export interface IntegrationKeyRepository {
   create(input: CreateIntegrationKeyInput): Promise<string>;
   rotate(input: RotateIntegrationKeyInput): Promise<void>;
   delete(input: DeleteIntegrationKeyInput): Promise<boolean>;
+  getDecryptedValueByType(
+    type: IntegrationKeyType,
+    environment: IntegrationEnvironment
+  ): Promise<string | null>;
 }

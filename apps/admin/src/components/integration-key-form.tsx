@@ -37,6 +37,10 @@ const typeOptions = [
   { value: 'STRIPE', label: 'Stripe' },
   { value: 'RESEND', label: 'Resend' },
   { value: 'CAPTCHA', label: 'Captcha' },
+  { value: 'GOOGLE_RECAPTCHA_V2_SITE', label: 'Google reCAPTCHA v2 (site key)' },
+  { value: 'GOOGLE_RECAPTCHA_V2_SECRET', label: 'Google reCAPTCHA v2 (secret key)' },
+  { value: 'GOOGLE_RECAPTCHA_V3_SITE', label: 'Google reCAPTCHA v3 (site key)' },
+  { value: 'GOOGLE_RECAPTCHA_V3_SECRET', label: 'Google reCAPTCHA v3 (secret key)' },
 ];
 
 const environmentOptions = [

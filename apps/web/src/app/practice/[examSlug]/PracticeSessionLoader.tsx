@@ -10,6 +10,7 @@ import type {
 } from '@/lib/practice/types';
 import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
 import {
+  clearSampleSessionState,
   loadSampleSessionSnapshot,
   mergeSampleSessionWithSnapshot,
   persistSampleSessionState,
@@ -28,12 +29,6 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
       snapshotRef.current = loadSampleSessionSnapshot(examSlug);
       if (snapshotRef.current) {
         const merged = mergeSampleSessionWithSnapshot(initialData, snapshotRef.current);
-        // eslint-disable-next-line no-console
-        console.log('[practice] loader init with snapshot', {
-          examSlug,
-          flagged: merged.flaggedQuestionIds,
-          bookmarked: merged.bookmarkedQuestionIds,
-        });
         return merged;
       }
     }
@@ -57,23 +52,57 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
     const controller = new AbortController();
 
     async function hydrate() {
-      try {
-        const response = await fetch('/api/practice/sessions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': PRACTICE_DEMO_USER_ID,
-          },
-          body: JSON.stringify({ examSlug, userId: PRACTICE_DEMO_USER_ID }),
-          signal: controller.signal,
-          cache: 'no-store',
-        });
+      const storedSnapshot = snapshotRef.current ?? loadSampleSessionSnapshot(examSlug);
+      snapshotRef.current = storedSnapshot;
+      const storedSessionId = storedSnapshot?.data.sessionId;
 
-        if (!response.ok) {
-          throw new Error(`Failed to start session (${response.status})`);
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-user-id': PRACTICE_DEMO_USER_ID,
+      } as const;
+
+      try {
+        let payload: PracticeSessionApiResponse | null = null;
+
+        if (storedSessionId && storedSessionId !== 'sample-session') {
+          try {
+            const resumeResponse = await fetch(`/api/practice/sessions/${storedSessionId}`, {
+              method: 'GET',
+              headers,
+              signal: controller.signal,
+              cache: 'no-store',
+            });
+
+            if (resumeResponse.ok) {
+              payload = (await resumeResponse.json()) as PracticeSessionApiResponse;
+            } else if (resumeResponse.status === 404) {
+              clearSampleSessionState(examSlug);
+              snapshotRef.current = null;
+            }
+          } catch (resumeError) {
+            // eslint-disable-next-line no-console
+            if (!cancelled) {
+              console.warn('[practice] failed to resume session', resumeError);
+            }
+          }
         }
 
-        const payload = (await response.json()) as PracticeSessionApiResponse;
+        if (!payload) {
+          const startResponse = await fetch('/api/practice/sessions', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ examSlug, userId: PRACTICE_DEMO_USER_ID }),
+            signal: controller.signal,
+            cache: 'no-store',
+          });
+
+          if (!startResponse.ok) {
+            throw new Error(`Failed to start session (${startResponse.status})`);
+          }
+
+          payload = (await startResponse.json()) as PracticeSessionApiResponse;
+        }
+
         if (cancelled) {
           return;
         }
@@ -88,12 +117,6 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
           const merged = snapshot ? mergeSampleSessionWithSnapshot(sampleSession, snapshot) : sampleSession;
           persistSampleSessionState(examSlug, merged, merged.progress.timeRemainingSeconds ?? null);
           snapshotRef.current = loadSampleSessionSnapshot(examSlug);
-          // eslint-disable-next-line no-console
-          console.log('[practice] loader merged session', {
-            flagged: merged.flaggedQuestionIds,
-            bookmarked: merged.bookmarkedQuestionIds,
-            hadSnapshot: Boolean(snapshot),
-          });
           setSession(merged);
           setError(null);
           return;

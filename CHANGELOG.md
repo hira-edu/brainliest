@@ -16,6 +16,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.2.22] - 2025-10-06
+
+### Changed
+- **Practice sample sessions** — Normalised fallback practice data to deterministic `question-*`/`choice-*` identifiers so Playwright mocks and UI state stay aligned even without the API (`apps/web/src/lib/practice/fetch-practice-session.ts`).
+- **Snapshot persistence** — Snapshot helper now mirrors data into `sessionStorage` and stores remote sessions as well, allowing bookmark/flag/timer state to survive reloads when tests clear `localStorage` (`apps/web/src/lib/practice/sample-persistence.ts`, `apps/web/src/app/practice/[examSlug]/PracticeSessionContainer.tsx`).
+- **Practice loader resume** — Client loader resumes existing sessions via stored IDs before issuing a new POST and clears stale snapshots on 404, ensuring replayed Playwright sessions pick up server-side toggles (`apps/web/src/app/practice/[examSlug]/PracticeSessionLoader.tsx`).
+- **App layout semantics** — Wrapped the root layout in a `<main>` element so Playwright selectors targeting `main` work across practice routes (`apps/web/src/app/layout.tsx`).
+
+### Tests
+- `pnpm playwright test --project=practice`
+- `pnpm lint --filter @brainliest/web`
+
+---
+
+## [2.2.21] - 2025-10-05
+
+### Added
+- **Admin auth helper** — Introduced `requireAdminActor` and a dedicated `AdminUnauthorizedError` so API routes and background jobs can share a consistent guard flow (`apps/admin/src/lib/auth/admin-actor.ts`, `apps/admin/src/lib/auth/index.ts`).
+- **reCAPTCHA safeguards** — Enabled optional Google reCAPTCHA (v2/v3) on the admin sign-in form with server-side verification and a reusable client controller (`apps/admin/src/lib/auth/recaptcha.ts`, `apps/admin/src/components/sign-in-form.tsx`).
+- **Credential throttling** — Added redis-backed rate limiting utilities (IP/email/credential buckets) and wired them into the admin sign-in action with audit logging (`packages/shared/src/adapters/redis/rate-limiter.ts`, `apps/admin/src/lib/auth/actions.ts`, `packages/config/redis-keys.ts`).
+- **Integration-key taxonomy** — Expanded schema/UI to manage Google reCAPTCHA site/secret variants so operators can rotate them from the admin panel (`packages/db/src/schema/index.ts`, `packages/shared/src/schemas/integration.ts`, `apps/admin/src/components/integration-key-form.tsx`).
+- **Authenticator MFA** — Delivered full TOTP multi-factor support with enrollment flows, recovery codes, trusted-device cookies, and a dedicated security settings surface (`packages/shared/src/crypto/totp.ts`, `apps/admin/src/lib/auth/totp-service.ts`, `apps/admin/src/components/totp-manager.tsx`).
+
+### Changed
+- **Session handling** — Admin sessions are now AES-encrypted, HMAC-signed tokens backed by Redis (sliding `lastSeenAt` refresh, remember-me support, IP/User-Agent metadata) with a new `ADMIN_SESSION_HMAC_SECRET` requirement (`apps/admin/src/lib/auth/session.ts`, `packages/config/env.server.ts`).
+- **Sign-in/out auditing** — Server actions now capture client metadata, persist session records, and emit audit log entries for sign-in and sign-out events (`apps/admin/src/lib/auth/actions.ts`).
+- **Configuration tests** — Updated config suite to account for the new signing secret so CI fails fast when the variable is missing (`packages/config/env.server.test.ts`).
+- **Sign-in UX** — Credential submission now chains through reCAPTCHA, TOTP challenges, and trusted-device cookies with recovery-code fallback (`apps/admin/src/components/sign-in-form.tsx`, `apps/admin/src/lib/auth/actions.ts`).
+- **API guards** — All admin API routes now defer to `requireAdminActor` and share a consistent 401 response helper, with corresponding test updates (`apps/admin/src/app/api/**/*.ts`, `apps/admin/src/lib/auth/error-response.ts`).
+
+### Tests
+- `pnpm --filter @brainliest/admin typecheck`
+- `pnpm --filter @brainliest/admin lint`
+
+---
+
 ## [2.2.20] - 2025-10-04
 
 ### Added

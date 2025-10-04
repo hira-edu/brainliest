@@ -3,6 +3,12 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+## 2025-10-06 (Session 28) — Codex
+- ✅ **Practice Playwright parity** — Normalised sample-session question/option IDs and extended session snapshots so the mock resume flow mirrors real API responses across reloads (`apps/web/src/lib/practice/fetch-practice-session.ts`, `apps/web/src/lib/practice/sample-persistence.ts`, `apps/web/src/app/practice/[examSlug]/PracticeSessionLoader.tsx`, `apps/web/src/app/practice/[examSlug]/PracticeSessionContainer.tsx`).
+- ♻️ **Semantics fix** — Wrapped the app root layout in a `<main>` so Playwright selectors scoped to `main` operate reliably (`apps/web/src/app/layout.tsx`).
+- 🧪 **Verification** — `pnpm playwright test --project=practice`, `pnpm lint --filter @brainliest/web`.
+- 📌 **Next** — Wire the practice persistence into the live API once the backend session endpoints arrive, then run the full practice Playwright suite in CI when Chromium is available.
+
 ## 2025-10-04 (Session 27) — Codex
 - 🔐 **Bcrypt migration** — Swapped the temporary scrypt helper for bcrypt, added typings, and kept legacy hashes verifiable so existing accounts continue to authenticate (`packages/shared/src/crypto/password.ts`, `packages/shared/src/crypto/password.test.ts`).
 - 🔑 **Integration key delete flow** — Introduced delete schema, repository mutation, server action, audit log entry, and modal UI with optional reason capture (`packages/shared/src/schemas/integration.ts`, `packages/db/src/repositories/**`, `apps/admin/src/app/(panel)/integrations/keys/actions.ts`, `apps/admin/src/components/integration-key-row-actions.tsx`).
@@ -262,3 +268,25 @@
   - Dedicated demo routes required, not just inline examples
   - Overlay close logic requires careful pointer event tracking
 - **Status**: Standing down on composites, ready for next assignment from Codex
+
+## 2025-10-05 (Session 27) — Codex
+- 🔐 **Session hardening** — Replaced cookie-only admin sessions with AES-encrypted, HMAC-signed envelopes backed by Redis metadata (rolling `lastSeenAt`, sliding expiry refresh) (`apps/admin/src/lib/auth/session.ts`).
+- 👤 **Actor helper** — Added `requireAdminActor` + `AdminUnauthorizedError` so API routes/background jobs can standardise their 401 handling (`apps/admin/src/lib/auth/admin-actor.ts`).
+- 🪵 **Audit coverage** — Sign-in/out actions now capture IP/User-Agent, persist session metadata, and emit audit log entries for traceability (`apps/admin/src/lib/auth/actions.ts`).
+- 🧩 **Build hygiene** — Introduced mandatory `ADMIN_SESSION_HMAC_SECRET` env var and updated config tests to keep CI aware of the new requirement (`packages/config/env.server.ts`, `packages/config/env.server.test.ts`).
+- 🧪 **Validation** — `pnpm --filter @brainliest/admin typecheck` and `pnpm --filter @brainliest/admin lint` executed successfully (Next.js warning about lockfiles persists).
+
+## 2025-10-05 (Session 28) — Codex
+- 🛡️ **Auth throttling** — Added Redis-backed rate limiting (per IP, email, credential) to `signInAction` with audit logging + cooldown messaging (`apps/admin/src/lib/auth/actions.ts`, `packages/config/redis-keys.ts`, `packages/shared/src/adapters/redis/rate-limiter.ts`).
+- 🤖 **reCAPTCHA integration** — Wired admin sign-in to optional Headless Google reCAPTCHA (v2/v3) with server verification + reusable client controller (`apps/admin/src/lib/auth/recaptcha.ts`, `apps/admin/src/components/sign-in-form.tsx`).
+- 🔑 **Integration key taxonomy** — Expanded integration key enums/UI to manage reCAPTCHA site/secret variants across filters and forms (`packages/db/src/schema/index.ts`, `packages/shared/src/schemas/integration.ts`, `apps/admin/src/components/integration-key-form.tsx`).
+- 🚦 **Guarded API routes** — Swapped API handlers to `requireAdminActor` + shared error response helper and updated tests to mock the new path (`apps/admin/src/app/api/**/*.ts`, `apps/admin/src/lib/auth/error-response.ts`).
+- ✅ **Maintenance** — Refreshed route tests for new guard shape and ensured typecheck/lint cover the reCAPTCHA flow.
+
+## 2025-10-05 (Session 29) — Codex
+- 🔐 **MFA rollout** — Added full TOTP support with setup/verification flows, recovery codes, and remember-device cookies backed by Redis challenges (`packages/shared/src/crypto/totp.ts`, `apps/admin/src/lib/auth/totp-service.ts`, `apps/admin/src/lib/auth/remember-device.ts`, `apps/admin/src/lib/auth/totp-challenge.ts`).
+- 👥 **Sign-in UX** — Updated the admin sign-in form to handle reCAPTCHA + TOTP challenge states with recovery-code fallback and trusted device opt-in (`apps/admin/src/components/sign-in-form.tsx`, `apps/admin/src/lib/auth/actions.ts`).
+- 🛡️ **Security settings** — Introduced the Settings → Security panel with MFA enrollment UI, recovery code regeneration, and trusted-device management (`apps/admin/src/app/(panel)/settings/security/page.tsx`, `apps/admin/src/components/totp-manager.tsx`, `apps/admin/src/app/(panel)/settings/security/actions.ts`).
+- 🗄️ **Schema support** — Extended admin schema/repositories & migrations for TOTP metadata, recovery codes, and remember-device records plus updated tests (`packages/db/src/schema/index.ts`, `packages/db/migrations/202510020900_init.sql`, `packages/db/src/repositories/**/*.ts`, `packages/db/src/repositories/drizzle-repositories.test.ts`).
+- 🧪 **Regression coverage** — Added shared/base32 + TOTP helpers with unit tests and refreshed db/shared suites (`packages/shared/src/crypto/base32.ts`, `packages/shared/src/crypto/encryption.test.ts`).
+- ✅ **Validation** — `pnpm --filter @brainliest/admin typecheck`, `pnpm --filter @brainliest/admin lint`, `pnpm --filter @brainliest/shared test`, `pnpm --filter @brainliest/db test`.

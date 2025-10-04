@@ -6,6 +6,7 @@ import { Card } from '@brainliest/ui';
 
 import { getAdminActor } from '@/lib/auth';
 import { SignInForm } from '@/components/sign-in-form';
+import { getRecaptchaClientConfig } from '@/lib/auth/recaptcha';
 
 export const metadata: Metadata = {
   title: 'Sign in • Brainliest Admin',
@@ -23,6 +24,8 @@ export default async function SignInPage() {
     redirect('/dashboard');
   }
 
+  const recaptchaConfig = await getRecaptchaClientConfig();
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-16">
       <Card {...cardProps}>
@@ -32,7 +35,7 @@ export default async function SignInPage() {
             <p className="text-sm text-gray-500">Sign in with your admin credentials to continue.</p>
           </header>
 
-          <SignInForm />
+          <SignInForm recaptcha={recaptchaConfig} />
         </div>
       </Card>
     </main>

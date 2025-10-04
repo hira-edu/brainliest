@@ -257,8 +257,11 @@ export function PracticeClient({
     hasRevealed,
   });
 
+  const hasServerReveal = Boolean(questionState.hasRevealedAnswer);
+  const showRevealedBanner = hasRevealed || hasServerReveal || isSubmitted;
+
   const revealedAnswerBanner = useMemo(() => {
-    if (!hasRevealed) {
+    if (!showRevealedBanner) {
       return null;
     }
 
@@ -285,7 +288,7 @@ export function PracticeClient({
       title: 'Correct answer',
       description,
     };
-  }, [correctAnswerLabel, hasRevealed, questionState.isCorrect]);
+  }, [correctAnswerLabel, questionState.isCorrect, showRevealedBanner]);
 
   const explanationSuccessBanner = state === 'success' && explanation
     ? {

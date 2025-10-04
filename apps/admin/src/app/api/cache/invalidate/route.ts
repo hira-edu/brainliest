@@ -7,7 +7,8 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { invalidateCategory, invalidateExam } from '@brainliest/shared';
 
-import { getAdminActor } from '@/lib/auth';
+import { requireAdminActor } from '@/lib/auth';
+import { handleAdminRouteError } from '@/lib/auth/error-response';
 
 type InvalidatePayload = {
   readonly type: 'exam' | 'category';
@@ -28,31 +29,22 @@ function isInvalidatePayload(value: unknown): value is InvalidatePayload {
 }
 
 export async function POST(request: NextRequest) {
-  const actor = await getAdminActor();
-  if (!actor) {
-    return NextResponse.json(
-      {
-        error: 'AUTH_REQUIRED',
-        message: 'Authentication required.',
-      },
-      { status: 401 }
-    );
-  }
-
-  const json = await request.json().catch(() => null);
-  if (!isInvalidatePayload(json)) {
-    return NextResponse.json(
-      {
-        error: 'INVALID_PAYLOAD',
-        message: 'Request body does not match schema',
-      },
-      { status: 400 }
-    );
-  }
-
-  const { type, identifier } = json;
-
   try {
+    await requireAdminActor();
+
+    const json = await request.json().catch(() => null);
+    if (!isInvalidatePayload(json)) {
+      return NextResponse.json(
+        {
+          error: 'INVALID_PAYLOAD',
+          message: 'Request body does not match schema',
+        },
+        { status: 400 }
+      );
+    }
+
+    const { type, identifier } = json;
+
     if (type === 'exam') {
       await invalidateExam(identifier);
     } else {
@@ -61,6 +53,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    const unauthorized = handleAdminRouteError(error);
+    if (unauthorized) {
+      return unauthorized;
+    }
+
     console.error('[api/cache/invalidate] unexpected error', error);
     return NextResponse.json(
       {

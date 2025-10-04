@@ -16,7 +16,21 @@ interface IntegrationKeysPageProps {
 }
 
 const ENV_OPTIONS = ['all', 'production', 'staging', 'development'] as const;
-const TYPE_OPTIONS = ['all', 'OPENAI', 'STRIPE', 'RESEND', 'CAPTCHA'] as const;
+const TYPE_OPTIONS = [
+  'all',
+  'OPENAI',
+  'STRIPE',
+  'RESEND',
+  'CAPTCHA',
+  'GOOGLE_RECAPTCHA_V2_SITE',
+  'GOOGLE_RECAPTCHA_V2_SECRET',
+  'GOOGLE_RECAPTCHA_V3_SITE',
+  'GOOGLE_RECAPTCHA_V3_SECRET',
+] as const;
+
+type IntegrationEnvironmentOption = (typeof ENV_OPTIONS)[number];
+type IntegrationTypeOption = (typeof TYPE_OPTIONS)[number];
+type IntegrationTypeFilter = Exclude<IntegrationTypeOption, 'all'>;
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -56,12 +70,12 @@ export default async function IntegrationKeysPage({ searchParams }: IntegrationK
   const page = pageParam ? Math.max(1, Number.parseInt(pageParam, 10)) : 1;
   const searchValue = searchParam?.trim() ?? '';
 
-  const normalizedEnvironment = ENV_OPTIONS.includes(environmentParam as (typeof ENV_OPTIONS)[number]) && environmentParam !== 'all'
-    ? (environmentParam as 'production' | 'staging' | 'development')
+  const normalizedEnvironment = ENV_OPTIONS.includes(environmentParam as IntegrationEnvironmentOption) && environmentParam !== 'all'
+    ? (environmentParam as Exclude<IntegrationEnvironmentOption, 'all'>)
     : undefined;
 
-  const normalizedType = TYPE_OPTIONS.includes(typeParam as (typeof TYPE_OPTIONS)[number]) && typeParam !== 'all'
-    ? (typeParam as 'OPENAI' | 'STRIPE' | 'RESEND' | 'CAPTCHA')
+  const normalizedType = TYPE_OPTIONS.includes(typeParam as IntegrationTypeOption) && typeParam !== 'all'
+    ? (typeParam as IntegrationTypeFilter)
     : undefined;
 
   const keysPage = await listIntegrationKeys({
