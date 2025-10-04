@@ -22,6 +22,11 @@ type SampleSessionState = {
   revealedQuestionIds: string[];
   timeRemainingSeconds: number | null;
   questionStates: Record<string, SampleQuestionSnapshot>;
+  questionStatesByOrder: Record<string, SampleQuestionSnapshot>;
+  flaggedOrderIndexes: number[];
+  bookmarkedOrderIndexes: number[];
+  submittedOrderIndexes: number[];
+  revealedOrderIndexes: number[];
 };
 
 interface SampleSessionSnapshot {
@@ -71,6 +76,22 @@ const buildSnapshot = (
     acc[question.questionId] = toQuestionSnapshot(question);
     return acc;
   }, {});
+  const questionStatesByOrder = session.questions.reduce<Record<string, SampleQuestionSnapshot>>((acc, question) => {
+    acc[String(question.orderIndex)] = toQuestionSnapshot(question);
+    return acc;
+  }, {});
+  const flaggedOrderIndexes = session.questions
+    .filter((question) => question.isFlagged)
+    .map((question) => question.orderIndex);
+  const bookmarkedOrderIndexes = session.questions
+    .filter((question) => question.isBookmarked)
+    .map((question) => question.orderIndex);
+  const submittedOrderIndexes = session.questions
+    .filter((question) => question.isSubmitted)
+    .map((question) => question.orderIndex);
+  const revealedOrderIndexes = session.questions
+    .filter((question) => question.hasRevealedAnswer)
+    .map((question) => question.orderIndex);
 
   const timeRemainingSeconds =
     typeof overrideRemainingSeconds === 'number'
@@ -89,6 +110,11 @@ const buildSnapshot = (
       revealedQuestionIds: normaliseIdList(session.revealedQuestionIds),
       timeRemainingSeconds,
       questionStates,
+      questionStatesByOrder,
+      flaggedOrderIndexes,
+      bookmarkedOrderIndexes,
+      submittedOrderIndexes,
+      revealedOrderIndexes,
     },
   };
 };
@@ -178,13 +204,32 @@ export const mergeSampleSessionWithSnapshot = (
   const bookmarkedSet = new Set(normaliseIdList(snapshot.data.bookmarkedQuestionIds));
   const submittedSet = new Set(normaliseIdList(snapshot.data.submittedQuestionIds));
   const revealedSet = new Set(normaliseIdList(snapshot.data.revealedQuestionIds));
+  const flaggedOrderSet = new Set((snapshot.data.flaggedOrderIndexes ?? []).filter((order) => Number.isFinite(order)));
+  const bookmarkedOrderSet = new Set(
+    (snapshot.data.bookmarkedOrderIndexes ?? []).filter((order) => Number.isFinite(order))
+  );
+  const submittedOrderSet = new Set(
+    (snapshot.data.submittedOrderIndexes ?? []).filter((order) => Number.isFinite(order))
+  );
+  const revealedOrderSet = new Set(
+    (snapshot.data.revealedOrderIndexes ?? []).filter((order) => Number.isFinite(order))
+  );
 
   const nextQuestions = base.questions.map((question) => {
-    const override = snapshot.data.questionStates[question.questionId];
+    const override =
+      snapshot.data.questionStates[question.questionId] ??
+      snapshot.data.questionStatesByOrder?.[String(question.orderIndex)];
     const selectedAnswers = override ? [...override.selectedAnswers] : [...question.selectedAnswers];
-    const isSubmitted = override?.isSubmitted ?? (submittedSet.has(question.questionId) ? true : Boolean(question.isSubmitted));
+    const isSubmitted =
+      override?.isSubmitted ??
+      (submittedSet.has(question.questionId) || submittedOrderSet.has(question.orderIndex)
+        ? true
+        : Boolean(question.isSubmitted));
     const hasRevealedAnswer =
-      override?.hasRevealedAnswer ?? (revealedSet.has(question.questionId) ? true : Boolean(question.hasRevealedAnswer));
+      override?.hasRevealedAnswer ??
+      (revealedSet.has(question.questionId) || revealedOrderSet.has(question.orderIndex)
+        ? true
+        : Boolean(question.hasRevealedAnswer));
 
     const timeSpentSeconds = (() => {
       if (!override) {
@@ -202,8 +247,8 @@ export const mergeSampleSessionWithSnapshot = (
     return {
       ...question,
       selectedAnswers,
-      isFlagged: flaggedSet.has(question.questionId),
-      isBookmarked: bookmarkedSet.has(question.questionId),
+      isFlagged: flaggedSet.has(question.questionId) || flaggedOrderSet.has(question.orderIndex),
+      isBookmarked: bookmarkedSet.has(question.questionId) || bookmarkedOrderSet.has(question.orderIndex),
       isSubmitted,
       hasRevealedAnswer,
       isCorrect: override?.isCorrect ?? question.isCorrect ?? null,
@@ -219,8 +264,9 @@ export const mergeSampleSessionWithSnapshot = (
         questionId: activeQuestion.questionId,
         orderIndex: activeQuestion.orderIndex,
         selectedAnswers: [...activeQuestion.selectedAnswers],
-        isFlagged: flaggedSet.has(activeQuestion.questionId),
-        isBookmarked: bookmarkedSet.has(activeQuestion.questionId),
+        isFlagged: flaggedSet.has(activeQuestion.questionId) || flaggedOrderSet.has(activeQuestion.orderIndex),
+        isBookmarked:
+          bookmarkedSet.has(activeQuestion.questionId) || bookmarkedOrderSet.has(activeQuestion.orderIndex),
         isSubmitted: Boolean(activeQuestion.isSubmitted),
         hasRevealedAnswer: Boolean(activeQuestion.hasRevealedAnswer),
         isCorrect: activeQuestion.isCorrect ?? null,
@@ -245,10 +291,30 @@ export const mergeSampleSessionWithSnapshot = (
       questionIndex: Math.min(resolvedIndex + 1, Math.max(base.progress.totalQuestions, 1)),
       timeRemainingSeconds: remainingSeconds ?? base.progress.timeRemainingSeconds ?? null,
     },
-    flaggedQuestionIds: Array.from(flaggedSet),
-    bookmarkedQuestionIds: Array.from(bookmarkedSet),
-    submittedQuestionIds: Array.from(submittedSet),
-    revealedQuestionIds: Array.from(revealedSet),
+    flaggedQuestionIds: Array.from(
+      new Set([
+        ...flaggedSet,
+        ...nextQuestions.filter((question) => flaggedOrderSet.has(question.orderIndex)).map((question) => question.questionId),
+      ])
+    ),
+    bookmarkedQuestionIds: Array.from(
+      new Set([
+        ...bookmarkedSet,
+        ...nextQuestions.filter((question) => bookmarkedOrderSet.has(question.orderIndex)).map((question) => question.questionId),
+      ])
+    ),
+    submittedQuestionIds: Array.from(
+      new Set([
+        ...submittedSet,
+        ...nextQuestions.filter((question) => submittedOrderSet.has(question.orderIndex)).map((question) => question.questionId),
+      ])
+    ),
+    revealedQuestionIds: Array.from(
+      new Set([
+        ...revealedSet,
+        ...nextQuestions.filter((question) => revealedOrderSet.has(question.orderIndex)).map((question) => question.questionId),
+      ])
+    ),
     fromSample: true,
   };
 };

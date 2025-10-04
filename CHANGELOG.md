@@ -30,6 +30,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.19] - 2025-10-04
+
+### Added
+- Shared AES-GCM helpers for encrypting integration secrets plus dedicated unit coverage (`packages/shared/src/crypto/encryption.ts`, `packages/shared/src/crypto/encryption.test.ts`).
+- Admin integration key create/rotate flows: server actions, modal forms, and row actions keep operators on the listing while revealing the newly submitted secret exactly once (`apps/admin/src/app/(panel)/integrations/keys/**`, `apps/admin/src/components/integration-key-*.tsx`).
+- Integration key repository mutations with encrypted persistence and rotation timestamps (`packages/db/src/repositories/integration-repository.ts`, `packages/db/src/repositories/drizzle-repositories.ts`).
+
+### Changed
+- Hardened admin user hashing by replacing the SHA-256 placeholder with a scrypt-based helper shared across admin actions and seed scripts; migrate to bcrypt when dependencies can be installed (`packages/shared/src/crypto/password.ts`, `apps/admin/src/app/(panel)/users/actions.ts`, `packages/db/scripts/seed-user-umair.ts`).
+
+### Tests
+- `pnpm --filter @brainliest/shared test`
+- `pnpm --filter @brainliest/db test`
+- `pnpm --filter @brainliest/admin typecheck`
+- `pnpm --filter @brainliest/admin lint`
+
 ## [2.2.18] - 2025-10-04
 
 ### Added

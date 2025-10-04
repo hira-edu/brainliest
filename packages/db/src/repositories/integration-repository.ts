@@ -22,6 +22,24 @@ export interface IntegrationKeyFilter {
   readonly search?: string;
 }
 
+export interface CreateIntegrationKeyInput {
+  readonly name: string;
+  readonly type: IntegrationKeyType;
+  readonly environment: IntegrationEnvironment;
+  readonly description?: string | null;
+  readonly value: string;
+  readonly createdByAdminId?: string | null;
+}
+
+export interface RotateIntegrationKeyInput {
+  readonly id: string;
+  readonly value: string;
+  readonly rotatedByAdminId?: string | null;
+  readonly rotatedAt?: Date;
+}
+
 export interface IntegrationKeyRepository {
   list(filters: IntegrationKeyFilter, page: number, pageSize: number): Promise<PaginatedResult<IntegrationKeyRecord>>;
+  create(input: CreateIntegrationKeyInput): Promise<string>;
+  rotate(input: RotateIntegrationKeyInput): Promise<void>;
 }

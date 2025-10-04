@@ -7,6 +7,7 @@ import type {
   PaginatedResult,
 } from '@brainliest/db';
 import { repositories } from './repositories';
+import type { CreateIntegrationKeyPayload, RotateIntegrationKeyPayload } from './shared-schemas';
 
 export interface ListIntegrationKeysOptions extends Partial<IntegrationKeyFilter> {
   readonly page?: number;
@@ -65,4 +66,29 @@ export async function searchIntegrationKeySuggestions(
     name: key.name,
     environment: key.environment,
   }));
+}
+
+export async function createIntegrationKey(
+  payload: CreateIntegrationKeyPayload,
+  actorId: string | null = null
+): Promise<string> {
+  return repositories.integrationKeys.create({
+    name: payload.name,
+    type: payload.type,
+    environment: payload.environment,
+    description: payload.description ?? null,
+    value: payload.value,
+    createdByAdminId: actorId,
+  });
+}
+
+export async function rotateIntegrationKey(
+  payload: RotateIntegrationKeyPayload,
+  actorId: string | null = null
+): Promise<void> {
+  await repositories.integrationKeys.rotate({
+    id: payload.id,
+    value: payload.value,
+    rotatedByAdminId: actorId,
+  });
 }

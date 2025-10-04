@@ -34,7 +34,6 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
     if (snapshot) {
       const merged = mergeSampleSessionWithSnapshot(initialData, snapshot);
       setSession(merged);
-      persistSampleSessionState(examSlug, merged, merged.progress.timeRemainingSeconds ?? null);
       setError(null);
       return;
     }
@@ -45,6 +44,7 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
+    const hasSampleBaseline = initialData.fromSample;
 
     async function hydrate() {
       try {
@@ -67,7 +67,19 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
         if (cancelled) {
           return;
         }
-        setSession(mapApiResponseToPracticeSessionData(payload));
+        const mapped = mapApiResponseToPracticeSessionData(payload);
+        if (hasSampleBaseline) {
+          const snapshot = loadSampleSessionSnapshot(examSlug);
+          const sampleSession = {
+            ...mapped,
+            fromSample: true,
+          } satisfies PracticeSessionData;
+          const merged = snapshot ? mergeSampleSessionWithSnapshot(sampleSession, snapshot) : sampleSession;
+          persistSampleSessionState(examSlug, merged, merged.progress.timeRemainingSeconds ?? null);
+          setSession(merged);
+        } else {
+          setSession(mapped);
+        }
         setError(null);
       } catch (hydrateError) {
         if (cancelled) {
@@ -83,7 +95,7 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
       cancelled = true;
       controller.abort();
     };
-  }, [examSlug]);
+  }, [examSlug, initialData.fromSample]);
 
   return (
     <div className="space-y-4">

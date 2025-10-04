@@ -68,7 +68,7 @@ export async function buildSampleSession(examSlug: string): Promise<PracticeSess
     question: model,
   }));
 
-  const minimumQuestions = Math.max(questions.length, 3);
+  const minimumQuestions = Math.max(questions.length, 1);
   while (questions.length < minimumQuestions) {
     const base = questions[0]?.question ?? SAMPLE_QUESTION;
     const suffix = `-sample-${questions.length + 1}`;

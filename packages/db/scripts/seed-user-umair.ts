@@ -1,18 +1,15 @@
-import { createHash } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { createDrizzleClient } from '../src/client';
 import * as schema from '../src/schema';
-
-// Hash password using SHA-256 (matching the admin app's approach)
-function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
-}
+import { hashPassword } from '@brainliest/shared/crypto/password';
 
 async function main() {
   const db = createDrizzleClient();
   console.log('Starting user seed...');
 
   try {
+    const hashedPassword = await hashPassword('Um@ir7156');
+
     // Check if regular user exists
     const [existingUser] = await db
       .select({ id: schema.users.id })
@@ -26,7 +23,7 @@ async function main() {
         email: 'umair.warraich@gmail.com',
         firstName: 'Umair',
         lastName: 'Warraich',
-        passwordHash: hashPassword('Um@ir7156'),
+        passwordHash: hashedPassword,
         role: 'STUDENT',
       });
       console.log('✓ Created regular user: umair.warraich@gmail.com');
@@ -35,7 +32,7 @@ async function main() {
       await db
         .update(schema.users)
         .set({
-          passwordHash: hashPassword('Um@ir7156'),
+          passwordHash: hashedPassword,
           updatedAt: new Date(),
         })
         .where(eq(schema.users.email, 'umair.warraich@gmail.com'));
@@ -55,7 +52,7 @@ async function main() {
         email: 'umair.warraich@gmail.com',
         firstName: 'Umair',
         lastName: 'Warraich',
-        passwordHash: hashPassword('Um@ir7156'),
+        passwordHash: hashedPassword,
         role: 'SUPERADMIN',
       });
       console.log('✓ Created super admin: umair.warraich@gmail.com');
@@ -64,7 +61,7 @@ async function main() {
       await db
         .update(schema.adminUsers)
         .set({
-          passwordHash: hashPassword('Um@ir7156'),
+          passwordHash: hashedPassword,
           updatedAt: new Date(),
         })
         .where(eq(schema.adminUsers.email, 'umair.warraich@gmail.com'));

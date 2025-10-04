@@ -30,6 +30,8 @@ export type {
   IntegrationKeyFilter,
   IntegrationKeyType,
   IntegrationEnvironment,
+  CreateIntegrationKeyInput,
+  RotateIntegrationKeyInput,
 } from './integration-repository';
 export type {
   MediaRepository,

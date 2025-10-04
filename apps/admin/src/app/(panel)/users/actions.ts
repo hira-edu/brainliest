@@ -1,12 +1,12 @@
 'use server';
 
-import { createHash } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createUserSchema, updateUserSchema, type CreateUserPayload, type UpdateUserPayload } from '@/lib/shared-schemas';
 import { isZodErrorLike, mapZodErrorIssues } from '@/lib/zod-helpers';
 import type { CreateUserInput, UpdateUserInput } from '@brainliest/db';
 import { repositories } from '@/lib/repositories';
+import { hashPassword } from '@brainliest/shared/crypto/password';
 
 export interface UserFormState {
   status: 'idle' | 'error' | 'success';
@@ -15,10 +15,6 @@ export interface UserFormState {
 }
 
 export const userFormInitialState: UserFormState = { status: 'idle' };
-
-function hashPassword(password: string): string {
-  return createHash('sha256').update(password).digest('hex');
-}
 
 const mapFieldErrors = (error: unknown): Record<string, string> => mapZodErrorIssues(error);
 
@@ -103,23 +99,27 @@ function normaliseUpdatePayload(formData: FormData): UpdateUserPayload {
   return parsed;
 }
 
-function toCreateInput(payload: CreateUserPayload): CreateUserInput {
+async function toCreateInput(payload: CreateUserPayload): Promise<CreateUserInput> {
+  const hashedPassword = await hashPassword(payload.password);
+
   return {
     email: payload.email,
     role: payload.role,
     status: payload.status,
-    hashedPassword: hashPassword(payload.password),
+    hashedPassword,
     profile: payload.profile,
   } satisfies CreateUserInput;
 }
 
-function toUpdateInput(payload: UpdateUserPayload): UpdateUserInput {
+async function toUpdateInput(payload: UpdateUserPayload): Promise<UpdateUserInput> {
+  const hashedPassword = payload.password ? await hashPassword(payload.password) : undefined;
+
   return {
     id: payload.id,
     email: payload.email,
     role: payload.role,
     status: payload.status,
-    hashedPassword: payload.password ? hashPassword(payload.password) : undefined,
+    hashedPassword,
     profile: payload.profile,
   } satisfies UpdateUserInput;
 }
@@ -131,7 +131,7 @@ function roleSegment(role: string): 'students' | 'admins' {
 export async function createUserAction(_: UserFormState, formData: FormData): Promise<UserFormState> {
   try {
     const payload = normaliseCreatePayload(formData);
-    const input = toCreateInput(payload);
+    const input = await toCreateInput(payload);
     const userId = await repositories.users.create(input);
     const submissionMode = formData.get('submissionMode');
     const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
@@ -168,7 +168,7 @@ export async function createUserAction(_: UserFormState, formData: FormData): Pr
 export async function updateUserAction(_: UserFormState, formData: FormData): Promise<UserFormState> {
   try {
     const payload = normaliseUpdatePayload(formData);
-    const input = toUpdateInput(payload);
+    const input = await toUpdateInput(payload);
     await repositories.users.update(input);
 
     const segment = roleSegment(payload.role);

@@ -12,6 +12,8 @@ export {
   updateSubjectSchema,
   createUserSchema,
   updateUserSchema,
+  createIntegrationKeySchema,
+  rotateIntegrationKeySchema,
 } from '@brainliest/shared';
 
 export type {
@@ -27,4 +29,6 @@ export type {
   UpdateSubjectPayload,
   CreateUserPayload,
   UpdateUserPayload,
+  CreateIntegrationKeyPayload,
+  RotateIntegrationKeyPayload,
 } from '@brainliest/shared';

@@ -3,6 +3,14 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+## 2025-10-04 (Session 26) — Codex
+- 🔐 **Encryption helpers** — Added shared AES-GCM utilities (`packages/shared/src/crypto/encryption.ts`) and Vitest coverage so integration secrets are encrypted consistently via the SSOT.
+- 🔑 **Integration key admin UX** — Introduced create/rotate server actions, modal forms, and row actions so operations stay in-context while surfacing the newly submitted secret exactly once (`apps/admin/src/app/(panel)/integrations/keys/**`, `apps/admin/src/components/integration-key-*.tsx`).
+- 🔄 **Repository plumbing** — Extended the integration key repository with create/rotate mutations that store encrypted payloads and update rotation metadata (`packages/db/src/repositories/**`).
+- 🔒 **Password hashing upgrade** — Replaced the SHA-256 placeholder with a scrypt-based helper shared across admin actions and seed scripts while bcrypt packages remain inaccessible offline (`packages/shared/src/crypto/password.ts`).
+- 🧪 **Verification** — `pnpm --filter @brainliest/shared test`, `pnpm --filter @brainliest/db test`, `pnpm --filter @brainliest/admin typecheck`, `pnpm --filter @brainliest/admin lint`.
+- ⚠️ **Follow-up** — Swap the temporary scrypt helper for bcrypt once the workspace can install native modules; integration key delete flow still pending.
+
 ## 2025-10-04 (Session 25) — Codex
 - 💾 **Sample session persistence** — Added a browser snapshot helper and wired `PracticeSessionLoader`/`PracticeSessionContainer` to merge + persist fallback practice data so selections, flags, and submissions survive navigation/reloads.
 - ⏱ **Deterministic countdown** — Stored remaining seconds with snapshot timestamps and reused them after resume so the sample countdown continues smoothly between visits, matching the Playwright expectations.

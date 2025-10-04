@@ -1,0 +1,8 @@
+process.env.DATABASE_URL ??= 'postgres://test';
+process.env.REDIS_URL ??= 'redis://localhost:6379';
+process.env.NEXTAUTH_SECRET ??= 's'.repeat(32);
+process.env.NEXTAUTH_URL ??= 'http://localhost:3000';
+process.env.OPENAI_API_KEY ??= 'sk-test-abcdefghijklmnopqrstuvwxyz012345';
+process.env.SITE_PRIMARY_DOMAIN ??= 'localhost';
+process.env.SITE_ADMIN_DOMAIN ??= 'localhost';
+process.env.SITE_KMS_MASTER_KEY ??= 'a'.repeat(64);

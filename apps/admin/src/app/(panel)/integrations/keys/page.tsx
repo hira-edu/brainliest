@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
@@ -7,6 +6,8 @@ import { listIntegrationKeys, countIntegrationKeysByEnvironment } from '@/lib/in
 import { PaginationControl } from '@/components/pagination-control';
 import IntegrationFilters from '@/components/integration-filters';
 import type { IntegrationFiltersInitialValues } from '@/types/filter-values';
+import { IntegrationKeyCreateButton } from '@/components/integration-key-create-button';
+import { IntegrationKeyRowActions } from '@/components/integration-key-row-actions';
 
 const DESCRIPTION = 'Manage third-party secrets, check rotation cadence, and keep environments in sync.';
 
@@ -91,11 +92,7 @@ export default async function IntegrationKeysPage({ searchParams }: IntegrationK
         { label: 'Integrations', href: '/integrations/keys' },
         { label: 'Keys', href: '/integrations/keys', isCurrent: true },
       ]}
-      pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/integrations/keys/new">Create key</Link>
-        </Button>
-      }
+      pageActions={<IntegrationKeyCreateButton />}
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Production" value={numberFormatter.format(productionCount)} icon="Server" />
@@ -154,6 +151,12 @@ export default async function IntegrationKeysPage({ searchParams }: IntegrationK
               id: 'createdAt',
               header: 'Created',
               cell: (key) => dateFormatter.format(key.createdAt),
+            },
+            {
+              id: 'actions',
+              header: 'Actions',
+              align: 'right',
+              cell: (key) => <IntegrationKeyRowActions integrationKey={key} />,
             },
           ]}
         />

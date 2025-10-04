@@ -29,7 +29,10 @@ import type {
   IntegrationKeyRepository,
   IntegrationKeyRecord,
   IntegrationKeyFilter,
+  CreateIntegrationKeyInput,
+  RotateIntegrationKeyInput,
 } from './integration-repository';
+import { encrypt } from '@brainliest/shared/crypto/encryption';
 import type {
   AuditLogRepository,
   AuditLogRecord,
@@ -1059,6 +1062,42 @@ export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository
       })),
       pagination: buildPaginationMeta(total, page, safePageSize),
     };
+  }
+
+  async create(input: CreateIntegrationKeyInput): Promise<string> {
+    const encryptedValue = await encrypt(input.value);
+    const now = new Date();
+
+    const [row] = await this.db
+      .insert(schema.integrationKeys)
+      .values({
+        name: input.name,
+        type: input.type,
+        environment: input.environment,
+        description: input.description ?? null,
+        valueEncrypted: encryptedValue,
+        createdByAdmin: input.createdByAdminId ?? null,
+        createdAt: now,
+        updatedAt: now,
+        lastRotatedAt: null,
+      })
+      .returning({ id: schema.integrationKeys.id });
+
+    return row.id;
+  }
+
+  async rotate(input: RotateIntegrationKeyInput): Promise<void> {
+    const encryptedValue = await encrypt(input.value);
+    const rotatedAt = input.rotatedAt ?? new Date();
+
+    await this.db
+      .update(schema.integrationKeys)
+      .set({
+        valueEncrypted: encryptedValue,
+        lastRotatedAt: rotatedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.integrationKeys.id, input.id));
   }
 }
 

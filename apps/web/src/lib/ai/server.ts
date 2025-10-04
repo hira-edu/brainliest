@@ -61,7 +61,7 @@ function ensureServerAiConfigured() {
       ? (request) => Promise.resolve(buildStubExplanation(request))
       : undefined,
     rateLimit: shouldStubRateLimiter
-      ? async () => ({ allowed: true, remaining: 5 })
+      ? () => Promise.resolve({ allowed: true, remaining: 5 })
       : undefined,
   });
 

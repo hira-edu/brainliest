@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { createRepositories } from './drizzle-repositories';
@@ -8,6 +9,10 @@ import { seedBaseData } from '../seeds/base-data';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type { ExamSlug, QuestionId, SubjectSlug } from '../types';
+
+if (!process.env.SITE_KMS_MASTER_KEY) {
+  process.env.SITE_KMS_MASTER_KEY = 'b'.repeat(64);
+}
 
 const migrationSql = readFileSync(
   resolve(__dirname, '../../migrations/202510020900_init.sql'),
@@ -419,6 +424,52 @@ describe('Drizzle repositories', () => {
 
       const future = await repositories.auditLogs.list({ createdAfter: new Date(Date.now() + 1_000) }, 1, 10);
       expect(future.data).toHaveLength(0);
+    });
+  });
+
+  it('creates and rotates integration keys with encrypted values', async () => {
+    await withTestContext(async ({ repositories, db }) => {
+      const integrationId = await repositories.integrationKeys.create({
+        name: 'OpenAI Production',
+        type: 'OPENAI',
+        environment: 'production',
+        description: 'Primary OpenAI key',
+        value: 'sk-live-1234567890',
+        createdByAdminId: null,
+      });
+
+      const page = await repositories.integrationKeys.list({}, 1, 10);
+      const created = page.data.find((record) => record.id === integrationId);
+      expect(created).toBeDefined();
+      expect(created?.name).toBe('OpenAI Production');
+      expect(created?.lastRotatedAt).toBeNull();
+
+      const [stored] = await db
+        .select({ encrypted: schema.integrationKeys.valueEncrypted })
+        .from(schema.integrationKeys)
+        .where(eq(schema.integrationKeys.id, integrationId));
+
+      expect(stored?.encrypted).toBeDefined();
+      expect(stored?.encrypted).not.toContain('sk-live-1234567890');
+
+      const rotationTime = new Date('2025-10-04T12:00:00Z');
+      await repositories.integrationKeys.rotate({
+        id: integrationId,
+        value: 'sk-live-rotated-0987654321',
+        rotatedAt: rotationTime,
+      });
+
+      const rotated = await repositories.integrationKeys.list({}, 1, 10);
+      const rotatedRecord = rotated.data.find((record) => record.id === integrationId);
+      expect(rotatedRecord?.lastRotatedAt?.toISOString()).toBe(rotationTime.toISOString());
+
+      const [rotatedStored] = await db
+        .select({ encrypted: schema.integrationKeys.valueEncrypted })
+        .from(schema.integrationKeys)
+        .where(eq(schema.integrationKeys.id, integrationId));
+
+      expect(rotatedStored?.encrypted).toBeDefined();
+      expect(rotatedStored?.encrypted).not.toContain('sk-live-rotated-0987654321');
     });
   });
 });

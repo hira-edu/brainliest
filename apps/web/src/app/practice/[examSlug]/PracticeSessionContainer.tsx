@@ -19,7 +19,11 @@ import {
 } from '@brainliest/ui';
 import { mapApiResponseToPracticeSessionData } from '@/lib/practice/mappers';
 import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
-import { persistSampleSessionState } from '@/lib/practice/sample-persistence';
+import {
+  loadSampleSessionSnapshot,
+  mergeSampleSessionWithSnapshot,
+  persistSampleSessionState,
+} from '@/lib/practice/sample-persistence';
 import type {
   PracticeSessionApiQuestion,
   PracticeSessionApiResponse,
@@ -338,7 +342,21 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   );
   const timerSyncRef = useRef<number | null>(initialData.progress.timeRemainingSeconds ?? null);
   const latestRemainingRef = useRef<number | null>(initialData.progress.timeRemainingSeconds ?? null);
+  const hasSampleBaselineRef = useRef(initialData.fromSample);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!hasSampleBaselineRef.current) {
+      return;
+    }
+
+    const snapshot = loadSampleSessionSnapshot(examSlug);
+    if (!snapshot) {
+      return;
+    }
+
+    setSession((current) => mergeSampleSessionWithSnapshot(current, snapshot));
+  }, [examSlug]);
 
   useEffect(() => {
     if (session.sessionId === initialData.sessionId) {
@@ -360,17 +378,7 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
 
   const sendPatch = useCallback(
     async (payload: SessionPatchPayload): Promise<PracticeSessionApiResponse | null> => {
-      if (session.fromSample) {
-        setSession((current) => {
-          const next = applyLocalPatch(current, payload);
-          const overrideRemaining =
-            latestRemainingRef.current ?? next.progress.timeRemainingSeconds ?? null;
-          persistSampleSessionState(examSlug, next, overrideRemaining);
-          return next;
-        });
-        return null;
-      }
-
+      const sampleMode = hasSampleBaselineRef.current;
       setIsSaving(true);
       setError(null);
       try {
@@ -389,12 +397,31 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
         }
 
         const data = (await response.json()) as PracticeSessionApiResponse;
-        const nextSession = mapApiResponseToPracticeSessionData(data);
+        const mapped = mapApiResponseToPracticeSessionData(data);
+        const nextSession = sampleMode ? { ...mapped, fromSample: true } : mapped;
         setSession(nextSession);
         setDisplayRemainingSeconds(nextSession.progress.timeRemainingSeconds ?? null);
         timerSyncRef.current = nextSession.progress.timeRemainingSeconds ?? null;
+        latestRemainingRef.current = nextSession.progress.timeRemainingSeconds ?? null;
+        if (sampleMode) {
+          const overrideRemaining =
+            latestRemainingRef.current ?? nextSession.progress.timeRemainingSeconds ?? null;
+          persistSampleSessionState(examSlug, nextSession, overrideRemaining);
+        }
         return data;
       } catch (requestError) {
+        if (sampleMode) {
+          setSession((current) => {
+            const next = applyLocalPatch(current, payload);
+            const overrideRemaining =
+              latestRemainingRef.current ?? next.progress.timeRemainingSeconds ?? null;
+            persistSampleSessionState(examSlug, next, overrideRemaining);
+            return next;
+          });
+          setError(null);
+          return null;
+        }
+
         const message = requestError instanceof Error ? requestError.message : 'Practice session update failed.';
         setError(message);
         throw requestError;
@@ -402,7 +429,7 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
         setIsSaving(false);
       }
     },
-    [examSlug, session.fromSample, session.sessionId]
+    [examSlug, session.sessionId]
   );
 
   const handleAdvance = useCallback(
@@ -473,17 +500,19 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   const handleCompleteSession = useCallback(async () => {
     const result = await sendPatch({
       operation: 'complete-session',
-    });
+    }).catch(() => null);
 
-    if (session.fromSample) {
+    const targetSessionId = result?.session.id ?? session.sessionId;
+
+    if (!targetSessionId) {
       return;
     }
 
-    if (result) {
-      const summaryUrl = `/practice/${examSlug}/summary?sessionId=${encodeURIComponent(result.session.id)}`;
+    if (hasSampleBaselineRef.current || result) {
+      const summaryUrl = `/practice/${examSlug}/summary?sessionId=${encodeURIComponent(targetSessionId)}`;
       router.push(summaryUrl);
     }
-  }, [sendPatch, router, examSlug, session.fromSample]);
+  }, [sendPatch, router, examSlug, session.sessionId]);
 
   const isFlagged = useMemo(
     () => session.flaggedQuestionIds.includes(activeQuestion?.questionId ?? session.questionState.questionId),
