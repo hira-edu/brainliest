@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
@@ -38,6 +38,8 @@ interface SubjectFormValues {
   active: boolean;
 }
 
+type SubmissionMode = 'page' | 'modal';
+
 export interface SubjectFormProps {
   readonly action: (state: SubjectFormState, formData: FormData) => Promise<SubjectFormState>;
   readonly categories: ReadonlyArray<SearchableSelectOption>;
@@ -46,6 +48,9 @@ export interface SubjectFormProps {
   readonly submitLabel?: string;
   readonly headline?: string;
   readonly description?: string;
+  readonly formId?: string;
+  readonly onSuccess?: (state: SubjectFormState) => void;
+  readonly submissionMode?: SubmissionMode;
 }
 
 function FormSubmitActions({ submitLabel }: { submitLabel: string }) {
@@ -82,14 +87,25 @@ export function SubjectForm({
   submitLabel = 'Save subject',
   headline = 'Subject details',
   description = 'Connect the subject to taxonomy and configure discovery metadata.',
+  formId,
+  onSuccess,
+  submissionMode = 'page',
 }: SubjectFormProps) {
   const hydratedDefaults = useMemo(() => normaliseDefaults(defaultValues), [defaultValues]);
   const [formState, formAction] = useFormState(action, subjectFormInitialState);
   const [values, setValues] = useState<SubjectFormValues>(hydratedDefaults);
+  const lastStatusRef = useRef(formState.status);
 
   useEffect(() => {
     setValues(hydratedDefaults);
   }, [hydratedDefaults]);
+
+  useEffect(() => {
+    if (formState.status === 'success' && lastStatusRef.current !== 'success') {
+      onSuccess?.(formState);
+    }
+    lastStatusRef.current = formState.status;
+  }, [formState, onSuccess]);
 
   const fieldErrors = formState.fieldErrors ?? {};
   const availableSubcategories = values.categorySlug
@@ -102,7 +118,9 @@ export function SubjectForm({
       title={headline}
       description={description}
       footer={<FormSubmitActions submitLabel={submitLabel} />}
+      id={formId}
     >
+      <input type="hidden" name="submissionMode" value={submissionMode} />
       <input type="hidden" name="categorySlug" value={values.categorySlug} />
       <input type="hidden" name="subcategorySlug" value={values.subcategorySlug ?? ''} />
       <input type="hidden" name="difficulty" value={values.difficulty ?? ''} />

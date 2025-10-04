@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -9,27 +9,32 @@ import {
   DropdownItem,
   DropdownSeparator,
   Icon,
+  Modal,
+  type SearchableSelectOption,
 } from '@brainliest/ui';
-import { deleteUserAction } from '@/app/(panel)/users/actions';
+import type { AdminUserRecord, UserRecord } from '@brainliest/db';
+import { deleteUserAction, updateUserAction } from '@/app/(panel)/users/actions';
+import { UserForm } from './user-form';
+
+type SupportedUser = UserRecord | AdminUserRecord;
 
 interface UserRowActionsProps {
-  readonly userId: string;
-  readonly role: string;
+  readonly user: SupportedUser;
+  readonly roleOptions: ReadonlyArray<SearchableSelectOption>;
 }
 
-function segmentForRole(role: string): 'students' | 'admins' {
-  return role.toUpperCase() === 'STUDENT' ? 'students' : 'admins';
-}
+const hasProfile = (user: SupportedUser): user is UserRecord => 'profile' in user;
 
-export function UserRowActions({ userId, role }: UserRowActionsProps) {
+export function UserRowActions({ user, roleOptions }: UserRowActionsProps) {
   const router = useRouter();
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteUserAction(userId, role);
+      const result = await deleteUserAction(user.id, user.role);
       if (result.status === 'success') {
         setDeleteOpen(false);
         setErrorMessage(null);
@@ -40,7 +45,38 @@ export function UserRowActions({ userId, role }: UserRowActionsProps) {
     });
   };
 
-  const segment = segmentForRole(role);
+  const formId = useMemo(() => `user-form-${user.id}`, [user.id]);
+
+  const defaultValues = useMemo(() => {
+    const profileObject: Record<string, unknown> =
+      hasProfile(user) && user.profile && typeof user.profile === 'object'
+        ? user.profile
+        : {};
+    const profileString = Object.keys(profileObject).length > 0
+      ? JSON.stringify(profileObject, null, 2)
+      : '';
+
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      profile: profileString,
+    };
+  }, [user]);
+
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
 
   return (
     <>
@@ -52,7 +88,13 @@ export function UserRowActions({ userId, role }: UserRowActionsProps) {
           </Button>
         }
       >
-        <DropdownItem href={`/users/${segment}/${userId}/edit`}>Edit</DropdownItem>
+        <DropdownItem
+          onSelect={() => {
+            handleOpenEdit();
+          }}
+        >
+          Edit
+        </DropdownItem>
         <DropdownSeparator />
         <DropdownItem
           onSelect={() => setDeleteOpen(true)}
@@ -62,6 +104,24 @@ export function UserRowActions({ userId, role }: UserRowActionsProps) {
           Delete
         </DropdownItem>
       </Dropdown>
+
+      <Modal
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        title={`Edit ${user.email}`}
+        size="lg"
+      >
+        <UserForm
+          action={updateUserAction}
+          roleOptions={roleOptions}
+          defaultValues={defaultValues}
+          submitLabel="Save changes"
+          headline="User details"
+          description="Manage account information and access controls."
+          formId={formId}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
 
       <DeleteConfirmation
         isOpen={isDeleteOpen}

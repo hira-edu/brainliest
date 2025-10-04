@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
@@ -34,12 +34,17 @@ interface CategoryFormValues {
   active: boolean;
 }
 
+type SubmissionMode = 'page' | 'modal';
+
 export interface CategoryFormProps {
   readonly action: (state: CategoryFormState, formData: FormData) => Promise<CategoryFormState>;
   readonly defaultValues?: Partial<CategoryFormValues>;
   readonly submitLabel?: string;
   readonly headline?: string;
   readonly description?: string;
+  readonly formId?: string;
+  readonly onSuccess?: (state: CategoryFormState) => void;
+  readonly submissionMode?: SubmissionMode;
 }
 
 function FormSubmitActions({ submitLabel }: { submitLabel: string }) {
@@ -71,14 +76,25 @@ export function CategoryForm({
   submitLabel = 'Save category',
   headline = 'Category details',
   description = 'Manage the highest level taxonomy grouping.',
+  formId,
+  onSuccess,
+  submissionMode = 'page',
 }: CategoryFormProps) {
   const hydratedDefaults = useMemo(() => normaliseDefaults(defaultValues), [defaultValues]);
   const [formState, formAction] = useFormState(action, categoryFormInitialState);
   const [values, setValues] = useState<CategoryFormValues>(hydratedDefaults);
+  const lastStatusRef = useRef(formState.status);
 
   useEffect(() => {
     setValues(hydratedDefaults);
   }, [hydratedDefaults]);
+
+  useEffect(() => {
+    if (formState.status === 'success' && lastStatusRef.current !== 'success') {
+      onSuccess?.(formState);
+    }
+    lastStatusRef.current = formState.status;
+  }, [formState, onSuccess]);
 
   const fieldErrors = formState.fieldErrors ?? {};
 
@@ -88,7 +104,9 @@ export function CategoryForm({
       title={headline}
       description={description}
       footer={<FormSubmitActions submitLabel={submitLabel} />}
+      id={formId}
     >
+      <input type="hidden" name="submissionMode" value={submissionMode} />
       <input type="hidden" name="type" value={values.type} />
       <input type="hidden" name="active" value={values.active ? 'true' : 'false'} />
 

@@ -19,6 +19,7 @@ import {
 } from '@brainliest/ui';
 import { mapApiResponseToPracticeSessionData } from '@/lib/practice/mappers';
 import { PRACTICE_DEMO_USER_ID } from '@/lib/practice/constants';
+import { persistSampleSessionState } from '@/lib/practice/sample-persistence';
 import type {
   PracticeSessionApiQuestion,
   PracticeSessionApiResponse,
@@ -336,7 +337,21 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
     initialData.progress.timeRemainingSeconds ?? null
   );
   const timerSyncRef = useRef<number | null>(initialData.progress.timeRemainingSeconds ?? null);
+  const latestRemainingRef = useRef<number | null>(initialData.progress.timeRemainingSeconds ?? null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (session.sessionId === initialData.sessionId) {
+      return;
+    }
+
+    setSession(initialData);
+    setDisplayRemainingSeconds(initialData.progress.timeRemainingSeconds ?? null);
+    timerSyncRef.current = initialData.progress.timeRemainingSeconds ?? null;
+    latestRemainingRef.current = initialData.progress.timeRemainingSeconds ?? null;
+    setShowQuestionExplanation(false);
+    setError(null);
+  }, [initialData, session.sessionId]);
 
   const activeQuestion = session.questions[session.currentQuestionIndex] ?? session.questions[0];
 
@@ -346,7 +361,13 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   const sendPatch = useCallback(
     async (payload: SessionPatchPayload): Promise<PracticeSessionApiResponse | null> => {
       if (session.fromSample) {
-        setSession((current) => applyLocalPatch(current, payload));
+        setSession((current) => {
+          const next = applyLocalPatch(current, payload);
+          const overrideRemaining =
+            latestRemainingRef.current ?? next.progress.timeRemainingSeconds ?? null;
+          persistSampleSessionState(examSlug, next, overrideRemaining);
+          return next;
+        });
         return null;
       }
 
@@ -381,7 +402,7 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
         setIsSaving(false);
       }
     },
-    [session.fromSample, session.sessionId]
+    [examSlug, session.fromSample, session.sessionId]
   );
 
   const handleAdvance = useCallback(
@@ -552,7 +573,12 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   useEffect(() => {
     setDisplayRemainingSeconds(session.progress.timeRemainingSeconds ?? null);
     timerSyncRef.current = session.progress.timeRemainingSeconds ?? null;
+    latestRemainingRef.current = session.progress.timeRemainingSeconds ?? null;
   }, [session.progress.timeRemainingSeconds, session.sessionId]);
+
+  useEffect(() => {
+    latestRemainingRef.current = displayRemainingSeconds ?? null;
+  }, [displayRemainingSeconds]);
 
   useEffect(() => {
     setShowQuestionExplanation(false);

@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Icon, Badge, Button } from '@brainliest/ui';
+import { Icon, Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
@@ -8,6 +7,8 @@ import { CategoryRowActions } from '@/components/category-row-actions';
 import { SubcategoryRowActions } from '@/components/subcategory-row-actions';
 import CategoryFilters from '@/components/category-filters';
 import type { CategoryFiltersInitialValues } from '@/types/filter-values';
+import { CategoryCreateButton } from '@/components/category-create-button';
+import { SubcategoryCreateButton } from '@/components/subcategory-create-button';
 
 interface CategoriesPageProps {
   readonly searchParams?: Promise<Record<string, string | string[]>>;
@@ -34,6 +35,10 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
   const availableTypes = Array.from(new Set(categories.map((category) => category.type))).sort((a, b) =>
     a.localeCompare(b, undefined, { sensitivity: 'base' })
   );
+
+  const categoryOptionsForForms = categories
+    .map((category) => ({ value: category.slug, label: category.name }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
   const normalizedType = availableTypes.includes(typeParam) ? typeParam : undefined;
   const searchValue = searchParam.trim().toLowerCase();
@@ -84,12 +89,8 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
       pageActions={
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary">{categories.length} active categories</Badge>
-          <Button variant="secondary" size="sm" asChild>
-            <Link href="/taxonomy/categories/new">Create category</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/taxonomy/subcategories/new">Create subcategory</Link>
-          </Button>
+          <CategoryCreateButton />
+          <SubcategoryCreateButton categories={categoryOptionsForForms} variant="ghost" />
         </div>
       }
     >
@@ -151,7 +152,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (category) => <CategoryRowActions slug={category.slug} />,
+              cell: (category) => <CategoryRowActions category={category} />,
             },
           ]}
         />
@@ -212,7 +213,13 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (row) => <SubcategoryRowActions slug={row.subcategory.slug} />,
+              cell: (row) => (
+                <SubcategoryRowActions
+                  categorySlug={row.category.slug}
+                  subcategory={row.subcategory}
+                  categoryOptions={categoryOptionsForForms}
+                />
+              ),
             },
           ]}
         />

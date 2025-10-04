@@ -1,13 +1,14 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listExams, countExamsByStatus } from '@/lib/exams';
+import { listTaxonomySubjects } from '@/lib/taxonomy';
 import { PaginationControl } from '@/components/pagination-control';
 import { ExamTemplateActions } from '@/components/exam-template-actions';
 import { ExamRowActions } from '@/components/exam-row-actions';
 import ExamFilters from '@/components/exam-filters';
+import { ExamCreateButton } from '@/components/exam-create-button';
 
 const numberFormatter = new Intl.NumberFormat('en-US');
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -84,7 +85,7 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
     search: searchParam.trim().length > 0 ? searchParam.trim() : undefined,
   };
 
-  const [{ data: exams, pagination }, publishedCount, draftCount, archivedCount] = await Promise.all([
+  const [{ data: exams, pagination }, subjectsList, publishedCount, draftCount, archivedCount] = await Promise.all([
     listExams({
       page,
       status: filters.status,
@@ -95,10 +96,21 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
       examSlug: filters.examSlug,
       search: filters.search,
     }),
+    listTaxonomySubjects(),
     countExamsByStatus('published'),
     countExamsByStatus('draft'),
     countExamsByStatus('archived'),
   ]);
+
+  const subjectOptionsForForm = subjectsList
+    .map((subject) => ({
+      value: subject.slug,
+      label: subject.name,
+      description: subject.subcategoryName
+        ? `${subject.categoryName} • ${subject.subcategoryName}`
+        : subject.categoryName,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
   const totalCount = pagination.totalCount;
   const initialFilters = {
@@ -120,11 +132,7 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
         { label: 'Content', href: '/content/exams' },
         { label: 'Exams', href: '/content/exams', isCurrent: true },
       ]}
-      pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/content/exams/new">Create exam</Link>
-        </Button>
-      }
+      pageActions={<ExamCreateButton subjects={subjectOptionsForForm} />}
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Total exams" value={numberFormatter.format(totalCount)} icon="BookOpen" />
@@ -212,7 +220,9 @@ export default async function ExamsPage({ searchParams }: ExamsPageProps) {
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (exam) => <ExamRowActions slug={exam.slug} />,
+              cell: (exam) => (
+                <ExamRowActions exam={exam} subjects={subjectOptionsForForm} />
+              ),
             },
           ]}
         />

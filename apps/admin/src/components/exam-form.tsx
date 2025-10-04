@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   EntityForm,
@@ -29,6 +29,8 @@ interface ExamFormValues {
   status: string;
 }
 
+type SubmissionMode = 'page' | 'modal';
+
 interface ExamFormProps {
   readonly action: (state: ExamFormState, formData: FormData) => Promise<ExamFormState>;
   readonly subjects: ReadonlyArray<SearchableSelectOption>;
@@ -36,6 +38,9 @@ interface ExamFormProps {
   readonly submitLabel?: string;
   readonly headline?: string;
   readonly description?: string;
+  readonly formId?: string;
+  readonly onSuccess?: (state: ExamFormState) => void;
+  readonly submissionMode?: SubmissionMode;
 }
 
 const difficultyOptions: SearchableSelectOption[] = [
@@ -90,15 +95,26 @@ export function ExamForm({
   submitLabel = 'Save exam',
   headline = 'Exam details',
   description = 'Configure title, taxonomy, scheduling details, and publishing status.',
+  formId,
+  onSuccess,
+  submissionMode = 'page',
 }: ExamFormProps) {
   const hydratedDefaults = useMemo(() => normaliseDefaults(defaultValues), [defaultValues]);
 
   const [formState, formAction] = useFormState(action, examFormInitialState);
   const [values, setValues] = useState<ExamFormValues>(hydratedDefaults);
+  const lastStatusRef = useRef(formState.status);
 
   useEffect(() => {
     setValues(hydratedDefaults);
   }, [hydratedDefaults]);
+
+  useEffect(() => {
+    if (formState.status === 'success' && lastStatusRef.current !== 'success') {
+      onSuccess?.(formState);
+    }
+    lastStatusRef.current = formState.status;
+  }, [formState, onSuccess]);
 
   const handleChange = useCallback(
     <K extends keyof ExamFormValues>(key: K, value: ExamFormValues[K]) => {
@@ -121,7 +137,9 @@ export function ExamForm({
       description={description}
       footer={<FormSubmitActions submitLabel={submitLabel} />}
       className="space-y-8"
+      id={formId}
     >
+      <input type="hidden" name="submissionMode" value={submissionMode} />
       <input type="hidden" name="subjectSlug" value={values.subjectSlug} />
       <input type="hidden" name="difficulty" value={values.difficulty ?? ''} />
       <input type="hidden" name="status" value={values.status} />

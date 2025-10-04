@@ -15,7 +15,64 @@ All notable changes to the Brainliest project specifications and implementation 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [2.2.19] - 2025-10-04
+
+### Added
+- **Sample session persistence** — Introduced a browser-side snapshot helper that stores practice fallback runs across navigation/reloads so mock sessions keep answer, flag/bookmark, and timer state aligned (`apps/web/src/lib/practice/sample-persistence.ts`).
+
+### Changed
+- **Practice loader** — `PracticeSessionLoader` now hydrates from any stored sample snapshot before attempting the API call and records a baseline when no snapshot exists, ensuring countdown calculations remain deterministic (`apps/web/src/app/practice/[examSlug]/PracticeSessionLoader.tsx`).
+- **Practice container** — Sample-session interactions persist their latest state (answers, toggles, completion, remaining time) via the new helper, keeping the UI and Playwright mocks in sync even without backend responses (`apps/web/src/app/practice/[examSlug]/PracticeSessionContainer.tsx`).
+
+### Tests
+- `pnpm lint --filter @brainliest/web` *(fails: existing @typescript-eslint/require-await in apps/web/src/lib/ai/server.ts)*
+
 ---
+
+## [2.2.18] - 2025-10-04
+
+### Added
+- Modal create triggers (`QuestionCreateButton`, `ExamCreateButton`, `CategoryCreateButton`, `SubcategoryCreateButton`, `SubjectCreateButton`, `UserCreateButton`) so listing pages launch in-context forms without navigating away (`apps/admin/src/components/*-create-button.tsx`).
+
+### Changed
+- Updated admin create server actions to honour a modal submission mode, returning a success state instead of redirecting when invoked from the new dialogs (`apps/admin/src/app/(panel)/content/{questions,exams}/actions.ts`, `apps/admin/src/app/(panel)/taxonomy/actions.ts`, `apps/admin/src/app/(panel)/users/actions.ts`).
+- Replaced listing page "Create" links with the new modal triggers to keep CRUD flows on the same screen while preserving existing layout/metrics (`apps/admin/src/app/(panel)/content/{questions,exams}/page.tsx`, `apps/admin/src/app/(panel)/taxonomy/{categories,subcategories,subjects}/page.tsx`, `apps/admin/src/app/(panel)/users/{students,admins}/page.tsx`).
+
+### Tests
+- `pnpm --filter @brainliest/admin typecheck`
+- `pnpm --filter @brainliest/admin lint`
+
+## [2.2.17] - 2025-10-04
+
+### Added
+- **Audit log repository** — Introduced `AuditLogRepository` with typed filters, actor/email search, and metrics helpers plus Vitest coverage to validate admin/user/system event queries (`packages/db/src/repositories/audit-log-repository.ts`, `packages/db/src/repositories/drizzle-repositories.ts`, `packages/db/src/repositories/drizzle-repositories.test.ts`).
+- **Admin audit trail** — Replaced the audit log placeholder with a fully filterable dashboard featuring KPI cards, actor/email/action search, diff rendering, and paginated results powered by the new repository (`apps/admin/src/app/(panel)/audit/logs/page.tsx`, `apps/admin/src/components/audit-log-filters*.tsx`, `apps/admin/src/lib/audit.ts`).
+- **Search endpoints** — Added `/api/search/audit-actors` and `/api/search/audit-actions` so the audit filters share the `EntitySearchBar` autocomplete pattern used elsewhere in the admin app (`apps/admin/src/app/api/search/audit-actors/route.ts`, `.../audit-actions/route.ts`).
+
+### Changed
+- **Shared question actions** — Tightened typing in `questions/actions.ts` while wiring the audit repository so `tsc --noEmit` runs cleanly after the new helpers (`apps/admin/src/app/(panel)/content/questions/actions.ts`).
+- **Repository plumbing** — Extended the Drizzle bundle/exports to surface `auditLogs` through `createRepositories`, making the audit APIs available to all server utilities (`packages/db/src/repositories/index.ts`).
+- **Admin edit UX** — Swapped every category/subcategory/subject/exam/question/user edit flow to modal dialogs powered by the shared CRUD primitives so edits stay in-context without leaving the listing pages (multiple `apps/admin/src/app/(panel)/**` rows).
+
+### Tests
+- `pnpm --filter @brainliest/db test`
+- `pnpm --filter @brainliest/admin typecheck`
+- `pnpm --filter @brainliest/admin lint`
+
+## [2.2.16] - 2025-10-04
+
+### Added
+- **Practice demo identity** — Introduced `PRACTICE_DEMO_USER_ID`, exported through the web practice utilities, and taught the Drizzle session repository to seed that user automatically so local/demo practice sessions no longer violate the users FK (`apps/web/src/lib/practice/constants.ts`, `packages/db/src/repositories/drizzle-repositories.ts`).
+- **Client practice loader** — Added a client-side session loader so local runs (and Playwright) can hydrate practice data without relying on server prefetch, alongside a dedicated practice Playwright project for isolated execution (`apps/web/src/app/practice/[examSlug]/PracticeSessionLoader.tsx`, `tests/playwright/playwright.config.ts`).
+
+### Changed
+- **Sample session builder** — Expanded the practice fallback loader to hydrate up to ten real questions, synthesize extras when needed, and always flag the payload as `fromSample`, ensuring the UI has a rich dataset even when the API falls back (`apps/web/src/lib/practice/fetch-practice-session.ts`).
+- **Client answer state & summary headings** — Hardened `PracticeClient` so it preserves the selected option while PATCH requests are in flight and adjusted the summary header/countdown copy so Playwright has unique heading targets (`apps/web/src/app/practice/[examSlug]/{PracticeClient.tsx,summary/page.tsx}`, `apps/web/src/lib/ai/server.ts`).
+
+### Tests
+- ✅ `curl -X POST /api/practice/sessions` (manual verification of seeded Neon user and session creation).
+- ⚠️ `pnpm playwright test --project=practice tests/playwright/specs/practice.spec.ts` *(fails: the mock-backed practice flow still needs client-side persistence for bookmarks/flags and a deterministic countdown; TODO captured in docs/dev/worklog.md).* 
 
 ## [2.2.15] - 2025-10-04
 
@@ -32,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pnpm --filter @brainliest/admin typecheck`
 - `pnpm --filter @brainliest/db typecheck`
 - `pnpm --filter @brainliest/admin lint`
+- ✳️ Playwright scenario skeletons for the new filters live at `tests/playwright/specs/admin-filters.spec.ts`; enable with `RUN_ADMIN_FILTER_E2E=true` once a browser-capable environment is available.
 
 ## [2.2.14] - 2025-10-04
 

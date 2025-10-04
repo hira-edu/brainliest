@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -9,22 +9,29 @@ import {
   DropdownItem,
   DropdownSeparator,
   Icon,
+  Modal,
+  type SearchableSelectOption,
 } from '@brainliest/ui';
-import { deleteSubcategoryAction } from '@/app/(panel)/taxonomy/actions';
+import type { CatalogSubcategorySummary } from '@brainliest/db';
+import { deleteSubcategoryAction, updateSubcategoryAction } from '@/app/(panel)/taxonomy/actions';
+import { SubcategoryForm } from './subcategory-form';
 
 interface SubcategoryRowActionsProps {
-  readonly slug: string;
+  readonly categorySlug: string;
+  readonly subcategory: CatalogSubcategorySummary;
+  readonly categoryOptions: ReadonlyArray<SearchableSelectOption>;
 }
 
-export function SubcategoryRowActions({ slug }: SubcategoryRowActionsProps) {
+export function SubcategoryRowActions({ categorySlug, subcategory, categoryOptions }: SubcategoryRowActionsProps) {
   const router = useRouter();
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteSubcategoryAction(slug);
+      const result = await deleteSubcategoryAction(subcategory.slug);
       if (result.status === 'success') {
         setDeleteOpen(false);
         setErrorMessage(null);
@@ -34,6 +41,34 @@ export function SubcategoryRowActions({ slug }: SubcategoryRowActionsProps) {
       }
     });
   };
+
+  const formId = useMemo(() => `subcategory-form-${subcategory.slug}`, [subcategory.slug]);
+
+  const defaultValues = useMemo(
+    () => ({
+      slug: subcategory.slug,
+      categorySlug,
+      name: subcategory.name,
+      description: subcategory.description ?? undefined,
+      icon: subcategory.icon ?? undefined,
+      sortOrder: Number.isFinite(subcategory.sortOrder) ? String(subcategory.sortOrder) : undefined,
+      active: subcategory.active,
+    }),
+    [categorySlug, subcategory]
+  );
+
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
 
   return (
     <>
@@ -45,7 +80,13 @@ export function SubcategoryRowActions({ slug }: SubcategoryRowActionsProps) {
           </Button>
         }
       >
-        <DropdownItem href={`/taxonomy/subcategories/${slug}/edit`}>Edit</DropdownItem>
+        <DropdownItem
+          onSelect={() => {
+            handleOpenEdit();
+          }}
+        >
+          Edit
+        </DropdownItem>
         <DropdownSeparator />
         <DropdownItem
           onSelect={() => setDeleteOpen(true)}
@@ -55,6 +96,24 @@ export function SubcategoryRowActions({ slug }: SubcategoryRowActionsProps) {
           Delete
         </DropdownItem>
       </Dropdown>
+
+      <Modal
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        title={`Edit ${subcategory.name}`}
+        size="lg"
+      >
+        <SubcategoryForm
+          action={updateSubcategoryAction}
+          categories={categoryOptions}
+          defaultValues={defaultValues}
+          submitLabel="Save changes"
+          headline="Subcategory details"
+          description="Attach the subcategory to a category and manage visibility."
+          formId={formId}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
 
       <DeleteConfirmation
         isOpen={isDeleteOpen}

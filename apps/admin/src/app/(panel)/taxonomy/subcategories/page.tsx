@@ -1,12 +1,13 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
-import { listTaxonomySubcategories } from '@/lib/taxonomy';
+import { listTaxonomyCategories, listTaxonomySubcategories } from '@/lib/taxonomy';
+import type { CatalogSubcategorySummary } from '@brainliest/db';
 import { SubcategoryRowActions } from '@/components/subcategory-row-actions';
 import SubcategoryFilters from '@/components/subcategory-filters';
 import type { SubcategoryFiltersInitialValues } from '@/types/filter-values';
+import { SubcategoryCreateButton } from '@/components/subcategory-create-button';
 
 interface SubcategoriesPageProps {
   readonly searchParams?: Promise<Record<string, string | string[]>>;
@@ -29,16 +30,25 @@ export default async function SubcategoriesPage({ searchParams }: SubcategoriesP
   const categoryParam = parseParam(resolvedSearchParams?.category);
   const searchParam = parseParam(resolvedSearchParams?.search) ?? '';
 
-  const subcategories = await listTaxonomySubcategories();
+  const [subcategories, categories] = await Promise.all([
+    listTaxonomySubcategories(),
+    listTaxonomyCategories(),
+  ]);
 
-  const categoryOptions = Array.from(
-    subcategories.reduce((acc, item) => acc.set(item.categorySlug, item.categoryName), new Map<string, string>())
-  ).map(([value, label]) => ({ value, label }));
+  const categoryOptions = categories
+    .map((category) => ({ value: category.slug, label: category.name }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
   const validCategorySlugs = new Set(categoryOptions.map((option) => option.value));
   const normalizedCategory = categoryParam && validCategorySlugs.has(categoryParam) ? categoryParam : undefined;
 
   const searchValue = searchParam.trim().toLowerCase();
+
+  const subcategorySummaryBySlug = new Map(
+    categories.flatMap((category) =>
+      category.subcategories.map((summary) => [summary.slug, { categorySlug: category.slug, summary }])
+    )
+  );
 
   const filteredSubcategories = subcategories.filter((subcategory) => {
     const matchesCategory = !normalizedCategory || subcategory.categorySlug === normalizedCategory;
@@ -69,11 +79,7 @@ export default async function SubcategoriesPage({ searchParams }: SubcategoriesP
         { label: 'Taxonomy', href: '/taxonomy/subcategories' },
         { label: 'Subcategories', href: '/taxonomy/subcategories', isCurrent: true },
       ]}
-      pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/taxonomy/subcategories/new">Create subcategory</Link>
-        </Button>
-      }
+      pageActions={<SubcategoryCreateButton categories={categoryOptions} variant="secondary" />}
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Tracks" value={numberFormatter.format(totalTracks)} icon="GitBranch" />
@@ -153,7 +159,29 @@ export default async function SubcategoriesPage({ searchParams }: SubcategoriesP
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (subcategory) => <SubcategoryRowActions slug={subcategory.subcategorySlug} />,
+              cell: (subcategory) => {
+                const detail = subcategorySummaryBySlug.get(subcategory.subcategorySlug);
+                const parentSlug = detail?.categorySlug ?? subcategory.categorySlug;
+                const summary: CatalogSubcategorySummary = detail?.summary ?? {
+                  slug: subcategory.subcategorySlug,
+                  name: subcategory.subcategoryName,
+                  description: subcategory.description,
+                  icon: subcategory.icon,
+                  examCount: subcategory.examCount,
+                  focusAreas: subcategory.focusAreas,
+                  subjectCount: subcategory.subjectCount,
+                  sortOrder: 0,
+                  active: true,
+                };
+
+                return (
+                  <SubcategoryRowActions
+                    categorySlug={parentSlug}
+                    subcategory={summary}
+                    categoryOptions={categoryOptions}
+                  />
+                );
+              },
             },
           ]}
         />

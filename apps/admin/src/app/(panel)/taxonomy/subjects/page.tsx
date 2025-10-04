@@ -1,12 +1,12 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
-import { listTaxonomySubjects } from '@/lib/taxonomy';
+import { getHierarchicalData, listTaxonomySubjects } from '@/lib/taxonomy';
 import { SubjectRowActions } from '@/components/subject-row-actions';
 import SubjectFilters from '@/components/subject-filters';
 import type { SubjectFiltersInitialValues } from '@/types/filter-values';
+import { SubjectCreateButton } from '@/components/subject-create-button';
 
 interface SubjectsPageProps {
   readonly searchParams?: Promise<Record<string, string | string[]>>;
@@ -36,7 +36,27 @@ export default async function SubjectsPage({ searchParams }: SubjectsPageProps) 
   const statusParam = (parseParam(resolvedSearchParams?.status) ?? 'all').toLowerCase();
   const searchParam = parseParam(resolvedSearchParams?.search) ?? '';
 
-  const subjects = await listTaxonomySubjects();
+  const [subjects, hierarchy] = await Promise.all([
+    listTaxonomySubjects(),
+    getHierarchicalData(),
+  ]);
+
+  const categoryOptionsForForms = hierarchy.categories.map((category) => ({
+    value: category.value,
+    label: category.label,
+    description: category.description,
+  }));
+
+  const subcategoriesByCategoryForForms = Object.fromEntries(
+    Object.entries(hierarchy.subcategoriesByCategory).map(([categorySlug, options]) => [
+      categorySlug,
+      options.map((option) => ({
+        value: option.value,
+        label: option.label,
+        description: option.description,
+      })),
+    ])
+  );
 
   const validCategorySlugs = new Set(subjects.map((subject) => subject.categorySlug));
   const validSubcategorySlugs = new Set(subjects.map((subject) => subject.subcategorySlug).filter((value): value is string => Boolean(value)));
@@ -96,9 +116,10 @@ export default async function SubjectsPage({ searchParams }: SubjectsPageProps) 
         { label: 'Subjects', href: '/taxonomy/subjects', isCurrent: true },
       ]}
       pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/taxonomy/subjects/new">Create subject</Link>
-        </Button>
+        <SubjectCreateButton
+          categories={categoryOptionsForForms}
+          subcategoriesByCategory={subcategoriesByCategoryForForms}
+        />
       }
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
@@ -192,7 +213,13 @@ export default async function SubjectsPage({ searchParams }: SubjectsPageProps) 
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (subject) => <SubjectRowActions slug={subject.slug} />,
+              cell: (subject) => (
+                <SubjectRowActions
+                  subject={subject}
+                  categories={categoryOptionsForForms}
+                  subcategoriesByCategory={subcategoriesByCategoryForForms}
+                />
+              ),
             },
           ]}
         />

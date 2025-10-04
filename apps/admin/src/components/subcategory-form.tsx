@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
@@ -35,6 +35,9 @@ export interface SubcategoryFormProps {
   readonly submitLabel?: string;
   readonly headline?: string;
   readonly description?: string;
+  readonly formId?: string;
+  readonly onSuccess?: (state: SubcategoryFormState) => void;
+  readonly submissionMode?: 'page' | 'modal';
 }
 
 function FormSubmitActions({ submitLabel }: { submitLabel: string }) {
@@ -67,14 +70,25 @@ export function SubcategoryForm({
   submitLabel = 'Save subcategory',
   headline = 'Subcategory details',
   description = 'Attach the subcategory to a category and manage visibility.',
+  formId,
+  onSuccess,
+  submissionMode = 'page',
 }: SubcategoryFormProps) {
   const hydratedDefaults = useMemo(() => normaliseDefaults(defaultValues), [defaultValues]);
   const [formState, formAction] = useFormState(action, subcategoryFormInitialState);
   const [values, setValues] = useState<SubcategoryFormValues>(hydratedDefaults);
+  const lastStatusRef = useRef(formState.status);
 
   useEffect(() => {
     setValues(hydratedDefaults);
   }, [hydratedDefaults]);
+
+  useEffect(() => {
+    if (formState.status === 'success' && lastStatusRef.current !== 'success') {
+      onSuccess?.(formState);
+    }
+    lastStatusRef.current = formState.status;
+  }, [formState, onSuccess]);
 
   const fieldErrors = formState.fieldErrors ?? {};
 
@@ -84,7 +98,9 @@ export function SubcategoryForm({
       title={headline}
       description={description}
       footer={<FormSubmitActions submitLabel={submitLabel} />}
+      id={formId}
     >
+      <input type="hidden" name="submissionMode" value={submissionMode} />
       <input type="hidden" name="categorySlug" value={values.categorySlug} />
       <input type="hidden" name="active" value={values.active ? 'true' : 'false'} />
 

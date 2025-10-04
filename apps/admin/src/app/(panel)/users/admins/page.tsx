@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
@@ -8,6 +7,7 @@ import { PaginationControl } from '@/components/pagination-control';
 import { UserRowActions } from '@/components/user-row-actions';
 import AdminUserFilters from '@/components/admin-user-filters';
 import type { AdminUserFiltersInitialValues } from '@/types/filter-values';
+import { UserCreateButton } from '@/components/user-create-button';
 
 const DESCRIPTION = 'Audit administrative access, check last activity, and plan staffing updates.';
 
@@ -67,6 +67,13 @@ export default async function AdminAccountsPage({ searchParams }: AdminAccountsP
     countAdminUsersByRole('SUPERADMIN'),
   ]);
 
+  const adminRoleOptions = [
+    { value: 'VIEWER', label: 'Viewer' },
+    { value: 'EDITOR', label: 'Editor' },
+    { value: 'ADMIN', label: 'Admin' },
+    { value: 'SUPERADMIN', label: 'Superadmin' },
+  ];
+
   const initialFilters: AdminUserFiltersInitialValues = {
     role: normalizedRole ?? 'all',
     status: normalizedStatus ?? 'all',
@@ -83,9 +90,13 @@ export default async function AdminAccountsPage({ searchParams }: AdminAccountsP
         { label: 'Admin Accounts', href: '/users/admins', isCurrent: true },
       ]}
       pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/users/admins/new">Add administrator</Link>
-        </Button>
+        <UserCreateButton
+          buttonLabel="Add administrator"
+          modalTitle="Create admin"
+          roleOptions={adminRoleOptions}
+          submitLabel="Create admin"
+          passwordDescription="Provide a temporary password. Share it securely and instruct the admin to rotate it after first sign-in."
+        />
       }
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -147,7 +158,9 @@ export default async function AdminAccountsPage({ searchParams }: AdminAccountsP
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (admin) => <UserRowActions userId={admin.id} role={admin.role} />,
+              cell: (admin) => (
+                <UserRowActions user={admin} roleOptions={adminRoleOptions} />
+              ),
             },
           ]}
         />

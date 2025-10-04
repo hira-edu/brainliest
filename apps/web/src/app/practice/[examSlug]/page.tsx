@@ -6,8 +6,9 @@
 
 import { notFound } from 'next/navigation';
 import { Badge, PracticeExamCard, PracticePageHeader } from '@brainliest/ui';
-import { fetchPracticeSession } from '@/lib/practice/fetch-practice-session';
+import { fetchPracticeSession, buildSampleSession } from '@/lib/practice/fetch-practice-session';
 import { PracticeSessionContainer } from './PracticeSessionContainer';
+import { PracticeSessionLoader } from './PracticeSessionLoader';
 
 interface PracticePageParams {
   examSlug: string;
@@ -16,7 +17,12 @@ interface PracticePageParams {
 export default async function PracticePage({ params }: { params: Promise<PracticePageParams> }) {
   const { examSlug } = await params;
 
-  const session = await fetchPracticeSession(examSlug);
+  const useClientFetch =
+    process.env.NEXT_PUBLIC_PRACTICE_CLIENT_FETCH === 'true' || process.env.NODE_ENV !== 'production';
+
+  const session = useClientFetch
+    ? await buildSampleSession(examSlug)
+    : await fetchPracticeSession(examSlug);
 
   if (session.fromSample && examSlug !== 'a-level-math') {
     notFound();
@@ -50,7 +56,11 @@ export default async function PracticePage({ params }: { params: Promise<Practic
           ]}
         />
 
-        <PracticeSessionContainer initialData={session} examSlug={examSlug} />
+        {useClientFetch ? (
+          <PracticeSessionLoader initialData={session} examSlug={examSlug} />
+        ) : (
+          <PracticeSessionContainer initialData={session} examSlug={examSlug} />
+        )}
       </div>
     </div>
   );

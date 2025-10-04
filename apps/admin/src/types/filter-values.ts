@@ -50,3 +50,10 @@ export interface SubjectFiltersInitialValues extends TaxonomySelectionState {
   readonly status?: string;
   readonly search?: string;
 }
+
+export interface AuditLogFiltersInitialValues {
+  readonly actorType?: string;
+  readonly timeframe?: string;
+  readonly actorEmail?: string;
+  readonly search?: string;
+}

@@ -329,4 +329,96 @@ describe('Drizzle repositories', () => {
       ).toBe(false);
     });
   }, 20000);
+
+  it('records and filters audit logs', async () => {
+    await withTestContext(async ({ db, repositories }) => {
+      const [admin] = await db
+        .insert(schema.adminUsers)
+        .values({
+          email: 'ops@example.com',
+          passwordHash: 'hashed-secret',
+          role: 'ADMIN',
+          status: 'active',
+        })
+        .returning({ id: schema.adminUsers.id });
+
+      if (!admin) {
+        throw new Error('Failed to insert admin user for audit log test.');
+      }
+
+      const studentId = await repositories.users.create({
+        email: 'learner@example.com',
+        hashedPassword: 'hashed-secret',
+        role: 'STUDENT',
+        profile: { subscriptionTier: 'plus' },
+      });
+
+      await db
+        .insert(schema.userProfiles)
+        .values({
+          userId: studentId,
+          firstName: 'Jamie',
+          lastName: 'Taylor',
+          preferences: {},
+        })
+        .onConflictDoNothing();
+
+      const questionList = await repositories.questions.list({}, 1, 1);
+      const questionId = questionList.data[0]?.id ?? null;
+
+      await repositories.auditLogs.log({
+        actorType: 'admin',
+        actorId: admin.id,
+        action: 'content.question.update',
+        entityType: 'question',
+        entityId: questionId ?? undefined,
+        diff: { before: { status: 'draft' }, after: { status: 'published' } },
+        ipAddress: '10.0.0.1',
+        userAgent: 'Vitest',
+      });
+
+      await repositories.auditLogs.log({
+        actorType: 'user',
+        actorId: studentId,
+        action: 'practice.session.start',
+        entityType: 'practice_session',
+        entityId: undefined,
+      });
+
+      await repositories.auditLogs.log({
+        actorType: 'system',
+        action: 'cron.digest.execute',
+        entityType: 'job',
+        entityId: undefined,
+      });
+
+      const all = await repositories.auditLogs.list({}, 1, 10);
+      expect(all.pagination.totalCount).toBe(3);
+      expect(all.data).toHaveLength(3);
+
+      const adminEntry = all.data.find((entry) => entry.actorType === 'admin');
+      expect(adminEntry?.actorEmail).toBe('ops@example.com');
+      expect(adminEntry?.actorDisplayName).toBe('ops@example.com');
+      expect(adminEntry?.diff).toMatchObject({ after: { status: 'published' } });
+
+      const userEntry = all.data.find((entry) => entry.actorType === 'user');
+      expect(userEntry?.actorDisplayName).toBe('Jamie Taylor');
+      expect(userEntry?.actorRole).toBe('STUDENT');
+
+      const adminOnly = await repositories.auditLogs.list({ actorType: 'admin' }, 1, 10);
+      expect(adminOnly.data).toHaveLength(1);
+      expect(adminOnly.data[0]?.action).toBe('content.question.update');
+
+      const emailFiltered = await repositories.auditLogs.list({ actorEmail: 'ops@' }, 1, 10);
+      expect(emailFiltered.data).toHaveLength(1);
+      expect(emailFiltered.data[0]?.actorType).toBe('admin');
+
+      const searchFiltered = await repositories.auditLogs.list({ search: 'practice.session' }, 1, 10);
+      expect(searchFiltered.data).toHaveLength(1);
+      expect(searchFiltered.data[0]?.actorType).toBe('user');
+
+      const future = await repositories.auditLogs.list({ createdAfter: new Date(Date.now() + 1_000) }, 1, 10);
+      expect(future.data).toHaveLength(0);
+    });
+  });
 });

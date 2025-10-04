@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   Button,
   Checkbox,
@@ -42,6 +42,8 @@ interface QuestionFormValues {
   options: QuestionOption[];
 }
 
+type SubmissionMode = 'page' | 'modal';
+
 interface QuestionFormProps {
   readonly action: (state: QuestionFormState, formData: FormData) => Promise<QuestionFormState>;
   readonly subjects: ReadonlyArray<SearchableSelectOption>;
@@ -50,6 +52,9 @@ interface QuestionFormProps {
   readonly submitLabel?: string;
   readonly headline?: string;
   readonly description?: string;
+  readonly formId?: string;
+  readonly onSuccess?: (state: QuestionFormState) => void;
+  readonly submissionMode?: SubmissionMode;
 }
 
 interface OptionEditorProps {
@@ -196,6 +201,9 @@ export function QuestionForm({
   submitLabel = 'Save question',
   headline = 'Question details',
   description = 'Manage content, metadata, and answer options for this question.',
+  formId,
+  onSuccess,
+  submissionMode = 'page',
 }: QuestionFormProps) {
   const hydratedDefaults: QuestionFormValues = useMemo(() => {
     return {
@@ -220,6 +228,7 @@ export function QuestionForm({
   const [values, setValues] = useState<QuestionFormValues>(hydratedDefaults);
   const [options, setOptions] = useState<QuestionOption[]>(hydratedDefaults.options);
   const [isPending, startTransition] = useTransition();
+  const lastStatusRef = useRef(formState.status);
 
   const { options: examOptions, loadOptions: loadExamOptions, isFetching: isFetchingExams } = useExamOptions(initialExamOptions);
 
@@ -227,6 +236,13 @@ export function QuestionForm({
     setValues(hydratedDefaults);
     setOptions(hydratedDefaults.options);
   }, [hydratedDefaults]);
+
+  useEffect(() => {
+    if (formState.status === 'success' && lastStatusRef.current !== 'success') {
+      onSuccess?.(formState);
+    }
+    lastStatusRef.current = formState.status;
+  }, [formState, onSuccess]);
 
   useEffect(() => {
     if (values.subjectSlug) {
@@ -299,8 +315,10 @@ export function QuestionForm({
       }
       footer={<FormSubmitActions submitLabel={submitLabel} />}
       action={formAction}
+      id={formId}
     >
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
+      <input type="hidden" name="submissionMode" value={submissionMode} />
       <input type="hidden" name="allowMultiple" value={values.allowMultiple ? 'true' : 'false'} />
       <input type="hidden" name="options" value={optionsJson} />
       <input type="hidden" name="subjectSlug" value={values.subjectSlug} />

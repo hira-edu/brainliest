@@ -6,7 +6,7 @@
  */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-redundant-type-constituents */
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { ReactNode } from 'react';
 import {
   Button,
@@ -101,13 +101,27 @@ export function PracticeClient({
       : 'Unavailable';
   }, [question.correctChoiceIds]);
 
+  const previousQuestionIdRef = useRef(questionState.questionId);
+
+  useEffect(() => {
+    previousQuestionIdRef.current = questionState.questionId;
+  }, [questionState.questionId]);
+
   useEffect(() => {
     if (isSyncing) {
       return;
     }
 
-    setSelectedChoiceId(deriveSelectedChoiceId(question, questionState));
-  }, [question, questionState, isSyncing]);
+    const derived = deriveSelectedChoiceId(question, questionState);
+    const hasServerSelection = Array.isArray(questionState.selectedAnswers) && questionState.selectedAnswers.length > 0;
+    const sameQuestion = previousQuestionIdRef.current === questionState.questionId;
+
+    if (derived === null && sameQuestion && !hasServerSelection && selectedChoiceId) {
+      return;
+    }
+
+    setSelectedChoiceId(derived);
+  }, [question, questionState, isSyncing, selectedChoiceId]);
 
   useEffect(() => {
     setFreeResponse('');
@@ -159,10 +173,6 @@ export function PracticeClient({
   const handleSelectionChange = (nextValue?: string) => {
     if (!hasOptions) {
       return;
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[practice] selection change', nextValue);
     }
 
     setSelectedChoiceId(nextValue ?? null);
@@ -280,7 +290,7 @@ export function PracticeClient({
   const explanationSuccessBanner = state === 'success' && explanation
     ? {
         variant: 'info' as const,
-        title: 'AI explanation ready',
+        title: 'Explanation ready',
         description: 'Review the generated explanation below.',
       }
     : null;

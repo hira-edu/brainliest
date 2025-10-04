@@ -46,7 +46,7 @@ async function fetchSessionFromApi(examSlug: string): Promise<PracticeSessionDat
   return mapApiResponseToPracticeSessionData(payload);
 }
 
-async function buildFallbackSession(examSlug: string): Promise<PracticeSessionData> {
+export async function buildSampleSession(examSlug: string): Promise<PracticeSessionData> {
   const repositories = createRepositories(drizzleClient);
   const examRecord = await repositories.exams.findBySlug(examSlug);
   const questionPage = await repositories.questions.findByExam(examSlug, {}, 1, 10);
@@ -110,10 +110,6 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
     examInfo.difficultyMix = difficultyMix;
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[practice] using fallback session with', questions.length, 'questions');
-  }
-
   const question = questions[0]?.question ?? SAMPLE_QUESTION;
 
   const progress = buildPracticeProgress(
@@ -131,7 +127,7 @@ async function buildFallbackSession(examSlug: string): Promise<PracticeSessionDa
     currentQuestionIndex: 0,
     question,
     questionState: {
-      questionId: record?.id ?? SAMPLE_QUESTION.id,
+      questionId: questions[0]?.questionId ?? SAMPLE_QUESTION.id,
       orderIndex: 0,
       selectedAnswers: [],
       isFlagged: false,
@@ -157,7 +153,7 @@ export async function fetchPracticeSession(examSlug: string): Promise<PracticeSe
     if (process.env.NODE_ENV !== 'production') {
       console.warn('[practice] falling back to sample data', error);
     }
-    return buildFallbackSession(examSlug);
+    return buildSampleSession(examSlug);
   }
 }
 

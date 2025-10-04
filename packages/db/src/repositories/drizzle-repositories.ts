@@ -4,7 +4,7 @@
  */
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 
-import { and, desc, eq, exists, gte, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
+import { and, desc, eq, exists, gte, ilike, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../client';
 import * as schema from '../schema';
 import type {
@@ -30,6 +30,12 @@ import type {
   IntegrationKeyRecord,
   IntegrationKeyFilter,
 } from './integration-repository';
+import type {
+  AuditLogRepository,
+  AuditLogRecord,
+  AuditLogFilter,
+  CreateAuditLogInput,
+} from './audit-log-repository';
 import type {
   MediaRepository,
   MediaAssetRecord,
@@ -1056,6 +1062,190 @@ export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository
   }
 }
 
+type AuditJoinRow = {
+  log: typeof schema.auditLogs.$inferSelect;
+  admin: typeof schema.adminUsers.$inferSelect | null;
+  user: typeof schema.users.$inferSelect | null;
+  profile: typeof schema.userProfiles.$inferSelect | null;
+};
+
+export class DrizzleAuditLogRepository implements AuditLogRepository {
+  constructor(private readonly db: DatabaseClient) {}
+
+  async log(entry: CreateAuditLogInput): Promise<void> {
+    await this.db.insert(schema.auditLogs).values({
+      actorType: entry.actorType,
+      actorId: entry.actorId ?? null,
+      action: entry.action,
+      entityType: entry.entityType ?? null,
+      entityId: entry.entityId ?? null,
+      diff: entry.diff ?? null,
+      ipAddress: entry.ipAddress ?? null,
+      userAgent: entry.userAgent ?? null,
+      createdAt: entry.createdAt ?? new Date(),
+    });
+  }
+
+  async list(filters: AuditLogFilter, page: number, pageSize: number): Promise<PaginatedResult<AuditLogRecord>> {
+    const conditions: SQL[] = [];
+
+    if (filters.actorType) {
+      conditions.push(eq(schema.auditLogs.actorType, filters.actorType));
+    }
+    if (filters.actorId) {
+      conditions.push(eq(schema.auditLogs.actorId, filters.actorId));
+    }
+    if (filters.action && filters.action.trim().length > 0) {
+      const sanitized = filters.action.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      conditions.push(ilike(schema.auditLogs.action, `%${sanitized}%`));
+    }
+    if (filters.entityType && filters.entityType.trim().length > 0) {
+      const sanitized = filters.entityType.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      conditions.push(ilike(schema.auditLogs.entityType, `%${sanitized}%`));
+    }
+    if (filters.entityId && filters.entityId.trim().length > 0) {
+      const sanitized = filters.entityId.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      conditions.push(sql`${schema.auditLogs.entityId}::text ILIKE ${`%${sanitized}%`}` as SQL);
+    }
+    if (filters.ipAddress && filters.ipAddress.trim().length > 0) {
+      const sanitized = filters.ipAddress.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      conditions.push(ilike(schema.auditLogs.ipAddress, `%${sanitized}%`));
+    }
+    if (filters.createdAfter) {
+      conditions.push(gte(schema.auditLogs.createdAt, filters.createdAfter));
+    }
+    if (filters.createdBefore) {
+      conditions.push(lte(schema.auditLogs.createdAt, filters.createdBefore));
+    }
+    if (filters.search && filters.search.trim().length > 0) {
+      const sanitized = filters.search.trim().replace(/[%_]/g, (match) => `\\${match}`);
+      const term = `%${sanitized}%`;
+      let predicate: SQL = ilike(schema.auditLogs.action, term);
+      predicate = or(predicate, ilike(schema.auditLogs.entityType, term)) as SQL;
+      predicate = or(predicate, sql`${schema.auditLogs.entityId}::text ILIKE ${term}`) as SQL;
+      predicate = or(predicate, ilike(schema.auditLogs.userAgent, term)) as SQL;
+      predicate = or(predicate, ilike(schema.auditLogs.ipAddress, term)) as SQL;
+      conditions.push(predicate);
+    }
+
+    const whereClause =
+      conditions.length === 0
+        ? undefined
+        : conditions.length === 1
+          ? conditions[0]!
+          : and(...conditions);
+
+    const actorEmailFilter = filters.actorEmail && filters.actorEmail.trim().length > 0
+      ? `%${filters.actorEmail.trim().replace(/[%_]/g, (match) => `\\${match}`)}%`
+      : null;
+
+    const emailPredicate = actorEmailFilter
+      ? (or(
+          ilike(schema.adminUsers.email, actorEmailFilter),
+          ilike(schema.users.email, actorEmailFilter)
+        ) as SQL)
+      : undefined;
+
+    const combinedWhere = emailPredicate
+      ? whereClause
+        ? (and(whereClause, emailPredicate) as SQL)
+        : emailPredicate
+      : whereClause;
+
+    const totalResult = await this.db
+      .select({ value: sql<number>`count(*)` })
+      .from(schema.auditLogs)
+      .leftJoin(schema.adminUsers, eq(schema.adminUsers.id, schema.auditLogs.actorId))
+      .leftJoin(schema.users, eq(schema.users.id, schema.auditLogs.actorId))
+      .where(combinedWhere ?? sql`TRUE`);
+
+    const totalCount = Number(totalResult[0]?.value ?? 0);
+
+    const safePageSize = pageSize > 0 ? pageSize : DEFAULT_PAGE_SIZE;
+    const safePage = page > 0 ? page : 1;
+    const offset = (safePage - 1) * safePageSize;
+
+    const rows = (await this.db
+      .select({
+        log: schema.auditLogs,
+        admin: schema.adminUsers,
+        user: schema.users,
+        profile: schema.userProfiles,
+      })
+      .from(schema.auditLogs)
+      .leftJoin(schema.adminUsers, eq(schema.adminUsers.id, schema.auditLogs.actorId))
+      .leftJoin(schema.users, eq(schema.users.id, schema.auditLogs.actorId))
+      .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.users.id))
+      .where(combinedWhere ?? sql`TRUE`)
+      .orderBy(desc(schema.auditLogs.createdAt))
+      .limit(safePageSize)
+      .offset(offset)) as AuditJoinRow[];
+
+    const records: AuditLogRecord[] = rows.map((row) => {
+      const { log, admin, user, profile } = row;
+
+      const actorEmail = log.actorType === 'admin'
+        ? admin?.email ?? null
+        : log.actorType === 'user'
+          ? user?.email ?? null
+          : null;
+
+      const actorRole = log.actorType === 'admin'
+        ? admin?.role ?? null
+        : log.actorType === 'user'
+          ? (user?.role ?? null)
+          : null;
+
+      const actorStatus = log.actorType === 'admin'
+        ? admin?.status ?? null
+        : log.actorType === 'user'
+          ? user?.status ?? null
+          : null;
+
+      const displayName = (() => {
+        if (log.actorType === 'system') {
+          return 'System';
+        }
+        if (log.actorType === 'admin') {
+          return admin?.email ?? null;
+        }
+        if (log.actorType === 'user') {
+          const first = profile?.firstName?.trim();
+          const last = profile?.lastName?.trim();
+          const full = [first, last].filter(Boolean).join(' ').trim();
+          if (full.length > 0) {
+            return full;
+          }
+          return user?.email ?? null;
+        }
+        return null;
+      })();
+
+      return {
+        id: log.id,
+        actorType: log.actorType,
+        actorId: log.actorId,
+        actorEmail,
+        actorDisplayName: displayName,
+        actorRole,
+        actorStatus,
+        action: log.action,
+        entityType: log.entityType ?? null,
+        entityId: log.entityId ?? null,
+        diff: log.diff ?? null,
+        ipAddress: log.ipAddress ?? null,
+        userAgent: log.userAgent ?? null,
+        createdAt: log.createdAt,
+      } satisfies AuditLogRecord;
+    });
+
+    return {
+      data: records,
+      pagination: buildPaginationMeta(totalCount, safePage, safePageSize),
+    };
+  }
+}
+
 type MediaRow = {
   asset: typeof schema.questionAssets.$inferSelect;
   question: typeof schema.questions.$inferSelect;
@@ -1735,6 +1925,7 @@ export interface RepositoryBundle {
   explanations: ExplanationRepository;
   sessions: SessionRepository;
   taxonomy: TaxonomyRepository;
+  auditLogs: AuditLogRepository;
 }
 
 export function createRepositories(db: DatabaseClient): RepositoryBundle {
@@ -1748,5 +1939,6 @@ export function createRepositories(db: DatabaseClient): RepositoryBundle {
     explanations: new DrizzleExplanationRepository(db),
     sessions: new DrizzleSessionRepository(db),
     taxonomy: new DrizzleTaxonomyRepository(db),
+    auditLogs: new DrizzleAuditLogRepository(db),
   };
 }

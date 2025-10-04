@@ -133,9 +133,18 @@ export async function createUserAction(_: UserFormState, formData: FormData): Pr
     const payload = normaliseCreatePayload(formData);
     const input = toCreateInput(payload);
     const userId = await repositories.users.create(input);
+    const submissionMode = formData.get('submissionMode');
+    const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
     const segment = roleSegment(payload.role);
     revalidatePath(`/users/${segment}`);
+    if (stayOnPage) {
+      return {
+        status: 'success',
+        message: 'User created successfully.',
+      } satisfies UserFormState;
+    }
+
     redirect(`/users/${segment}/${userId}/edit?created=1`);
   } catch (error) {
     if (isZodErrorLike(error)) {

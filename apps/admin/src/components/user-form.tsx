@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   EntityForm,
@@ -31,6 +31,8 @@ interface UserFormValues {
   password?: string;
 }
 
+type SubmissionMode = 'page' | 'modal';
+
 export interface UserFormProps {
   readonly action: (state: UserFormState, formData: FormData) => Promise<UserFormState>;
   readonly roleOptions: ReadonlyArray<SearchableSelectOption>;
@@ -40,6 +42,9 @@ export interface UserFormProps {
   readonly submitLabel?: string;
   readonly passwordLabel?: string;
   readonly passwordDescription?: string;
+  readonly formId?: string;
+  readonly onSuccess?: (state: UserFormState) => void;
+  readonly submissionMode?: SubmissionMode;
 }
 
 function FormSubmitActions({ submitLabel }: { submitLabel: string }) {
@@ -73,10 +78,14 @@ export function UserForm({
   submitLabel = 'Save user',
   passwordLabel = 'Password',
   passwordDescription,
+  formId,
+  onSuccess,
+  submissionMode = 'page',
 }: UserFormProps) {
   const hydratedDefaults = useMemo(() => normaliseDefaults(defaultValues), [defaultValues]);
   const [formState, formAction] = useFormState(action, userFormInitialState);
   const [values, setValues] = useState<UserFormValues>(hydratedDefaults);
+  const lastStatusRef = useRef(formState.status);
 
   useEffect(() => {
     setValues(hydratedDefaults);
@@ -90,6 +99,13 @@ export function UserForm({
       }));
     }
   }, [roleOptions, values.role]);
+
+  useEffect(() => {
+    if (formState.status === 'success' && lastStatusRef.current !== 'success') {
+      onSuccess?.(formState);
+    }
+    lastStatusRef.current = formState.status;
+  }, [formState, onSuccess]);
 
   const handleChange = useCallback(<K extends keyof UserFormValues>(key: K, value: UserFormValues[K]) => {
     setValues((previous) => ({
@@ -109,7 +125,9 @@ export function UserForm({
       title={headline}
       description={description}
       footer={<FormSubmitActions submitLabel={submitLabel} />}
+      id={formId}
     >
+      <input type="hidden" name="submissionMode" value={submissionMode} />
       {values.id ? <input type="hidden" name="id" value={values.id} /> : null}
       <input type="hidden" name="role" value={roleValue} />
       <input type="hidden" name="status" value={values.status} />

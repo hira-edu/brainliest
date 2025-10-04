@@ -87,8 +87,17 @@ export async function createExamAction(_: ExamFormState, formData: FormData): Pr
     const payload = normaliseCreatePayload(formData);
     const input = toCreateInput(payload);
     await repositories.exams.create(input, ACTOR_ID);
+    const submissionMode = formData.get('submissionMode');
+    const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
     revalidatePath('/content/exams');
+    if (stayOnPage) {
+      return {
+        status: 'success',
+        message: 'Exam created successfully.',
+      } satisfies ExamFormState;
+    }
+
     redirect(`/content/exams/${payload.slug}/edit?created=1`);
   } catch (error) {
     if (isZodErrorLike(error)) {

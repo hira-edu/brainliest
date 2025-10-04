@@ -261,8 +261,17 @@ export async function createCategoryAction(_: CategoryFormState, formData: FormD
     const payload = parsed;
 
     await repositories.taxonomy.createCategory(toCreateCategoryInput(payload), 'system-admin');
+    const submissionMode = formData.get('submissionMode');
+    const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
     revalidatePath('/taxonomy/categories');
+    if (stayOnPage) {
+      return {
+        status: 'success',
+        message: 'Category created successfully.',
+      } satisfies CategoryFormState;
+    }
+
     redirect(`/taxonomy/categories/${payload.slug}/edit?created=1`);
   } catch (error) {
     if (isZodErrorLike(error)) {
@@ -357,8 +366,18 @@ export async function createSubcategoryAction(_: SubcategoryFormState, formData:
     const payload = parsed;
 
     await repositories.taxonomy.createSubcategory(toCreateSubcategoryInput(payload), 'system-admin');
+    const submissionMode = formData.get('submissionMode');
+    const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
     revalidatePath('/taxonomy/subcategories');
+    revalidatePath('/taxonomy/categories');
+    if (stayOnPage) {
+      return {
+        status: 'success',
+        message: 'Subcategory created successfully.',
+      } satisfies SubcategoryFormState;
+    }
+
     redirect(`/taxonomy/subcategories/${payload.slug}/edit?created=1`);
   } catch (error) {
     if (isZodErrorLike(error)) {
@@ -456,8 +475,20 @@ export async function createSubjectAction(_: SubjectFormState, formData: FormDat
     const payload = parsed;
 
     await repositories.taxonomy.createSubject(toCreateSubjectInput(payload), 'system-admin');
+    const submissionMode = formData.get('submissionMode');
+    const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
     revalidatePath('/taxonomy/subjects');
+    revalidatePath('/taxonomy/subcategories');
+    revalidatePath('/taxonomy/categories');
+
+    if (stayOnPage) {
+      return {
+        status: 'success',
+        message: 'Subject created successfully.',
+      } satisfies SubjectFormState;
+    }
+
     redirect(`/taxonomy/subjects/${payload.slug}/edit?created=1`);
   } catch (error) {
     if (isZodErrorLike(error)) {

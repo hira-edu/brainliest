@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -9,22 +9,26 @@ import {
   DropdownItem,
   DropdownSeparator,
   Icon,
+  Modal,
 } from '@brainliest/ui';
-import { deleteCategoryAction } from '@/app/(panel)/taxonomy/actions';
+import type { CatalogCategorySummary } from '@brainliest/db';
+import { deleteCategoryAction, updateCategoryAction } from '@/app/(panel)/taxonomy/actions';
+import { CategoryForm } from './category-form';
 
 interface CategoryRowActionsProps {
-  readonly slug: string;
+  readonly category: CatalogCategorySummary;
 }
 
-export function CategoryRowActions({ slug }: CategoryRowActionsProps) {
+export function CategoryRowActions({ category }: CategoryRowActionsProps) {
   const router = useRouter();
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteCategoryAction(slug);
+      const result = await deleteCategoryAction(category.slug);
       if (result.status === 'success') {
         setDeleteOpen(false);
         setErrorMessage(null);
@@ -34,6 +38,34 @@ export function CategoryRowActions({ slug }: CategoryRowActionsProps) {
       }
     });
   };
+
+  const formId = useMemo(() => `category-form-${category.slug}`, [category.slug]);
+
+  const defaultValues = useMemo(
+    () => ({
+      slug: category.slug,
+      name: category.name,
+      description: category.description ?? undefined,
+      type: category.type,
+      icon: category.icon ?? undefined,
+      sortOrder: Number.isFinite(category.sortOrder) ? String(category.sortOrder) : undefined,
+      active: category.active,
+    }),
+    [category]
+  );
+
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
 
   return (
     <>
@@ -45,7 +77,13 @@ export function CategoryRowActions({ slug }: CategoryRowActionsProps) {
           </Button>
         }
       >
-        <DropdownItem href={`/taxonomy/categories/${slug}/edit`}>Edit</DropdownItem>
+        <DropdownItem
+          onSelect={() => {
+            handleOpenEdit();
+          }}
+        >
+          Edit
+        </DropdownItem>
         <DropdownSeparator />
         <DropdownItem
           onSelect={() => setDeleteOpen(true)}
@@ -55,6 +93,23 @@ export function CategoryRowActions({ slug }: CategoryRowActionsProps) {
           Delete
         </DropdownItem>
       </Dropdown>
+
+      <Modal
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        title={`Edit ${category.name}`}
+        size="lg"
+      >
+        <CategoryForm
+          action={updateCategoryAction}
+          defaultValues={defaultValues}
+          submitLabel="Save changes"
+          headline="Category details"
+          description="Manage the highest level taxonomy grouping."
+          formId={formId}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
 
       <DeleteConfirmation
         isOpen={isDeleteOpen}

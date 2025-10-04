@@ -127,12 +127,14 @@ function buildUpdateQuestionInput(formData: FormData): UpdateQuestionInput {
 }
 
 function buildCreateQuestionInputFromParsed(data: CreateQuestionPayload): CreateQuestionInput {
-  const options: QuestionOptionInput[] = data.options.map((option) => ({
-    id: option.id,
-    label: option.label,
-    contentMarkdown: option.contentMarkdown,
-    isCorrect: option.isCorrect ?? false,
-  }));
+  const options: QuestionOptionInput[] = data.options.map(
+    (option: CreateQuestionPayload['options'][number]): QuestionOptionInput => ({
+      id: option.id,
+      label: option.label,
+      contentMarkdown: option.contentMarkdown,
+      isCorrect: option.isCorrect ?? false,
+    })
+  );
 
   const correctIndices = deriveCorrectIndices(options);
   const allowMultiple = data.allowMultiple || correctIndices.length > 1;
@@ -159,8 +161,17 @@ export async function createQuestionAction(_: QuestionFormState, formData: FormD
   try {
     const input = buildCreateQuestionInput(formData);
     const questionId = await repositories.questions.create(input, ACTOR_ID);
+    const submissionMode = formData.get('submissionMode');
+    const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
     revalidatePath('/content/questions');
+    if (stayOnPage) {
+      return {
+        status: 'success',
+        message: 'Question created successfully.',
+      } satisfies QuestionFormState;
+    }
+
     redirect(`/content/questions/${questionId}/edit?created=1`);
   } catch (error) {
     if (isZodErrorLike(error)) {

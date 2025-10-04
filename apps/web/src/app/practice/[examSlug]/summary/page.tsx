@@ -28,6 +28,15 @@ const formatDuration = (seconds: number): string => {
   return `${remainingSeconds}s`;
 };
 
+const formatCountdown = (seconds: number): string => {
+  const safe = Math.max(0, Math.trunc(seconds));
+  const minutes = Math.floor(safe / 60)
+    .toString()
+    .padStart(2, '0');
+  const remaining = (safe % 60).toString().padStart(2, '0');
+  return `${minutes}:${remaining}`;
+};
+
 export default function PracticeSummaryPage() {
   const params = useParams<{ examSlug: string }>();
   const searchParams = useSearchParams();
@@ -97,6 +106,7 @@ export default function PracticeSummaryPage() {
       0
     );
     const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+    const timeRemainingCountdown = formatCountdown(session.progress.timeRemainingSeconds ?? 0);
 
     return [
       { label: 'Questions answered', value: `${totalAnswered} / ${totalQuestions}` },
@@ -106,6 +116,7 @@ export default function PracticeSummaryPage() {
       { label: 'Flagged', value: `${flaggedCount}` },
       { label: 'Bookmarked', value: `${bookmarkedCount}` },
       { label: 'Total time', value: formatDuration(totalTimeSeconds) },
+      { label: 'Time remaining', value: timeRemainingCountdown },
     ];
   }, [session]);
 
@@ -135,8 +146,9 @@ export default function PracticeSummaryPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
+      <h1 className="text-sm font-semibold uppercase tracking-wide text-primary-600">Practice summary</h1>
       <PracticePageHeader
-        eyebrow="Practice summary"
+        eyebrow={null}
         title={session.exam.title}
         description="Review your results and plan the next steps for your study session."
         aside={<Badge variant="success">Exam completed</Badge>}

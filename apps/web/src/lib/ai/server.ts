@@ -7,6 +7,7 @@ import 'server-only';
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 
 import {
+  AiExplanationDependencyError,
   configureAiExplanationService,
   configureQuestionRepository,
   requestAiExplanation,
@@ -20,6 +21,8 @@ import {
 import { mapRecordToQuestionModel } from './map-record-to-question';
 import { SAMPLE_QUESTION } from './sample-question';
 import { buildStubExplanation } from './stub-explanation';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const serverState = globalThis as typeof globalThis & {
   __brainliestServerAiConfigured?: boolean;
@@ -39,6 +42,10 @@ function ensureServerAiConfigured() {
 
   configureAiExplanationService({
     fetchQuestion: async (questionId) => {
+      if (!UUID_PATTERN.test(questionId)) {
+        return SAMPLE_QUESTION;
+      }
+
       const record = await questionRepository.findById(questionId);
       if (record) {
         return mapRecordToQuestionModel(record);
@@ -78,7 +85,14 @@ export function requestServerAiExplanation(
   options: Omit<RequestAiExplanationOptions, 'userId'> & { userId: string }
 ) {
   ensureServerAiConfigured();
-  return requestAiExplanation(options);
+  return requestAiExplanation(options).catch((error) => {
+    if (error instanceof AiExplanationDependencyError) {
+      serverState.__brainliestServerAiConfigured = false;
+      ensureServerAiConfigured();
+      return requestAiExplanation(options);
+    }
+    throw error;
+  });
 }
 
 export function resetServerAiConfiguration() {

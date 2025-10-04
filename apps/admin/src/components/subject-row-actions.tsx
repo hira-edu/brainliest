@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -9,22 +9,29 @@ import {
   DropdownItem,
   DropdownSeparator,
   Icon,
+  Modal,
+  type SearchableSelectOption,
 } from '@brainliest/ui';
-import { deleteSubjectAction } from '@/app/(panel)/taxonomy/actions';
+import type { CatalogSubjectSummary } from '@brainliest/db';
+import { deleteSubjectAction, updateSubjectAction } from '@/app/(panel)/taxonomy/actions';
+import { SubjectForm } from './subject-form';
 
 interface SubjectRowActionsProps {
-  readonly slug: string;
+  readonly subject: CatalogSubjectSummary;
+  readonly categories: ReadonlyArray<SearchableSelectOption>;
+  readonly subcategoriesByCategory: Readonly<Record<string, ReadonlyArray<SearchableSelectOption>>>;
 }
 
-export function SubjectRowActions({ slug }: SubjectRowActionsProps) {
+export function SubjectRowActions({ subject, categories, subcategoriesByCategory }: SubjectRowActionsProps) {
   const router = useRouter();
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteSubjectAction(slug);
+      const result = await deleteSubjectAction(subject.slug);
       if (result.status === 'success') {
         setDeleteOpen(false);
         setErrorMessage(null);
@@ -34,6 +41,37 @@ export function SubjectRowActions({ slug }: SubjectRowActionsProps) {
       }
     });
   };
+
+  const formId = useMemo(() => `subject-form-${subject.slug}`, [subject.slug]);
+
+  const defaultValues = useMemo(
+    () => ({
+      slug: subject.slug,
+      categorySlug: subject.categorySlug,
+      subcategorySlug: subject.subcategorySlug ?? undefined,
+      name: subject.name,
+      description: subject.description ?? undefined,
+      icon: subject.icon ?? undefined,
+      difficulty: subject.difficulty ?? undefined,
+      tags: subject.tags.length > 0 ? subject.tags.join(', ') : '',
+      metadata: Object.keys(subject.metadata ?? {}).length > 0 ? JSON.stringify(subject.metadata, null, 2) : '',
+      active: subject.active,
+    }),
+    [subject]
+  );
+
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
 
   return (
     <>
@@ -45,7 +83,13 @@ export function SubjectRowActions({ slug }: SubjectRowActionsProps) {
           </Button>
         }
       >
-        <DropdownItem href={`/taxonomy/subjects/${slug}/edit`}>Edit</DropdownItem>
+        <DropdownItem
+          onSelect={() => {
+            handleOpenEdit();
+          }}
+        >
+          Edit
+        </DropdownItem>
         <DropdownSeparator />
         <DropdownItem
           onSelect={() => setDeleteOpen(true)}
@@ -55,6 +99,25 @@ export function SubjectRowActions({ slug }: SubjectRowActionsProps) {
           Delete
         </DropdownItem>
       </Dropdown>
+
+      <Modal
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        title={`Edit ${subject.name}`}
+        size="xl"
+      >
+        <SubjectForm
+          action={updateSubjectAction}
+          categories={categories}
+          subcategoriesByCategory={subcategoriesByCategory}
+          defaultValues={defaultValues}
+          submitLabel="Save changes"
+          headline="Subject details"
+          description="Connect the subject to taxonomy and configure discovery metadata."
+          formId={formId}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
 
       <DeleteConfirmation
         isOpen={isDeleteOpen}

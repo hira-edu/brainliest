@@ -1,12 +1,13 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
 import { listQuestions, countQuestionsByStatus, countQuestionsByDifficulty } from '@/lib/questions';
+import { listTaxonomySubjects } from '@/lib/taxonomy';
 import { PaginationControl } from '@/components/pagination-control';
 import QuestionFilters from '@/components/question-filters';
 import { QuestionRowActions } from '@/components/question-row-actions';
+import { QuestionCreateButton } from '@/components/question-create-button';
 
 const DESCRIPTION = 'Review question inventory, monitor publishing progress, and quickly spot content gaps.';
 
@@ -54,16 +55,29 @@ export default async function QuestionsPage({ searchParams }: QuestionsPageProps
   const allowedDifficulty = new Set(['all', 'EASY', 'MEDIUM', 'HARD', 'EXPERT']);
   const normalisedDifficulty = allowedDifficulty.has(difficultyParam) ? difficultyParam : 'all';
 
-  const questionsPage = await listQuestions({
-    page,
-    status: normalisedStatus as 'published' | 'draft' | 'unpublished' | 'all',
-    difficulty: normalisedDifficulty as 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT' | 'all',
-    categorySlug: categoryParam ?? undefined,
-    subcategorySlug: subcategoryParam ?? undefined,
-    subjectSlug: subjectParam ?? undefined,
-    examSlug: examParam ?? undefined,
-    search: searchParam?.trim() ?? undefined,
-  });
+  const [questionsPage, subjectSummaries] = await Promise.all([
+    listQuestions({
+      page,
+      status: normalisedStatus as 'published' | 'draft' | 'unpublished' | 'all',
+      difficulty: normalisedDifficulty as 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT' | 'all',
+      categorySlug: categoryParam ?? undefined,
+      subcategorySlug: subcategoryParam ?? undefined,
+      subjectSlug: subjectParam ?? undefined,
+      examSlug: examParam ?? undefined,
+      search: searchParam?.trim() ?? undefined,
+    }),
+    listTaxonomySubjects(),
+  ]);
+
+  const subjectOptionsForForm = subjectSummaries
+    .map((subject) => ({
+      value: subject.slug,
+      label: subject.name,
+      description: subject.subcategoryName
+        ? `${subject.categoryName} • ${subject.subcategoryName}`
+        : subject.categoryName,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
   const [publishedCount, draftCount, hardCount] = await Promise.all([
     countQuestionsByStatus('published'),
@@ -91,11 +105,7 @@ export default async function QuestionsPage({ searchParams }: QuestionsPageProps
         { label: 'Content', href: '/content/questions' },
         { label: 'Questions', href: '/content/questions', isCurrent: true },
       ]}
-      pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/content/questions/new">Create question</Link>
-        </Button>
-      }
+      pageActions={<QuestionCreateButton subjects={subjectOptionsForForm} />}
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Total questions" value={numberFormatter.format(totalCount)} icon="ListChecks" />
@@ -166,7 +176,9 @@ export default async function QuestionsPage({ searchParams }: QuestionsPageProps
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (question) => <QuestionRowActions questionId={question.id} />,
+              cell: (question) => (
+                <QuestionRowActions question={question} subjects={subjectOptionsForForm} />
+              ),
             },
           ]}
         />

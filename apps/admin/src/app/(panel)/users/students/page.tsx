@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { Badge, Button } from '@brainliest/ui';
+import { Badge } from '@brainliest/ui';
 import { AdminShell } from '@/components/admin-shell';
 import { DataTable } from '@/components/data-table';
 import { MetricCard } from '@/components/metric-card';
@@ -8,6 +7,7 @@ import { PaginationControl } from '@/components/pagination-control';
 import { UserRowActions } from '@/components/user-row-actions';
 import StudentUserFilters from '@/components/student-user-filters';
 import type { StudentUserFiltersInitialValues } from '@/types/filter-values';
+import { UserCreateButton } from '@/components/user-create-button';
 
 const DESCRIPTION = 'Monitor student accounts, investigate status changes, and keep growth metrics in view.';
 
@@ -66,6 +66,8 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
     countUsersByStatus('STUDENT', 'suspended'),
   ]);
 
+  const studentRoleOptions = [{ value: 'STUDENT', label: 'Student' }] as const;
+
   const initialFilters: StudentUserFiltersInitialValues = {
     status: normalizedStatus ?? 'all',
     subscriptionTier: normalizedSubscription ?? 'all',
@@ -82,9 +84,14 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
         { label: 'Students', href: '/users/students', isCurrent: true },
       ]}
       pageActions={
-        <Button variant="secondary" size="sm" asChild>
-          <Link href="/users/students/invite">Invite student</Link>
-        </Button>
+        <UserCreateButton
+          buttonLabel="Invite student"
+          modalTitle="Invite student"
+          roleOptions={studentRoleOptions}
+          submitLabel="Invite student"
+          passwordLabel="Temporary password"
+          passwordDescription="Share this temporary password securely; the student should change it after first sign-in."
+        />
       }
     >
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -144,7 +151,9 @@ export default async function StudentsPage({ searchParams }: StudentsPageProps) 
               id: 'actions',
               header: 'Actions',
               align: 'right',
-              cell: (user) => <UserRowActions userId={user.id} role={user.role} />,
+              cell: (user) => (
+                <UserRowActions user={user} roleOptions={studentRoleOptions} />
+              ),
             },
           ]}
         />

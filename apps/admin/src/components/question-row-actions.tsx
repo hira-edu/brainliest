@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -9,22 +9,28 @@ import {
   DropdownItem,
   DropdownSeparator,
   Icon,
+  Modal,
+  type SearchableSelectOption,
 } from '@brainliest/ui';
-import { deleteQuestionAction } from '@/app/(panel)/content/questions/actions';
+import type { QuestionRecord } from '@brainliest/db';
+import { deleteQuestionAction, updateQuestionAction } from '@/app/(panel)/content/questions/actions';
+import { QuestionForm } from './question-form';
 
 interface QuestionRowActionsProps {
-  readonly questionId: string;
+  readonly question: QuestionRecord;
+  readonly subjects: ReadonlyArray<SearchableSelectOption>;
 }
 
-export function QuestionRowActions({ questionId }: QuestionRowActionsProps) {
+export function QuestionRowActions({ question, subjects }: QuestionRowActionsProps) {
   const router = useRouter();
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteQuestionAction(questionId);
+      const result = await deleteQuestionAction(question.id);
       if (result.status === 'success') {
         setDeleteOpen(false);
         setErrorMessage(null);
@@ -34,6 +40,44 @@ export function QuestionRowActions({ questionId }: QuestionRowActionsProps) {
       }
     });
   };
+
+  const formId = useMemo(() => `question-form-${question.id}`, [question.id]);
+
+  const defaultValues = useMemo(
+    () => ({
+      id: question.id,
+      text: question.stemMarkdown,
+      explanation: question.explanationMarkdown ?? '',
+      allowMultiple: question.type === 'multi',
+      difficulty: question.difficulty,
+      subjectSlug: question.subjectSlug,
+      examSlug: question.examSlug ?? undefined,
+      domain: question.domain ?? undefined,
+      source: question.source ?? undefined,
+      year: question.year ?? undefined,
+      status: question.published ? 'published' : 'draft',
+      options: question.options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        contentMarkdown: option.contentMarkdown,
+        isCorrect: option.isCorrect,
+      })),
+    }),
+    [question]
+  );
+
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
 
   return (
     <>
@@ -45,7 +89,13 @@ export function QuestionRowActions({ questionId }: QuestionRowActionsProps) {
           </Button>
         }
       >
-        <DropdownItem href={`/content/questions/${questionId}/edit`}>Edit</DropdownItem>
+        <DropdownItem
+          onSelect={() => {
+            handleOpenEdit();
+          }}
+        >
+          Edit
+        </DropdownItem>
         <DropdownSeparator />
         <DropdownItem
           onSelect={() => setDeleteOpen(true)}
@@ -55,6 +105,24 @@ export function QuestionRowActions({ questionId }: QuestionRowActionsProps) {
           Delete
         </DropdownItem>
       </Dropdown>
+
+      <Modal
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        title="Edit question"
+        size="xl"
+      >
+        <QuestionForm
+          action={updateQuestionAction}
+          subjects={subjects}
+          defaultValues={defaultValues}
+          submitLabel="Save changes"
+          headline="Question details"
+          description="Manage content, metadata, and answer options for this question."
+          formId={formId}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
 
       <DeleteConfirmation
         isOpen={isDeleteOpen}

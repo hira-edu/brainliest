@@ -39,6 +39,13 @@ export type {
   CreateMediaAssetInput,
 } from './media-repository';
 export type {
+  AuditLogRepository,
+  AuditLogRecord,
+  AuditLogFilter,
+  CreateAuditLogInput,
+  AuditActorType,
+} from './audit-log-repository';
+export type {
   ExplanationRepository,
   ExplanationRecord,
   ExplanationSummary,
@@ -85,6 +92,7 @@ export {
   DrizzleExplanationRepository,
   DrizzleSessionRepository,
   DrizzleTaxonomyRepository,
+  DrizzleAuditLogRepository,
   createRepositories,
   type RepositoryBundle,
 } from './drizzle-repositories';

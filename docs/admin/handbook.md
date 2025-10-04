@@ -65,6 +65,17 @@ This handbook guides Brainliest administrators through daily operations in the a
 3. Provide new secret value (encrypted at rest).
 4. Confirm environments impacted; redeploy if necessary.
 
+### Review Audit Trail
+1. Open **Audit & Logs → Audit Log** from the sidebar.
+2. Use the KPI cards at the top to understand total event volume, actor mix, and activity over the last 24 hours.
+3. Narrow results with the filter panel:
+   - Actor email autocomplete (admins and users) via the search bar.
+   - Actor type selector (admin, user, system).
+   - Timeframe presets (24h, 7d, 30d, 90d) powered by relative windows.
+   - Keyword search across actions, entities, IPs, and user agents.
+4. Review the event table for each entry’s diff payload, IP address, user agent, and relative timestamp.
+5. Export or escalate if suspicious activity is detected; include the event ID and timestamp when filing an incident ticket.
+
 ## Guidelines
 
 - Always add reasoning in notes/comments when performing bulk operations.

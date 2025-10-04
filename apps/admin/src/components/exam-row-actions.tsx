@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -9,22 +9,28 @@ import {
   DropdownItem,
   DropdownSeparator,
   Icon,
+  Modal,
+  type SearchableSelectOption,
 } from '@brainliest/ui';
-import { deleteExamAction } from '@/app/(panel)/content/exams/actions';
+import type { ExamRecord } from '@brainliest/db';
+import { deleteExamAction, updateExamAction } from '@/app/(panel)/content/exams/actions';
+import { ExamForm } from './exam-form';
 
 interface ExamRowActionsProps {
-  readonly slug: string;
+  readonly exam: ExamRecord;
+  readonly subjects: ReadonlyArray<SearchableSelectOption>;
 }
 
-export function ExamRowActions({ slug }: ExamRowActionsProps) {
+export function ExamRowActions({ exam, subjects }: ExamRowActionsProps) {
   const router = useRouter();
   const [isDeleteOpen, setDeleteOpen] = useState(false);
+  const [isEditOpen, setEditOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
     startTransition(async () => {
-      const result = await deleteExamAction(slug);
+      const result = await deleteExamAction(exam.slug);
       if (result.status === 'success') {
         setDeleteOpen(false);
         setErrorMessage(null);
@@ -34,6 +40,39 @@ export function ExamRowActions({ slug }: ExamRowActionsProps) {
       }
     });
   };
+
+  const formId = useMemo(() => `exam-form-${exam.slug}`, [exam.slug]);
+
+  const defaultValues = useMemo(
+    () => ({
+      slug: exam.slug,
+      title: exam.title,
+      description: exam.description ?? undefined,
+      subjectSlug: exam.subjectSlug,
+      difficulty: exam.difficulty ?? undefined,
+      durationMinutes: exam.durationMinutes !== null && exam.durationMinutes !== undefined
+        ? String(exam.durationMinutes)
+        : undefined,
+      questionTarget: exam.questionTarget !== null && exam.questionTarget !== undefined
+        ? String(exam.questionTarget)
+        : undefined,
+      status: exam.status,
+    }),
+    [exam]
+  );
+
+  const handleEditSuccess = useCallback(() => {
+    setEditOpen(false);
+    router.refresh();
+  }, [router]);
+
+  const handleOpenEdit = useCallback(() => {
+    setEditOpen(true);
+  }, []);
+
+  const handleCloseEdit = useCallback(() => {
+    setEditOpen(false);
+  }, []);
 
   return (
     <>
@@ -45,7 +84,13 @@ export function ExamRowActions({ slug }: ExamRowActionsProps) {
           </Button>
         }
       >
-        <DropdownItem href={`/content/exams/${slug}/edit`}>Edit</DropdownItem>
+        <DropdownItem
+          onSelect={() => {
+            handleOpenEdit();
+          }}
+        >
+          Edit
+        </DropdownItem>
         <DropdownSeparator />
         <DropdownItem
           onSelect={() => setDeleteOpen(true)}
@@ -55,6 +100,24 @@ export function ExamRowActions({ slug }: ExamRowActionsProps) {
           Delete
         </DropdownItem>
       </Dropdown>
+
+      <Modal
+        isOpen={isEditOpen}
+        onClose={handleCloseEdit}
+        title={`Edit ${exam.title}`}
+        size="xl"
+      >
+        <ExamForm
+          action={updateExamAction}
+          subjects={subjects}
+          defaultValues={defaultValues}
+          submitLabel="Save changes"
+          headline="Exam details"
+          description="Configure title, taxonomy, scheduling details, and publishing status."
+          formId={formId}
+          onSuccess={handleEditSuccess}
+        />
+      </Modal>
 
       <DeleteConfirmation
         isOpen={isDeleteOpen}

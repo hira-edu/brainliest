@@ -62,6 +62,14 @@ This document tracks HTTP and RPC-style endpoints exposed by the Brainliest plat
 - `GET /api/v1/admin/feature-flags`
 - `PATCH /api/v1/admin/feature-flags/:key`
 
+## Admin Search & Audit Helpers
+
+- `GET /api/search/admin-users?q=&role=&status=&limit=` — Autocomplete for admin emails (used by filter panel).
+- `GET /api/search/users?q=&role=&status=&subscriptionTier=&limit=` — Autocomplete for student users.
+- `GET /api/search/integration-keys?q=&environment=&type=&limit=` — Autocomplete for integration keys.
+- `GET /api/search/audit-actors?q=&actorType=&limit=` — Returns admin/user actor suggestions for the audit log view.
+- `GET /api/search/audit-actions?q=&limit=` — Returns action keyword suggestions for the audit log view.
+
 ## Student-Facing Endpoints & Actions
 
 ### Discovery
@@ -96,6 +104,7 @@ Track endpoint additions/updates here with links to ADRs or PRs.
 
 | Date | Endpoint | Change | Reference |
 | --- | --- | --- | --- |
+| 2025-10-04 | `/api/search/audit-actors`, `/api/search/audit-actions` | Added autocomplete endpoints for the admin audit log filters | Session 22 — Codex |
 | _TBD_ | | | |
 
 ## To-Do
