@@ -24,13 +24,19 @@ import type {
   UpdateExamInput,
 } from './exam-repository';
 import type { UserRepository, UserRecord, CreateUserInput, UpdateUserInput, UserFilter } from './user-repository';
-import type { AdminUserRepository, AdminUserRecord, AdminUserFilter } from './admin-user-repository';
+import type {
+  AdminUserRepository,
+  AdminUserRecord,
+  AdminUserFilter,
+  AdminUserAuthRecord,
+} from './admin-user-repository';
 import type {
   IntegrationKeyRepository,
   IntegrationKeyRecord,
   IntegrationKeyFilter,
   CreateIntegrationKeyInput,
   RotateIntegrationKeyInput,
+  DeleteIntegrationKeyInput,
 } from './integration-repository';
 import { encrypt } from '@brainliest/shared/crypto/encryption';
 import type {
@@ -996,6 +1002,29 @@ export class DrizzleAdminUserRepository implements AdminUserRepository {
       updatedAt: user.updatedAt,
     };
   }
+
+  private mapAdminAuth(user: typeof schema.adminUsers.$inferSelect): AdminUserAuthRecord {
+    return {
+      ...this.mapAdmin(user),
+      passwordHash: user.passwordHash,
+      totpSecret: user.totpSecret ?? null,
+    } satisfies AdminUserAuthRecord;
+  }
+
+  async findByEmail(email: string): Promise<AdminUserAuthRecord | null> {
+    const row = await this.db.query.adminUsers.findFirst({
+      where: (users, { eq }) => eq(users.email, email),
+    });
+
+    return row ? this.mapAdminAuth(row) : null;
+  }
+
+  async updateLastLogin(id: string, lastLoginAt: Date = new Date()): Promise<void> {
+    await this.db
+      .update(schema.adminUsers)
+      .set({ lastLoginAt, updatedAt: new Date() })
+      .where(eq(schema.adminUsers.id, id));
+  }
 }
 
 export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository {
@@ -1098,6 +1127,15 @@ export class DrizzleIntegrationKeyRepository implements IntegrationKeyRepository
         updatedAt: new Date(),
       })
       .where(eq(schema.integrationKeys.id, input.id));
+  }
+
+  async delete(input: DeleteIntegrationKeyInput): Promise<boolean> {
+    const [row] = await this.db
+      .delete(schema.integrationKeys)
+      .where(eq(schema.integrationKeys.id, input.id))
+      .returning({ id: schema.integrationKeys.id });
+
+    return Boolean(row?.id);
   }
 }
 

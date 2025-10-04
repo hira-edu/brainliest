@@ -16,6 +16,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [2.2.20] - 2025-10-04
+
+### Added
+- **Integration key deletion** — Added delete schema, repository mutation, server action, and modal UX so operators can revoke secrets in-context while capturing optional audit reasons (`packages/shared/src/schemas/integration.ts`, `packages/db/src/repositories/**`, `apps/admin/src/app/(panel)/integrations/keys/actions.ts`, `apps/admin/src/components/integration-key-row-actions.tsx`).
+- **Integration key E2E coverage** — Added a skip-by-default Playwright spec that exercises creating and deleting keys via the modal workflow once a browser environment is available (`tests/playwright/specs/admin-integration-keys.spec.ts`).
+- **Admin authentication** — Implemented a bcrypt-backed sign-in flow with encrypted session cookies, sign-out action, and a protected panel layout that redirects unauthenticated visitors to the login screen (`apps/admin/src/app/(auth)/sign-in/page.tsx`, `apps/admin/src/lib/auth/actions.ts`, `apps/admin/src/lib/auth/session.ts`, `apps/admin/src/app/(panel)/layout.tsx`, `apps/admin/src/components/sign-in-form.tsx`, `apps/admin/src/components/sign-out-button.tsx`).
+
+### Changed
+- **Password hashing** — Migrated the shared helper from the temporary scrypt implementation to bcrypt while retaining legacy verification support, updated tests, and installed official type definitions (`packages/shared/src/crypto/password.ts`, `packages/shared/src/crypto/password.test.ts`).
+- **Integration key actions** — Server actions now derive the acting admin from headers/cookies instead of the `system-admin` placeholder so repository mutations and audit logging capture the real operator (`apps/admin/src/lib/auth/admin-actor.ts`, `apps/admin/src/app/(panel)/integrations/keys/actions.ts`, `apps/admin/src/lib/integrations.ts`).
+- **Admin CRUD actions** — Category, subcategory, subject, exam, and question flows now require an authenticated admin and record their actor ids rather than the hard-coded `system-admin` value (`apps/admin/src/app/(panel)/taxonomy/actions.ts`, `apps/admin/src/app/(panel)/content/exams/actions.ts`, `apps/admin/src/app/(panel)/content/questions/actions.ts`).
+- **Exam import API** — Import route now enforces admin authentication, passes the acting id into repository calls, and updates tests accordingly (`apps/admin/src/app/api/content/exams/import/route.ts`, `apps/admin/src/app/api/content/exams/import/route.test.ts`, `apps/admin/src/lib/exam-import.ts`).
+- **Next.js config** — Updated the admin build to exclude `bcrypt` from client bundles, preventing optional dependency warnings during production builds (`apps/admin/next.config.js`).
+
+### Tests
+- `pnpm --filter @brainliest/shared test`
+- `pnpm --filter @brainliest/db test`
+- `pnpm --filter @brainliest/admin typecheck`
+- `pnpm --filter @brainliest/admin lint`
+
+---
+
 ## [2.2.19] - 2025-10-04
 
 ### Added

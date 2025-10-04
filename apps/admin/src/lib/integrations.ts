@@ -7,7 +7,11 @@ import type {
   PaginatedResult,
 } from '@brainliest/db';
 import { repositories } from './repositories';
-import type { CreateIntegrationKeyPayload, RotateIntegrationKeyPayload } from './shared-schemas';
+import type {
+  CreateIntegrationKeyPayload,
+  RotateIntegrationKeyPayload,
+  DeleteIntegrationKeyPayload,
+} from './shared-schemas';
 
 export interface ListIntegrationKeysOptions extends Partial<IntegrationKeyFilter> {
   readonly page?: number;
@@ -91,4 +95,28 @@ export async function rotateIntegrationKey(
     value: payload.value,
     rotatedByAdminId: actorId,
   });
+}
+
+export async function deleteIntegrationKey(
+  payload: DeleteIntegrationKeyPayload,
+  actorId: string | null = null
+): Promise<boolean> {
+  const deleted = await repositories.integrationKeys.delete({
+    id: payload.id,
+    deletedByAdminId: actorId,
+    reason: payload.reason ?? null,
+  });
+
+  if (deleted) {
+    await repositories.auditLogs.log({
+      actorType: actorId ? 'admin' : 'system',
+      actorId,
+      action: 'integration_key.deleted',
+      entityType: 'integration_key',
+      entityId: payload.id,
+      diff: payload.reason ? { reason: payload.reason } : null,
+    });
+  }
+
+  return deleted;
 }

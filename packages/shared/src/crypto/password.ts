@@ -1,11 +1,9 @@
-import { randomBytes, timingSafeEqual, scrypt as scryptCallback } from 'node:crypto';
+import bcrypt from 'bcrypt';
+import { timingSafeEqual, scrypt as scryptCallback } from 'node:crypto';
 import type { ScryptOptions } from 'node:crypto';
 import { promisify } from 'node:util';
 
-const SCRYPT_KEY_LENGTH = 64;
-const SCRYPT_N = 16384;
-const SCRYPT_r = 8;
-const SCRYPT_p = 1;
+const BCRYPT_SALT_ROUNDS = 12;
 
 const scryptAsync = promisify(scryptCallback) as (
   password: string | Buffer,
@@ -22,17 +20,6 @@ interface ParsedHash {
     r: number;
     p: number;
   };
-}
-
-function serializeHash(params: ParsedHash): string {
-  return [
-    'scrypt',
-    params.params.N,
-    params.params.r,
-    params.params.p,
-    params.salt.toString('hex'),
-    params.derivedKey.toString('hex'),
-  ].join('$');
 }
 
 function parseHash(hash: string): ParsedHash {
@@ -57,20 +44,33 @@ function parseHash(hash: string): ParsedHash {
   };
 }
 
-export async function hashPassword(plainText: string): Promise<string> {
-  const salt = randomBytes(16);
-  const derivedKey = await scryptAsync(plainText, salt, SCRYPT_KEY_LENGTH, {
-    N: SCRYPT_N,
-    r: SCRYPT_r,
-    p: SCRYPT_p,
-  });
+function isLegacyScryptHash(hash: string): boolean {
+  return hash.startsWith('scrypt$');
+}
 
-  return serializeHash({ salt, derivedKey, params: { N: SCRYPT_N, r: SCRYPT_r, p: SCRYPT_p } });
+async function verifyLegacyScryptHash(plainText: string, hash: string): Promise<boolean> {
+  try {
+    const parsed = parseHash(hash);
+    const derivedKey = await scryptAsync(plainText, parsed.salt, parsed.derivedKey.length, parsed.params);
+
+    return timingSafeEqual(derivedKey, parsed.derivedKey);
+  } catch {
+    return false;
+  }
+}
+
+export async function hashPassword(plainText: string): Promise<string> {
+  return bcrypt.hash(plainText, BCRYPT_SALT_ROUNDS);
 }
 
 export async function verifyPassword(plainText: string, hash: string): Promise<boolean> {
-  const parsed = parseHash(hash);
-  const derivedKey = await scryptAsync(plainText, parsed.salt, parsed.derivedKey.length, parsed.params);
+  if (isLegacyScryptHash(hash)) {
+    return verifyLegacyScryptHash(plainText, hash);
+  }
 
-  return timingSafeEqual(derivedKey, parsed.derivedKey);
+  try {
+    return await bcrypt.compare(plainText, hash);
+  } catch {
+    return false;
+  }
 }

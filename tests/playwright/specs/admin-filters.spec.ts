@@ -1,10 +1,20 @@
 import { expect, test } from '@playwright/test';
 
+// Enable with RUN_ADMIN_FILTER_E2E=true and provide PLAYWRIGHT_ADMIN_EMAIL once
+// the admin app can run alongside Chromium in CI/local environments.
+
 const shouldRun = process.env.RUN_ADMIN_FILTER_E2E === 'true';
 const describeAdmin = shouldRun ? test.describe : test.describe.skip;
 const WAIT = 15_000;
 
 describeAdmin('Admin filters', () => {
+  test.beforeEach(async ({ context }) => {
+    const adminEmail = process.env.PLAYWRIGHT_ADMIN_EMAIL ?? 'umair.warraich@gmail.com';
+    await context.setExtraHTTPHeaders({
+      'x-admin-email': adminEmail,
+    });
+  });
+
   test('admin users filters update query string', async ({ page }) => {
     await page.goto('/users/admins');
     await page.waitForLoadState('networkidle');

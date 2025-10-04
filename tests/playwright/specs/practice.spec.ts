@@ -307,7 +307,12 @@ test.describe('Practice page', () => {
     expect(updatedTimerValue).not.toBe(initialTimerValue);
   });
 
-  test('allows toggling question controls and persists state', async ({ page }) => {
+  test('allows toggling question controls and persists state', async ({ page, context }) => {
+    // Clear localStorage before navigating
+    await context.addInitScript(() => {
+      localStorage.clear();
+    });
+
     await page.goto('/practice/a-level-math');
     await page.waitForLoadState('networkidle');
 

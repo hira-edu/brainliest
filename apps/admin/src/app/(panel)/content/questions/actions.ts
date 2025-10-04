@@ -11,8 +11,7 @@ import {
 import { isZodErrorLike, mapZodErrorIssues } from '@/lib/zod-helpers';
 import type { CreateQuestionInput, QuestionOptionInput, UpdateQuestionInput } from '@brainliest/db';
 import { repositories } from '@/lib/repositories';
-
-const ACTOR_ID = 'system-admin';
+import { getAdminActor } from '@/lib/auth';
 
 export interface QuestionFormState {
   status: 'idle' | 'error' | 'success';
@@ -158,9 +157,17 @@ function buildCreateQuestionInputFromParsed(data: CreateQuestionPayload): Create
 /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 
 export async function createQuestionAction(_: QuestionFormState, formData: FormData): Promise<QuestionFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to create questions.',
+    } satisfies QuestionFormState;
+  }
+
   try {
     const input = buildCreateQuestionInput(formData);
-    const questionId = await repositories.questions.create(input, ACTOR_ID);
+    const questionId = await repositories.questions.create(input, actor.id);
     const submissionMode = formData.get('submissionMode');
     const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
@@ -193,10 +200,18 @@ export async function createQuestionAction(_: QuestionFormState, formData: FormD
 }
 
 export async function updateQuestionAction(_: QuestionFormState, formData: FormData): Promise<QuestionFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to update questions.',
+    } satisfies QuestionFormState;
+  }
+
   try {
     const input = buildUpdateQuestionInput(formData);
     const { id } = input;
-    await repositories.questions.update(input, ACTOR_ID);
+    await repositories.questions.update(input, actor.id);
 
     revalidatePath('/content/questions');
     revalidatePath(`/content/questions/${id}/edit`);
@@ -223,8 +238,16 @@ export async function updateQuestionAction(_: QuestionFormState, formData: FormD
 }
 
 export async function deleteQuestionAction(questionId: string): Promise<QuestionFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to delete questions.',
+    } satisfies QuestionFormState;
+  }
+
   try {
-    await repositories.questions.delete(questionId, ACTOR_ID);
+    await repositories.questions.delete(questionId, actor.id);
     revalidatePath('/content/questions');
     return {
       status: 'success',

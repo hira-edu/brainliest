@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 interface ExplanationDto {
   readonly id: string;
@@ -127,11 +127,13 @@ export async function fetchExplanationPage({
   cache = 'no-store',
 }: FetchExplanationPageOptions): Promise<{ data: ExplanationRecord[]; pagination: PaginationDto; }> {
   const baseUrl = await resolveAdminBaseUrl();
+  const cookieHeader = (await cookies()).toString();
 
   const response = await fetch(`${baseUrl}/api/explanations?page=${page}&pageSize=${pageSize}`, {
     cache,
     headers: {
       Accept: 'application/json',
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
     },
   });
 
@@ -160,11 +162,13 @@ export async function fetchExplanationMetrics(
   const baseUrl = await resolveAdminBaseUrl();
   const windowDays = options.windowDays ?? 7;
   const cache = options.cache ?? 'no-store';
+  const cookieHeader = (await cookies()).toString();
 
   const response = await fetch(`${baseUrl}/api/explanations/metrics?window=${windowDays}`, {
     cache,
     headers: {
       Accept: 'application/json',
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
     },
   });
 

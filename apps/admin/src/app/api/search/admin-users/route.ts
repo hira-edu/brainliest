@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { AdminUserFilter } from '@brainliest/db';
 import { searchAdminUsersSuggestions } from '@/lib/admin-users';
+import { getAdminActor } from '@/lib/auth';
 
 const MIN_QUERY_LENGTH = 2;
 const ADMIN_ROLES: readonly NonNullable<AdminUserFilter['role']>[] = ['VIEWER', 'EDITOR', 'ADMIN', 'SUPERADMIN'];
@@ -8,6 +9,11 @@ const ROLE_SET = new Set(ADMIN_ROLES);
 const STATUS_OPTIONS = new Set(['active', 'invited', 'suspended']);
 
 export async function GET(request: Request) {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = (searchParams.get('q') ?? '').trim();
   const roleParam = (searchParams.get('role') ?? '').toUpperCase();

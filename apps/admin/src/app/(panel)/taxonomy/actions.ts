@@ -20,6 +20,7 @@ import type {
   UpdateSubjectInput,
 } from '@brainliest/db';
 import { repositories } from '@/lib/repositories';
+import { getAdminActor } from '@/lib/auth';
 
 interface ActionState {
   status: 'idle' | 'error' | 'success';
@@ -243,6 +244,14 @@ function toUpdateSubjectInput(payload: SubjectPayloadShape): UpdateSubjectInput 
 }
 
 export async function createCategoryAction(_: CategoryFormState, formData: FormData): Promise<CategoryFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to create categories.',
+    } satisfies CategoryFormState;
+  }
+
   try {
     const parsed: unknown = createCategorySchema.parse({
       slug: getString(formData, 'slug'),
@@ -260,7 +269,7 @@ export async function createCategoryAction(_: CategoryFormState, formData: FormD
 
     const payload = parsed;
 
-    await repositories.taxonomy.createCategory(toCreateCategoryInput(payload), 'system-admin');
+    await repositories.taxonomy.createCategory(toCreateCategoryInput(payload), actor.id);
     const submissionMode = formData.get('submissionMode');
     const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
@@ -293,6 +302,14 @@ export async function createCategoryAction(_: CategoryFormState, formData: FormD
 }
 
 export async function updateCategoryAction(_: CategoryFormState, formData: FormData): Promise<CategoryFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to update categories.',
+    } satisfies CategoryFormState;
+  }
+
   try {
     const parsed: unknown = updateCategorySchema.parse({
       slug: getString(formData, 'slug'),
@@ -310,7 +327,7 @@ export async function updateCategoryAction(_: CategoryFormState, formData: FormD
 
     const payload = parsed;
 
-    await repositories.taxonomy.updateCategory(toUpdateCategoryInput(payload), 'system-admin');
+    await repositories.taxonomy.updateCategory(toUpdateCategoryInput(payload), actor.id);
 
     revalidatePath('/taxonomy/categories');
     revalidatePath(`/taxonomy/categories/${payload.slug}/edit`);
@@ -337,8 +354,13 @@ export async function updateCategoryAction(_: CategoryFormState, formData: FormD
 }
 
 export async function deleteCategoryAction(slug: string): Promise<ActionState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return { status: 'error', message: 'Admin authentication is required to delete categories.' } satisfies ActionState;
+  }
+
   try {
-    await repositories.taxonomy.deleteCategory(slug, 'system-admin');
+    await repositories.taxonomy.deleteCategory(slug, actor.id);
     revalidatePath('/taxonomy/categories');
     return { status: 'success', message: 'Category deleted.' };
   } catch (error) {
@@ -348,6 +370,14 @@ export async function deleteCategoryAction(slug: string): Promise<ActionState> {
 }
 
 export async function createSubcategoryAction(_: SubcategoryFormState, formData: FormData): Promise<SubcategoryFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to create subcategories.',
+    } satisfies SubcategoryFormState;
+  }
+
   try {
     const parsed: unknown = createSubcategorySchema.parse({
       slug: getString(formData, 'slug'),
@@ -365,7 +395,7 @@ export async function createSubcategoryAction(_: SubcategoryFormState, formData:
 
     const payload = parsed;
 
-    await repositories.taxonomy.createSubcategory(toCreateSubcategoryInput(payload), 'system-admin');
+    await repositories.taxonomy.createSubcategory(toCreateSubcategoryInput(payload), actor.id);
     const submissionMode = formData.get('submissionMode');
     const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
@@ -399,6 +429,14 @@ export async function createSubcategoryAction(_: SubcategoryFormState, formData:
 }
 
 export async function updateSubcategoryAction(_: SubcategoryFormState, formData: FormData): Promise<SubcategoryFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to update subcategories.',
+    } satisfies SubcategoryFormState;
+  }
+
   try {
     const parsed: unknown = updateSubcategorySchema.parse({
       slug: getString(formData, 'slug'),
@@ -416,7 +454,7 @@ export async function updateSubcategoryAction(_: SubcategoryFormState, formData:
 
     const payload = parsed;
 
-    await repositories.taxonomy.updateSubcategory(toUpdateSubcategoryInput(payload), 'system-admin');
+    await repositories.taxonomy.updateSubcategory(toUpdateSubcategoryInput(payload), actor.id);
 
     revalidatePath('/taxonomy/subcategories');
     revalidatePath(`/taxonomy/subcategories/${payload.slug}/edit`);
@@ -443,8 +481,13 @@ export async function updateSubcategoryAction(_: SubcategoryFormState, formData:
 }
 
 export async function deleteSubcategoryAction(slug: string): Promise<ActionState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return { status: 'error', message: 'Admin authentication is required to delete subcategories.' } satisfies ActionState;
+  }
+
   try {
-    await repositories.taxonomy.deleteSubcategory(slug, 'system-admin');
+    await repositories.taxonomy.deleteSubcategory(slug, actor.id);
     revalidatePath('/taxonomy/subcategories');
     return { status: 'success', message: 'Subcategory deleted.' };
   } catch (error) {
@@ -454,6 +497,14 @@ export async function deleteSubcategoryAction(slug: string): Promise<ActionState
 }
 
 export async function createSubjectAction(_: SubjectFormState, formData: FormData): Promise<SubjectFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to create subjects.',
+    } satisfies SubjectFormState;
+  }
+
   try {
     const parsed: unknown = createSubjectSchema.parse({
       slug: getString(formData, 'slug'),
@@ -474,7 +525,7 @@ export async function createSubjectAction(_: SubjectFormState, formData: FormDat
 
     const payload = parsed;
 
-    await repositories.taxonomy.createSubject(toCreateSubjectInput(payload), 'system-admin');
+    await repositories.taxonomy.createSubject(toCreateSubjectInput(payload), actor.id);
     const submissionMode = formData.get('submissionMode');
     const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
@@ -510,6 +561,14 @@ export async function createSubjectAction(_: SubjectFormState, formData: FormDat
 }
 
 export async function updateSubjectAction(_: SubjectFormState, formData: FormData): Promise<SubjectFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to update subjects.',
+    } satisfies SubjectFormState;
+  }
+
   try {
     const parsed: unknown = updateSubjectSchema.parse({
       slug: getString(formData, 'slug'),
@@ -530,7 +589,7 @@ export async function updateSubjectAction(_: SubjectFormState, formData: FormDat
 
     const payload = parsed;
 
-    await repositories.taxonomy.updateSubject(toUpdateSubjectInput(payload), 'system-admin');
+    await repositories.taxonomy.updateSubject(toUpdateSubjectInput(payload), actor.id);
 
     revalidatePath('/taxonomy/subjects');
     revalidatePath(`/taxonomy/subjects/${payload.slug}/edit`);
@@ -557,8 +616,13 @@ export async function updateSubjectAction(_: SubjectFormState, formData: FormDat
 }
 
 export async function deleteSubjectAction(slug: string): Promise<ActionState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return { status: 'error', message: 'Admin authentication is required to delete subjects.' } satisfies ActionState;
+  }
+
   try {
-    await repositories.taxonomy.deleteSubject(slug, 'system-admin');
+    await repositories.taxonomy.deleteSubject(slug, actor.id);
     revalidatePath('/taxonomy/subjects');
     return { status: 'success', message: 'Subject deleted.' };
   } catch (error) {

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { CURRENT_EXAM_TEMPLATE_VERSION } from '@brainliest/shared';
 import { generateExamTemplate } from '@/lib/exam-import';
+import { getAdminActor } from '@/lib/auth';
 
-export function GET() {
+export async function GET() {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   const template = generateExamTemplate();
   const body = JSON.stringify(template, null, 2);
 

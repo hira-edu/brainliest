@@ -1,12 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createIntegrationKey, rotateIntegrationKey } from '@/lib/integrations';
+import { createIntegrationKey, rotateIntegrationKey, deleteIntegrationKey } from '@/lib/integrations';
+import { getAdminActor } from '@/lib/auth';
 import {
   createIntegrationKeySchema,
   rotateIntegrationKeySchema,
+  deleteIntegrationKeySchema,
   type CreateIntegrationKeyPayload,
   type RotateIntegrationKeyPayload,
+  type DeleteIntegrationKeyPayload,
 } from '@/lib/shared-schemas';
 import { isZodErrorLike, mapZodErrorIssues } from '@/lib/zod-helpers';
 
@@ -64,13 +67,35 @@ function normalizeRotatePayload(formData: FormData): RotateIntegrationKeyPayload
   return parsed as RotateIntegrationKeyPayload;
 }
 
+function normalizeDeletePayload(formData: FormData): DeleteIntegrationKeyPayload {
+  const raw = {
+    id: getString(formData, 'id'),
+    reason: getOptionalString(formData, 'reason'),
+  } satisfies Record<string, unknown>;
+
+  const parsed: unknown = deleteIntegrationKeySchema.parse(raw);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Delete integration key payload failed validation');
+  }
+
+  return parsed as DeleteIntegrationKeyPayload;
+}
+
 export async function createIntegrationKeyAction(
   _state: IntegrationKeyFormState,
   formData: FormData
 ): Promise<IntegrationKeyFormState> {
   try {
+    const actor = await getAdminActor();
+    if (!actor) {
+      return {
+        status: 'error',
+        message: 'Admin authentication is required to create integration keys.',
+      } satisfies IntegrationKeyFormState;
+    }
+
     const payload = normalizeCreatePayload(formData);
-    await createIntegrationKey(payload);
+    await createIntegrationKey(payload, actor.id);
 
     revalidatePath('/integrations/keys');
 
@@ -101,8 +126,16 @@ export async function rotateIntegrationKeyAction(
   formData: FormData
 ): Promise<IntegrationKeyFormState> {
   try {
+    const actor = await getAdminActor();
+    if (!actor) {
+      return {
+        status: 'error',
+        message: 'Admin authentication is required to rotate integration keys.',
+      } satisfies IntegrationKeyFormState;
+    }
+
     const payload = normalizeRotatePayload(formData);
-    await rotateIntegrationKey(payload);
+    await rotateIntegrationKey(payload, actor.id);
 
     revalidatePath('/integrations/keys');
 
@@ -124,6 +157,52 @@ export async function rotateIntegrationKeyAction(
     return {
       status: 'error',
       message: 'Unable to rotate integration key. Please try again.',
+    } satisfies IntegrationKeyFormState;
+  }
+}
+
+export async function deleteIntegrationKeyAction(
+  _state: IntegrationKeyFormState,
+  formData: FormData
+): Promise<IntegrationKeyFormState> {
+  try {
+    const actor = await getAdminActor();
+    if (!actor) {
+      return {
+        status: 'error',
+        message: 'Admin authentication is required to delete integration keys.',
+      } satisfies IntegrationKeyFormState;
+    }
+
+    const payload = normalizeDeletePayload(formData);
+    const deleted = await deleteIntegrationKey(payload, actor.id);
+
+    if (!deleted) {
+      return {
+        status: 'error',
+        message: 'Integration key not found. It may have already been removed.',
+      } satisfies IntegrationKeyFormState;
+    }
+
+    revalidatePath('/integrations/keys');
+
+    return {
+      status: 'success',
+      message: 'Integration key deleted successfully.',
+    } satisfies IntegrationKeyFormState;
+  } catch (error) {
+    if (isZodErrorLike(error)) {
+      return {
+        status: 'error',
+        message: 'Please correct the highlighted fields.',
+        fieldErrors: mapZodErrorIssues(error),
+      } satisfies IntegrationKeyFormState;
+    }
+
+    console.error('[integrations/actions] delete key failed', error);
+    return {
+      status: 'error',
+      message: 'Unable to delete integration key. Please try again.',
     } satisfies IntegrationKeyFormState;
   }
 }

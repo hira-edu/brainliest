@@ -10,6 +10,7 @@ class MockZodError extends Error {
 }
 
 const importExamTemplateMock = vi.fn();
+const getAdminActorMock = vi.fn();
 
 vi.mock('@brainliest/shared', () => ({
   ZodError: MockZodError,
@@ -19,9 +20,15 @@ vi.mock('@/lib/exam-import', () => ({
   importExamTemplate: importExamTemplateMock,
 }));
 
+vi.mock('@/lib/auth', () => ({
+  getAdminActor: getAdminActorMock,
+}));
+
 describe('POST /api/content/exams/import', () => {
   beforeEach(() => {
     importExamTemplateMock.mockReset();
+    getAdminActorMock.mockReset();
+    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('imports an exam template and returns the created slug', async () => {
@@ -39,7 +46,7 @@ describe('POST /api/content/exams/import', () => {
     const response = await POST(request);
 
     expect(response.status).toBe(200);
-    expect(importExamTemplateMock).toHaveBeenCalledWith(payload);
+    expect(importExamTemplateMock).toHaveBeenCalledWith(payload, 'admin-1');
 
     const body = (await response.json()) as {
       success: boolean;
@@ -153,5 +160,24 @@ describe('POST /api/content/exams/import', () => {
     const body = (await response.json()) as { success: boolean; error: string };
     expect(body.success).toBe(false);
     expect(body.error).toBe('Unexpected error importing exam.');
+  });
+
+  it('returns 401 when authentication is missing', async () => {
+    getAdminActorMock.mockResolvedValueOnce(null);
+
+    const { POST } = await import('./route');
+
+    const request = new Request('http://localhost/api/content/exams/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: '2025.10' }),
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { success: boolean; error: string };
+    expect(body.success).toBe(false);
+    expect(body.error).toBe('Authentication required.');
   });
 });

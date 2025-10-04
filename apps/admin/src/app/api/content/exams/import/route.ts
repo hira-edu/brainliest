@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from '@brainliest/shared';
 import { importExamTemplate } from '@/lib/exam-import';
+import { getAdminActor } from '@/lib/auth';
 
 export async function POST(request: Request) {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json({ success: false, error: 'Authentication required.' }, { status: 401 });
+  }
+
   let payload: unknown;
 
   try {
@@ -12,7 +18,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await importExamTemplate(payload);
+    const result = await importExamTemplate(payload, actor.id);
     return NextResponse.json({ success: true, examSlug: result.examSlug, questionCount: result.questionCount });
   } catch (error) {
     if (error instanceof ZodError) {

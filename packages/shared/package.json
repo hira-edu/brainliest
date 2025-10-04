@@ -24,11 +24,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "ioredis": "^5.4.1",
     "openai": "^4.53.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "vite-tsconfig-paths": "^4.3.1"
   }
 }

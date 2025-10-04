@@ -10,8 +10,6 @@ import {
 } from '@brainliest/shared';
 import { repositories } from './repositories';
 
-const SYSTEM_ACTOR_ID = 'admin-import';
-
 export function generateExamTemplate(): ExamImportTemplate {
   return buildExamTemplateSkeleton();
 }
@@ -25,7 +23,7 @@ export interface ExamImportResult {
   readonly questionCount: number;
 }
 
-export async function importExamTemplate(payload: unknown): Promise<ExamImportResult> {
+export async function importExamTemplate(payload: unknown, actorId: string): Promise<ExamImportResult> {
   const template = examImportTemplateSchema.parse(payload);
 
   if (template.version !== CURRENT_EXAM_TEMPLATE_VERSION) {
@@ -51,7 +49,7 @@ export async function importExamTemplate(payload: unknown): Promise<ExamImportRe
       status: template.exam.status,
       metadata: template.exam.metadata ?? {},
     },
-    SYSTEM_ACTOR_ID
+    actorId
   );
 
   for (const question of template.questions) {
@@ -110,7 +108,7 @@ export async function importExamTemplate(payload: unknown): Promise<ExamImportRe
       correctAnswers: allowMultiple ? correctIndicesArray : undefined,
     } as const;
 
-    const questionId = await repositories.questions.create(createInput, SYSTEM_ACTOR_ID);
+    const questionId = await repositories.questions.create(createInput, actorId);
 
     if (question.assets && question.assets.length > 0) {
       await repositories.media.createMany(

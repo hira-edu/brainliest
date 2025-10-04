@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const listRecentMock = vi.fn();
 const getAggregateTotalsMock = vi.fn();
 const listDailyTotalsMock = vi.fn();
+const getAdminActorMock = vi.fn();
 
 vi.mock('@brainliest/db', () => ({
   drizzleClient: {},
@@ -13,11 +14,17 @@ vi.mock('@brainliest/db', () => ({
   },
 }));
 
+vi.mock('@/lib/auth', () => ({
+  getAdminActor: getAdminActorMock,
+}));
+
 describe('GET /api/explanations', () => {
   beforeEach(() => {
     listRecentMock.mockReset();
     getAggregateTotalsMock.mockReset();
     listDailyTotalsMock.mockReset();
+    getAdminActorMock.mockReset();
+    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('returns paginated explanation data', async () => {
@@ -125,11 +132,22 @@ describe('GET /api/explanations', () => {
 
     expect(listRecentMock).toHaveBeenCalledWith({ page: 1, pageSize: 5 });
   });
+
+  it('returns 401 when unauthenticated', async () => {
+    const { GET } = await import('./route');
+    getAdminActorMock.mockResolvedValueOnce(null);
+
+    const response = await GET(new Request('http://localhost/api/explanations'));
+    expect(response.status).toBe(401);
+    expect(listRecentMock).not.toHaveBeenCalled();
+  });
 });
 
 describe('GET /api/explanations/metrics', () => {
   beforeEach(() => {
     getAggregateTotalsMock.mockReset();
+    getAdminActorMock.mockReset();
+    getAdminActorMock.mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', role: 'ADMIN' });
   });
 
   it('returns aggregate totals with averages', async () => {
@@ -178,5 +196,14 @@ describe('GET /api/explanations/metrics', () => {
         costCentsTotal: 12,
       },
     ]);
+  });
+
+  it('returns 401 for metrics when unauthenticated', async () => {
+    const { GET } = await import('./metrics/route');
+    getAdminActorMock.mockResolvedValueOnce(null);
+
+    const response = await GET(new Request('http://localhost/api/explanations/metrics'));
+    expect(response.status).toBe(401);
+    expect(getAggregateTotalsMock).not.toHaveBeenCalled();
   });
 });

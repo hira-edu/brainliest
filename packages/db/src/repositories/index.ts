@@ -23,7 +23,12 @@ export type {
   UserRoleValue,
   UserFilter,
 } from './user-repository';
-export type { AdminUserRepository, AdminUserRecord, AdminUserFilter } from './admin-user-repository';
+export type {
+  AdminUserRepository,
+  AdminUserRecord,
+  AdminUserFilter,
+  AdminUserAuthRecord,
+} from './admin-user-repository';
 export type {
   IntegrationKeyRepository,
   IntegrationKeyRecord,
@@ -32,6 +37,7 @@ export type {
   IntegrationEnvironment,
   CreateIntegrationKeyInput,
   RotateIntegrationKeyInput,
+  DeleteIntegrationKeyInput,
 } from './integration-repository';
 export type {
   MediaRepository,

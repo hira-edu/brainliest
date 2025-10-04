@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   mapApiResponseToPracticeSessionData,
 } from '@/lib/practice/mappers';
@@ -22,7 +22,24 @@ interface PracticeSessionLoaderProps {
 }
 
 export function PracticeSessionLoader({ examSlug, initialData }: PracticeSessionLoaderProps) {
-  const [session, setSession] = useState<PracticeSessionData>(initialData);
+  const snapshotRef = useRef<ReturnType<typeof loadSampleSessionSnapshot> | null>(null);
+  const [session, setSession] = useState<PracticeSessionData>(() => {
+    if (initialData.fromSample) {
+      snapshotRef.current = loadSampleSessionSnapshot(examSlug);
+      if (snapshotRef.current) {
+        const merged = mergeSampleSessionWithSnapshot(initialData, snapshotRef.current);
+        // eslint-disable-next-line no-console
+        console.log('[practice] loader init with snapshot', {
+          examSlug,
+          flagged: merged.flaggedQuestionIds,
+          bookmarked: merged.bookmarkedQuestionIds,
+        });
+        return merged;
+      }
+    }
+
+    return initialData;
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,21 +47,14 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
       return;
     }
 
-    const snapshot = loadSampleSessionSnapshot(examSlug);
-    if (snapshot) {
-      const merged = mergeSampleSessionWithSnapshot(initialData, snapshot);
-      setSession(merged);
-      setError(null);
-      return;
+    if (!snapshotRef.current) {
+      persistSampleSessionState(examSlug, initialData, initialData.progress.timeRemainingSeconds ?? null);
     }
-
-    persistSampleSessionState(examSlug, initialData, initialData.progress.timeRemainingSeconds ?? null);
-  }, [examSlug, initialData]);
+  }, [examSlug, initialData, initialData.fromSample]);
 
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
-    const hasSampleBaseline = initialData.fromSample;
 
     async function hydrate() {
       try {
@@ -68,18 +78,28 @@ export function PracticeSessionLoader({ examSlug, initialData }: PracticeSession
           return;
         }
         const mapped = mapApiResponseToPracticeSessionData(payload);
-        if (hasSampleBaseline) {
-          const snapshot = loadSampleSessionSnapshot(examSlug);
-          const sampleSession = {
+
+        if (initialData.fromSample) {
+          const sampleSession: PracticeSessionData = {
             ...mapped,
             fromSample: true,
-          } satisfies PracticeSessionData;
+          };
+          const snapshot = snapshotRef.current ?? loadSampleSessionSnapshot(examSlug);
           const merged = snapshot ? mergeSampleSessionWithSnapshot(sampleSession, snapshot) : sampleSession;
           persistSampleSessionState(examSlug, merged, merged.progress.timeRemainingSeconds ?? null);
+          snapshotRef.current = loadSampleSessionSnapshot(examSlug);
+          // eslint-disable-next-line no-console
+          console.log('[practice] loader merged session', {
+            flagged: merged.flaggedQuestionIds,
+            bookmarked: merged.bookmarkedQuestionIds,
+            hadSnapshot: Boolean(snapshot),
+          });
           setSession(merged);
-        } else {
-          setSession(mapped);
+          setError(null);
+          return;
         }
+
+        setSession(mapped);
         setError(null);
       } catch (hydrateError) {
         if (cancelled) {

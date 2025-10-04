@@ -6,6 +6,7 @@ import { createUserSchema, updateUserSchema, type CreateUserPayload, type Update
 import { isZodErrorLike, mapZodErrorIssues } from '@/lib/zod-helpers';
 import type { CreateUserInput, UpdateUserInput } from '@brainliest/db';
 import { repositories } from '@/lib/repositories';
+import { getAdminActor } from '@/lib/auth';
 import { hashPassword } from '@brainliest/shared/crypto/password';
 
 export interface UserFormState {
@@ -129,6 +130,14 @@ function roleSegment(role: string): 'students' | 'admins' {
 }
 
 export async function createUserAction(_: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to create users.',
+    } satisfies UserFormState;
+  }
+
   try {
     const payload = normaliseCreatePayload(formData);
     const input = await toCreateInput(payload);
@@ -166,6 +175,14 @@ export async function createUserAction(_: UserFormState, formData: FormData): Pr
 }
 
 export async function updateUserAction(_: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to update users.',
+    } satisfies UserFormState;
+  }
+
   try {
     const payload = normaliseUpdatePayload(formData);
     const input = await toUpdateInput(payload);
@@ -196,6 +213,14 @@ export async function updateUserAction(_: UserFormState, formData: FormData): Pr
 }
 
 export async function deleteUserAction(id: string, role: string): Promise<UserFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to delete users.',
+    } satisfies UserFormState;
+  }
+
   try {
     await repositories.users.delete(id);
     const segment = roleSegment(role);

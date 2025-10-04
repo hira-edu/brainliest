@@ -38,8 +38,15 @@ export interface RotateIntegrationKeyInput {
   readonly rotatedAt?: Date;
 }
 
+export interface DeleteIntegrationKeyInput {
+  readonly id: string;
+  readonly deletedByAdminId?: string | null;
+  readonly reason?: string | null;
+}
+
 export interface IntegrationKeyRepository {
   list(filters: IntegrationKeyFilter, page: number, pageSize: number): Promise<PaginatedResult<IntegrationKeyRecord>>;
   create(input: CreateIntegrationKeyInput): Promise<string>;
   rotate(input: RotateIntegrationKeyInput): Promise<void>;
+  delete(input: DeleteIntegrationKeyInput): Promise<boolean>;
 }

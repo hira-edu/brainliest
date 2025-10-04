@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { AuditActorType } from '@brainliest/db';
 import { searchAuditActorSuggestions } from '@/lib/audit';
+import { getAdminActor } from '@/lib/auth';
 
 const MIN_QUERY_LENGTH = 2;
 const ACTOR_TYPES: readonly AuditActorType[] = ['admin', 'user', 'system'];
 const ACTOR_TYPE_SET = new Set<string>(ACTOR_TYPES);
 
 export async function GET(request: Request) {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = (searchParams.get('q') ?? '').trim();
   const limitParam = searchParams.get('limit');

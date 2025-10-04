@@ -26,15 +26,14 @@ export function PracticeQuestionActions({
   timerLabel,
 }: PracticeQuestionActionsProps) {
   React.useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.log('[practice] question actions state', {
-        isBookmarked,
-        isFlagged,
-        ariaLabel: isBookmarked ? removeBookmarkLabel : bookmarkedLabel,
-      });
-    }
-  }, [isBookmarked, isFlagged, removeBookmarkLabel, bookmarkedLabel]);
+    // eslint-disable-next-line no-console
+    console.log('[practice] question actions state', {
+      isBookmarked,
+      isFlagged,
+      bookmarkAriaLabel: isBookmarked ? removeBookmarkLabel : bookmarkedLabel,
+      flagAriaLabel: isFlagged ? unflagLabel : flagLabel,
+    });
+  }, [isBookmarked, isFlagged, removeBookmarkLabel, bookmarkedLabel, unflagLabel, flagLabel]);
 
   const handleBookmark = () => {
     if (onToggleBookmark) {

@@ -11,8 +11,7 @@ import {
 import { isZodErrorLike, mapZodErrorIssues } from '@/lib/zod-helpers';
 import type { CreateExamInput, UpdateExamInput } from '@brainliest/db';
 import { repositories } from '@/lib/repositories';
-
-const ACTOR_ID = 'system-admin';
+import { getAdminActor } from '@/lib/auth';
 
 export interface ExamFormState {
   status: 'idle' | 'error' | 'success';
@@ -83,10 +82,18 @@ function toUpdateInput(payload: UpdateExamPayload): UpdateExamInput {
 }
 
 export async function createExamAction(_: ExamFormState, formData: FormData): Promise<ExamFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to create exams.',
+    } satisfies ExamFormState;
+  }
+
   try {
     const payload = normaliseCreatePayload(formData);
     const input = toCreateInput(payload);
-    await repositories.exams.create(input, ACTOR_ID);
+    await repositories.exams.create(input, actor.id);
     const submissionMode = formData.get('submissionMode');
     const stayOnPage = typeof submissionMode === 'string' && submissionMode === 'modal';
 
@@ -119,10 +126,18 @@ export async function createExamAction(_: ExamFormState, formData: FormData): Pr
 }
 
 export async function updateExamAction(_: ExamFormState, formData: FormData): Promise<ExamFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to update exams.',
+    } satisfies ExamFormState;
+  }
+
   try {
     const payload = normaliseUpdatePayload(formData);
     const input = toUpdateInput(payload);
-    await repositories.exams.update(input, ACTOR_ID);
+    await repositories.exams.update(input, actor.id);
 
     revalidatePath('/content/exams');
     revalidatePath(`/content/exams/${payload.slug}/edit`);
@@ -149,8 +164,16 @@ export async function updateExamAction(_: ExamFormState, formData: FormData): Pr
 }
 
 export async function deleteExamAction(slug: string): Promise<ExamFormState> {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return {
+      status: 'error',
+      message: 'Admin authentication is required to delete exams.',
+    } satisfies ExamFormState;
+  }
+
   try {
-    await repositories.exams.delete(slug, ACTOR_ID);
+    await repositories.exams.delete(slug, actor.id);
     revalidatePath('/content/exams');
     return {
       status: 'success',

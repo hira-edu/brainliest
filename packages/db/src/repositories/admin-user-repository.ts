@@ -10,6 +10,11 @@ export interface AdminUserRecord {
   readonly updatedAt: Date;
 }
 
+export interface AdminUserAuthRecord extends AdminUserRecord {
+  readonly passwordHash: string;
+  readonly totpSecret: string | null;
+}
+
 export interface AdminUserFilter {
   readonly role?: AdminUserRecord['role'];
   readonly status?: string;
@@ -18,4 +23,6 @@ export interface AdminUserFilter {
 
 export interface AdminUserRepository {
   list(filters: AdminUserFilter, page: number, pageSize: number): Promise<PaginatedResult<AdminUserRecord>>;
+  findByEmail(email: string): Promise<AdminUserAuthRecord | null>;
+  updateLastLogin(id: string, lastLoginAt?: Date): Promise<void>;
 }

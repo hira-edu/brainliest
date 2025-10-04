@@ -17,6 +17,7 @@ import {
 } from '@brainliest/ui';
 import type { AdminNavSectionConfig } from '@/config/navigation';
 import { ADMIN_NAV_SECTIONS, resolveAdminNavItems } from '@/config/navigation';
+import { SignOutButton } from '@/components/sign-out-button';
 
 export interface AdminShellProps {
   readonly title: string;
@@ -116,6 +117,7 @@ export function AdminShell({
           actions={
             <div className="flex items-center gap-3">
               {headerActions}
+              <SignOutButton />
               <Button asChild variant="secondary" size="sm">
                 <Link href="/settings/system" prefetch={false}>
                   Settings

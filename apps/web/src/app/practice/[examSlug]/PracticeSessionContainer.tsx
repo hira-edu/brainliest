@@ -333,7 +333,34 @@ interface PracticeSessionContainerProps {
 }
 
 export function PracticeSessionContainer({ initialData, examSlug }: PracticeSessionContainerProps) {
-  const [session, setSession] = useState<PracticeSessionData>(initialData);
+  const [session, setSession] = useState<PracticeSessionData>(() => {
+    // For sample sessions, merge with localStorage on initial load
+    if (initialData.fromSample) {
+      const snapshot = loadSampleSessionSnapshot(examSlug);
+      // eslint-disable-next-line no-console
+      console.log('[practice] container init check', {
+        hasSnapshot: !!snapshot,
+        examSlug,
+        fromSample: initialData.fromSample,
+        snapshotData: snapshot ? {
+          flagged: snapshot.data.flaggedQuestionIds,
+          bookmarked: snapshot.data.bookmarkedQuestionIds,
+          flaggedOrderIndexes: snapshot.data.flaggedOrderIndexes,
+          bookmarkedOrderIndexes: snapshot.data.bookmarkedOrderIndexes,
+        } : null,
+      });
+      if (snapshot) {
+        const merged = mergeSampleSessionWithSnapshot(initialData, snapshot);
+        // eslint-disable-next-line no-console
+        console.log('[practice] container after merge', {
+          mergedFlagged: merged.flaggedQuestionIds,
+          mergedBookmarked: merged.bookmarkedQuestionIds,
+        });
+        return merged;
+      }
+    }
+    return initialData;
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQuestionExplanation, setShowQuestionExplanation] = useState(false);
@@ -344,19 +371,6 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
   const latestRemainingRef = useRef<number | null>(initialData.progress.timeRemainingSeconds ?? null);
   const hasSampleBaselineRef = useRef(initialData.fromSample);
   const router = useRouter();
-
-  useEffect(() => {
-    if (!hasSampleBaselineRef.current) {
-      return;
-    }
-
-    const snapshot = loadSampleSessionSnapshot(examSlug);
-    if (!snapshot) {
-      return;
-    }
-
-    setSession((current) => mergeSampleSessionWithSnapshot(current, snapshot));
-  }, [examSlug]);
 
   useEffect(() => {
     if (session.sessionId === initialData.sessionId) {
@@ -396,17 +410,22 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
           throw new Error(body.message ?? 'Failed to update practice session.');
         }
 
-        const data = (await response.json()) as PracticeSessionApiResponse;
-        const mapped = mapApiResponseToPracticeSessionData(data);
-        const nextSession = sampleMode ? { ...mapped, fromSample: true } : mapped;
-        setSession(nextSession);
-        setDisplayRemainingSeconds(nextSession.progress.timeRemainingSeconds ?? null);
-        timerSyncRef.current = nextSession.progress.timeRemainingSeconds ?? null;
-        latestRemainingRef.current = nextSession.progress.timeRemainingSeconds ?? null;
+      const data = (await response.json()) as PracticeSessionApiResponse;
+      const mapped = mapApiResponseToPracticeSessionData(data);
+      const nextSession = sampleMode ? { ...mapped, fromSample: true } : mapped;
+      setSession(nextSession);
+      setDisplayRemainingSeconds(nextSession.progress.timeRemainingSeconds ?? null);
+      timerSyncRef.current = nextSession.progress.timeRemainingSeconds ?? null;
+      latestRemainingRef.current = nextSession.progress.timeRemainingSeconds ?? null;
         if (sampleMode) {
           const overrideRemaining =
             latestRemainingRef.current ?? nextSession.progress.timeRemainingSeconds ?? null;
           persistSampleSessionState(examSlug, nextSession, overrideRemaining);
+          // eslint-disable-next-line no-console
+          console.log('[practice] sample session updated (remote success)', {
+            flagged: nextSession.flaggedQuestionIds,
+            bookmarked: nextSession.bookmarkedQuestionIds,
+          });
         }
         return data;
       } catch (requestError) {
@@ -416,11 +435,16 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
             const overrideRemaining =
               latestRemainingRef.current ?? next.progress.timeRemainingSeconds ?? null;
             persistSampleSessionState(examSlug, next, overrideRemaining);
+            // eslint-disable-next-line no-console
+            console.log('[practice] sample session updated (local patch)', {
+              flagged: next.flaggedQuestionIds,
+              bookmarked: next.bookmarkedQuestionIds,
+            });
             return next;
           });
           setError(null);
-          return null;
-        }
+        return null;
+      }
 
         const message = requestError instanceof Error ? requestError.message : 'Practice session update failed.';
         setError(message);
@@ -514,15 +538,29 @@ export function PracticeSessionContainer({ initialData, examSlug }: PracticeSess
     }
   }, [sendPatch, router, examSlug, session.sessionId]);
 
-  const isFlagged = useMemo(
-    () => session.flaggedQuestionIds.includes(activeQuestion?.questionId ?? session.questionState.questionId),
-    [activeQuestion?.questionId, session.flaggedQuestionIds, session.questionState.questionId]
-  );
+  const isFlagged = useMemo(() => {
+    const questionId = activeQuestion?.questionId ?? session.questionState.questionId;
+    const result = session.flaggedQuestionIds.includes(questionId);
+    // eslint-disable-next-line no-console
+    console.log('[practice] container isFlagged check', {
+      questionId,
+      flaggedQuestionIds: session.flaggedQuestionIds,
+      result,
+    });
+    return result;
+  }, [activeQuestion?.questionId, session.flaggedQuestionIds, session.questionState.questionId]);
 
-  const isBookmarked = useMemo(
-    () => session.bookmarkedQuestionIds.includes(activeQuestion?.questionId ?? session.questionState.questionId),
-    [activeQuestion?.questionId, session.bookmarkedQuestionIds, session.questionState.questionId]
-  );
+  const isBookmarked = useMemo(() => {
+    const questionId = activeQuestion?.questionId ?? session.questionState.questionId;
+    const result = session.bookmarkedQuestionIds.includes(questionId);
+    // eslint-disable-next-line no-console
+    console.log('[practice] container isBookmarked check', {
+      questionId,
+      bookmarkedQuestionIds: session.bookmarkedQuestionIds,
+      result,
+    });
+    return result;
+  }, [activeQuestion?.questionId, session.bookmarkedQuestionIds, session.questionState.questionId]);
 
   const isSubmitted = session.questionState.isSubmitted;
   const hasRevealedAnswer = session.questionState.hasRevealedAnswer;

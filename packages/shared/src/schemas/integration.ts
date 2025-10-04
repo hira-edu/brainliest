@@ -16,5 +16,16 @@ export const rotateIntegrationKeySchema = z.object({
   value: z.string().min(8, 'Key value must be at least 8 characters long'),
 });
 
+export const deleteIntegrationKeySchema = z.object({
+  id: z.string().uuid('Integration key id must be a valid UUID'),
+  reason: z
+    .string()
+    .trim()
+    .max(500, 'Deletion reason must be 500 characters or fewer')
+    .optional()
+    .nullable(),
+});
+
 export type CreateIntegrationKeyPayload = z.infer<typeof createIntegrationKeySchema>;
 export type RotateIntegrationKeyPayload = z.infer<typeof rotateIntegrationKeySchema>;
+export type DeleteIntegrationKeyPayload = z.infer<typeof deleteIntegrationKeySchema>;

@@ -3,13 +3,22 @@
 > **Coordination Log**  
 > This document is the SSOT for intra-team updates between Codex (repo owner) and Claude Sonnet 4.5. Every session must append at the top.
 
+## 2025-10-04 (Session 27) — Codex
+- 🔐 **Bcrypt migration** — Swapped the temporary scrypt helper for bcrypt, added typings, and kept legacy hashes verifiable so existing accounts continue to authenticate (`packages/shared/src/crypto/password.ts`, `packages/shared/src/crypto/password.test.ts`).
+- 🔑 **Integration key delete flow** — Introduced delete schema, repository mutation, server action, audit log entry, and modal UI with optional reason capture (`packages/shared/src/schemas/integration.ts`, `packages/db/src/repositories/**`, `apps/admin/src/app/(panel)/integrations/keys/actions.ts`, `apps/admin/src/components/integration-key-row-actions.tsx`).
+- 🙋 **Admin actor resolution** — Server actions now resolve the acting admin from request headers/cookies (with config/dev fallbacks) so integrations, taxonomy, exam, and question mutations populate repository metadata and audit logs with real identities instead of `system-admin` (`apps/admin/src/lib/auth/admin-actor.ts`, `apps/admin/src/app/(panel)/integrations/keys/actions.ts`, `apps/admin/src/app/(panel)/taxonomy/actions.ts`, `apps/admin/src/app/(panel)/content/{exams,questions}/actions.ts`).
+- 🧭 **Playwright coverage** — Added a skip-by-default spec that provisions and removes an integration key via the modal workflow for future browser runs (`tests/playwright/specs/admin-integration-keys.spec.ts`).
+- 🔐 **Admin sign-in** — Introduced a bcrypt-based sign-in form, encrypted session cookies, panel-level auth guard, and sign-out control so the admin console now requires explicit authentication (`apps/admin/src/app/(auth)/sign-in/page.tsx`, `apps/admin/src/lib/auth/actions.ts`, `apps/admin/src/lib/auth/session.ts`, `apps/admin/src/app/(panel)/layout.tsx`, `apps/admin/src/components/sign-in-form.tsx`, `apps/admin/src/components/sign-out-button.tsx`).
+- 🧪 **Verification** — `pnpm --filter @brainliest/shared test`, `pnpm --filter @brainliest/db test`, `pnpm --filter @brainliest/admin typecheck`, `pnpm --filter @brainliest/admin lint`.
+- 📌 **Follow-up** — Extend the new auth/session helper to user API routes and background workers, add MFA toggles, and enable the Playwright admin suites in CI once Chromium access is available.
+
 ## 2025-10-04 (Session 26) — Codex
 - 🔐 **Encryption helpers** — Added shared AES-GCM utilities (`packages/shared/src/crypto/encryption.ts`) and Vitest coverage so integration secrets are encrypted consistently via the SSOT.
 - 🔑 **Integration key admin UX** — Introduced create/rotate server actions, modal forms, and row actions so operations stay in-context while surfacing the newly submitted secret exactly once (`apps/admin/src/app/(panel)/integrations/keys/**`, `apps/admin/src/components/integration-key-*.tsx`).
 - 🔄 **Repository plumbing** — Extended the integration key repository with create/rotate mutations that store encrypted payloads and update rotation metadata (`packages/db/src/repositories/**`).
-- 🔒 **Password hashing upgrade** — Replaced the SHA-256 placeholder with a scrypt-based helper shared across admin actions and seed scripts while bcrypt packages remain inaccessible offline (`packages/shared/src/crypto/password.ts`).
+- 🔒 **Password hashing upgrade** — Replaced the SHA-256 placeholder with a scrypt-based helper shared across admin actions and seed scripts while bcrypt packages remained inaccessible offline (`packages/shared/src/crypto/password.ts`).
 - 🧪 **Verification** — `pnpm --filter @brainliest/shared test`, `pnpm --filter @brainliest/db test`, `pnpm --filter @brainliest/admin typecheck`, `pnpm --filter @brainliest/admin lint`.
-- ⚠️ **Follow-up** — Swap the temporary scrypt helper for bcrypt once the workspace can install native modules; integration key delete flow still pending.
+- 📌 **Follow-up (resolved in Session 27)** — Upgrade to bcrypt-based hashing and add integration key deletion/audit flow once native modules are available.
 
 ## 2025-10-04 (Session 25) — Codex
 - 💾 **Sample session persistence** — Added a browser snapshot helper and wired `PracticeSessionLoader`/`PracticeSessionContainer` to merge + persist fallback practice data so selections, flags, and submissions survive navigation/reloads.

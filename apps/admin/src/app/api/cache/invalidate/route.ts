@@ -7,6 +7,8 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { invalidateCategory, invalidateExam } from '@brainliest/shared';
 
+import { getAdminActor } from '@/lib/auth';
+
 type InvalidatePayload = {
   readonly type: 'exam' | 'category';
   readonly identifier: string;
@@ -26,6 +28,17 @@ function isInvalidatePayload(value: unknown): value is InvalidatePayload {
 }
 
 export async function POST(request: NextRequest) {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json(
+      {
+        error: 'AUTH_REQUIRED',
+        message: 'Authentication required.',
+      },
+      { status: 401 }
+    );
+  }
+
   const json = await request.json().catch(() => null);
   if (!isInvalidatePayload(json)) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { UserRoleValue } from '@brainliest/db';
 import { searchUsersSuggestions } from '@/lib/users';
+import { getAdminActor } from '@/lib/auth';
 
 const MIN_QUERY_LENGTH = 2;
 const USER_ROLES: readonly UserRoleValue[] = ['STUDENT', 'EDITOR', 'ADMIN', 'SUPERADMIN'];
@@ -9,6 +10,11 @@ const STATUS_OPTIONS = new Set(['active', 'suspended', 'banned']);
 const SUBSCRIPTION_OPTIONS = new Set(['free', 'standard', 'premium', 'team']);
 
 export async function GET(request: Request) {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = (searchParams.get('q') ?? '').trim();
   const roleParam = (searchParams.get('role') ?? '').toUpperCase();

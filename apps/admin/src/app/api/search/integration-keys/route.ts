@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { IntegrationEnvironment } from '@brainliest/db';
 import { searchIntegrationKeySuggestions } from '@/lib/integrations';
+import { getAdminActor } from '@/lib/auth';
 
 const MIN_QUERY_LENGTH = 2;
 const ENVIRONMENTS: readonly IntegrationEnvironment[] = ['production', 'staging', 'development'];
 const ENVIRONMENT_SET = new Set(ENVIRONMENTS);
 
 export async function GET(request: Request) {
+  const actor = await getAdminActor();
+  if (!actor) {
+    return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const query = (searchParams.get('q') ?? '').trim();
   const environmentParam = (searchParams.get('environment') ?? '').toLowerCase();

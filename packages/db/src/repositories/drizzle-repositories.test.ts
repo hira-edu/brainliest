@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { PGlite } from '@electric-sql/pglite';
@@ -57,6 +58,30 @@ async function withTestContext<T>(handler: (context: {
 }
 
 describe('Drizzle repositories', () => {
+  it('finds admin users by email and updates last login', async () => {
+    await withTestContext(async ({ db, repositories }) => {
+      const adminId = randomUUID();
+      await db.insert(schema.adminUsers).values({
+        id: adminId,
+        email: 'admin@example.com',
+        passwordHash: 'bcrypt-hash',
+        role: 'ADMIN',
+        status: 'active',
+      });
+
+      const record = await repositories.adminUsers.findByEmail('admin@example.com');
+      expect(record).not.toBeNull();
+      expect(record?.id).toBe(adminId);
+      expect(record?.passwordHash).toBe('bcrypt-hash');
+      expect(record?.totpSecret).toBeNull();
+
+      await repositories.adminUsers.updateLastLogin(adminId, new Date('2025-10-04T00:00:00Z'));
+
+      const updated = await repositories.adminUsers.findByEmail('admin@example.com');
+      expect(updated?.lastLoginAt?.toISOString()).toBe('2025-10-04T00:00:00.000Z');
+    });
+  });
+
   it('creates and retrieves questions with options and pagination', async () => {
     await withTestContext(async ({ repositories }) => {
       const questionId = await repositories.questions.create(
@@ -470,6 +495,45 @@ describe('Drizzle repositories', () => {
 
       expect(rotatedStored?.encrypted).toBeDefined();
       expect(rotatedStored?.encrypted).not.toContain('sk-live-rotated-0987654321');
+    });
+  });
+
+  it('deletes integration keys and reports success', async () => {
+    await withTestContext(async ({ repositories, db }) => {
+      const integrationId = await repositories.integrationKeys.create({
+        name: 'Resend Staging',
+        type: 'RESEND',
+        environment: 'staging',
+        description: 'Transactional email key',
+        value: 're-staging-secret',
+        createdByAdminId: null,
+      });
+
+      const deletionResult = await repositories.integrationKeys.delete({
+        id: integrationId,
+        deletedByAdminId: null,
+        reason: 'Rotated out of band',
+      });
+
+      expect(deletionResult).toBe(true);
+
+      const remaining = await repositories.integrationKeys.list({}, 1, 10);
+      const stillPresent = remaining.data.some((record) => record.id === integrationId);
+      expect(stillPresent).toBe(false);
+
+      const [row] = await db
+        .select({ id: schema.integrationKeys.id })
+        .from(schema.integrationKeys)
+        .where(eq(schema.integrationKeys.id, integrationId));
+
+      expect(row).toBeUndefined();
+
+      const secondAttempt = await repositories.integrationKeys.delete({
+        id: integrationId,
+        deletedByAdminId: null,
+      });
+
+      expect(secondAttempt).toBe(false);
     });
   });
 });
